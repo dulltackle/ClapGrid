@@ -1,0 +1,129 @@
+{
+  "recorded_at": "2026-09-25T14:39:11.952778+00:00",
+  "system": "Ubuntu 24.04.5 LTS",
+  "python": "3.12.3",
+  "codex_version": "26.917.71314",
+  "startup": "运行安装缓存 prototype.py，复用已有服务，独立 GET /state 核对",
+  "results": {
+    "right_panel": "用户已在面板完成媒体测试",
+    "vp8_playback_seek": "用户确认正常",
+    "text_save": "待用户确认",
+    "panel_close_continuation": "与退出 Codex 合并验证，未单独采样",
+    "codex_exit_continuation": "用户确认已重开；{\"same_pid\": true, \"same_task_id\": true, \"progress_before\": 142, \"progress_after\": 180, \"status\": \"已完成\"}"
+  },
+  "baseline": {
+    "rows": [
+      "Linux 面板保存验证。这是第一阶段",
+      "这是第二段测试文案。测试爱你"
+    ],
+    "task": {
+      "id": "70ddcfd5-ffd1-49c2-a58a-e0669dfe9dd7",
+      "status": "运行中",
+      "seconds": 180,
+      "progress": 142
+    },
+    "identity": "clapgrid-runtime-PROTOTYPE",
+    "project": "/tmp/clapgrid-PROTOTYPE-wipe-me",
+    "pid": 288387,
+    "locked": true,
+    "time": 1790347151.952357
+  },
+  "reopened_at": "2026-09-25T14:44:57.700487+00:00",
+  "after_reopen": {
+    "rows": [
+      "Linux 面板保存验证。这是第一阶段",
+      "这是第二段测试文案。测试爱你"
+    ],
+    "task": {
+      "id": "70ddcfd5-ffd1-49c2-a58a-e0669dfe9dd7",
+      "status": "已完成",
+      "seconds": 180,
+      "progress": 180
+    },
+    "identity": "clapgrid-runtime-PROTOTYPE",
+    "project": "/tmp/clapgrid-PROTOTYPE-wipe-me",
+    "pid": 288387,
+    "locked": false,
+    "time": 1790347497.7000535
+  },
+  "checks": {
+    "same_pid": true,
+    "same_task_id": true,
+    "progress_before": 142,
+    "progress_after": 180,
+    "status": "已完成"
+  },
+  "cold_start": {
+    "before_stop": {
+      "rows": [
+        "Linux 面板保存验证。这是第一阶段",
+        "这是第二段测试文案。测试爱你"
+      ],
+      "task": {
+        "id": "70ddcfd5-ffd1-49c2-a58a-e0669dfe9dd7",
+        "status": "已完成",
+        "seconds": 180,
+        "progress": 180
+      },
+      "identity": "clapgrid-runtime-PROTOTYPE",
+      "project": "/tmp/clapgrid-PROTOTYPE-wipe-me",
+      "pid": 288387,
+      "locked": false,
+      "time": 1790347586.0151813
+    },
+    "normal_stop": {
+      "rows": [
+        "Linux 面板保存验证。这是第一阶段",
+        "这是第二段测试文案。测试爱你"
+      ],
+      "task": {
+        "id": "70ddcfd5-ffd1-49c2-a58a-e0669dfe9dd7",
+        "status": "已完成",
+        "seconds": 180,
+        "progress": 180
+      },
+      "identity": "clapgrid-runtime-PROTOTYPE",
+      "project": "/tmp/clapgrid-PROTOTYPE-wipe-me",
+      "pid": 288387,
+      "locked": false,
+      "time": 1790347586.026718
+    },
+    "default_sandbox": "启动调用内 PID 4 可访问；下一次独立 curl 返回退出码 7，服务不可连接",
+    "host_execution": "require_escalated 启动成功；独立调用 GET /state 成功",
+    "after_host_start": {
+      "rows": [
+        "Linux 面板保存验证。这是第一阶段",
+        "这是第二段测试文案。测试爱你"
+      ],
+      "task": {
+        "id": "70ddcfd5-ffd1-49c2-a58a-e0669dfe9dd7",
+        "status": "已完成",
+        "seconds": 180,
+        "progress": 180
+      },
+      "identity": "clapgrid-runtime-PROTOTYPE",
+      "project": "/tmp/clapgrid-PROTOTYPE-wipe-me",
+      "pid": 340896,
+      "locked": false,
+      "time": 1790347628.2775788
+    },
+    "repeat_launcher": {
+      "rows": [
+        "Linux 面板保存验证。这是第一阶段",
+        "这是第二段测试文案。测试爱你"
+      ],
+      "task": {
+        "id": "70ddcfd5-ffd1-49c2-a58a-e0669dfe9dd7",
+        "status": "已完成",
+        "seconds": 180,
+        "progress": 180
+      },
+      "identity": "clapgrid-runtime-PROTOTYPE",
+      "project": "/tmp/clapgrid-PROTOTYPE-wipe-me",
+      "pid": 340896,
+      "locked": false,
+      "time": 1790347628.3540523
+    },
+    "same_pid_on_reuse": true
+  }
+}

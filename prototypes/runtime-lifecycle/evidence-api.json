@@ -1,0 +1,156 @@
+[
+  {
+    "operation": "/state",
+    "http_status": 200,
+    "response": {
+      "rows": [
+        "Linux 面板保存验证。",
+        "这是第二段测试文案。"
+      ],
+      "task": null,
+      "identity": "clapgrid-runtime-PROTOTYPE",
+      "project": "/tmp/clapgrid-PROTOTYPE-wipe-me",
+      "pid": 222414,
+      "locked": false,
+      "time": 1790344154.0707617
+    }
+  },
+  {
+    "operation": "/start",
+    "http_status": 200,
+    "response": {
+      "rows": [
+        "Linux 面板保存验证。",
+        "这是第二段测试文案。"
+      ],
+      "task": {
+        "id": "4d7e4dd6-b747-4a13-9e7c-0a5ffe89ee0c",
+        "status": "运行中",
+        "seconds": 180,
+        "progress": 0
+      },
+      "identity": "clapgrid-runtime-PROTOTYPE",
+      "project": "/tmp/clapgrid-PROTOTYPE-wipe-me",
+      "pid": 222414,
+      "locked": true,
+      "time": 1790344154.0815778
+    }
+  },
+  {
+    "operation": "/edit",
+    "http_status": 409,
+    "response": {
+      "error": "后台任务持有项目锁，不能编辑"
+    }
+  },
+  {
+    "operation": "/start",
+    "http_status": 409,
+    "response": {
+      "error": "已有后台任务，未重复创建",
+      "rows": [
+        "Linux 面板保存验证。",
+        "这是第二段测试文案。"
+      ],
+      "task": {
+        "id": "4d7e4dd6-b747-4a13-9e7c-0a5ffe89ee0c",
+        "status": "运行中",
+        "seconds": 180,
+        "progress": 1
+      },
+      "identity": "clapgrid-runtime-PROTOTYPE",
+      "project": "/tmp/clapgrid-PROTOTYPE-wipe-me",
+      "pid": 222414,
+      "locked": true,
+      "time": 1790344156.084192
+    }
+  },
+  {
+    "operation": "/stop",
+    "http_status": 409,
+    "response": {
+      "error": "任务仍在运行，保持服务；须明确选择中断任务并退出"
+    }
+  },
+  {
+    "operation": "/state",
+    "http_status": 200,
+    "response": {
+      "rows": [
+        "Linux 面板保存验证。",
+        "这是第二段测试文案。"
+      ],
+      "task": {
+        "id": "4d7e4dd6-b747-4a13-9e7c-0a5ffe89ee0c",
+        "status": "运行中",
+        "seconds": 180,
+        "progress": 1
+      },
+      "identity": "clapgrid-runtime-PROTOTYPE",
+      "project": "/tmp/clapgrid-PROTOTYPE-wipe-me",
+      "pid": 222414,
+      "locked": true,
+      "time": 1790344156.0852504
+    }
+  },
+  {
+    "operation": "explicit-stop",
+    "response": {
+      "rows": [
+        "Linux 面板保存验证。",
+        "这是第二段测试文案。"
+      ],
+      "task": {
+        "id": "4d7e4dd6-b747-4a13-9e7c-0a5ffe89ee0c",
+        "status": "已中断",
+        "seconds": 180,
+        "progress": 18
+      },
+      "identity": "clapgrid-runtime-PROTOTYPE",
+      "project": "/tmp/clapgrid-PROTOTYPE-wipe-me",
+      "pid": 222414,
+      "locked": false,
+      "time": 1790344172.9652808
+    }
+  },
+  {
+    "operation": "after-panel-close",
+    "response": {
+      "rows": [
+        "Linux 面板保存验证。",
+        "这是第二段测试文案。"
+      ],
+      "task": {
+        "id": "3e6d4142-732c-42ed-9d2c-33a333c77067",
+        "status": "运行中",
+        "seconds": 180,
+        "progress": 9
+      },
+      "identity": "clapgrid-runtime-PROTOTYPE",
+      "project": "/tmp/clapgrid-PROTOTYPE-wipe-me",
+      "pid": 224559,
+      "locked": true,
+      "time": 1790344203.181935
+    }
+  },
+  {
+    "operation": "after-service-crash-and-restart",
+    "response": {
+      "rows": [
+        "Linux 面板保存验证。",
+        "这是第二段测试文案。"
+      ],
+      "task": {
+        "id": "3e6d4142-732c-42ed-9d2c-33a333c77067",
+        "status": "已中断",
+        "seconds": 180,
+        "progress": 28
+      },
+      "identity": "clapgrid-runtime-PROTOTYPE",
+      "project": "/tmp/clapgrid-PROTOTYPE-wipe-me",
+      "pid": 226788,
+      "locked": false,
+      "time": 1790344236.2967243
+    }
+  }
+]
