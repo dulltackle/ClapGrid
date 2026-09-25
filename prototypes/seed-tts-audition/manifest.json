@@ -1,0 +1,72 @@
+{
+  "model": "seed-tts-2.0",
+  "text": "做口播视频，最费时间的往往不是录制，而是反复修改。把文案分成20个片段，配上视频，再用AI生成配音。预算是19.9元，目标输出1080P。改好一句后，只更新对应配音。先听一遍：语气是否自然，停顿是否合适？",
+  "samples": [
+    {
+      "name": "vivi 2.0",
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "request": {
+        "req_params": {
+          "text": "做口播视频，最费时间的往往不是录制，而是反复修改。把文案分成20个片段，配上视频，再用AI生成配音。预算是19.9元，目标输出1080P。改好一句后，只更新对应配音。先听一遍：语气是否自然，停顿是否合适？",
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "audio_params": {
+            "format": "mp3",
+            "sample_rate": 24000,
+            "speech_rate": 0,
+            "loudness_rate": 0
+          }
+        }
+      },
+      "status": "complete",
+      "usage": {
+        "text_words": 102
+      },
+      "file": "A-vivi.mp3",
+      "bytes": 160557
+    },
+    {
+      "name": "流畅女声",
+      "speaker": "zh_female_santongyongns_saturn_bigtts",
+      "request": {
+        "req_params": {
+          "text": "做口播视频，最费时间的往往不是录制，而是反复修改。把文案分成20个片段，配上视频，再用AI生成配音。预算是19.9元，目标输出1080P。改好一句后，只更新对应配音。先听一遍：语气是否自然，停顿是否合适？",
+          "speaker": "zh_female_santongyongns_saturn_bigtts",
+          "audio_params": {
+            "format": "mp3",
+            "sample_rate": 24000,
+            "speech_rate": 0,
+            "loudness_rate": 0
+          }
+        }
+      },
+      "status": "complete",
+      "usage": {
+        "text_words": 102
+      },
+      "file": "B-fluent.mp3",
+      "bytes": 162285
+    },
+    {
+      "name": "儒雅逸辰",
+      "speaker": "zh_male_ruyayichen_saturn_bigtts",
+      "request": {
+        "req_params": {
+          "text": "做口播视频，最费时间的往往不是录制，而是反复修改。把文案分成20个片段，配上视频，再用AI生成配音。预算是19.9元，目标输出1080P。改好一句后，只更新对应配音。先听一遍：语气是否自然，停顿是否合适？",
+          "speaker": "zh_male_ruyayichen_saturn_bigtts",
+          "audio_params": {
+            "format": "mp3",
+            "sample_rate": 24000,
+            "speech_rate": 0,
+            "loudness_rate": 0
+          }
+        }
+      },
+      "status": "complete",
+      "usage": {
+        "text_words": 102
+      },
+      "file": "C-yichen.mp3",
+      "bytes": 160557
+    }
+  ]
+}
