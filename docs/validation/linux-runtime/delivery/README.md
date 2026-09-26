@@ -26,7 +26,7 @@ python3 -m zipfile -t /tmp/clapgrid-delivery-release/clapgrid-runtime-probe.zip
 
 本机另有 `.agents/plugins/plugins/` 同名副本；第一次重装仍返回旧版，通过 CLI 查明实际源后已恢复未使用副本、更新真实源并重装。不能仅凭重装命令返回成功就宣布新代码已安装。[缓存哈希](../delivery-evidence/cache-sha256.json) 验证四个新文件与仓库内容一致，[已安装插件信息](../delivery-evidence/installed-plugin.json) 记录实际来源及版本。
 
-更新后的技能需要在新聊天调用 `$clapgrid-runtime-probe`，才能验收新版本技能发现。本聊天已经从新安装缓存执行入口并验证右侧打开；没有将这一结果冒充新聊天的技能发现验证。
+后续独立聊天“测试宿主审批拒绝”（`01a0dccb-effb-75a1-8c74-f709a32dd19d`）已读取新版本缓存中的技能并执行其 check/status/start 流程，补齐新聊天技能发现记录。
 
 ## 入口和错误契约
 
@@ -70,6 +70,19 @@ python3 -m zipfile -t /tmp/clapgrid-delivery-release/clapgrid-runtime-probe.zip
 
 ## 尚未验收的边界
 
-本轮交付了 Ubuntu 原型安装入口、明确了依赖来源，并在已安装缓存验证 Codex 启动及右侧打开。**干净容器不等于干净 Codex 桌面**：缺少 Python 的真实桌面首装及系统图形认证仍待验证。真实宿主审批拒绝尚未出现，只交付了技能中的处理分支；无 sudo 的系统权限失败不能代替它。
+本轮交付了 Ubuntu 原型安装入口、明确了依赖来源，并在已安装缓存验证 Codex 启动及右侧打开。**干净容器不等于干净 Codex 桌面**：缺少 Python 的真实桌面首装及系统图形认证仍待验证。真实宿主审批拒绝已在后续独立聊天通过，见下节；无 sudo 的系统权限失败与该证据分开记录。
 
 遵循用户要求，没有新增自动化测试。已执行 shell 语法、Python 编译、技能／插件结构验证和实际接口检查。仓库没有配置类型检查或全量测试命令；不把语法检查称为类型检查。提交前安排一次只读代码审查，并检查证据、缓存一致性及文档链接。
+
+
+## 后续真实启动审批拒绝（2026-09-26）
+
+用户在“测试宿主审批拒绝”中明确授权重试准备检查，并亲自拒绝启动请求。第一次拒绝的是端口检查，不计通过；以下是第二次操作的实际证据：
+
+- 独立项目 `/tmp/clapgrid-approval-denial-haf0k6MJ`，测试端口 48765；Python 3.12.3 已就绪，准备阶段 status 返回 20、连接拒绝。
+- `2026-09-26T08:24:05.731Z` 单独申请宿主执行 `runtime-linux.sh start --port 48765 --project /tmp/clapgrid-approval-denial-haf0k6MJ`。
+- `2026-09-26T08:24:11.028Z` 返回 `CreateProcess ... Rejected("rejected by user")`，这是宿主拒绝，脚本未启动，没有脚本退出码。
+- 聊天最终反馈“宿主未允许启动，本次启动操作未执行”。该聊天记录中，拒绝之后没有后续工具调用，不存在换方式或自动重试。
+- 本聊天收到用户完成测试的反馈后，只读查询同端口同项目，仍返回 20、连接拒绝；此查询与原聊天结束时刻分开记录，没有启动服务。
+
+[请求与拒绝原始记录](../delivery-evidence/approval-denial.json) 从源聊天会话日志提取，仅保留相关调用和返回，不收录其他监听端口；[接续查询](../delivery-evidence/denial-followup-status.txt) 保存本聊天输出。结合已有允许启动证据，#13 第 3 条通过。干净 Codex 桌面首装仍待实测，事项保持开放。
