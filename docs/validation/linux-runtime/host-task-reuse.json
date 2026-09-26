@@ -1,0 +1,1 @@
+{"url": "http://127.0.0.1:48763", "state": {"rows": ["这是第一段测试文案。", "这是第二段测试文案。"], "task": {"id": "f7baf5d4-a38a-437f-a6bc-d426aa4e2e9d", "status": "运行中", "seconds": 900, "progress": 0}, "identity": "clapgrid-runtime-PROTOTYPE", "project": "/tmp/clapgrid-issue13-host", "pid": 154611, "locked": true, "time": 1790408299.5135827}}
