@@ -1,0 +1,18 @@
+{
+  "name": "clapgrid-runtime-probe",
+  "version": "0.1.0+codex.20260926075948",
+  "description": "ClapGrid \u4e00\u6b21\u6027\u672c\u5730\u8fd0\u884c\u9a8c\u8bc1\uff1a\u53f3\u4fa7\u8868\u683c\u3001\u5a92\u4f53\u9884\u89c8\u4e0e\u6a21\u62df\u540e\u53f0\u4efb\u52a1",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "ClapGrid \u8fd0\u884c\u9a8c\u8bc1\u539f\u578b",
+    "shortDescription": "\u9a8c\u8bc1\u672c\u5730\u8868\u683c\u3001\u9884\u89c8\u4e0e\u540e\u53f0\u4efb\u52a1\u3002",
+    "longDescription": "\u4e00\u6b21\u6027\u5b89\u88c5\u4e0e\u8fd0\u884c\u80fd\u529b\u539f\u578b\uff0c\u4e0d\u8c03\u7528\u4ed8\u8d39\u670d\u52a1\u3002",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "\u6253\u5f00 ClapGrid \u8fd0\u884c\u9a8c\u8bc1\u539f\u578b\u3002"
+  }
+}

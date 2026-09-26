@@ -1,0 +1,16 @@
+[
+  {
+    "pluginId": "clapgrid-runtime-probe@personal",
+    "name": "clapgrid-runtime-probe",
+    "marketplaceName": "personal",
+    "version": "0.1.0+codex.20260926075948",
+    "installed": true,
+    "enabled": true,
+    "source": {
+      "source": "local",
+      "path": "/home/forclaw/plugins/clapgrid-runtime-probe"
+    },
+    "installPolicy": "AVAILABLE",
+    "authPolicy": "ON_INSTALL"
+  }
+]

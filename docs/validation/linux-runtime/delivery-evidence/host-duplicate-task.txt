@@ -1,0 +1,2 @@
+{"error": "已有后台任务，未重复创建", "rows": ["这是第一段测试文案。", "这是第二段测试文案。"], "task": {"id": "a406a5c3-b6e3-4e51-9ae6-a2fdcc5f595b", "status": "运行中", "seconds": 10, "progress": 0}, "identity": "clapgrid-runtime-PROTOTYPE", "project": "/tmp/clapgrid-issue13-delivery-host", "pid": 199030, "locked": true, "time": 1790409986.5146577}
+HTTP 409

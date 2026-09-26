@@ -1,0 +1,17 @@
+Err:1 http://archive.ubuntu.com/ubuntu noble InRelease
+  Temporary failure resolving 'archive.ubuntu.com'
+Err:2 http://security.ubuntu.com/ubuntu noble-security InRelease
+  Temporary failure resolving 'security.ubuntu.com'
+Err:3 http://archive.ubuntu.com/ubuntu noble-updates InRelease
+  Temporary failure resolving 'archive.ubuntu.com'
+Err:4 http://archive.ubuntu.com/ubuntu noble-backports InRelease
+  Temporary failure resolving 'archive.ubuntu.com'
+Reading package lists...
+E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble/InRelease  Temporary failure resolving 'archive.ubuntu.com'
+E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-updates/InRelease  Temporary failure resolving 'archive.ubuntu.com'
+E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-backports/InRelease  Temporary failure resolving 'archive.ubuntu.com'
+E: Failed to fetch http://security.ubuntu.com/ubuntu/dists/noble-security/InRelease  Temporary failure resolving 'security.ubuntu.com'
+E: Some index files failed to download. They have been ignored, or old ones used instead.
+运行组件安装失败，本次未启动服务。请保留上方错误，解决网络、包管理器或权限问题后重新执行 install；不会自动启动或重试任务。
+
+exit=13

@@ -1,0 +1,6 @@
+{
+  "scripts/runtime-linux.sh": "cc5922a2194939031fbf234f76e4259b82f1c48e938a0d1a2a339b8b9c16804d",
+  "scripts/runtime_status.py": "e618363795e90fb2118bc6d3b1f24d5943c821e73778f80a7ad9a293a00ee712",
+  "skills/clapgrid-runtime-probe/SKILL.md": "87959c66a4bf69b0883fd7d2ec6b15eaaa42551bc5ccb6f50771ddce7304eec2",
+  ".codex-plugin/plugin.json": "3ab32ba5abbc3ae3fab1e336f56cd4fc6541fc7dff090e1bfdba1e2d7042ed23"
+}
