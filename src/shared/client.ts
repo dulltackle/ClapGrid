@@ -30,7 +30,7 @@ export async function saveSegment(baseUrl: string, change: { text: string; id?: 
 export async function modifyBatch(baseUrl: string, batch: Batch, signal?: AbortSignal): Promise<BatchResult> {
   const response = await fetch(`${baseUrl}/api/codex/modify`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(batch),
-    signal: signal ?? AbortSignal.timeout(30000), redirect: 'error',
+    signal: signal ?? (batch.changes.some(change => change.kind === 'video') ? undefined : AbortSignal.timeout(30000)), redirect: 'error',
   });
   const body = await response.json();
   if (!response.ok) throw new Error(body.error ?? `修改失败：HTTP ${response.status}`);
@@ -77,10 +77,10 @@ export async function beginEdit(baseUrl: string): Promise<EditSession> {
 }
 
 
-async function postJson(baseUrl: string, path: string, input: unknown, token?: string, signal?: AbortSignal) {
+async function postJson(baseUrl: string, path: string, input: unknown, token?: string, signal?: AbortSignal | null) {
   const response = await fetch(`${baseUrl}${path}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Edit-Token': token } : {}) },
-    body: JSON.stringify(input), signal: signal ?? AbortSignal.timeout(30000), redirect: 'error',
+    body: JSON.stringify(input), signal: signal === null ? undefined : signal ?? AbortSignal.timeout(30000), redirect: 'error',
   });
   const body = await response.json();
   if (!response.ok) throw new Error(body.error ?? `请求失败：HTTP ${response.status}`);
@@ -94,8 +94,9 @@ export async function processSegments(baseUrl: string, input: ScopedOperation, s
   const body = await postJson(baseUrl, '/api/codex/process', input, undefined, signal);
   return { ...body, status: statusSchema.parse(body.status) };
 }
-export async function modifyUserBatch(baseUrl: string, input: Batch, token: string): Promise<BatchResult> {
-  const body = await postJson(baseUrl, '/api/segments/modify', input, token);
+export async function modifyUserBatch(baseUrl: string, input: Batch, token: string, signal?: AbortSignal): Promise<BatchResult> {
+  // 媒体校验由服务端逐进程限时；不能沿用短文本编辑的 30 秒总超时。
+  const body = await postJson(baseUrl, '/api/segments/modify', input, token, signal ?? (input.changes.some(change => change.kind === 'video') ? null : undefined));
   return { ...body, status: statusSchema.parse(body.status) };
 }
 
@@ -145,4 +146,15 @@ export async function connectTable(baseUrl: string): Promise<TableSession> {
     };
   } catch (error) { controller.abort(); throw error; }
   finally { clearTimeout(timeout); }
+}
+
+/** 导入仅接收用户明确指定的文件；不自动扫描路径或重试。 */
+export async function importVideo(baseUrl: string, sourcePath: string, token?: string, signal?: AbortSignal) {
+  const response = await fetch(`${baseUrl}${token ? '/api/video/import' : '/api/codex/import-video'}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Edit-Token': token } : {}) },
+    body: JSON.stringify({ sourcePath }), signal, redirect: 'error',
+  });
+  const body = await response.json();
+  if (!response.ok) throw new Error(body.error ?? '视频导入失败');
+  return { asset: body.asset as import('./contracts.js').VideoAsset, status: statusSchema.parse(body.status) };
 }

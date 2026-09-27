@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { AllCommunityModule, themeQuartz, type ColDef, type GridApi } from 'ag-grid-community';
 import { AgGridProvider, AgGridReact } from 'ag-grid-react';
-import { queryStatus, saveSegment, beginEdit, type EditSession, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
+import { queryStatus, importVideo, saveSegment, beginEdit, type EditSession, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
 import type { Segment, ServiceStatus, Batch } from '../shared/contracts.js';
 import './style.css';
 
@@ -29,6 +29,11 @@ const theme = themeQuartz.withParams({
 function App() {
   const [status, setStatus] = useState<ServiceStatus>();
   const [error, setError] = useState('');
+  const [videoEditor, setVideoEditor] = useState<{ segment: Segment; assetId: string; start: string } | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [sourcePath, setSourcePath] = useState('');
+  const [preview, setPreview] = useState<{ assetId: string; start: number } | null>(null);
+  const importController = useRef<AbortController | null>(null);
   const [filter, setFilter] = useState('');
   const [paste, setPaste] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -57,6 +62,7 @@ function App() {
     void next.closed.then(() => {
       if (session.current !== next || pending.current) return;
       session.current = null; editing.current = false;
+      setVideoEditor(null); setImporting(false);
       grid.current?.stopEditing(true);
       setSaveState('failed'); setSaveError('编辑连接已断开，未提交输入已取消；请重新读取后编辑。');
     });
@@ -90,7 +96,18 @@ function App() {
         if (params.editing && params.event.key === 'Tab') { params.api.stopEditing(); return true; }
         return !params.editing && (['Enter', 'F2', 'Backspace', 'Delete'].includes(params.event.key) || params.event.key.length === 1);
       } },
-    { headerName: '画面素材', width: 150 },
+    { headerName: '画面素材', width: 310, cellRenderer: (params: { data?: Segment }) => {
+      const segment = params.data;
+      if (!segment) return null;
+      const asset = status?.snapshot.assets.find(asset => asset.id === segment.video?.assetId);
+      return <div className="video-cell">
+        {asset && <button className="thumbnail" aria-label={`播放 ${asset.name}`} onClick={() => setPreview(segment.video)}>
+          <img src={`/api/media/${asset.id}/thumbnail`} alt={asset.name} />
+        </button>}
+        <span>{asset ? `${asset.name} · ${segment.video!.start} 秒` : '未关联视频'}</span>
+        <button disabled={disabled} onClick={() => { void openVideoEditor(segment.id); }}>{asset ? '更改' : '关联'}</button>
+      </div>;
+    } },
     { headerName: '配音', width: 140 },
     { headerName: '画面说明', width: 180 },
   ];
@@ -127,6 +144,49 @@ function App() {
     } catch (cause) {
       setSaveState('failed'); setSaveError(cause instanceof Error ? cause.message : '未确认保存结果，请查询后再操作');
     } finally { await release(); pending.current = false; }
+  };
+  const openVideoEditor = async (id?: string) => {
+    if (pending.current || editing.current) return;
+    pending.current = true; generation.current++;
+    try {
+      const lease = await acquire();
+      setStatus(lease.status); setSaveError(''); setSaveState('saved');
+      editing.current = true;
+      if (id) {
+        const segment = lease.status.snapshot.segments.find(segment => segment.id === id);
+        if (!segment) throw new Error('口播片段已删除');
+        setVideoEditor({ segment, assetId: segment.video?.assetId ?? '', start: String(segment.video?.start ?? 0) });
+      } else { setSourcePath(''); setImporting(true); }
+    } catch (cause) {
+      await release(); setSaveState('failed'); setSaveError((cause as Error).message);
+    } finally { pending.current = false; }
+  };
+  const cancelVideo = async () => {
+    importController.current?.abort();
+    setVideoEditor(null); setImporting(false);
+    await release(); generation.current++;
+  };
+  const saveVideo = async () => {
+    if (pending.current || !session.current) return;
+    pending.current = true; generation.current++; setSaveState('saving'); setSaveError('');
+    try {
+      const controller = new AbortController(); importController.current = controller;
+      if (importing) {
+        const result = await importVideo(window.location.origin, sourcePath, session.current.token, controller.signal);
+        setStatus(result.status);
+      } else if (videoEditor) {
+        if (!videoEditor.start.trim()) throw new Error('请填写视频起点');
+        const result = await modifyUserBatch(window.location.origin, { changes: [{ kind: 'video', expected: videoEditor.segment,
+          assetId: videoEditor.assetId || null, start: Number(videoEditor.start) }] }, session.current.token, controller.signal);
+        setStatus(result.status);
+        if (result.summary.applied !== 1) throw new Error(result.results[0]?.message ?? '关联未保存');
+      }
+      setSaveState('saved');
+    } catch (cause) { setSaveState('failed'); setSaveError((cause as Error).message); }
+    finally {
+      importController.current = null; setVideoEditor(null); setImporting(false);
+      await release(); pending.current = false;
+    }
   };
   const move = (direction: -1 | 1) => {
     const ids = status?.snapshot.segments.map(segment => segment.id) ?? [];
@@ -192,6 +252,7 @@ function App() {
   const selectedPosition = status?.snapshot.segments.findIndex(segment => segment.id === selectedIds[0]) ?? -1;
   return <main>
     <header><h1>口播片段</h1>
+      <button disabled={disabled} onClick={() => { void openVideoEditor(); }}>导入本地视频</button>
       <button disabled={!status || saveState === 'saving' || !!status.modification || editing.current} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
     </header>
     <p className={`save-status${saveState === 'failed' ? ' save-error' : ''}`} role="status">
@@ -227,6 +288,25 @@ function App() {
         <button disabled={disabled || !paste.trim()} onClick={() => { void organize({ changes: [{ kind: 'paste', text: paste }] }); }}>按非空行新增</button>
       </details>
     </section>
+    {(videoEditor || importing) && <div className="modal-backdrop"><section role="dialog" aria-modal="true" aria-label={importing ? '导入本地视频' : '关联视频'} className="media-dialog">
+      <h2>{importing ? '导入本地视频' : '关联视频'}</h2>
+      {importing ? <label>视频文件绝对路径<input autoFocus aria-label="视频文件绝对路径" value={sourcePath} disabled={saveState === 'saving'} onChange={event => setSourcePath(event.target.value)} placeholder="粘贴要导入的本地视频完整路径" /></label>
+        : videoEditor && <>
+          <label>素材<select aria-label="关联素材" value={videoEditor.assetId} disabled={saveState === 'saving'} onChange={event => setVideoEditor({ ...videoEditor, assetId: event.target.value, start: '0' })}>
+            <option value="">解除关联</option>
+            {status?.snapshot.assets.map(asset => <option key={asset.id} value={asset.id}>{asset.name}（{asset.duration.toFixed(2)} 秒）</option>)}
+          </select></label>
+          <label>播放起点（秒）<input aria-label="播放起点（秒）" type="number" min="0" step="any" disabled={!videoEditor.assetId || saveState === 'saving'} value={videoEditor.start} onChange={event => setVideoEditor({ ...videoEditor, start: event.target.value })} /></label>
+          {!status?.snapshot.assets.length && <p>请先取消并导入本地视频。</p>}
+        </>}
+      {importing && <p>只读取指定文件，复制到项目并生成静音预览。原文件之后可移动或改名。</p>}
+      <div className="toolbar"><button disabled={saveState === 'saving' || (importing && !sourcePath.trim())} onClick={() => { void saveVideo(); }}>{saveState === 'saving' ? '正在处理…' : importing ? '导入并复制' : '保存关联与起点'}</button>
+        <button onClick={() => { void cancelVideo(); }}>取消</button></div>
+    </section></div>}
+    {preview && <div className="modal-backdrop"><section role="dialog" aria-modal="true" aria-label="视频预览" className="media-dialog">
+      <h2>视频预览</h2><video key={preview.assetId} controls muted autoPlay src={`/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
+      <p>从 {preview.start} 秒开始，预览默认静音。</p><button onClick={() => setPreview(null)}>关闭预览</button>
+    </section></div>}
     <div className="grid"><AgGridProvider modules={[AllCommunityModule]}><AgGridReact
       readOnlyEdit stopEditingWhenCellsLoseFocus suppressClickEdit
       rowSelection={{ mode: 'multiRow', selectAll: 'filtered', enableClickSelection: false }}

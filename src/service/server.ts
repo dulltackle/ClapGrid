@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, openSync, fstatSync, createReadStream, constants, closeSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { claimProjectService } from '../business/service-ownership.js';
 import { openBusiness } from '../business/index.js';
-import { addSegmentSchema, editSegmentSchema, batchSchema, segmentQuerySchema, selectionSchema, scopedOperationSchema, type ServiceStatus } from '../shared/contracts.js';
+import { importVideoSchema, addSegmentSchema, editSegmentSchema, batchSchema, segmentQuerySchema, selectionSchema, scopedOperationSchema, type ServiceStatus } from '../shared/contracts.js';
 
 export interface ServiceOptions {
   projectDirectory: string;
@@ -133,7 +133,7 @@ export async function startService(options: ServiceOptions) {
         if (typeof token !== 'string') { reject(400, '缺少修改权凭据。'); return; }
         finishSession(token); json({ released: true }); return;
       }
-      if (path === '/api/segments/add' || path === '/api/segments/edit' || path === '/api/codex/modify' || path === '/api/segments/modify' || path === '/api/codex/process') {
+      if (path === '/api/video/import' || path === '/api/codex/import-video' || path === '/api/segments/add' || path === '/api/segments/edit' || path === '/api/codex/modify' || path === '/api/segments/modify' || path === '/api/codex/process') {
         if (request.method !== 'POST') {
           response.setHeader('Allow', 'POST'); reject(405, '请使用 POST 提交编辑。'); return;
         }
@@ -171,7 +171,14 @@ export async function startService(options: ServiceOptions) {
           if (!business.owns(token, codex ? 'codex' : 'user')) {
             reject(409, '修改权已失效，请重新读取项目后编辑。'); return;
           }
-          if (path === '/api/codex/process') {
+          if (path === '/api/video/import' || path === '/api/codex/import-video') {
+            const parsed = importVideoSchema.safeParse(input);
+            if (!parsed.success) { reject(400, '请提供用户明确指定的视频路径'); return; }
+            try {
+              const asset = await business.importVideo(token, parsed.data);
+              release(); json({ asset, status: status() });
+            } catch (error) { if (!response.destroyed) reject(400, (error as Error).message); }
+          } else if (path === '/api/codex/process') {
             const parsed = scopedOperationSchema.safeParse(input);
             if (!parsed.success) { reject(400, '请提供明确范围、查询快照和有效操作。'); return; }
             try {
@@ -199,7 +206,34 @@ export async function startService(options: ServiceOptions) {
       if (request.method !== 'GET') {
         response.setHeader('Allow', 'GET'); reject(405, '此接口仅提供查询。'); return;
       }
-      if (path === '/api/status') {
+      const media = /^\/api\/media\/([a-f0-9-]{36})\/(preview|thumbnail)$/.exec(path);
+      if (media) {
+        let descriptor: number | undefined;
+        try {
+          const kind = media[2] as 'preview' | 'thumbnail';
+          descriptor = openSync(business.getMedia(media[1]!, kind), constants.O_RDONLY | constants.O_NOFOLLOW);
+          const stat = fstatSync(descriptor);
+          if (!stat.isFile() || stat.nlink !== 1) throw new Error('媒体文件无效');
+          const size = stat.size;
+          let start = 0; let end = size - 1;
+          const range = request.headers.range;
+          if (range) {
+            const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+            if (!match || (!match[1] && !match[2])) { reject(416, '范围无效'); return; }
+            start = match[1] ? Number(match[1]) : Math.max(0, size - Number(match[2]));
+            end = match[1] && match[2] ? Math.min(size - 1, Number(match[2])) : size - 1;
+            if (start > end || start >= size) { response.setHeader('Content-Range', `bytes */${size}`); reject(416, '范围无效'); return; }
+            response.setHeader('Content-Range', `bytes ${start}-${end}/${size}`);
+          }
+          response.writeHead(range ? 206 : 200, { 'Content-Type': kind === 'preview' ? 'video/webm' : 'image/png', 'Accept-Ranges': 'bytes', 'Content-Length': end - start + 1 });
+          const stream = createReadStream('', { fd: descriptor, autoClose: true, start, end });
+          descriptor = undefined;
+          stream.on('error', () => response.destroy());
+          response.on('close', () => stream.destroy());
+          stream.pipe(response);
+        } catch { if (!response.headersSent) reject(404, '素材不可读取'); else response.destroy(); }
+        finally { if (descriptor !== undefined) closeSync(descriptor); }
+      } else if (path === '/api/status') {
         try {
           response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
           response.end(JSON.stringify(status()));

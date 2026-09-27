@@ -1,6 +1,6 @@
-import { batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
+import { importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { localServiceUrl, queryStatus, modifyBatch, querySegments, processSegments } from '../shared/client.js';
+import { localServiceUrl, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
 
 export function createBusinessMcp(url: string) {
   const baseUrl = localServiceUrl(url);
@@ -18,7 +18,7 @@ export function createBusinessMcp(url: string) {
     }
   });
   server.registerTool('clapgrid_modify', {
-    description: '批量新增、粘贴、修改、删除或重排口播片段。paste 按非空行创建片段；reorder 必须提供查询时项目顺序 expectedIds 及包含全部身份的新顺序 ids。修改/删除必须携带 clapgrid_status 查询得到的完整 expected 片段快照。用户编辑时立即拒绝；目标变化或删除逐项跳过。仅最终结果代表已提交，不自动重试。',
+    description: '批量新增、粘贴、修改、删除或重排口播片段，或设置视频关联。video 操作携带完整 expected、assetId 和 start（秒）；assetId 为 null 解除关联，否则关联/替换已导入素材并设置起点，使用同一 assetId 可只调整起点。paste 按非空行创建片段；reorder 必须提供查询时项目顺序 expectedIds 及包含全部身份的新顺序 ids。修改/删除必须携带 clapgrid_status 查询得到的完整 expected 片段快照。用户编辑时立即拒绝；目标变化或删除逐项跳过。仅最终结果代表已提交，不自动重试。',
     inputSchema: batchSchema,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
   }, async (input, extra) => {
@@ -51,6 +51,18 @@ export function createBusinessMcp(url: string) {
       return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result };
     } catch (error) {
       return { isError: true, content: [{ type: 'text', text: error instanceof Error ? error.message : '修改失败，请查询项目确认结果' }] };
+    }
+  });
+  server.registerTool('clapgrid_import_video', {
+    description: '导入用户明确指定的单个本地视频绝对路径（可在项目外），复制原件到项目并生成静音预览与缩略图。只能传入用户已授权的具体来源，不扫描或猜测路径。持有普通修改权直至完成；返回素材身份供多个片段复用。失败不自动重试。',
+    inputSchema: importVideoSchema,
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  }, async (input, extra) => {
+    try {
+      const result = await importVideo(baseUrl, input.sourcePath, undefined, extra.signal);
+      return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result };
+    } catch (error) {
+      return { isError: true, content: [{ type: 'text', text: error instanceof Error ? error.message : '导入失败，请查询项目确认结果' }] };
     }
   });
   return server;

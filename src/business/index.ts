@@ -1,6 +1,8 @@
 import { setImmediate } from 'node:timers/promises';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
+import { prepareVideo, validateVideo, mediaPath, verifyMedia, discardImport } from './video-media.js';
+import { importVideoSchema, type ImportVideo } from '../shared/contracts.js';
 import { projectPaths } from './project-paths.js';
 import { DatabaseSync } from 'node:sqlite';
 import { addSegmentSchema, editSegmentSchema, snapshotSchema, type Snapshot, batchSchema, type Batch, type ChangeResult, scopeSchema, selectionSchema, scopedOperationSchema, type SegmentScope, type ScopedOperation, type SegmentQueryResult } from '../shared/contracts.js';
@@ -20,6 +22,12 @@ export function openBusiness(directory: string) {
         position INTEGER NOT NULL UNIQUE CHECK (position > 0),
         text TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS video_assets (
+        id TEXT PRIMARY KEY, name TEXT NOT NULL, duration REAL NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS segment_video (
+        segment_id TEXT PRIMARY KEY, asset_id TEXT NOT NULL, start REAL NOT NULL
+      );
       CREATE TABLE IF NOT EXISTS project_identity (
         singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
         id TEXT NOT NULL,
@@ -37,7 +45,11 @@ export function openBusiness(directory: string) {
     return snapshotSchema.parse({
       project: { id: row.id, directory: projectDirectory, createdAt: row.created_at },
       storage: { database, mediaDirectory },
-      segments: db.prepare('SELECT id, ROW_NUMBER() OVER (ORDER BY position) AS "order", text FROM segments ORDER BY position').all(),
+      segments: db.prepare('SELECT id, ROW_NUMBER() OVER (ORDER BY position) AS "order", text FROM segments ORDER BY position').all().map(segment => {
+        const video = db.prepare('SELECT asset_id AS assetId, start FROM segment_video WHERE segment_id = ?').get(segment.id!);
+        return { ...segment, video: video ?? null };
+      }),
+      assets: db.prepare('SELECT id, name, duration FROM video_assets ORDER BY rowid').all(),
     });
   }
   // 所有项目变更共用事务边界；仅在提交成功后向 UI / MCP 发布快照。
@@ -54,16 +66,16 @@ export function openBusiness(directory: string) {
       throw error;
     }
   }
-  let modification: { token: string; owner: 'user' | 'codex' } | null = null;
+  let modification: { token: string; owner: 'user' | 'codex'; controller: AbortController } | null = null;
   const acquire = (owner: 'user' | 'codex') => {
     if (modification) throw new Error(modification.owner === 'user' ? '用户正在编辑' : 'Codex 正在修改');
     const token = randomUUID();
-    modification = { token, owner };
+    modification = { token, owner, controller: new AbortController() };
     return token;
   };
   const release = (token: string) => {
     // 只释放本次普通编辑；迟到的连接事件不能解除后续修改权或后台任务锁。
-    if (modification?.token === token) modification = null;
+    if (modification?.token === token) { modification.controller.abort(); modification = null; }
   };
   const tables = new Map<string, string[]>();
   const business = {
@@ -113,6 +125,26 @@ export function openBusiness(directory: string) {
       if (!changes.length) return { results: [], summary: { applied: 0, changed: 0, deleted: 0, failed: 0 } };
       return business.modifyBatch(token, { changes });
     },
+    async importVideo(token: string, input: ImportVideo) {
+      if (modification?.token !== token) throw new Error('修改权已失效');
+      const { sourcePath } = importVideoSchema.parse(input);
+      const signal = modification.controller.signal;
+      verify();
+      const id = randomUUID();
+      try {
+        const asset = await prepareVideo(mediaDirectory, id, sourcePath, signal);
+        if (modification?.token !== token) throw new Error('修改权已失效');
+        commit(() => { db.prepare('INSERT INTO video_assets VALUES (?, ?, ?)').run(asset.id, asset.name, asset.duration); });
+        return asset;
+      } catch (error) { discardImport(mediaDirectory, id); throw error; }
+    },
+    getMedia(id: string, kind: 'source' | 'preview' | 'thumbnail') {
+      verify();
+      if (!getSnapshot().assets.some(asset => asset.id === id)) throw new Error('素材不存在');
+      const path = mediaPath(mediaDirectory, id, kind);
+      verifyMedia(path);
+      return path;
+    },
     getSnapshot,
     acquire, release,
     getModification: () => modification ? { owner: modification.owner } : null,
@@ -146,6 +178,20 @@ export function openBusiness(directory: string) {
         try {
           // 每个目标都在持有修改权的事务内重新读取；比较与提交之间不让出执行权。
           let result: ChangeResult = { index, id, outcome: 'applied', message: '已完成' };
+          if (change.kind === 'video') {
+            const current = getSnapshot().segments.find(segment => segment.id === id);
+            if (!current) { results.push({ index, id, outcome: 'deleted', message: '口播片段已删除，已跳过' }); continue; }
+            if (JSON.stringify(current.video) !== JSON.stringify(change.expected.video) || current.text !== change.expected.text || (submittedOrder.get(current.id) ?? current.order) !== change.expected.order) {
+              results.push({ index, id, outcome: 'changed', message: '目标内容已变化，请重新查询', current }); continue;
+            }
+          }
+          if (change.kind === 'video' && change.assetId) {
+            const asset = getSnapshot().assets.find(asset => asset.id === change.assetId);
+            if (!asset) throw new Error('素材不存在');
+            const duration = await validateVideo(business.getMedia(asset.id, 'source'), modification!.controller.signal);
+            if (change.start >= duration) throw new Error('视频起点必须大于等于零且严格小于视频时长');
+            if (modification?.token !== token) throw new Error('修改权已失效');
+          }
           commit(() => {
             if (change.kind === 'reorder') {
               const currentIds = getSnapshot().segments.map(segment => segment.id);
@@ -177,15 +223,21 @@ export function openBusiness(directory: string) {
             if (!current) {
               result = { index, id, outcome: 'deleted', message: '口播片段已删除，已跳过' }; return;
             }
-            if (current.text !== change.expected.text || (submittedOrder.get(current.id) ?? current.order) !== change.expected.order) {
+            if (JSON.stringify(current.video) !== JSON.stringify(change.expected.video) || current.text !== change.expected.text || (submittedOrder.get(current.id) ?? current.order) !== change.expected.order) {
               result = { index, id, outcome: 'changed', message: '目标内容已变化，请核对最新内容后重新提交', current }; return;
             }
             if (change.kind === 'edit') db.prepare('UPDATE segments SET text = ? WHERE id = ?').run(change.text, id!);
-            else db.prepare('DELETE FROM segments WHERE id = ?').run(id!);
+            else if (change.kind === 'video') {
+              if (change.assetId) db.prepare('INSERT OR REPLACE INTO segment_video VALUES (?, ?, ?)').run(id!, change.assetId, change.start);
+              else db.prepare('DELETE FROM segment_video WHERE segment_id = ?').run(id!);
+            } else {
+              db.prepare('DELETE FROM segment_video WHERE segment_id = ?').run(id!);
+              db.prepare('DELETE FROM segments WHERE id = ?').run(id!);
+            }
           });
           results.push(result);
-        } catch {
-          results.push({ index, id, outcome: 'failed', message: '保存失败，本项未提交；请检查项目存储后重试' });
+        } catch (error) {
+          results.push({ index, id, outcome: 'failed', message: error instanceof Error ? `保存失败：${error.message}` : '保存失败，本项未提交' });
         }
       }
       const summary = { applied: 0, changed: 0, deleted: 0, failed: 0 };
