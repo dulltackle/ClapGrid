@@ -1,0 +1,19 @@
+{
+  "name": "clapgrid",
+  "version": "0.1.0",
+  "description": "ClapGrid 工程骨架：口播片段空表格与独立本地服务",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "ClapGrid",
+    "shortDescription": "打开口播片段表格并查询本地服务。",
+    "longDescription": "工程初始化入口，提供独立本地服务、空表格及只读业务 MCP。",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "打开 ClapGrid 表格。"
+  },
+  "mcpServers": "./.mcp.json"
+}

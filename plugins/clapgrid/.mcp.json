@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "clapgrid": {
+      "command": "node",
+      "args": ["dist/mcp/main.js"],
+      "cwd": ".",
+      "env_vars": ["CLAPGRID_SERVICE_URL"]
+    }
+  }
+}

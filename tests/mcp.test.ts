@@ -1,0 +1,36 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { startService } from '../src/service/server.js';
+import { createBusinessMcp } from '../src/mcp/server.js';
+
+test('MCP 只读工具与面板 HTTP 读取同一服务，服务离线时明确失败', async (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'clapgrid-mcp-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const panelDirectory = join(root, 'panel');
+  mkdirSync(panelDirectory);
+  writeFileSync(join(panelDirectory, 'index.html'), 'ClapGrid');
+  const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
+  let closed = false;
+  t.after(async () => { if (!closed) await service.close(); });
+  const mcp = createBusinessMcp(service.url);
+  const client = new Client({ name: 'clapgrid-test', version: '0.1.0' });
+  t.after(() => client.close());
+  t.after(() => mcp.close());
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await mcp.connect(serverTransport);
+  await client.connect(clientTransport);
+  const { tools } = await client.listTools();
+  assert.deepEqual(tools.map(tool => tool.name), ['clapgrid_status']);
+  const status = await (await fetch(`${service.url}/api/status`)).json();
+  const result = await client.callTool({ name: 'clapgrid_status', arguments: {} });
+  assert.deepEqual(result.structuredContent, status);
+  await service.close(); closed = true;
+  const offline = await client.callTool({ name: 'clapgrid_status', arguments: {} });
+  assert.equal(offline.isError, true);
+  assert.match(JSON.stringify(offline.content), /服务不可用/);
+});
