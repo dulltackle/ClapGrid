@@ -14,7 +14,24 @@ const columns: ColDef[] = [
   { headerName: '配音可用性', width: 140 },
   { headerName: '任务状态', width: 130 },
 ];
-const theme = themeQuartz.withParams({ accentColor: '#386b5b', fontFamily: 'system-ui, sans-serif', headerBackgroundColor: '#f0f3ef' });
+// 页面与表格共享语义变量；固定亮色，不跟随宿主主题。
+const theme = themeQuartz.withParams({
+  browserColorScheme: 'light',
+  accentColor: 'var(--color-accent)',
+  backgroundColor: 'var(--color-surface)',
+  foregroundColor: 'var(--color-ink)',
+  borderColor: 'var(--color-border)',
+  headerBackgroundColor: 'var(--color-surface-subtle)',
+  headerTextColor: 'var(--color-ink-secondary)',
+  rowHoverColor: 'var(--color-hover)',
+  fontFamily: 'var(--font-ui)',
+  fontSize: 14,
+  spacing: 4,
+  borderRadius: 'var(--radius-control)',
+  wrapperBorderRadius: 'var(--radius-panel)',
+  headerHeight: 40,
+  rowHeight: 40,
+});
 
 function App() {
   const [status, setStatus] = useState<ServiceStatus>();
@@ -34,16 +51,23 @@ function App() {
     return () => { active = false; clearInterval(timer); };
   }, []);
   return <main>
-    <header><div><p className="eyebrow">CLAPGRID</p><h1>口播片段</h1></div><span className="badge">工程骨架</span></header>
-    <section className="connection" aria-live="polite">
-      <strong>{error || (status ? '本地服务已连接' : '正在连接本地服务…')}</strong>
-      {status && <><p className="path">{status.snapshot.project.directory}</p><p className="identity">服务实例 {status.instanceId} · PID {status.pid}</p></>}
+    <header><h1>口播片段</h1></header>
+    <section className={`connection${error ? ' connection-error' : ''}`} aria-label="服务连接">
+      <p className="connection-status" role="status">{error || (status ? '本地服务已连接' : '正在连接本地服务…')}</p>
+      {status && <details className="diagnostics">
+        <summary>诊断信息</summary>
+        <dl>
+          <dt>项目路径</dt><dd>{status.snapshot.project.directory}</dd>
+          <dt>服务实例</dt><dd>{status.instanceId}</dd>
+          <dt>PID</dt><dd>{status.pid}</dd>
+        </dl>
+      </details>}
     </section>
     <div className="grid"><AgGridProvider modules={[AllCommunityModule]}><AgGridReact
-      theme={theme} columnDefs={columns} rowData={status?.snapshot.segments ?? []}
+      theme={theme} loading={!status && !error} columnDefs={columns} rowData={status?.snapshot.segments ?? []}
       defaultColDef={{ editable: false, sortable: false, resizable: true }}
-      overlayNoRowsTemplate="<span>暂无口播片段</span>" /></AgGridProvider></div>
-    <footer>工程初始化验证 · 片段编辑、配音与导出尚未实现</footer>
+      overlayLoadingTemplate="<span>正在连接本地服务…</span>"
+      overlayNoRowsTemplate={error ? '<span>暂时无法读取口播片段</span>' : '<span>暂无口播片段</span>'} /></AgGridProvider></div>
   </main>;
 }
 
