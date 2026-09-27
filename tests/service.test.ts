@@ -1,3 +1,4 @@
+import { beginEdit } from '../src/shared/client.js';
 import { test } from 'node:test';
 import { get } from 'node:http';
 import assert from 'node:assert/strict';
@@ -58,9 +59,14 @@ test('HTTP 完成编辑才返回已提交快照，数据库占用时保存失败
   const projectDirectory = join(root, 'project');
   const service = await startService({ projectDirectory, panelDirectory, port: 0 });
   t.after(() => service.close());
-  const post = (path: string, body: unknown) => fetch(`${service.url}${path}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-  });
+  const post = async (path: string, body: unknown) => {
+    const session = await beginEdit(service.url);
+    try {
+      return await fetch(`${service.url}${path}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Edit-Token': session.token }, body: JSON.stringify(body),
+      });
+    } finally { await session.close(); }
+  };
   const added = await post('/api/segments/add', { text: '原文' });
   assert.equal(added.status, 200);
   const initial = statusSchema.parse(await added.json());

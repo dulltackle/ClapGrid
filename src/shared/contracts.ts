@@ -19,6 +19,25 @@ export const statusSchema = z.object({
   pid: z.number().int().positive(),
   startedAt: z.iso.datetime(),
   snapshot: snapshotSchema,
+  modification: z.object({ owner: z.enum(['user', 'codex']) }).nullable(),
 });
 export type Snapshot = z.infer<typeof snapshotSchema>;
 export type ServiceStatus = z.infer<typeof statusSchema>;
+
+// 目标快照来自普通查询；服务取得修改权后逐项重读并比较。
+export const batchChangeSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('add'), text: z.string() }).strict(),
+  z.object({ kind: z.literal('edit'), expected: segmentSchema.strict(), text: z.string() }).strict(),
+  z.object({ kind: z.literal('delete'), expected: segmentSchema.strict() }).strict(),
+]);
+export const batchSchema = z.object({ changes: z.array(batchChangeSchema).min(1).max(500) }).strict();
+export type Batch = z.infer<typeof batchSchema>;
+export type ChangeResult = {
+  index: number; id?: string; outcome: 'applied' | 'changed' | 'deleted' | 'failed';
+  message: string; current?: Segment;
+};
+export type BatchResult = {
+  results: ChangeResult[];
+  summary: Record<ChangeResult['outcome'], number>;
+  status: ServiceStatus;
+};

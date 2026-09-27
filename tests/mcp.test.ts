@@ -1,3 +1,4 @@
+import { beginEdit } from '../src/shared/client.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -8,7 +9,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { startService } from '../src/service/server.js';
 import { createBusinessMcp } from '../src/mcp/server.js';
 
-test('MCP 只读工具与面板 HTTP 读取同一服务，服务离线时明确失败', async (t) => {
+test('MCP 修改和查询与面板 HTTP 读取同一服务，服务离线时明确失败', async (t) => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-mcp-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const panelDirectory = join(root, 'panel');
@@ -25,15 +26,22 @@ test('MCP 只读工具与面板 HTTP 读取同一服务，服务离线时明确�
   await mcp.connect(serverTransport);
   await client.connect(clientTransport);
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map(tool => tool.name), ['clapgrid_status']);
-  const saved = await fetch(`${service.url}/api/segments/add`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: 'MCP 读取已保存文案' }),
-  });
-  assert.equal(saved.status, 200);
-  const status = await saved.json();
+  assert.deepEqual(tools.map(tool => tool.name), ['clapgrid_status', 'clapgrid_modify']);
+  const saved = await client.callTool({ name: 'clapgrid_modify', arguments: {
+    changes: [{ kind: 'add', text: 'MCP 读取已保存文案' }],
+  } });
+  assert.notEqual(saved.isError, true);
+  const status = (saved.structuredContent as { status: unknown }).status;
   const result = await client.callTool({ name: 'clapgrid_status', arguments: {} });
   assert.deepEqual(result.structuredContent, status);
   assert.deepEqual(await (await fetch(`${service.url}/api/status`)).json(), status);
+  const session = await beginEdit(service.url);
+  const duringEdit = await client.callTool({ name: 'clapgrid_status', arguments: {} });
+  assert.deepEqual((duringEdit.structuredContent as { modification: unknown }).modification, { owner: 'user' });
+  const rejected = await client.callTool({ name: 'clapgrid_modify', arguments: { changes: [{ kind: 'add', text: '冲突' }] } });
+  assert.equal(rejected.isError, true);
+  assert.match(JSON.stringify(rejected.content), /用户正在编辑/);
+  await session.close();
   await service.close(); closed = true;
   const offline = await client.callTool({ name: 'clapgrid_status', arguments: {} });
   assert.equal(offline.isError, true);
