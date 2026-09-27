@@ -27,10 +27,12 @@ export type ServiceStatus = z.infer<typeof statusSchema>;
 // 目标快照来自普通查询；服务取得修改权后逐项重读并比较。
 export const batchChangeSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('add'), text: z.string() }).strict(),
+  z.object({ kind: z.literal('paste'), text: z.string() }).strict(),
+  z.object({ kind: z.literal('reorder'), expectedIds: z.array(z.uuid()), ids: z.array(z.uuid()) }).strict(),
   z.object({ kind: z.literal('edit'), expected: segmentSchema.strict(), text: z.string() }).strict(),
   z.object({ kind: z.literal('delete'), expected: segmentSchema.strict() }).strict(),
 ]);
-export const batchSchema = z.object({ changes: z.array(batchChangeSchema).min(1).max(500) }).strict();
+export const batchSchema = z.object({ changes: z.array(batchChangeSchema).min(1) }).strict();
 export type Batch = z.infer<typeof batchSchema>;
 export type ChangeResult = {
   index: number; id?: string; outcome: 'applied' | 'changed' | 'deleted' | 'failed';
@@ -41,3 +43,28 @@ export type BatchResult = {
   summary: Record<ChangeResult['outcome'], number>;
   status: ServiceStatus;
 };
+
+export const scopeSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('all') }).strict(),
+  z.object({ kind: z.literal('ids'), ids: z.array(z.uuid()) }).strict(),
+  z.object({ kind: z.literal('query'), textContains: z.string().min(1) }).strict(),
+  z.object({ kind: z.literal('selected'), tableId: z.uuid().optional() }).strict(),
+]);
+export type SegmentScope = z.infer<typeof scopeSchema>;
+export const segmentQuerySchema = z.object({ scope: scopeSchema }).strict();
+export const selectionSchema = z.object({ tableId: z.uuid(), ids: z.array(z.uuid()) }).strict();
+export const scopedOperationSchema = z.object({
+  scope: scopeSchema,
+  expected: z.array(segmentSchema.strict()),
+  action: z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('edit'), text: z.string() }).strict(),
+    z.object({ kind: z.literal('delete') }).strict(),
+  ]),
+}).strict();
+export type ScopedOperation = z.infer<typeof scopedOperationSchema>;
+export const queryResultSchema = z.object({
+  segments: z.array(segmentSchema),
+  availability: z.enum(['available', 'unavailable', 'ambiguous']),
+  tables: z.array(z.object({ tableId: z.uuid(), ids: z.array(z.uuid()) })),
+});
+export type SegmentQueryResult = z.infer<typeof queryResultSchema>;

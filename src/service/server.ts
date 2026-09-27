@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { claimProjectService } from '../business/service-ownership.js';
 import { openBusiness } from '../business/index.js';
-import { addSegmentSchema, editSegmentSchema, batchSchema, type ServiceStatus } from '../shared/contracts.js';
+import { addSegmentSchema, editSegmentSchema, batchSchema, segmentQuerySchema, selectionSchema, scopedOperationSchema, type ServiceStatus } from '../shared/contracts.js';
 
 export interface ServiceOptions {
   projectDirectory: string;
@@ -41,6 +41,13 @@ export async function startService(options: ServiceOptions) {
       application: 'clapgrid', apiVersion: 1, instanceId, pid: process.pid,
       startedAt, snapshot: business.getSnapshot(), modification: business.getModification(),
     });
+    const tableSessions = new Map<string, () => void>();
+    const finishTable = (id: string) => {
+      business.disconnectTable(id);
+      const close = tableSessions.get(id);
+      tableSessions.delete(id);
+      close?.();
+    };
     const sessions = new Map<string, () => void>();
     const finishSession = (token: string) => {
       business.release(token);
@@ -68,6 +75,41 @@ export async function startService(options: ServiceOptions) {
         response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         response.end(JSON.stringify(body));
       };
+      if (path === '/api/table-session') {
+        if (request.method !== 'POST') { reject(405, '请使用 POST 连接表格。'); return; }
+        const tableId = business.connectTable();
+        response.writeHead(200, { 'Content-Type': 'application/x-ndjson; charset=utf-8' });
+        response.write(JSON.stringify({ tableId }) + '\n');
+        const heartbeat = setInterval(() => { response.write('\n'); }, 1000);
+        tableSessions.set(tableId, () => { clearInterval(heartbeat); response.end(); });
+        response.on('close', () => finishTable(tableId));
+        return;
+      }
+      if (path === '/api/table-session/release' || path === '/api/table-selection' || path === '/api/segments/query') {
+        if (request.method !== 'POST') { reject(405, '请使用 POST。'); return; }
+        if (request.headers['content-type']?.split(';')[0]?.trim() !== 'application/json') { reject(415, '请求必须使用 application/json。'); return; }
+        const timeout = setTimeout(() => request.destroy(), 5000);
+        try {
+          const chunks: Buffer[] = []; let size = 0;
+          for await (const chunk of request) {
+            size += chunk.length;
+            if (size > 8 * 1024 * 1024) { reject(413, '请求内容过大。'); return; }
+            chunks.push(Buffer.from(chunk));
+          }
+          const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          if (path === '/api/segments/query') {
+            json(business.querySegments(segmentQuerySchema.parse(input).scope));
+          } else if (path === '/api/table-selection') {
+            const { tableId, ids } = selectionSchema.parse(input);
+            business.selectSegments(tableId, ids); json({ updated: true });
+          } else {
+            const { tableId } = selectionSchema.pick({ tableId: true }).parse(input);
+            finishTable(tableId); json({ released: true });
+          }
+        } catch { if (!response.destroyed) reject(400, '查询或勾选请求无效，表格连接可能已断开。'); }
+        finally { clearTimeout(timeout); }
+        return;
+      }
       if (path === '/api/edit-session') {
         if (request.method !== 'POST') { reject(405, '请使用 POST 申请修改权。'); return; }
         let token: string;
@@ -91,14 +133,14 @@ export async function startService(options: ServiceOptions) {
         if (typeof token !== 'string') { reject(400, '缺少修改权凭据。'); return; }
         finishSession(token); json({ released: true }); return;
       }
-      if (path === '/api/segments/add' || path === '/api/segments/edit' || path === '/api/codex/modify') {
+      if (path === '/api/segments/add' || path === '/api/segments/edit' || path === '/api/codex/modify' || path === '/api/segments/modify' || path === '/api/codex/process') {
         if (request.method !== 'POST') {
           response.setHeader('Allow', 'POST'); reject(405, '请使用 POST 提交编辑。'); return;
         }
         if (request.headers['content-type']?.split(';')[0]?.trim() !== 'application/json') {
           reject(415, '编辑请求必须使用 application/json。'); return;
         }
-        const codex = path === '/api/codex/modify';
+        const codex = path.startsWith('/api/codex/');
         let token: string;
         try {
           if (codex) token = business.acquire('codex');
@@ -129,7 +171,14 @@ export async function startService(options: ServiceOptions) {
           if (!business.owns(token, codex ? 'codex' : 'user')) {
             reject(409, '修改权已失效，请重新读取项目后编辑。'); return;
           }
-          if (codex) {
+          if (path === '/api/codex/process') {
+            const parsed = scopedOperationSchema.safeParse(input);
+            if (!parsed.success) { reject(400, '请提供明确范围、查询快照和有效操作。'); return; }
+            try {
+              const result = await business.processScope(token, parsed.data);
+              release(); json({ ...result, status: status() });
+            } catch (error) { reject(409, (error as Error).message); }
+          } else if (codex || path === '/api/segments/modify') {
             const parsed = batchSchema.safeParse(input);
             if (!parsed.success) { reject(400, '批量修改格式无效；修改和删除必须提供查询时的目标快照。'); return; }
             const result = await business.modifyBatch(token, parsed.data);
@@ -181,6 +230,7 @@ export async function startService(options: ServiceOptions) {
       url: `http://127.0.0.1:${port}`,
       close() {
         return closing ??= (async () => {
+          for (const id of tableSessions.keys()) finishTable(id);
           for (const token of sessions.keys()) finishSession(token);
           server.closeAllConnections();
           await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));

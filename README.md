@@ -2,7 +2,7 @@
 
 通过 Codex 右侧表格组织口播视频。产品契约见 [MVP.md](MVP.md)，术语见 [CONTEXT.md](CONTEXT.md)。
 
-当前已支持本地项目创建／重开、口播片段新增与文案编辑、自动保存、表格与 Codex 交替修改和业务 MCP。配音、导出及三平台安装交付尚未实现或验收。
+当前已支持本地项目创建／重开、口播片段新增、文案编辑、删除、重排、多行粘贴、明确范围操作、自动保存、表格与 Codex 交替修改和业务 MCP。配音、导出及三平台安装交付尚未实现或验收。
 
 ## 运行条件
 
@@ -47,9 +47,13 @@ npm run runtime -- status --project /绝对路径/验证项目
 
 调用路径：React 面板 / MCP → `GET /api/status` → `src/business/index.ts` → SQLite。共享 schema 与 HTTP 客户端位于 `src/shared/`。MCP 是 stdio 适配器，查询和修改均调用独立服务，不另建数据库或启动后台服务。
 
-业务层 `openBusiness(directory)` 暴露 `getSnapshot()`、`addSegment(text)`、`editSegment(id, text)` 与 `close()`；数据库连接不对适配层开放。新目录自动创建可保存的空项目，已有目录恢复项目标识、创建时间、有序片段及文案。同一服务固定打开一个项目；`service-owner.sqlite` 的独占文件锁保证同一项目不能经不同端口重复打开，进程退出自动释放；更换项目须停止旧服务，再指定新目录启动。目录由用户在 Codex 中明确指定，面板不接受任意文件路径。
+业务层 `openBusiness(directory)` 暴露 `getSnapshot()`、`addSegment(text)`、`editSegment(id, text)`、`modifyBatch()`、`querySegments()`、`processScope()` 与 `close()`；数据库连接不对适配层开放。新目录自动创建可保存的空项目，已有目录恢复项目标识、创建时间、有序片段及文案。同一服务固定打开一个项目；`service-owner.sqlite` 的独占文件锁保证同一项目不能经不同端口重复打开，进程退出自动释放；更换项目须停止旧服务，再指定新目录启动。目录由用户在 Codex 中明确指定，面板不接受任意文件路径。
 
 点击「新增口播片段」创建空文案片段，双击文案单元格（或选中后按 Enter）编辑；Enter 或离开单元格完成编辑并自动保存，Esc 取消未提交输入。保存期间暂停新的编辑，成功后显示「已保存」；失败显示「保存失败」，表格继续显示业务层已提交内容。未提交的输入不承诺恢复。网络中断或超时可能使结果未知，此时核对表格后再操作，不自动重发新增请求。
+
+表格勾选用于明确操作目标，可删除勾选片段；只勾选一个片段时可用「项目顺序上移／下移」调整真实项目顺序。文案筛选和序号／文案表头排序只改变视图，数字序号仍表示完整项目中的顺序；删除后剩余片段重新连续编号。筛选隐藏的勾选仍保留，界面显示包含隐藏项的总勾选数。「粘贴多行文案」输入区按每个非空行新增一个片段，忽略空白行，支持 LF、CRLF 和 CR 换行。所有操作按稳定 UUID 定位。
+
+表格通过独立的 `POST /api/table-session` 长连接维护临时勾选，`POST /api/table-selection` 同步身份集合；不占用修改权。关闭、刷新或断开表格后清除该连接的选择，重新连接从空选择开始。同步失败会显示断开并清空勾选，可手动重新连接。多个表格的选择独立，MCP 必须指定 `tableId` 消除歧义。
 
 `POST /api/edit-session` 取得一次用户编辑的修改权并保持 NDJSON 长连接，首行返回凭据与最新快照。保存请求须携带 `X-Edit-Token`；取消通过 `POST /api/edit-session/release` 释放，连接断开也会释放。迟到释放只作用于对应凭据。`POST /api/segments/add` 仅接受 `{ text }`，`POST /api/segments/edit` 仅接受 `{ id, text }`；身份为 UUID，项目顺序持久化且独立于表格显示。所有变更经业务层同一 SQLite 事务提交入口，提交完成才返回快照；后续素材元数据、设置和任务应沿用该入口，不能另建表格存储或任意 SQL／状态修改接口。
 
@@ -74,7 +78,11 @@ npm run plugin:build
 
 `clapgrid_status` 返回相同的服务实例、修改权状态和项目快照；离线或协议不匹配返回 `isError`，不自动启动或重复业务请求。默认连接 `http://127.0.0.1:48762`。修改端口时给 MCP 配置 `CLAPGRID_SERVICE_URL`，只接受 IPv4 本机 HTTP 地址。
 
-`clapgrid_modify` 接收 `{ changes: [...] }`，支持 `{ kind: "add", text }`、`{ kind: "edit", expected, text }` 和 `{ kind: "delete", expected }`。`expected` 必须是查询时取得的完整片段 `{ id, order, text }`。服务收到请求即尝试取得修改权；占用时返回冲突，不排队。取得修改权后逐项重读，变化返回 `changed` 和最新片段，已删除返回 `deleted`，成功返回 `applied`，存储异常返回 `failed`，并附分类汇总。各项独立提交，失败不撤销其他已完成项。网络中断可能已有部分提交，须先查询，不能盲目重发。
+`clapgrid_modify` 接收 `{ changes: [...] }`，支持 `{ kind: "add", text }`、`{ kind: "edit", expected, text }` 、`{ kind: "delete", expected }`、`{ kind: "paste", text }` 和 `{ kind: "reorder", expectedIds, ids }`。重排要求 `expectedIds` 与最新项目身份顺序一致，`ids` 是全部片段身份的无重复排列；单次重排或粘贴在一个事务内提交。表格通过携带用户修改权的 `POST /api/segments/modify` 调用同一业务批处理。`expected` 必须是查询时取得的完整片段 `{ id, order, text }`。服务收到请求即尝试取得修改权；占用时返回冲突，不排队。取得修改权后逐项重读，变化返回 `changed` 和最新片段，已删除返回 `deleted`，成功返回 `applied`，存储异常返回 `failed`，并附分类汇总。各项独立提交，失败不撤销其他已完成项。网络中断可能已有部分提交，须先查询，不能盲目重发。
+
+`clapgrid_query_segments` 接收 `{ scope }`。范围支持 `{ kind: "all" }`、`{ kind: "ids", ids }`、`{ kind: "query", textContains }` 或 `{ kind: "selected", tableId? }`，返回项目顺序下的片段快照、已连接表格及勾选。没有勾选或连接时，selected 返回 `availability: "unavailable"`；多个表格未指明连接时返回 `ambiguous`，两者都返回空目标，不扩展范围。
+
+`clapgrid_process_segments` 接收 `{ scope, expected, action }`，其中 `expected` 是查询得到的完整片段快照数组，`action` 为 `{ kind: "edit", text }` 或 `{ kind: "delete" }`。取得修改权并接收完整请求后，服务在让出执行权之前固定目标身份；后续改选、筛选或表格断开不影响该操作。选择为空或有歧义会拒绝；新增目标缺少查询快照也拒绝，要求重新查询；明确身份和原条件命中的旧目标仍进入重读，逐项返回已删除或已变化信息。明确身份和条件查询在表格关闭后仍可用。配音与导出任务尚未实现；后续须沿用固定范围规则。
 
 表格先取得修改权再打开编辑器，保存、Esc 取消或连接断开时释放。Codex 修改期间不能开始编辑；表格每秒查询共享状态，自动显示已完成修改。普通查询不占用修改权。此修改权仅表示普通编辑，不承担后续配音或导出任务锁；后台任务必须使用独立生命周期，不能复用编辑连接的释放回调。
 
@@ -86,6 +94,6 @@ npm run plugin:build
 
 自动化边界经确认：共享业务层公开接口、HTTP 接口、MCP 工具接口。测试使用临时 SQLite 和真实本机服务，MCP 使用 SDK 协议传输；面板单独在 Codex 内实际检查。执行记录见 [工程骨架验证](docs/validation/issue-16.md)。
 
-本次不调用在线配音、不执行导出。项目编辑与保存验证见 [#17 验证记录](docs/validation/issue-17.md)。交替修改验证见 [#18 验证记录](docs/validation/issue-18.md)。Windows、macOS 安装、正式组件分发与完全退出 Codex 后的真实任务继续执行，仍属于后续事项。
+本次不调用在线配音、不执行导出。项目编辑与保存验证见 [#17 验证记录](docs/validation/issue-17.md)。交替修改验证见 [#18 验证记录](docs/validation/issue-18.md)。片段组织与明确范围验证见 [#19 验证记录](docs/validation/issue-19.md)。Windows、macOS 安装、正式组件分发与完全退出 Codex 后的真实任务继续执行，仍属于后续事项。
 
 实现参考：[AG Grid React 官方入门](https://www.ag-grid.com/react-data-grid/getting-started/)、[OpenAI 插件打包说明](https://developers.openai.com/plugins/build/plugins)。

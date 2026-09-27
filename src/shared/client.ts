@@ -1,4 +1,4 @@
-import { statusSchema, type ServiceStatus, type Batch, type BatchResult } from './contracts.js';
+import { statusSchema, type ServiceStatus, type Batch, type BatchResult, queryResultSchema, type SegmentScope, type ScopedOperation } from './contracts.js';
 
 export async function queryStatus(baseUrl: string): Promise<ServiceStatus> {
   const response = await fetch(`${baseUrl}/api/status`, { signal: AbortSignal.timeout(3000), redirect: 'error' });
@@ -70,6 +70,77 @@ export async function beginEdit(baseUrl: string): Promise<EditSession> {
             method: 'POST', headers: { 'X-Edit-Token': token }, signal: AbortSignal.timeout(3000), keepalive: true,
           });
         } finally { controller.abort(); }
+      },
+    };
+  } catch (error) { controller.abort(); throw error; }
+  finally { clearTimeout(timeout); }
+}
+
+
+async function postJson(baseUrl: string, path: string, input: unknown, token?: string, signal?: AbortSignal) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Edit-Token': token } : {}) },
+    body: JSON.stringify(input), signal: signal ?? AbortSignal.timeout(30000), redirect: 'error',
+  });
+  const body = await response.json();
+  if (!response.ok) throw new Error(body.error ?? `请求失败：HTTP ${response.status}`);
+  return body;
+}
+
+export async function querySegments(baseUrl: string, scope: SegmentScope) {
+  return queryResultSchema.parse(await postJson(baseUrl, '/api/segments/query', { scope }));
+}
+export async function processSegments(baseUrl: string, input: ScopedOperation, signal?: AbortSignal): Promise<BatchResult> {
+  const body = await postJson(baseUrl, '/api/codex/process', input, undefined, signal);
+  return { ...body, status: statusSchema.parse(body.status) };
+}
+export async function modifyUserBatch(baseUrl: string, input: Batch, token: string): Promise<BatchResult> {
+  const body = await postJson(baseUrl, '/api/segments/modify', input, token);
+  return { ...body, status: statusSchema.parse(body.status) };
+}
+
+export type TableSession = { tableId: string; select: (ids: string[]) => Promise<void>; close: () => Promise<void>; closed: Promise<void> };
+
+/** 表格连接只保存临时勾选，不占用项目修改权；失联后禁止沿用旧选择。 */
+export async function connectTable(baseUrl: string): Promise<TableSession> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(`${baseUrl}/api/table-session`, { method: 'POST', signal: controller.signal, redirect: 'error' });
+    if (!response.ok) throw new Error('表格选择连接失败');
+    const reader = response.body!.getReader();
+    const decoder = new TextDecoder();
+    let initial = '';
+    while (!initial.includes('\n')) {
+      const chunk = await reader.read();
+      if (chunk.done) throw new Error('表格选择连接已断开');
+      initial += decoder.decode(chunk.value, { stream: true });
+    }
+    const { tableId } = JSON.parse(initial.split('\n')[0]!);
+    clearTimeout(timeout);
+    const closed = (async () => {
+      try { while (!(await reader.read()).done) { /* 消费心跳。 */ } } catch { /* 调用方收到 closed。 */ }
+    })();
+    // 顺序发送勾选变化，避免较早的请求迟到覆盖新选择。
+    let queue = Promise.resolve();
+    let active = true;
+    return {
+      tableId, closed,
+      select(ids) {
+        const snapshot = [...ids];
+        queue = queue.then(async () => {
+          if (!active) throw new Error('表格选择连接已断开');
+          await postJson(baseUrl, '/api/table-selection', { tableId, ids: snapshot }, undefined, AbortSignal.timeout(5000));
+        });
+        return queue;
+      },
+      async close() {
+        active = false;
+        controller.abort();
+        await fetch(`${baseUrl}/api/table-session/release`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tableId }),
+          signal: AbortSignal.timeout(3000), keepalive: true, redirect: 'error',
+        }).catch(() => {});
       },
     };
   } catch (error) { controller.abort(); throw error; }

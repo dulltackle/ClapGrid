@@ -3,8 +3,8 @@ import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { AllCommunityModule, themeQuartz, type ColDef, type GridApi } from 'ag-grid-community';
 import { AgGridProvider, AgGridReact } from 'ag-grid-react';
-import { queryStatus, saveSegment, beginEdit, type EditSession } from '../shared/client.js';
-import type { Segment, ServiceStatus } from '../shared/contracts.js';
+import { queryStatus, saveSegment, beginEdit, type EditSession, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
+import type { Segment, ServiceStatus, Batch } from '../shared/contracts.js';
 import './style.css';
 
 // 页面与表格共享语义变量；固定亮色，不跟随宿主主题。
@@ -29,6 +29,13 @@ const theme = themeQuartz.withParams({
 function App() {
   const [status, setStatus] = useState<ServiceStatus>();
   const [error, setError] = useState('');
+  const [filter, setFilter] = useState('');
+  const [paste, setPaste] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectionState, setSelectionState] = useState('正在连接勾选…');
+  const [connectionVersion, setConnectionVersion] = useState(0);
+  const table = useRef<TableSession | null>(null);
+  const selectionVersion = useRef(0);
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'failed'>('saved');
   const [saveError, setSaveError] = useState('');
   const pending = useRef(false);
@@ -77,8 +84,8 @@ function App() {
     } finally { pending.current = false; }
   };
   const columns: ColDef<Segment>[] = [
-    { headerName: '序号', field: 'order', width: 80 },
-    { headerName: '文案', field: 'text', flex: 1, minWidth: 200, editable: () => !!session.current && !pending.current && !error,
+    { headerName: '序号', field: 'order', width: 80, sortable: true },
+    { headerName: '文案', field: 'text', sortable: true, flex: 1, minWidth: 200, editable: () => !!session.current && !pending.current && !error,
       suppressKeyboardEvent: params => {
         if (params.editing && params.event.key === 'Tab') { params.api.stopEditing(); return true; }
         return !params.editing && (['Enter', 'F2', 'Backspace', 'Delete'].includes(params.event.key) || params.event.key.length === 1);
@@ -105,6 +112,64 @@ function App() {
       pending.current = false;
     }
   };
+  const organize = async (batch: Batch) => {
+    if (pending.current || editing.current) return;
+    pending.current = true; generation.current++;
+    setSaveState('saving'); setSaveError('');
+    try {
+      const lease = await acquire();
+      const result = await modifyUserBatch(window.location.origin, batch, lease.token);
+      setStatus(result.status); setError('');
+      const unsuccessful = result.results.filter(item => item.outcome !== 'applied');
+      if (unsuccessful.length) throw new Error(unsuccessful.map(item => item.message).join('；'));
+      setSaveState('saved');
+      if (batch.changes.some(change => change.kind === 'paste')) setPaste('');
+    } catch (cause) {
+      setSaveState('failed'); setSaveError(cause instanceof Error ? cause.message : '未确认保存结果，请查询后再操作');
+    } finally { await release(); pending.current = false; }
+  };
+  const move = (direction: -1 | 1) => {
+    const ids = status?.snapshot.segments.map(segment => segment.id) ?? [];
+    const position = ids.indexOf(selectedIds[0]!);
+    const destination = position + direction;
+    if (selectedIds.length !== 1 || position < 0 || destination < 0 || destination >= ids.length) return;
+    const next = [...ids];
+    [next[position], next[destination]] = [next[destination]!, next[position]!];
+    void organize({ changes: [{ kind: 'reorder', expectedIds: ids, ids: next }] });
+  };
+  const synchronizeSelection = (ids: string[]) => {
+    setSelectedIds(ids);
+    const connection = table.current;
+    if (!connection) return;
+    setSelectionState('正在同步勾选…');
+    const version = ++selectionVersion.current;
+    void connection.select(ids).then(() => {
+      if (table.current === connection && version === selectionVersion.current) setSelectionState('勾选已同步');
+    }).catch(() => {
+      if (table.current !== connection) return;
+      table.current = null; void connection.close();
+      grid.current?.deselectAll(); setSelectedIds([]);
+      setSelectionState('勾选连接已断开，请重新连接');
+    });
+  };
+  useEffect(() => {
+    let active = true;
+    let connection: TableSession | undefined;
+    setSelectionState('正在连接勾选…');
+    void connectTable(window.location.origin).then(next => {
+      if (!active) { void next.close(); return; }
+      connection = next; table.current = next;
+      grid.current?.deselectAll(); setSelectedIds([]); setSelectionState('勾选已同步');
+      void next.closed.then(() => {
+        if (!active || table.current !== next) return;
+        table.current = null; grid.current?.deselectAll(); setSelectedIds([]);
+        setSelectionState('勾选连接已断开，请重新连接');
+      });
+    }).catch(() => { if (active) setSelectionState('勾选连接已断开，请重新连接'); });
+    const leave = () => { if (connection) { table.current = null; void connection.close(); } };
+    window.addEventListener('pagehide', leave);
+    return () => { active = false; window.removeEventListener('pagehide', leave); leave(); };
+  }, [connectionVersion]);
   useEffect(() => {
     let active = true; mounted.current = true;
     const refresh = async () => {
@@ -123,6 +188,8 @@ function App() {
     window.addEventListener('pagehide', leave);
     return () => { active = false; mounted.current = false; clearInterval(timer); window.removeEventListener('pagehide', leave); void release(); };
   }, []);
+  const disabled = !status || saveState === 'saving' || !!status.modification || editing.current;
+  const selectedPosition = status?.snapshot.segments.findIndex(segment => segment.id === selectedIds[0]) ?? -1;
   return <main>
     <header><h1>口播片段</h1>
       <button disabled={!status || saveState === 'saving' || !!status.modification || editing.current} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
@@ -141,8 +208,30 @@ function App() {
         </dl>
       </details>}
     </section>
+    <section className="organization" aria-label="组织口播片段">
+      <div className="toolbar">
+        <label>筛选文案 <input aria-label="筛选文案" value={filter} onChange={event => setFilter(event.target.value)} /></label>
+        <span>已勾选 {selectedIds.length} 个片段（含筛选隐藏项）</span>
+        <button disabled={disabled || !selectedIds.length} onClick={() => {
+          const targets = status!.snapshot.segments.filter(segment => selectedIds.includes(segment.id));
+          void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) });
+        }}>删除勾选</button>
+        <button disabled={disabled || selectedIds.length !== 1 || selectedPosition <= 0} onClick={() => move(-1)}>项目顺序上移</button>
+        <button disabled={disabled || selectedIds.length !== 1 || selectedPosition < 0 || selectedPosition >= (status?.snapshot.segments.length ?? 0) - 1} onClick={() => move(1)}>项目顺序下移</button>
+      </div>
+      <p className="selection-status" role="status">{selectionState}
+        {selectionState.includes('断开') && <button onClick={() => setConnectionVersion(version => version + 1)}>重新连接勾选</button>}
+      </p>
+      <details><summary>粘贴多行文案</summary>
+        <textarea aria-label="多行文案" value={paste} onChange={event => setPaste(event.target.value)} placeholder="每个非空行创建一个口播片段" />
+        <button disabled={disabled || !paste.trim()} onClick={() => { void organize({ changes: [{ kind: 'paste', text: paste }] }); }}>按非空行新增</button>
+      </details>
+    </section>
     <div className="grid"><AgGridProvider modules={[AllCommunityModule]}><AgGridReact
       readOnlyEdit stopEditingWhenCellsLoseFocus suppressClickEdit
+      rowSelection={{ mode: 'multiRow', selectAll: 'filtered', enableClickSelection: false }}
+      quickFilterText={filter}
+      onSelectionChanged={event => synchronizeSelection(event.api.getSelectedRows().map(segment => segment.id))}
       onGridReady={event => { grid.current = event.api; }}
       onCellDoubleClicked={event => { if (event.colDef.field === 'text' && event.data) void startEdit(event.data.id); }}
       onCellKeyDown={event => {

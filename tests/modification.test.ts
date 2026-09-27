@@ -68,7 +68,7 @@ test('持有修改权重读目标：返回变化信息、跳过删除目标，�
   const result = await batch([
     { kind: 'edit', expected: changed, text: '过时覆盖' },
     { kind: 'edit', expected: deleted, text: '不应复活' },
-    { kind: 'edit', expected: valid, text: '正常修改' },
+    { kind: 'edit', expected: (await status()).snapshot.segments.find((s: { id: string }) => s.id === valid.id), text: '正常修改' },
   ]);
   assert.deepEqual(result.results.map((r: { outcome: string }) => r.outcome), ['changed', 'deleted', 'applied']);
   assert.equal(result.results[0].current.text, '查询之后的新文案');
@@ -131,4 +131,37 @@ test('同一项目不能由不同端口的两个服务同时修改，关闭所�
   const reopened = await startService(options);
   assert.equal((await (await fetch(`${reopened.url}/api/status`)).json()).snapshot.project.id, initial.snapshot.project.id);
   await reopened.close();
+});
+
+test('表格选择连接独立于修改权，断开后不能使用旧选择，表格可批量粘贴删除重排', async t => {
+  const { service, post, status } = await fixture(t);
+  const { beginEdit } = await import('../src/shared/client.js');
+  const controller = new AbortController();
+  const connected = await fetch(`${service.url}/api/table-session`, { method: 'POST', signal: controller.signal });
+  assert.equal(connected.status, 200);
+  const reader = connected.body!.getReader();
+  const { tableId } = JSON.parse(new TextDecoder().decode((await reader.read()).value).trim());
+  assert.equal((await status()).modification, null);
+  const userBatch = async (changes: unknown[]) => {
+    const lease = await beginEdit(service.url);
+    try {
+      const response = await post('/api/segments/modify', { changes }, lease.token);
+      assert.equal(response.status, 200);
+      return response.json();
+    } finally { await lease.close(); }
+  };
+  await userBatch([{ kind: 'paste', text: '甲\n\n乙\n丙' }]);
+  const [a, b, c] = (await status()).snapshot.segments;
+  assert.equal((await post('/api/table-selection', { tableId, ids: [b.id] })).status, 200);
+  const query = async (scope: unknown) => (await post('/api/segments/query', { scope })).json();
+  assert.deepEqual((await query({ kind: 'selected' })).segments, [b]);
+  await userBatch([{ kind: 'reorder', expectedIds: [a.id, b.id, c.id], ids: [c.id, a.id, b.id] }]);
+  assert.deepEqual((await query({ kind: 'selected' })).segments.map((s: { id: string; order: number }) => [s.id, s.order]), [[b.id, 3]]);
+  controller.abort();
+  for (let i = 0; i < 50 && (await query({ kind: 'selected' })).availability !== 'unavailable'; i++) await new Promise(resolve => setTimeout(resolve, 10));
+  assert.equal((await query({ kind: 'selected' })).availability, 'unavailable');
+  assert.equal((await post('/api/codex/process', { scope: { kind: 'selected' }, expected: [b], action: { kind: 'delete' } })).status, 409);
+  const explicit = await query({ kind: 'ids', ids: [b.id] });
+  assert.equal((await post('/api/codex/process', { scope: { kind: 'ids', ids: [b.id] }, expected: explicit.segments, action: { kind: 'delete' } })).status, 200);
+  assert.deepEqual((await status()).snapshot.segments.map((s: { text: string }) => s.text), ['丙', '甲']);
 });
