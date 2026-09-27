@@ -7,12 +7,11 @@ import type { ServiceStatus } from '../shared/contracts.js';
 import './style.css';
 
 const columns: ColDef[] = [
-  { headerName: '顺序', width: 80 },
+  { headerName: '序号', width: 80 },
   { headerName: '文案', flex: 1, minWidth: 200 },
-  { headerName: '关联视频', width: 150 },
-  { headerName: '视频起点', width: 110 },
-  { headerName: '配音可用性', width: 140 },
-  { headerName: '任务状态', width: 130 },
+  { headerName: '画面素材', width: 150 },
+  { headerName: '配音', width: 140 },
+  { headerName: '画面说明', width: 180 },
 ];
 // 页面与表格共享语义变量；固定亮色，不跟随宿主主题。
 const theme = themeQuartz.withParams({
