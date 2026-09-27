@@ -1,8 +1,9 @@
 import { spawn } from 'node:child_process';
-import { mkdirSync, realpathSync, existsSync, openSync, closeSync } from 'node:fs';
+import { realpathSync, existsSync, openSync, closeSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setTimeout } from 'node:timers/promises';
+import { projectPaths } from './business/project-paths.js';
 import { serviceOptions } from './service/options.js';
 import { queryStatus } from './shared/client.js';
 
@@ -33,8 +34,8 @@ try {
     if (!offline) {
       console.log(JSON.stringify(await verify(), null, 2));
     } else {
-      mkdirSync(options.projectDirectory, { recursive: true });
-      const log = openSync(join(options.projectDirectory, 'service.log'), 'a', 0o600);
+      const { projectDirectory } = projectPaths(options.projectDirectory);
+      const log = openSync(join(projectDirectory, 'service.log'), 'a', 0o600);
       const child = spawn(process.execPath, [
         fileURLToPath(new URL('./service/main.js', import.meta.url)),
         '--project', options.projectDirectory, '--port', String(options.port),

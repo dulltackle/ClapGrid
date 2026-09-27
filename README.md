@@ -2,7 +2,7 @@
 
 通过 Codex 右侧表格组织口播视频。产品契约见 [MVP.md](MVP.md)，术语见 [CONTEXT.md](CONTEXT.md)。
 
-当前为 #16 工程骨架：React、TypeScript、AG Grid Community 空表格，独立 Node.js 服务，SQLite 初始化和只读业务 MCP。片段编辑、配音、导出及三平台安装交付尚未实现或验收。
+当前已支持本地项目创建／重开、口播片段新增与文案编辑、自动保存和只读业务 MCP。配音、导出及三平台安装交付尚未实现或验收。
 
 ## 运行条件
 
@@ -47,7 +47,11 @@ npm run runtime -- status --project /绝对路径/验证项目
 
 调用路径：React 面板 / MCP → `GET /api/status` → `src/business/index.ts` → SQLite。共享 schema 与 HTTP 客户端位于 `src/shared/`。MCP 是 stdio 适配器，只查询独立服务，不另建数据库或启动后台服务。
 
-业务层 `openBusiness(directory)` 暴露 `getSnapshot()` 与 `close()`；数据库连接不对适配层开放。初始化持久化项目标识与创建时间，重开通过同一接口读回，作为最小 SQLite 读写闭环。该身份记录不是完整项目创建／打开功能。
+业务层 `openBusiness(directory)` 暴露 `getSnapshot()`、`addSegment(text)`、`editSegment(id, text)` 与 `close()`；数据库连接不对适配层开放。新目录自动创建可保存的空项目，已有目录恢复项目标识、创建时间、有序片段及文案。同一服务固定打开一个项目；更换项目须停止旧服务，再指定新目录启动。目录由用户在 Codex 中明确指定，面板不接受任意文件路径。
+
+点击「新增口播片段」创建空文案片段，双击文案单元格（或选中后按 Enter）编辑；Enter 或离开单元格完成编辑并自动保存，Esc 取消未提交输入。保存期间暂停新的编辑，成功后显示「已保存」；失败显示「保存失败」，表格继续显示业务层已提交内容。未提交的输入不承诺恢复。网络中断或超时可能使结果未知，此时核对表格后再操作，不自动重发新增请求。
+
+`POST /api/segments/add` 仅接受 `{ text }`，`POST /api/segments/edit` 仅接受 `{ id, text }`；身份为 UUID，项目顺序持久化且独立于表格显示。所有变更经业务层同一 SQLite 事务提交入口，提交完成才返回快照；后续素材元数据、设置和任务应沿用该入口，不能另建表格存储或任意 SQL／状态修改接口。
 
 ```text
 指定的本地项目目录/
@@ -58,7 +62,7 @@ npm run runtime -- status --project /绝对路径/验证项目
 
 媒体字节不存入 SQLite；未来仅保存项目内相对路径及业务元数据。数据库和媒体目录均不在静态 HTTP 白名单中。运行配置、密钥不属于项目记录。面板不是数据源，空片段集合由业务层返回。
 
-服务仅绑定 `127.0.0.1`，检查 Host 与 Origin，不开放跨域读取，仅接受 GET。骨架不提供任意业务状态修改、SQL 或文件读写 API；同机进程仍可查询服务，不是多用户隔离机制。
+服务仅绑定 `127.0.0.1`，检查 Host 与 Origin，不开放跨域读取；写入接口只接受 JSON 并严格校验业务字段。存储入口拒绝符号链接和多硬链接文件，启动器日志也使用相同检查。不提供任意业务状态修改、SQL 或文件读写 API；同机进程仍可访问服务，不是多用户或恶意本机进程隔离机制。
 
 ## 业务 MCP 与插件
 
@@ -77,6 +81,6 @@ npm run plugin:build
 
 自动化边界经确认：共享业务层公开接口、HTTP 接口、MCP 工具接口。测试使用临时 SQLite 和真实本机服务，MCP 使用 SDK 协议传输；面板单独在 Codex 内实际检查。执行记录见 [工程骨架验证](docs/validation/issue-16.md)。
 
-本次不调用在线配音、不编辑片段、不执行导出。Windows、macOS 安装、正式组件分发与完全退出 Codex 后的真实任务继续执行，仍属于后续事项。
+本次不调用在线配音、不执行导出。项目编辑与保存验证见 [#17 验证记录](docs/validation/issue-17.md)。Windows、macOS 安装、正式组件分发与完全退出 Codex 后的真实任务继续执行，仍属于后续事项。
 
 实现参考：[AG Grid React 官方入门](https://www.ag-grid.com/react-data-grid/getting-started/)、[OpenAI 插件打包说明](https://developers.openai.com/plugins/build/plugins)。

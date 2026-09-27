@@ -26,9 +26,14 @@ test('MCP 只读工具与面板 HTTP 读取同一服务，服务离线时明确�
   await client.connect(clientTransport);
   const { tools } = await client.listTools();
   assert.deepEqual(tools.map(tool => tool.name), ['clapgrid_status']);
-  const status = await (await fetch(`${service.url}/api/status`)).json();
+  const saved = await fetch(`${service.url}/api/segments/add`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: 'MCP 读取已保存文案' }),
+  });
+  assert.equal(saved.status, 200);
+  const status = await saved.json();
   const result = await client.callTool({ name: 'clapgrid_status', arguments: {} });
   assert.deepEqual(result.structuredContent, status);
+  assert.deepEqual(await (await fetch(`${service.url}/api/status`)).json(), status);
   await service.close(); closed = true;
   const offline = await client.callTool({ name: 'clapgrid_status', arguments: {} });
   assert.equal(offline.isError, true);

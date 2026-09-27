@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 import { readFileSync, readdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { openBusiness } from '../business/index.js';
-import type { ServiceStatus } from '../shared/contracts.js';
+import { addSegmentSchema, editSegmentSchema, type ServiceStatus } from '../shared/contracts.js';
 
 export interface ServiceOptions {
   projectDirectory: string;
@@ -33,7 +33,11 @@ export async function startService(options: ServiceOptions) {
       }
       if (!files.has('/index.html')) throw new Error('面板构建缺失，请先运行 npm run build。');
     }
-    const server = createServer((request, response) => {
+    const status = (): ServiceStatus => ({
+      application: 'clapgrid', apiVersion: 1, instanceId, pid: process.pid,
+      startedAt, snapshot: business.getSnapshot(),
+    });
+    const server = createServer(async (request, response) => {
       const host = `127.0.0.1:${(server.address() as import('node:net').AddressInfo).port}`;
       response.setHeader('X-Content-Type-Options', 'nosniff');
       response.setHeader('Cache-Control', 'no-store');
@@ -44,23 +48,49 @@ export async function startService(options: ServiceOptions) {
       if (request.headers.host !== host || (request.headers.origin && request.headers.origin !== `http://${host}`)) {
         reject(403, '仅允许本机同源访问。'); return;
       }
-      if (request.method !== 'GET') {
-        response.setHeader('Allow', 'GET'); reject(405, '骨架仅提供只读查询。'); return;
-      }
       let path: string;
       try {
         path = new URL(request.url ?? '/', `http://${host}`).pathname;
       } catch {
         reject(400, '请求路径无效。'); return;
       }
+      if (path === '/api/segments/add' || path === '/api/segments/edit') {
+        if (request.method !== 'POST') {
+          response.setHeader('Allow', 'POST'); reject(405, '请使用 POST 提交编辑。'); return;
+        }
+        if (request.headers['content-type']?.split(';')[0]?.trim() !== 'application/json') {
+          reject(415, '编辑请求必须使用 application/json。'); return;
+        }
+        let input: unknown;
+        try {
+          const chunks: Buffer[] = [];
+          let size = 0;
+          for await (const chunk of request) {
+            size += chunk.length;
+            if (size > 8 * 1024 * 1024) { reject(413, '请求内容过大。'); return; }
+            chunks.push(Buffer.from(chunk));
+          }
+          input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+        } catch { reject(400, '编辑请求格式无效。'); return; }
+        const parsed = (path.endsWith('/add') ? addSegmentSchema : editSegmentSchema).safeParse(input);
+        if (!parsed.success) { reject(400, '请提供有效的片段身份和文案，不允许修改其他状态。'); return; }
+        try {
+          const data = parsed.data;
+          const snapshot = 'id' in data ? business.editSegment(editSegmentSchema.parse(data).id, data.text) : business.addSegment(data.text);
+          response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          response.end(JSON.stringify({ ...status(), snapshot }));
+        } catch {
+          reject(500, '保存失败，未确认本次编辑已保存；请检查项目目录或数据库占用后重试。');
+        }
+        return;
+      }
+      if (request.method !== 'GET') {
+        response.setHeader('Allow', 'GET'); reject(405, '此接口仅提供查询。'); return;
+      }
       if (path === '/api/status') {
         try {
-          const status: ServiceStatus = {
-            application: 'clapgrid', apiVersion: 1, instanceId, pid: process.pid,
-            startedAt, snapshot: business.getSnapshot(),
-          };
           response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-          response.end(JSON.stringify(status));
+          response.end(JSON.stringify(status()));
         } catch {
           reject(500, '读取项目状态失败。');
         }
