@@ -223,23 +223,33 @@ test('再次导出使用新内容和设置，生成唯一文件且保留原成�
   assert.ok(bands.length >= 3, `长文案至少分三行烧录，实际行带 ${bands}`);
 });
 
-test('配音未结束仍汇总其他问题，不开始渲染、不追加配音，全部任务结束才恢复编辑', async t => {
+test('配音刚受理及生成时拒绝导出且不创建任务，结束后恢复前置校验', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-speech-lock-'));
   let finish!: (response: Response) => void;
   const business = openBusiness(directory, { configPath: '.env', key: () => 'key', fetch: (async () => new Promise<Response>(resolve => { finish = resolve; })) as typeof fetch });
   t.after(async () => { await business.close(); rmSync(directory, { recursive: true, force: true }); });
   const segment = business.addSegment('配音尚未完成').segments[0]!;
   business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
-  const result = await finished(business, business.submitExport().id);
-  assert.equal(result.state, 'failed'); assert.equal(result.completed, 0);
-  assert.ok(result.issues.some(issue => /配音任务尚未结束/.test(issue.message)));
-  assert.ok(result.issues.some(issue => issue.field === 'video'));
-  assert.ok(result.issues.some(issue => issue.field === 'settings'));
+  assert.equal(business.getSpeechStatus().tasks[0]!.state, 'accepted');
+  assert.throws(() => business.submitExport(), /配音任务尚未结束/);
+  assert.deepEqual(business.getExportTasks(), { locked: false, tasks: [] });
+  assert.equal(existsSync(join(directory, 'exports')), false);
+  await new Promise<void>(resolve => setImmediate(resolve));
+  assert.equal(business.getSpeechStatus().tasks[0]!.state, 'running');
+  assert.throws(() => business.submitExport(), /配音任务尚未结束/);
+  assert.deepEqual(business.getExportTasks(), { locked: false, tasks: [] });
+  assert.equal(existsSync(join(directory, 'exports')), false);
   assert.equal(business.getSpeechStatus().tasks.length, 1);
   assert.throws(() => business.acquire('user'), /配音/);
   finish(new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n'));
   for (let i = 0; i < 200 && business.getSpeechStatus().locked; i++) await new Promise(resolve => setTimeout(resolve, 5));
   const token = business.acquire('user'); business.release(token);
+  const result = await finished(business, business.submitExport().id);
+  assert.equal(result.state, 'failed');
+  assert.ok(result.issues.some(issue => issue.field === 'video'));
+  assert.ok(result.issues.some(issue => issue.field === 'settings'));
+  assert.ok(result.issues.every(issue => !/配音任务尚未结束/.test(issue.message)));
+
 });
 
 test('配音时长不是视频帧整倍数时，拼接处不插入静音间隔', async t => {

@@ -108,7 +108,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
   const exports = exportTasks(db, {
     snapshot: getSnapshot, settings: getExportStatus, speech: speech.getSpeechStatus,
     verify, video: id => business.getMedia(id, 'source'), audio: speech.getSpeechAudio,
-    busy: () => [speech.getSpeechStatus().locked ? '配音任务尚未结束' : '', modification ? (modification.owner === 'user' ? '用户正在编辑' : 'Codex 正在修改') : ''].filter(Boolean),
+    busy: () => [modification ? (modification.owner === 'user' ? '用户正在编辑' : 'Codex 正在修改') : ''].filter(Boolean),
   });
   const tables = new Map<string, string[]>();
   const business = {

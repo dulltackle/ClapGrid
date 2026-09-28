@@ -61,6 +61,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
       if (active) return structuredClone(active);
       const snapshot = inputs.snapshot();
       const speech = inputs.speech();
+      if (speech.locked) throw new Error('配音任务尚未结束，不能开始导出；允许查询和试听');
       const task: ExportTask = { id: randomUUID(), createdAt: new Date().toISOString(), state: 'accepted', message: '已受理，尚未完成', completed: 0, total: snapshot.segments.length,
         issues: inputs.busy().map(message => ({ field: 'project', message })), warnings: [] };
       save(task); active = task;

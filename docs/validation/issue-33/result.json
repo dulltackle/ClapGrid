@@ -1,0 +1,357 @@
+{
+  "at": "2026-09-28T16:57:43.842Z",
+  "platform": "linux",
+  "node": "v22.23.3",
+  "version": "0.1.0",
+  "status": {
+    "application": "clapgrid",
+    "apiVersion": 1,
+    "instanceId": "eaffea13-df21-4f4f-8d69-d90f08bcbce3",
+    "pid": 47383,
+    "startedAt": "2026-09-28T16:53:32.906Z",
+    "snapshot": {
+      "project": {
+        "id": "ba2572b9-5498-4f5a-b7b1-26f1ad1f0b4e",
+        "directory": "/home/forclaw/code/ClapGrid/.cache/issue-33/project",
+        "createdAt": "2026-09-28T16:53:32.880Z"
+      },
+      "storage": {
+        "database": "/home/forclaw/code/ClapGrid/.cache/issue-33/project/clapgrid.sqlite",
+        "mediaDirectory": "/home/forclaw/code/ClapGrid/.cache/issue-33/project/media"
+      },
+      "segments": [
+        {
+          "id": "d0b178bd-defc-4a2d-b86c-ac5780d601ec",
+          "order": 1,
+          "text": "这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。",
+          "video": {
+            "assetId": "ab980d9d-15d6-4d7b-bcae-c346afe275da",
+            "start": 0
+          }
+        }
+      ],
+      "assets": [
+        {
+          "id": "ab980d9d-15d6-4d7b-bcae-c346afe275da",
+          "name": "source.mp4",
+          "duration": 1
+        }
+      ],
+      "exportSettings": {
+        "codec": "libx264",
+        "fps": 25,
+        "fontFamily": "Noto Sans CJK SC",
+        "fontSize": 48
+      }
+    },
+    "taskLocked": false,
+    "modification": null
+  },
+  "speech": {
+    "configured": true,
+    "configPath": "/home/forclaw/code/ClapGrid/.env",
+    "locked": false,
+    "operations": [],
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "tasks": [
+      {
+        "id": "ca327879-535c-4e40-a833-4d1d77c0c594",
+        "requestId": "d9e87c06-1016-4848-a6d1-8c392e97342e",
+        "segmentId": "d0b178bd-defc-4a2d-b86c-ac5780d601ec",
+        "input": {
+          "text": "这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "state": "succeeded",
+        "message": "生成成功",
+        "createdAt": "2026-09-28T16:53:34.702Z",
+        "succeededAt": "2026-09-28T16:53:47.122Z"
+      },
+      {
+        "id": "e5cdec1c-b3c1-479e-9b4f-3f43abb16696",
+        "requestId": "cb02ffde-ab07-4b8c-b211-7818b875f7b2",
+        "segmentId": "d0b178bd-defc-4a2d-b86c-ac5780d601ec",
+        "input": {
+          "text": "这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "state": "succeeded",
+        "message": "生成成功",
+        "createdAt": "2026-09-28T16:55:42.290Z",
+        "succeededAt": "2026-09-28T16:55:55.921Z"
+      },
+      {
+        "id": "40b305d3-4626-4b83-bc5e-8c02aadd3567",
+        "requestId": "a42fc69c-26c1-443e-84c8-1ad3254f9723",
+        "segmentId": "d0b178bd-defc-4a2d-b86c-ac5780d601ec",
+        "input": {
+          "text": "这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "state": "succeeded",
+        "message": "生成成功",
+        "createdAt": "2026-09-28T16:56:38.695Z",
+        "succeededAt": "2026-09-28T16:56:51.903Z"
+      }
+    ],
+    "audio": [
+      {
+        "taskId": "ca327879-535c-4e40-a833-4d1d77c0c594",
+        "segmentId": "d0b178bd-defc-4a2d-b86c-ac5780d601ec",
+        "input": {
+          "text": "这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "createdAt": "2026-09-28T16:53:47.122Z",
+        "valid": true,
+        "url": "/api/speech/audio/ca327879-535c-4e40-a833-4d1d77c0c594"
+      },
+      {
+        "taskId": "e5cdec1c-b3c1-479e-9b4f-3f43abb16696",
+        "segmentId": "d0b178bd-defc-4a2d-b86c-ac5780d601ec",
+        "input": {
+          "text": "这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "createdAt": "2026-09-28T16:55:55.921Z",
+        "valid": true,
+        "url": "/api/speech/audio/e5cdec1c-b3c1-479e-9b4f-3f43abb16696"
+      },
+      {
+        "taskId": "40b305d3-4626-4b83-bc5e-8c02aadd3567",
+        "segmentId": "d0b178bd-defc-4a2d-b86c-ac5780d601ec",
+        "input": {
+          "text": "这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。这是配音任务锁的真实验收。项目已经具备可导出的视频、有效配音和字幕设置。生成期间应当拒绝导出，并且保持原项目、连接和任务标识不变。关闭再打开表格后，查询进度和试听已有音频仍应可用。任务完成以后，系统只解除任务锁，不会自动导出，也不会自动重试配音。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "createdAt": "2026-09-28T16:56:51.903Z",
+        "valid": true,
+        "url": "/api/speech/audio/40b305d3-4626-4b83-bc5e-8c02aadd3567"
+      }
+    ]
+  },
+  "exports": {
+    "locked": false,
+    "tasks": [
+      {
+        "id": "37ebca6b-a90b-472d-b861-3e4567e76f1f",
+        "createdAt": "2026-09-28T16:53:47.141Z",
+        "state": "succeeded",
+        "message": "导出成功",
+        "completed": 1,
+        "total": 1,
+        "issues": [],
+        "warnings": [
+          {
+            "segmentId": "d0b178bd-defc-4a2d-b86c-ac5780d601ec",
+            "order": 1,
+            "field": "video",
+            "message": "视频剩余时长不足，末帧将冻结补足配音时长"
+          }
+        ],
+        "output": {
+          "path": "/home/forclaw/code/ClapGrid/.cache/issue-33/project/exports/2026-09-28T16-53-47-141Z-37ebca6b-a90b-472d-b861-3e4567e76f1f.mp4",
+          "url": "/api/exports/37ebca6b-a90b-472d-b861-3e4567e76f1f/file",
+          "previewUrl": "/api/exports/37ebca6b-a90b-472d-b861-3e4567e76f1f/preview"
+        }
+      },
+      {
+        "id": "2ca5daaa-ceca-4afd-b542-e952ecc04fa8",
+        "createdAt": "2026-09-28T16:55:56.404Z",
+        "state": "cancelled",
+        "message": "导出已取消，本次文件已清理",
+        "completed": 0,
+        "total": 1,
+        "issues": [
+          {
+            "segmentId": "d0b178bd-defc-4a2d-b86c-ac5780d601ec",
+            "order": 1,
+            "field": "video",
+            "message": "导出已取消"
+          }
+        ],
+        "warnings": [
+          {
+            "segmentId": "d0b178bd-defc-4a2d-b86c-ac5780d601ec",
+            "order": 1,
+            "field": "video",
+            "message": "视频剩余时长不足，末帧将冻结补足配音时长"
+          }
+        ],
+        "segmentId": "d0b178bd-defc-4a2d-b86c-ac5780d601ec"
+      }
+    ]
+  },
+  "files": [
+    "2026-09-28T16-53-47-141Z-37ebca6b-a90b-472d-b861-3e4567e76f1f.mp4"
+  ],
+  "baselineSha256": "f7ae451ad76bce70f529810ad1b6c9b7b1ab8186b7e5e92df709d0a9c89aa490",
+  "probe": {
+    "streams": [
+      {
+        "index": 0,
+        "codec_name": "h264",
+        "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+        "profile": "High",
+        "codec_type": "video",
+        "codec_tag_string": "avc1",
+        "codec_tag": "0x31637661",
+        "width": 1920,
+        "height": 1080,
+        "coded_width": 1920,
+        "coded_height": 1080,
+        "closed_captions": 0,
+        "film_grain": 0,
+        "has_b_frames": 2,
+        "sample_aspect_ratio": "1:1",
+        "display_aspect_ratio": "16:9",
+        "pix_fmt": "yuv420p",
+        "level": 40,
+        "chroma_location": "left",
+        "field_order": "progressive",
+        "refs": 1,
+        "is_avc": "true",
+        "nal_length_size": "4",
+        "id": "0x1",
+        "r_frame_rate": "25/1",
+        "avg_frame_rate": "25/1",
+        "time_base": "1/12800",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 918016,
+        "duration": "71.720000",
+        "bit_rate": "181129",
+        "bits_per_raw_sample": "8",
+        "nb_frames": "1793",
+        "extradata_size": 47,
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "VideoHandler",
+          "vendor_id": "[0][0][0][0]",
+          "encoder": "Lavc60.31.102 libx264"
+        }
+      },
+      {
+        "index": 1,
+        "codec_name": "aac",
+        "codec_long_name": "AAC (Advanced Audio Coding)",
+        "profile": "LC",
+        "codec_type": "audio",
+        "codec_tag_string": "mp4a",
+        "codec_tag": "0x6134706d",
+        "sample_fmt": "fltp",
+        "sample_rate": "48000",
+        "channels": 1,
+        "channel_layout": "mono",
+        "bits_per_sample": 0,
+        "initial_padding": 0,
+        "id": "0x2",
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "time_base": "1/48000",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 3443328,
+        "duration": "71.736000",
+        "bit_rate": "70480",
+        "nb_frames": "3364",
+        "extradata_size": 5,
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "SoundHandler",
+          "vendor_id": "[0][0][0][0]"
+        }
+      }
+    ],
+    "format": {
+      "filename": "/home/forclaw/code/ClapGrid/.cache/issue-33/project/exports/2026-09-28T16-53-47-141Z-37ebca6b-a90b-472d-b861-3e4567e76f1f.mp4",
+      "nb_streams": 2,
+      "nb_programs": 0,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "format_long_name": "QuickTime / MOV",
+      "start_time": "0.000000",
+      "duration": "71.736000",
+      "size": "2312114",
+      "bit_rate": "257846",
+      "probe_score": 100,
+      "tags": {
+        "major_brand": "isom",
+        "minor_version": "512",
+        "compatible_brands": "isomiso2avc1mp41",
+        "encoder": "Lavf60.16.100"
+      }
+    }
+  },
+  "projectMismatch": {
+    "otherIdentity": {
+      "id": "fdc2b308-78d3-4ef2-bc55-f5929c887678",
+      "directory": "/home/forclaw/code/ClapGrid/.cache/issue-33/other-project",
+      "createdAt": "2026-09-28T16:57:43.694Z"
+    },
+    "exitCode": 1,
+    "error": "端口上的服务属于其他项目，请保留该服务并明确选择其他端口。",
+    "originalTaskLocked": false,
+    "conclusion": "空闲时同样拒绝其他项目，不能作为配音任务锁或切换恢复证据"
+  }
+}
