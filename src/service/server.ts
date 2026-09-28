@@ -1,3 +1,5 @@
+import { localSpeechRuntime } from './speech-config.js';
+import type { SpeechRuntime } from '../business/speech.js';
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { readFileSync, readdirSync, openSync, fstatSync, createReadStream, constants, closeSync } from 'node:fs';
@@ -11,12 +13,13 @@ export interface ServiceOptions {
   panelDirectory: string;
   port: number;
   dev?: boolean;
+  speechRuntime?: SpeechRuntime;
 }
 
 export async function startService(options: ServiceOptions) {
   const releaseOwnership = claimProjectService(options.projectDirectory);
   let business: ReturnType<typeof openBusiness>;
-  try { business = openBusiness(options.projectDirectory); }
+  try { business = openBusiness(options.projectDirectory, options.speechRuntime ?? localSpeechRuntime()); }
   catch (error) { releaseOwnership(); throw error; }
   const instanceId = randomUUID();
   const startedAt = new Date().toISOString();
@@ -39,7 +42,7 @@ export async function startService(options: ServiceOptions) {
     }
     const status = (): ServiceStatus => ({
       application: 'clapgrid', apiVersion: 1, instanceId, pid: process.pid,
-      startedAt, snapshot: business.getSnapshot(), modification: business.getModification(),
+      startedAt, snapshot: business.getSnapshot(), modification: business.getModification(), taskLocked: business.getSpeechStatus().locked,
     });
     const tableSessions = new Map<string, () => void>();
     const finishTable = (id: string) => {
@@ -75,6 +78,23 @@ export async function startService(options: ServiceOptions) {
         response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         response.end(JSON.stringify(body));
       };
+      if (path === '/api/speech/submit' || path === '/api/speech/voice') {
+        if (request.method !== 'POST') { reject(405, '请使用 POST。'); return; }
+        if (request.headers['content-type']?.split(';')[0]?.trim() !== 'application/json') { reject(415, '请使用 application/json。'); return; }
+        const timeout = setTimeout(() => request.destroy(), 5000);
+        try {
+          const chunks: Buffer[] = []; let size = 0;
+          for await (const chunk of request) {
+            size += chunk.length;
+            if (size > 16384) { reject(413, '请求内容过大'); return; }
+            chunks.push(Buffer.from(chunk));
+          }
+          const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          json(path.endsWith('/submit') ? business.submitSpeech(input) : business.setVoice(input));
+        } catch (error) { if (!response.destroyed) reject(409, error instanceof Error ? error.message : '配音请求未受理'); }
+        finally { clearTimeout(timeout); }
+        return;
+      }
       if (path === '/api/table-session') {
         if (request.method !== 'POST') { reject(405, '请使用 POST 连接表格。'); return; }
         const tableId = business.connectTable();
@@ -206,12 +226,13 @@ export async function startService(options: ServiceOptions) {
       if (request.method !== 'GET') {
         response.setHeader('Allow', 'GET'); reject(405, '此接口仅提供查询。'); return;
       }
+      const speechAudio = /^\/api\/speech\/audio\/([a-f0-9-]{36})$/.exec(path);
       const media = /^\/api\/media\/([a-f0-9-]{36})\/(preview|thumbnail)$/.exec(path);
-      if (media) {
+      if (media || speechAudio) {
         let descriptor: number | undefined;
         try {
-          const kind = media[2] as 'preview' | 'thumbnail';
-          descriptor = openSync(business.getMedia(media[1]!, kind), constants.O_RDONLY | constants.O_NOFOLLOW);
+          const kind = speechAudio ? 'audio' : media![2] as 'preview' | 'thumbnail';
+          descriptor = openSync(speechAudio ? business.getSpeechAudio(speechAudio[1]!) : business.getMedia(media![1]!, kind as 'preview' | 'thumbnail'), constants.O_RDONLY | constants.O_NOFOLLOW);
           const stat = fstatSync(descriptor);
           if (!stat.isFile() || stat.nlink !== 1) throw new Error('媒体文件无效');
           const size = stat.size;
@@ -225,7 +246,7 @@ export async function startService(options: ServiceOptions) {
             if (start > end || start >= size) { response.setHeader('Content-Range', `bytes */${size}`); reject(416, '范围无效'); return; }
             response.setHeader('Content-Range', `bytes ${start}-${end}/${size}`);
           }
-          response.writeHead(range ? 206 : 200, { 'Content-Type': kind === 'preview' ? 'video/webm' : 'image/png', 'Accept-Ranges': 'bytes', 'Content-Length': end - start + 1 });
+          response.writeHead(range ? 206 : 200, { 'Content-Type': kind === 'audio' ? 'audio/mpeg' : kind === 'preview' ? 'video/webm' : 'image/png', 'Accept-Ranges': 'bytes', 'Content-Length': end - start + 1 });
           const stream = createReadStream('', { fd: descriptor, autoClose: true, start, end });
           descriptor = undefined;
           stream.on('error', () => response.destroy());
@@ -233,6 +254,8 @@ export async function startService(options: ServiceOptions) {
           stream.pipe(response);
         } catch { if (!response.headersSent) reject(404, '素材不可读取'); else response.destroy(); }
         finally { if (descriptor !== undefined) closeSync(descriptor); }
+      } else if (path === '/api/speech') {
+        try { json(business.getSpeechStatus()); } catch { reject(500, '读取配音状态失败'); }
       } else if (path === '/api/status') {
         try {
           response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });

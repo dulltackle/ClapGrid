@@ -2,7 +2,7 @@
 
 通过 Codex 右侧表格组织口播视频。产品契约见 [MVP.md](MVP.md)，术语见 [CONTEXT.md](CONTEXT.md)。
 
-当前已支持本地项目创建／重开、口播片段新增、文案编辑、删除、重排、多行粘贴、明确范围操作、自动保存、表格与 Codex 交替修改、本地视频导入／复用／预览和业务 MCP。配音、导出及三平台安装交付尚未实现或验收。
+当前已支持本地项目创建／重开、口播片段新增、文案编辑、删除、重排、多行粘贴、明确范围操作、自动保存、表格与 Codex 交替修改、本地视频导入／复用／预览和业务 MCP。现已支持 TokenDance 单片段配音与试听；导出及三平台安装交付尚未实现或验收。
 
 ## 运行条件
 
@@ -93,9 +93,9 @@ npm run plugin:build
 
 `clapgrid_query_segments` 接收 `{ scope }`。范围支持 `{ kind: "all" }`、`{ kind: "ids", ids }`、`{ kind: "query", textContains }` 或 `{ kind: "selected", tableId? }`，返回项目顺序下的片段快照、已连接表格及勾选。没有勾选或连接时，selected 返回 `availability: "unavailable"`；多个表格未指明连接时返回 `ambiguous`，两者都返回空目标，不扩展范围。
 
-`clapgrid_process_segments` 接收 `{ scope, expected, action }`，其中 `expected` 是查询得到的完整片段快照数组，`action` 为 `{ kind: "edit", text }` 或 `{ kind: "delete" }`。取得修改权并接收完整请求后，服务在让出执行权之前固定目标身份；后续改选、筛选或表格断开不影响该操作。选择为空或有歧义会拒绝；新增目标缺少查询快照也拒绝，要求重新查询；明确身份和原条件命中的旧目标仍进入重读，逐项返回已删除或已变化信息。明确身份和条件查询在表格关闭后仍可用。配音与导出任务尚未实现；后续须沿用固定范围规则。
+`clapgrid_process_segments` 接收 `{ scope, expected, action }`，其中 `expected` 是查询得到的完整片段快照数组，`action` 为 `{ kind: "edit", text }` 或 `{ kind: "delete" }`。取得修改权并接收完整请求后，服务在让出执行权之前固定目标身份；后续改选、筛选或表格断开不影响该操作。选择为空或有歧义会拒绝；新增目标缺少查询快照也拒绝，要求重新查询；明确身份和原条件命中的旧目标仍进入重读，逐项返回已删除或已变化信息。明确身份和条件查询在表格关闭后仍可用。配音当前仅支持明确单片段；后续批量配音与导出须沿用固定范围规则。
 
-表格先取得修改权再打开编辑器，保存、Esc 取消或连接断开时释放。Codex 修改期间不能开始编辑；表格每秒查询共享状态，自动显示已完成修改。普通查询不占用修改权。此修改权仅表示普通编辑，不承担后续配音或导出任务锁；后台任务必须使用独立生命周期，不能复用编辑连接的释放回调。
+表格先取得修改权再打开编辑器，保存、Esc 取消或连接断开时释放。Codex 修改期间不能开始编辑；表格每秒查询共享状态，自动显示已完成修改。普通查询不占用修改权。普通修改权与配音任务锁独立；配音从受理前锁定项目至终态持久化，关闭表格、MCP 或编辑连接不会提前解锁。
 
 插件源为 `plugins/clapgrid/`，含清单、stdio MCP 配置、`open-clapgrid` 技能。`plugin:build` 生成 **`dist/plugin/clapgrid/`**，打包服务、MCP 的依赖及面板，运行需要满足要求的 Node.js，视频功能另需上述 FFmpeg 组件。注册或安装时使用这个完整目录，源码模板本身不可直接安装。插件 MCP 的 `cwd: "."` 由宿主相对于插件根目录解析。
 
@@ -105,8 +105,24 @@ npm run plugin:build
 
 自动化边界经确认：共享业务层公开接口、HTTP 接口、MCP 工具接口。测试使用临时 SQLite 和真实本机服务，MCP 使用 SDK 协议传输；面板单独在 Codex 内实际检查。执行记录见 [工程骨架验证](docs/validation/issue-16.md)。
 
-本次不调用在线配音、不执行导出。项目编辑与保存验证见 [#17 验证记录](docs/validation/issue-17.md)。交替修改验证见 [#18 验证记录](docs/validation/issue-18.md)。片段组织与明确范围验证见 [#19 验证记录](docs/validation/issue-19.md)。Windows、macOS 安装、正式组件分发与完全退出 Codex 后的真实任务继续执行，仍属于后续事项。
+自动化验证使用模拟供应商响应，不产生配音费用；不执行导出。项目编辑与保存验证见 [#17 验证记录](docs/validation/issue-17.md)。交替修改验证见 [#18 验证记录](docs/validation/issue-18.md)。片段组织与明确范围验证见 [#19 验证记录](docs/validation/issue-19.md)。Windows、macOS 安装、正式组件分发与完全退出 Codex 后的真实任务继续执行，仍属于后续事项。
 
 实现参考：[AG Grid React 官方入门](https://www.ag-grid.com/react-data-grid/getting-started/)、[OpenAI 插件打包说明](https://developers.openai.com/plugins/build/plugins)。
 
 本地视频验证见 [#20 验证记录](docs/validation/issue-20.md)。
+
+## 单片段配音
+
+在本机用户目录 `~/.config/clapgrid/.env` 配置 `TOKENDANCE_KEY`（Windows 为用户主目录下的 `.config/clapgrid/.env`）。文件由用户在项目之外创建并限制访问；服务不读取项目 `.env`，不把密钥写入项目或通过表格／MCP 返回。表格显示实际绝对路径和「已配置／未配置」。每次提交重新读取该文件，换密钥无需重建项目，不影响已有配音有效性。
+
+统一音色提供 vivi 2.0（默认）、流畅女声、儒雅逸辰；统一语速默认 1.0 倍，可用范围 0.5～2.0 倍，以 0.01 倍递增。声音按项目保存，无逐片段覆盖、高级参数或自动生成。接口使用 `speechRate` 整数 -50～100，转换关系为 `1 + speechRate / 100`。供应商请求固定 TokenDance `seed-tts-2.0`、24 kHz MP3，音量省略以使用默认值。协议依据 [TokenDance 语音文档](https://tokendance.space/docs/protocol-ark-tts.md)。
+
+单行「生成配音」先返回已受理和任务标识；查询到成功后才提供试听。任务期间禁用项目修改和追加生成，查询、视频预览及已有配音试听仍可用。输入快照、请求标识和任务结果保存到 SQLite。配音失败保留旧音频，未收到完整完成标志不发布部分音频；断流、网络异常和无法确认的服务结果显示「结果未知，可能已计费」。不会自动重试或切换供应商。进程中断后，重开把未完成任务标为未知，不再发起请求。
+
+业务 MCP：
+
+- `clapgrid_set_voice`：`{ speaker, speechRate }`，保存项目统一声音。
+- `clapgrid_submit_speech`：`{ requestId, segmentId }`，一次操作固定 UUID；重发复用同一标识，只有用户明确的新生成才换新 UUID。返回 `accepted` 不是成功。
+- `clapgrid_speech_status`：查询配置状态、统一声音、锁、任务和音频。按 `id` 或 `requestId` 查找原操作，音频 `url` 相对于本地服务地址。
+
+表格提交前把请求标识保存到浏览器本地存储。提交未确认时，再点按钮会复用原标识核对，不会自动创建新的付费请求。验收证据及未验证项见 [#21 验证记录](docs/validation/issue-21.md)。

@@ -1,3 +1,5 @@
+import { speechTasks } from './speech-tasks.js';
+import type { SpeechRuntime } from './speech.js';
 import { setImmediate } from 'node:timers/promises';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
@@ -8,7 +10,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { addSegmentSchema, editSegmentSchema, snapshotSchema, type Snapshot, batchSchema, type Batch, type ChangeResult, scopeSchema, selectionSchema, scopedOperationSchema, type SegmentScope, type ScopedOperation, type SegmentQueryResult } from '../shared/contracts.js';
 
 /** HTTP 和未来业务操作的唯一业务入口；数据库不向适配层开放。 */
-export function openBusiness(directory: string) {
+export function openBusiness(directory: string, speechRuntime: SpeechRuntime = { key: () => '', configPath: '.env' }) {
   const { projectDirectory, database, mediaDirectory, verify } = projectPaths(directory);
   mkdirSync(mediaDirectory, { recursive: true });
   const db = new DatabaseSync(database);
@@ -54,6 +56,7 @@ export function openBusiness(directory: string) {
   }
   // 所有项目变更共用事务边界；仅在提交成功后向 UI / MCP 发布快照。
   function commit(change: () => void): Snapshot {
+    speech.assertUnlocked();
     verify();
     db.exec('BEGIN IMMEDIATE');
     try {
@@ -68,6 +71,7 @@ export function openBusiness(directory: string) {
   }
   let modification: { token: string; owner: 'user' | 'codex'; controller: AbortController } | null = null;
   const acquire = (owner: 'user' | 'codex') => {
+    speech.assertUnlocked();
     if (modification) throw new Error(modification.owner === 'user' ? '用户正在编辑' : 'Codex 正在修改');
     const token = randomUUID();
     modification = { token, owner, controller: new AbortController() };
@@ -77,6 +81,7 @@ export function openBusiness(directory: string) {
     // 只释放本次普通编辑；迟到的连接事件不能解除后续修改权或后台任务锁。
     if (modification?.token === token) { modification.controller.abort(); modification = null; }
   };
+  const speech = speechTasks(db, mediaDirectory, speechRuntime, getSnapshot, verify, () => !!modification);
   const tables = new Map<string, string[]>();
   const business = {
     connectTable() { const id = randomUUID(); tables.set(id, []); return id; },
@@ -145,6 +150,10 @@ export function openBusiness(directory: string) {
       verifyMedia(path);
       return path;
     },
+    getSpeechStatus: speech.getSpeechStatus,
+    submitSpeech: speech.submitSpeech,
+    setVoice: speech.setVoice,
+    getSpeechAudio: speech.getSpeechAudio,
     getSnapshot,
     acquire, release,
     getModification: () => modification ? { owner: modification.owner } : null,
@@ -244,7 +253,7 @@ export function openBusiness(directory: string) {
       for (const result of results) summary[result.outcome]++;
       return { results, summary };
     },
-    close() { db.close(); },
+    close() { speech.close(); db.close(); },
   };
   return business;
 }

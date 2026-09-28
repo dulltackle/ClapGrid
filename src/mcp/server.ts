@@ -1,6 +1,6 @@
-import { importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
+import { submitSpeechSchema, voiceSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { localServiceUrl, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
+import { localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
 
 export function createBusinessMcp(url: string) {
   const baseUrl = localServiceUrl(url);
@@ -64,6 +64,28 @@ export function createBusinessMcp(url: string) {
     } catch (error) {
       return { isError: true, content: [{ type: 'text', text: error instanceof Error ? error.message : '导入失败，请查询项目确认结果' }] };
     }
+  });
+  server.registerTool('clapgrid_submit_speech', {
+    description: '为一个明确片段生成配音，文案发送至 TokenDance seed-tts-2.0。一次操作固定 UUID requestId；重发必须复用，仅明确的新操作使用新标识。返回已受理不代表成功。生成期间项目锁定；不会自动重试。',
+    inputSchema: submitSpeechSchema,
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  }, async input => {
+    try { const result = await submitSpeech(baseUrl, input); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+  });
+  server.registerTool('clapgrid_speech_status', {
+    description: '查询配音任务标识、请求标识、输入快照、进度和结果、完整音频试听路径，以及统一声音和凭据是否配置；不回显密钥。',
+    inputSchema: {}, annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async () => {
+    try { const result = await querySpeech(baseUrl); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: { ...result } }; }
+    catch { return { isError: true, content: [{ type: 'text', text: '配音状态查询失败，请检查本地服务' }] }; }
+  });
+  server.registerTool('clapgrid_set_voice', {
+    description: '保存项目统一音色和语速（speechRate 整数 -50 至 100，0 为原速）。无逐片段覆盖或高级参数；不自动生成配音。编辑占用或任务锁期间拒绝。',
+    inputSchema: voiceSchema, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async input => {
+    try { const result = await setVoice(baseUrl, input); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   return server;
 }

@@ -3,8 +3,8 @@ import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { AllCommunityModule, themeQuartz, type ColDef, type GridApi } from 'ag-grid-community';
 import { AgGridProvider, AgGridReact } from 'ag-grid-react';
-import { queryStatus, importVideo, saveSegment, beginEdit, type EditSession, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
-import type { Segment, ServiceStatus, Batch } from '../shared/contracts.js';
+import { queryStatus, querySpeech, submitSpeech, setVoice, importVideo, saveSegment, beginEdit, type EditSession, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
+import type { Segment, ServiceStatus, SpeechStatus, Voice, Batch } from '../shared/contracts.js';
 import './style.css';
 
 // 页面与表格共享语义变量；固定亮色，不跟随宿主主题。
@@ -28,6 +28,9 @@ const theme = themeQuartz.withParams({
 
 function App() {
   const [status, setStatus] = useState<ServiceStatus>();
+  const [speech, setSpeech] = useState<SpeechStatus>();
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [speechBusy, setSpeechBusy] = useState(false);
   const [error, setError] = useState('');
   const [videoEditor, setVideoEditor] = useState<{ segment: Segment; assetId: string; start: string } | null>(null);
   const [importing, setImporting] = useState(false);
@@ -108,9 +111,42 @@ function App() {
         <button disabled={disabled} onClick={() => { void openVideoEditor(segment.id); }}>{asset ? '更改' : '关联'}</button>
       </div>;
     } },
-    { headerName: '配音', width: 140 },
+    { headerName: '配音', width: 410, cellRenderer: (params: { data?: Segment }) => {
+      const segment = params.data; if (!segment) return null;
+      const tasks = speech?.tasks.filter(task => task.segmentId === segment.id) ?? [];
+      const latest = tasks.at(-1);
+      const recordings = speech?.audio.filter(audio => audio.segmentId === segment.id) ?? [];
+      const audio = recordings.filter(audio => audio.valid).at(-1) ?? recordings.at(-1);
+      return <div className="video-cell">
+        <button disabled={disabled || !segment.text.trim()} onClick={() => { void generateSpeech(segment.id); }}>{latest ? '重新生成' : '生成配音'}</button>
+        {audio && <button onClick={() => setAudioUrl(audio.url)}>试听{audio.valid ? '' : '（待更新）'}</button>}
+        <span title={latest?.message}>{latest?.message ?? '未生成'}</span>
+      </div>;
+    } },
     { headerName: '画面说明', width: 180 },
   ];
+  const generateSpeech = async (segmentId: string) => {
+    if (pending.current || editing.current || speechBusy || !status) return;
+    pending.current = true; generation.current++; setSpeechBusy(true); setSaveError('');
+    // 请求标识在提交前保存；断线或刷新后同一按钮复用，避免重复付费。
+    const storageKey = `clapgrid-speech:${status.snapshot.project.id}:${segmentId}`;
+    try {
+      const requestId = localStorage.getItem(storageKey) ?? crypto.randomUUID();
+      localStorage.setItem(storageKey, requestId);
+      const task = await submitSpeech(window.location.origin, { requestId, segmentId });
+      localStorage.removeItem(storageKey);
+      setSaveError(`任务 ${task.id}：${task.message}`); setSaveState('saved');
+      setSpeech(await querySpeech(window.location.origin));
+    } catch (cause) { setSaveState('failed'); setSaveError((cause as Error).message); }
+    finally { pending.current = false; setSpeechBusy(false); }
+  };
+  const changeVoice = async (voice: Voice) => {
+    if (pending.current || editing.current || speechBusy) return;
+    pending.current = true; generation.current++; setSpeechBusy(true);
+    try { await setVoice(window.location.origin, voice); setSpeech(await querySpeech(window.location.origin)); setSaveState('saved'); }
+    catch (cause) { setSaveState('failed'); setSaveError((cause as Error).message); }
+    finally { pending.current = false; setSpeechBusy(false); }
+  };
   const save = async (change: { id?: string; text: string }) => {
     if (pending.current) return;
     pending.current = true;
@@ -236,8 +272,8 @@ function App() {
       if (pending.current || editing.current) return;
       const version = generation.current;
       try {
-        const next = await queryStatus(window.location.origin);
-        if (active && version === generation.current && !editing.current) { setStatus(next); setError(''); }
+        const [next, nextSpeech] = await Promise.all([queryStatus(window.location.origin), querySpeech(window.location.origin)]);
+        if (active && version === generation.current && !editing.current) { setStatus(next); setSpeech(nextSpeech); setError(''); }
       } catch {
         if (active && version === generation.current && !editing.current) { setStatus(undefined); setError('服务连接失败，请通过 Codex 检查本地服务。'); }
       }
@@ -248,15 +284,15 @@ function App() {
     window.addEventListener('pagehide', leave);
     return () => { active = false; mounted.current = false; clearInterval(timer); window.removeEventListener('pagehide', leave); void release(); };
   }, []);
-  const disabled = !status || saveState === 'saving' || !!status.modification || editing.current;
+  const disabled = !status || !speech || speech.locked || status.taskLocked || speechBusy || saveState === 'saving' || !!status.modification || editing.current;
   const selectedPosition = status?.snapshot.segments.findIndex(segment => segment.id === selectedIds[0]) ?? -1;
   return <main>
     <header><h1>口播片段</h1>
       <button disabled={disabled} onClick={() => { void openVideoEditor(); }}>导入本地视频</button>
-      <button disabled={!status || saveState === 'saving' || !!status.modification || editing.current} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
+      <button disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
     </header>
     <p className={`save-status${saveState === 'failed' ? ' save-error' : ''}`} role="status">
-      {saveState === 'saving' ? '保存中…' : saveState === 'failed' ? saveError : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : status ? '已保存' : '等待读取项目'}
+      {saveState === 'saving' ? '保存中…' : saveState === 'failed' ? saveError : speech?.locked ? '配音进行中，项目已锁定；可查询和试听，关闭面板不终止任务' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : status ? '已保存' : '等待读取项目'}
     </p>
     <section className={`connection${error ? ' connection-error' : ''}`} aria-label="服务连接">
       <p className="connection-status" role="status">{error || (status ? '本地服务已连接' : '正在连接本地服务…')}</p>
@@ -269,6 +305,27 @@ function App() {
         </dl>
       </details>}
     </section>
+    {speech && <section className="organization" aria-label="统一声音设置">
+      <div className="toolbar">
+        <label>统一音色 <select aria-label="统一音色" disabled={disabled} value={speech.voice.speaker} onChange={event => { void changeVoice({ ...speech.voice, speaker: event.target.value as Voice['speaker'] }); }}>
+          <option value="zh_female_vv_uranus_bigtts">vivi 2.0</option>
+          <option value="zh_female_santongyongns_saturn_bigtts">流畅女声</option>
+          <option value="zh_male_ruyayichen_saturn_bigtts">儒雅逸辰</option>
+        </select></label>
+        <label>统一语速 {(1 + speech.voice.speechRate / 100).toFixed(2)} 倍
+          <select aria-label="统一语速" disabled={disabled} value={speech.voice.speechRate} onChange={event => { void changeVoice({ ...speech.voice, speechRate: Number(event.target.value) }); }}>
+            {Array.from({ length: 151 }, (_, index) => index - 50).map(rate => <option key={rate} value={rate}>{(1 + rate / 100).toFixed(2)} 倍</option>)}
+          </select>
+        </label>
+        <span>TokenDance 凭据：{speech.configured ? '已配置' : '未配置'}</span>
+      </div>
+      <p>文案通过 TokenDance seed-tts-2.0 生成配音，可能产生费用。配置位置：{speech.configPath}，键名 TOKENDANCE_KEY。已配置不代表服务已验证。</p>
+      {speech.tasks.length > 0 && <details><summary>配音任务与请求标识</summary>{speech.tasks.map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{task.message}</p>)}</details>}
+    </section>}
+    {audioUrl && <div className="modal-backdrop"><section role="dialog" aria-modal="true" aria-label="配音试听" className="media-dialog">
+      <h2>配音试听</h2><audio controls autoPlay src={audioUrl} onError={() => { setSaveState('failed'); setSaveError('音频不可读取，请检查项目文件'); }} />
+      <button onClick={() => setAudioUrl(null)}>关闭试听</button>
+    </section></div>}
     <section className="organization" aria-label="组织口播片段">
       <div className="toolbar">
         <label>筛选文案 <input aria-label="筛选文案" value={filter} onChange={event => setFilter(event.target.value)} /></label>

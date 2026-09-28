@@ -28,6 +28,7 @@ export const statusSchema = z.object({
   pid: z.number().int().positive(),
   startedAt: z.iso.datetime(),
   snapshot: snapshotSchema,
+  taskLocked: z.boolean().default(false),
   modification: z.object({ owner: z.enum(['user', 'codex']) }).nullable(),
 });
 export type Snapshot = z.infer<typeof snapshotSchema>;
@@ -78,3 +79,14 @@ export const queryResultSchema = z.object({
   tables: z.array(z.object({ tableId: z.uuid(), ids: z.array(z.uuid()) })),
 });
 export type SegmentQueryResult = z.infer<typeof queryResultSchema>;
+
+export const voiceSchema = z.object({
+  speaker: z.enum(['zh_female_vv_uranus_bigtts', 'zh_female_santongyongns_saturn_bigtts', 'zh_male_ruyayichen_saturn_bigtts']),
+  speechRate: z.number().int().min(-50).max(100),
+}).strict();
+export const defaultVoice = { speaker: 'zh_female_vv_uranus_bigtts', speechRate: 0 } as const;
+export const submitSpeechSchema = z.object({ requestId: z.uuid(), segmentId: z.uuid() }).strict();
+export type Voice = z.infer<typeof voiceSchema>;
+export type SpeechInput = { text: string; voice: Voice };
+export type SpeechTask = { id: string; requestId: string; segmentId: string; input: SpeechInput; state: 'accepted' | 'running' | 'succeeded' | 'failed' | 'unknown'; message: string; createdAt: string };
+export type SpeechStatus = { configured: boolean; configPath: string; locked: boolean; voice: Voice; tasks: SpeechTask[]; audio: { taskId: string; segmentId: string; input: SpeechInput; createdAt: string; valid: boolean; url: string }[] };

@@ -158,3 +158,26 @@ export async function importVideo(baseUrl: string, sourcePath: string, token?: s
   if (!response.ok) throw new Error(body.error ?? '视频导入失败');
   return { asset: body.asset as import('./contracts.js').VideoAsset, status: statusSchema.parse(body.status) };
 }
+
+export async function querySpeech(baseUrl: string): Promise<import('./contracts.js').SpeechStatus> {
+  const response = await fetch(`${baseUrl}/api/speech`, { signal: AbortSignal.timeout(5000), redirect: 'error' });
+  if (!response.ok) throw new Error('配音状态查询失败');
+  return response.json();
+}
+export async function submitSpeech(baseUrl: string, input: { requestId: string; segmentId: string }): Promise<import('./contracts.js').SpeechTask> {
+  let response: Response; let body: any;
+  try {
+    response = await fetch(`${baseUrl}/api/speech/submit`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input),
+      signal: AbortSignal.timeout(5000), redirect: 'error',
+    });
+    body = await response.json();
+  } catch {
+    throw new Error(`提交未确认，请使用同一请求标识 ${input.requestId} 查询或重发；不会自动生成新请求。`);
+  }
+  if (!response.ok) throw new Error(typeof body.error === 'string' ? body.error : '配音请求被拒绝');
+  return body;
+}
+export async function setVoice(baseUrl: string, input: import('./contracts.js').Voice) {
+  return postJson(baseUrl, '/api/speech/voice', input, undefined, AbortSignal.timeout(5000));
+}
