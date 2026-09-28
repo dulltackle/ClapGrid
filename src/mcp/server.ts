@@ -1,6 +1,6 @@
-import { speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
+import { exportTaskRequestSchema, submitExportSchema, speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { submitSpeechBatch, queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
+import { submitExport, queryExports, cancelExport, submitSpeechBatch, queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
 
 export function createBusinessMcp(url: string) {
   const baseUrl = localServiceUrl(url);
@@ -107,6 +107,27 @@ export function createBusinessMcp(url: string) {
     inputSchema: updateExportSettingsSchema, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   }, async (input, extra) => {
     try { const result = await saveExportSettings(baseUrl, input, undefined, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+  });
+  server.registerTool('clapgrid_submit_export', {
+    description: '按项目顺序导出完整粗剪，筛选及勾选不改变范围。立即返回已受理及任务标识，不代表成功；同项目运行期间重发返回已有任务。开始后锁定内容、素材与设置，汇总校验失败不跳片段、不自动配音；用 clapgrid_export_status 查询校验、进度、警告与最终成片路径。每次成功生成新文件。',
+    inputSchema: submitExportSchema, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  }, async () => {
+    try { const result = await submitExport(baseUrl); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: { ...result } }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: `${(error as Error).message}；请先查询导出任务确认是否已受理` }] }; }
+  });
+  server.registerTool('clapgrid_export_status', {
+    description: '查询全片导出任务标识、校验问题及对应片段、完成片段数、短视频冻结提示、取消清理与最终结果。succeeded 才代表成功；output 包含成片绝对路径及本地服务打开路径。',
+    inputSchema: {}, annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async () => {
+    try { const result = await queryExports(baseUrl); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: { ...result } }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+  });
+  server.registerTool('clapgrid_cancel_export', {
+    description: '取消指定导出任务。返回 cleaning 表示正在停止媒体进程并清理临时文件，尚未解锁；查询直到 cancelled。成功成片和其他历史成片不会被删除。',
+    inputSchema: exportTaskRequestSchema, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async input => {
+    try { const result = await cancelExport(baseUrl, input.taskId); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: { ...result } }; }
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   return server;

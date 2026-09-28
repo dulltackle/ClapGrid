@@ -6,7 +6,7 @@ import { readFileSync, readdirSync, openSync, fstatSync, createReadStream, const
 import { extname, join } from 'node:path';
 import { claimProjectService } from '../business/service-ownership.js';
 import { openBusiness } from '../business/index.js';
-import { importVideoSchema, addSegmentSchema, editSegmentSchema, batchSchema, segmentQuerySchema, selectionSchema, scopedOperationSchema, type ServiceStatus } from '../shared/contracts.js';
+import { submitExportSchema, exportTaskRequestSchema, importVideoSchema, addSegmentSchema, editSegmentSchema, batchSchema, segmentQuerySchema, selectionSchema, scopedOperationSchema, type ServiceStatus } from '../shared/contracts.js';
 
 export interface ServiceOptions {
   projectDirectory: string;
@@ -42,7 +42,7 @@ export async function startService(options: ServiceOptions) {
     }
     const status = (): ServiceStatus => ({
       application: 'clapgrid', apiVersion: 1, instanceId, pid: process.pid,
-      startedAt, snapshot: business.getSnapshot(), modification: business.getModification(), taskLocked: business.getSpeechStatus().locked,
+      startedAt, snapshot: business.getSnapshot(), modification: business.getModification(), taskLocked: business.getSpeechStatus().locked || business.getExportTasks().locked,
     });
     const tableSessions = new Map<string, () => void>();
     const finishTable = (id: string) => {
@@ -78,6 +78,24 @@ export async function startService(options: ServiceOptions) {
         response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         response.end(JSON.stringify(body));
       };
+      if (path === '/api/exports/submit' || path === '/api/exports/cancel') {
+        if (request.method !== 'POST') { reject(405, '请使用 POST。'); return; }
+        if (request.headers['content-type']?.split(';')[0]?.trim() !== 'application/json') { reject(415, '请使用 application/json。'); return; }
+        const timeout = setTimeout(() => request.destroy(), 5000);
+        try {
+          const chunks: Buffer[] = []; let size = 0;
+          for await (const chunk of request) {
+            size += chunk.length;
+            if (size > 4096) { reject(413, '请求内容过大'); return; }
+            chunks.push(Buffer.from(chunk));
+          }
+          const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          if (path.endsWith('/submit')) { submitExportSchema.parse(input); json(business.submitExport()); }
+          else { json(business.cancelExport(exportTaskRequestSchema.parse(input).taskId)); }
+        } catch (error) { if (!response.destroyed) reject(400, error instanceof Error ? error.message : '导出请求未受理'); }
+        finally { clearTimeout(timeout); }
+        return;
+      }
       if (path === '/api/speech/submit' || path === '/api/speech/voice' || path === '/api/speech/batch') {
         if (request.method !== 'POST') { reject(405, '请使用 POST。'); return; }
         if (request.headers['content-type']?.split(';')[0]?.trim() !== 'application/json') { reject(415, '请使用 application/json。'); return; }
@@ -233,13 +251,14 @@ export async function startService(options: ServiceOptions) {
       if (request.method !== 'GET') {
         response.setHeader('Allow', 'GET'); reject(405, '此接口仅提供查询。'); return;
       }
+      const exportFile = /^\/api\/exports\/([a-f0-9-]{36})\/(file|preview)$/.exec(path);
       const speechAudio = /^\/api\/speech\/audio\/([a-f0-9-]{36})$/.exec(path);
       const media = /^\/api\/media\/([a-f0-9-]{36})\/(preview|thumbnail)$/.exec(path);
-      if (media || speechAudio) {
+      if (media || speechAudio || exportFile) {
         let descriptor: number | undefined;
         try {
-          const kind = speechAudio ? 'audio' : media![2] as 'preview' | 'thumbnail';
-          descriptor = openSync(speechAudio ? business.getSpeechAudio(speechAudio[1]!) : business.getMedia(media![1]!, kind as 'preview' | 'thumbnail'), constants.O_RDONLY | constants.O_NOFOLLOW);
+          const kind = exportFile ? exportFile[2] === 'preview' ? 'preview' : 'export' : speechAudio ? 'audio' : media![2] as 'preview' | 'thumbnail';
+          descriptor = openSync(exportFile ? business.getExportFile(exportFile[1]!, exportFile[2] as 'file' | 'preview') : speechAudio ? business.getSpeechAudio(speechAudio[1]!) : business.getMedia(media![1]!, kind as 'preview' | 'thumbnail'), constants.O_RDONLY | constants.O_NOFOLLOW);
           const stat = fstatSync(descriptor);
           if (!stat.isFile() || stat.nlink !== 1) throw new Error('媒体文件无效');
           const size = stat.size;
@@ -253,7 +272,7 @@ export async function startService(options: ServiceOptions) {
             if (start > end || start >= size) { response.setHeader('Content-Range', `bytes */${size}`); reject(416, '范围无效'); return; }
             response.setHeader('Content-Range', `bytes ${start}-${end}/${size}`);
           }
-          response.writeHead(range ? 206 : 200, { 'Content-Type': kind === 'audio' ? 'audio/mpeg' : kind === 'preview' ? 'video/webm' : 'image/png', 'Accept-Ranges': 'bytes', 'Content-Length': end - start + 1 });
+          response.writeHead(range ? 206 : 200, { 'Content-Type': kind === 'export' ? 'video/mp4' : kind === 'audio' ? 'audio/mpeg' : kind === 'preview' ? 'video/webm' : 'image/png', 'Accept-Ranges': 'bytes', 'Content-Length': end - start + 1 });
           const stream = createReadStream('', { fd: descriptor, autoClose: true, start, end });
           descriptor = undefined;
           stream.on('error', () => response.destroy());
@@ -261,6 +280,8 @@ export async function startService(options: ServiceOptions) {
           stream.pipe(response);
         } catch { if (!response.headersSent) reject(404, '素材不可读取'); else response.destroy(); }
         finally { if (descriptor !== undefined) closeSync(descriptor); }
+      } else if (path === '/api/exports') {
+        try { json(business.getExportTasks()); } catch { reject(500, '读取导出任务失败'); }
       } else if (path === '/api/export-settings') {
         try { json(await business.getExportStatus()); } catch { reject(500, '读取导出设置失败'); }
       } else if (path === '/api/speech') {
@@ -301,14 +322,14 @@ export async function startService(options: ServiceOptions) {
           server.closeAllConnections();
           await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
           await vite?.close();
-          business.close();
+          await business.close();
           releaseOwnership();
         })();
       },
     };
   } catch (error) {
     await vite?.close();
-    business.close();
+    await business.close();
     releaseOwnership();
     throw error;
   }

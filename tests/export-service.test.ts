@@ -58,3 +58,32 @@ test('表格 HTTP 与 MCP 共享导出设置，自动保存恢复并遵守普通
   await service.close(); service = await startService(options);
   assert.deepEqual((await queryExportSettings(service.url)).settings, changed);
 });
+
+test('表格与 MCP 共用全片导出任务，立即受理、重复提交、进度及取消状态一致', async t => {
+  const root = mkdtempSync(join(tmpdir(), 'clapgrid-export-api-'));
+  const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
+  const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
+  t.after(async () => { await service.close(); rmSync(root, { recursive: true, force: true }); });
+  const mcp = createBusinessMcp(service.url); const client = new Client({ name: '导出验收', version: '1' });
+  const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
+  t.after(async () => { await client.close(); await mcp.close(); });
+  const response = await fetch(`${service.url}/api/exports/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  assert.equal(response.status, 200);
+  const task = await response.json(); assert.equal(task.state, 'accepted');
+  assert.equal((await queryStatus(service.url)).taskLocked, true);
+  const duplicate = await client.callTool({ name: 'clapgrid_submit_export', arguments: {} });
+  assert.equal((duplicate.structuredContent as import('../src/shared/contracts.js').ExportTask).id, task.id);
+  const cancel = await client.callTool({ name: 'clapgrid_cancel_export', arguments: { taskId: task.id } });
+  assert.equal((cancel.structuredContent as import('../src/shared/contracts.js').ExportTask).state, 'cleaning');
+  let status: any;
+  for (let i = 0; i < 200; i++) {
+    const result = await client.callTool({ name: 'clapgrid_export_status', arguments: {} });
+    status = result.structuredContent;
+    if (!status.locked) break;
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  assert.equal(status.tasks[0].id, task.id); assert.equal(status.tasks[0].state, 'cancelled');
+  assert.equal((await queryStatus(service.url)).taskLocked, false);
+  const invalid = await fetch(`${service.url}/api/exports/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"scope":"selected"}' });
+  assert.equal(invalid.status, 400);
+});

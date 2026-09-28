@@ -28,6 +28,18 @@ export type ExportStatus = { settings: ExportSettings; output: typeof exportOutp
 export const updateExportSettingsSchema = z.object({ expected: exportSettingsSchema, settings: exportSettingsSchema }).strict();
 export type UpdateExportSettings = z.infer<typeof updateExportSettingsSchema>;
 
+export const submitExportSchema = z.object({}).strict();
+export const exportTaskRequestSchema = z.object({ taskId: z.uuid() }).strict();
+export type ExportIssue = { segmentId?: string; order?: number; field: 'project' | 'video' | 'start' | 'speech' | 'settings'; message: string };
+export type ExportTask = {
+  id: string; createdAt: string;
+  state: 'accepted' | 'validating' | 'rendering' | 'cleaning' | 'succeeded' | 'failed' | 'cancelled';
+  message: string; completed: number; total: number; segmentId?: string;
+  issues: ExportIssue[]; warnings: ExportIssue[];
+  output?: { path: string; url: string; previewUrl?: string };
+};
+export type ExportTasksStatus = { locked: boolean; tasks: ExportTask[] };
+
 export const snapshotSchema = z.object({
   project: z.object({ id: z.uuid(), directory: z.string(), createdAt: z.iso.datetime() }),
   storage: z.object({ database: z.string(), mediaDirectory: z.string() }),

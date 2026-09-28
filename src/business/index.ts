@@ -1,3 +1,4 @@
+import { exportTasks } from './export-tasks.js';
 import { listExportFonts, missingExportSettings, verifyExportMedia } from './export-media.js';
 import { defaultExportSettings, exportSettingsSchema, exportOutput, updateExportSettingsSchema, type UpdateExportSettings, type ExportStatus } from '../shared/contracts.js';
 import { speechTasks } from './speech-tasks.js';
@@ -62,19 +63,20 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
     const row = db.prepare('SELECT value FROM export_settings WHERE singleton = 1').get();
     return exportSettingsSchema.parse(row ? JSON.parse(String(row.value)) : defaultExportSettings);
   }
-  async function getExportStatus(): Promise<ExportStatus> {
+  async function getExportStatus(signal?: AbortSignal): Promise<ExportStatus> {
     const settings = getExportSettings();
     const issues = missingExportSettings(settings);
     let fonts: string[] = [];
     try {
-      fonts = await listExportFonts();
+      fonts = await listExportFonts(signal);
       if (settings.fontFamily && !fonts.includes(settings.fontFamily)) issues.push(`字幕字体不可用：${settings.fontFamily}，请安装该字体或重新选择`);
     } catch (error) { issues.push((error as Error).message); }
-    try { await verifyExportMedia(settings); } catch (error) { issues.push((error as Error).message); }
+    try { await verifyExportMedia(settings, signal); } catch (error) { issues.push((error as Error).message); }
     return { settings, output: exportOutput, fonts, issues };
   }
   // 所有项目变更共用事务边界；仅在提交成功后向 UI / MCP 发布快照。
   function commit(change: () => void): Snapshot {
+    exports.assertUnlocked();
     speech.assertUnlocked();
     verify();
     db.exec('BEGIN IMMEDIATE');
@@ -90,6 +92,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
   }
   let modification: { token: string; owner: 'user' | 'codex'; controller: AbortController } | null = null;
   const acquire = (owner: 'user' | 'codex') => {
+    exports.assertUnlocked();
     speech.assertUnlocked();
     if (modification) throw new Error(modification.owner === 'user' ? '用户正在编辑' : 'Codex 正在修改');
     const token = randomUUID();
@@ -101,6 +104,11 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
     if (modification?.token === token) { modification.controller.abort(); modification = null; }
   };
   const speech = speechTasks(db, mediaDirectory, speechRuntime, getSnapshot, verify, () => !!modification, scope => business.querySegments(scope));
+  const exports = exportTasks(db, {
+    snapshot: getSnapshot, settings: getExportStatus, speech: speech.getSpeechStatus,
+    verify, video: id => business.getMedia(id, 'source'), audio: speech.getSpeechAudio,
+    busy: () => [speech.getSpeechStatus().locked ? '配音任务尚未结束' : '', modification ? (modification.owner === 'user' ? '用户正在编辑' : 'Codex 正在修改') : ''].filter(Boolean),
+  });
   const tables = new Map<string, string[]>();
   const business = {
     connectTable() { const id = randomUUID(); tables.set(id, []); return id; },
@@ -173,6 +181,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
     async setExportSettings(token: string, input: UpdateExportSettings) {
       if (modification?.token !== token) throw new Error('修改权已失效');
       const signal = modification.controller.signal;
+      exports.assertUnlocked();
       speech.assertUnlocked();
       const parsed = updateExportSettingsSchema.safeParse(input);
       if (!parsed.success) throw new Error(parsed.error.issues.map(issue => issue.message).join('；'));
@@ -193,18 +202,24 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       return settings;
     },
     async getCurrentExportSettings() {
+      exports.assertUnlocked();
       speech.assertUnlocked();
       if (modification) throw new Error('项目正在修改，无法读取导出输入');
       const status = await getExportStatus();
+      exports.assertUnlocked();
       speech.assertUnlocked();
       if (modification || JSON.stringify(getExportSettings()) !== JSON.stringify(status.settings)) throw new Error('导出设置已变化，请重新读取');
       if (status.issues.length) throw new Error(status.issues.join('；'));
       return { ...status.settings, ...exportOutput };
     },
     getSpeechStatus: speech.getSpeechStatus,
-    submitSpeech: speech.submitSpeech,
-    submitSpeechBatch: speech.submitSpeechBatch,
-    setVoice: speech.setVoice,
+    submitSpeech(input: Parameters<typeof speech.submitSpeech>[0]) { exports.assertUnlocked(); return speech.submitSpeech(input); },
+    submitSpeechBatch(input: Parameters<typeof speech.submitSpeechBatch>[0]) { exports.assertUnlocked(); return speech.submitSpeechBatch(input); },
+    setVoice(input: unknown) { exports.assertUnlocked(); return speech.setVoice(input); },
+    submitExport: exports.submitExport,
+    getExportTasks: exports.getExportTasks,
+    cancelExport: exports.cancelExport,
+    getExportFile: exports.getExportFile,
     getSpeechAudio: speech.getSpeechAudio,
     getCurrentSpeechAudio: speech.getCurrentSpeechAudio,
     getSnapshot,
@@ -306,7 +321,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       for (const result of results) summary[result.outcome]++;
       return { results, summary };
     },
-    close() { speech.close(); db.close(); },
+    async close() { speech.close(); await exports.close(); db.close(); },
   };
   return business;
 }

@@ -200,3 +200,15 @@ export async function saveExportSettings(baseUrl: string, input: import('./contr
 export async function submitSpeechBatch(baseUrl: string, input: import('./contracts.js').SpeechBatchRequest): Promise<import('./contracts.js').SpeechBatchResult> {
   return postJson(baseUrl, '/api/speech/batch', input);
 }
+
+export async function queryExports(baseUrl: string): Promise<import('./contracts.js').ExportTasksStatus> {
+  const response = await fetch(`${baseUrl}/api/exports`, { signal: AbortSignal.timeout(5000), redirect: 'error' });
+  if (!response.ok) throw new Error('读取导出任务失败');
+  return response.json();
+}
+export async function submitExport(baseUrl: string): Promise<import('./contracts.js').ExportTask> {
+  return postJson(baseUrl, '/api/exports/submit', {});
+}
+export async function cancelExport(baseUrl: string, taskId: string): Promise<import('./contracts.js').ExportTask> {
+  return postJson(baseUrl, '/api/exports/cancel', { taskId });
+}

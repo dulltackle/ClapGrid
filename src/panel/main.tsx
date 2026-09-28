@@ -1,3 +1,4 @@
+import { ExportTasksPanel } from './export-tasks.js';
 import { ExportSettingsPanel } from './export-settings.js';
 import { StrictMode, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
@@ -301,7 +302,7 @@ function App() {
       <button disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
     </header>
     <p className={`save-status${saveState === 'failed' ? ' save-error' : ''}`} role="status">
-      {saveState === 'saving' ? '保存中…' : saveState === 'failed' ? saveError : speech?.locked ? '配音进行中，项目已锁定；可查询和试听，关闭面板不终止任务' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : status ? '已保存' : '等待读取项目'}
+      {saveState === 'saving' ? '保存中…' : saveState === 'failed' ? saveError : speech?.locked ? '配音进行中，项目已锁定；可查询和试听，关闭面板不终止任务' : status?.taskLocked ? '导出进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : status ? '已保存' : '等待读取项目'}
     </p>
     <section className={`connection${error ? ' connection-error' : ''}`} aria-label="服务连接">
       <p className="connection-status" role="status">{error || (status ? '本地服务已连接' : '正在连接本地服务…')}</p>
@@ -338,6 +339,7 @@ function App() {
       </section>}
       {speech.tasks.length > 0 && <details><summary>配音任务与请求标识</summary>{speech.tasks.map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{task.message}</p>)}</details>}
     </section>}
+    <ExportTasksPanel onStatus={setStatus} />
     {exportSettingsOpen && status && <ExportSettingsPanel status={status} onStatus={setStatus} onClose={() => setExportSettingsOpen(false)} />}
     {audioHistory && <div className="modal-backdrop"><section role="dialog" aria-modal="true" aria-label="保留音频" className="media-dialog">
       <h2>保留音频</h2>

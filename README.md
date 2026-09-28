@@ -93,7 +93,7 @@ npm run plugin:build
 
 `clapgrid_query_segments` 接收 `{ scope }`。范围支持 `{ kind: "all" }`、`{ kind: "ids", ids }`、`{ kind: "query", textContains }` 或 `{ kind: "selected", tableId? }`，返回项目顺序下的片段快照、已连接表格及勾选。没有勾选或连接时，selected 返回 `availability: "unavailable"`；多个表格未指明连接时返回 `ambiguous`，两者都返回空目标，不扩展范围。
 
-`clapgrid_process_segments` 接收 `{ scope, expected, action }`，其中 `expected` 是查询得到的完整片段快照数组，`action` 为 `{ kind: "edit", text }` 或 `{ kind: "delete" }`。取得修改权并接收完整请求后，服务在让出执行权之前固定目标身份；后续改选、筛选或表格断开不影响该操作。选择为空或有歧义会拒绝；新增目标缺少查询快照也拒绝，要求重新查询；明确身份和原条件命中的旧目标仍进入重读，逐项返回已删除或已变化信息。明确身份和条件查询在表格关闭后仍可用。配音当前仅支持明确单片段；后续批量配音与导出须沿用固定范围规则。
+`clapgrid_process_segments` 接收 `{ scope, expected, action }`，其中 `expected` 是查询得到的完整片段快照数组，`action` 为 `{ kind: "edit", text }` 或 `{ kind: "delete" }`。取得修改权并接收完整请求后，服务在让出执行权之前固定目标身份；后续改选、筛选或表格断开不影响该操作。选择为空或有歧义会拒绝；新增目标缺少查询快照也拒绝，要求重新查询；明确身份和原条件命中的旧目标仍进入重读，逐项返回已删除或已变化信息。明确身份和条件查询在表格关闭后仍可用。批量配音使用明确范围；全片导出始终读取完整项目。
 
 表格先取得修改权再打开编辑器，保存、Esc 取消或连接断开时释放。Codex 修改期间不能开始编辑；表格每秒查询共享状态，自动显示已完成修改。普通查询不占用修改权。普通修改权与配音任务锁独立；配音从受理前锁定项目至终态持久化，关闭表格、MCP 或编辑连接不会提前解锁。
 
@@ -105,7 +105,7 @@ npm run plugin:build
 
 自动化边界经确认：共享业务层公开接口、HTTP 接口、MCP 工具接口。测试使用临时 SQLite 和真实本机服务，MCP 使用 SDK 协议传输；面板单独在 Codex 内实际检查。执行记录见 [工程骨架验证](docs/validation/issue-16.md)。
 
-自动化验证使用模拟供应商响应，不产生配音费用；不执行导出。项目编辑与保存验证见 [#17 验证记录](docs/validation/issue-17.md)。交替修改验证见 [#18 验证记录](docs/validation/issue-18.md)。片段组织与明确范围验证见 [#19 验证记录](docs/validation/issue-19.md)。Windows、macOS 安装、正式组件分发与完全退出 Codex 后的真实任务继续执行，仍属于后续事项。
+自动化验证使用模拟供应商响应，不产生配音费用；导出测试执行真实本机媒体处理。项目编辑与保存验证见 [#17 验证记录](docs/validation/issue-17.md)。交替修改验证见 [#18 验证记录](docs/validation/issue-18.md)。片段组织与明确范围验证见 [#19 验证记录](docs/validation/issue-19.md)。Windows、macOS 安装、正式组件分发与完全退出 Codex 后的真实任务继续执行，仍属于后续事项。
 
 实现参考：[AG Grid React 官方入门](https://www.ag-grid.com/react-data-grid/getting-started/)、[OpenAI 插件打包说明](https://developers.openai.com/plugins/build/plugins)。
 
@@ -126,3 +126,17 @@ npm run plugin:build
 - `clapgrid_speech_status`：查询配置状态、统一声音、锁、任务和音频。按 `id` 或 `requestId` 查找原操作，音频 `url` 相对于本地服务地址。
 
 表格提交前把请求标识保存到浏览器本地存储。提交未确认时，再点按钮会复用原标识核对，不会自动创建新的付费请求。验收证据及未验证项见 [#21 验证记录](docs/validation/issue-21.md)。
+
+## 全片导出
+
+表格的「导出全片」始终采用完整项目顺序，筛选、勾选不影响范围。先返回任务标识，随后汇总片段视频、起点、有效配音、导出设置及修改权/配音任务占用等问题；校验失败不会跳片段或自动生成配音。校验到渲染、取消清理全程锁定项目，同项目重复提交返回正在执行的任务。
+
+画面从指定起点截取至配音结束，剩余画面不足时冻结末帧并提示；视频等比缩放留边、原声静音，片段直接拼接。字幕按项目字体字号整句烧录，支持中文自动换行和多行，不因长文案拒绝导出。媒体环境需 FFmpeg、ffprobe、Fontconfig，以及 ffv1、libvpx、libvorbis 和支持 `wrap_unicode` 的 libass/libunibreak。字幕排版使用 ASS，须显式开启 Unicode 换行（[FFmpeg 官方说明](https://ffmpeg.org/ffmpeg-filters.html#subtitles-1)）。
+
+成片输出至项目 `exports/`，格式固定 1920×1080 MP4，编码及帧率使用当前设置。文件名包含时间及 UUID，每次生成新文件；表格显示位置并提供打开入口；内置浏览器以兼容的 WebM 预览播放，并提供原始 MP4 下载，预览保存在项目媒体目录。取消先显示「正在清理」，等待媒体进程结束和本次临时文件删除后才解锁。失败显示原因与能定位的片段，已有成片保留。清理或状态保存失败时保持锁定并显示原因，不能把未清理的文件当作已清理。
+
+- `clapgrid_submit_export` / `POST /api/exports/submit`：参数 `{}`，立即返回任务，`accepted` 不等于成功。
+- `clapgrid_export_status` / `GET /api/exports`：查询任务、锁、完成片段数、问题、警告及成片位置；`output.url` 相对于服务地址。
+- `clapgrid_cancel_export` / `POST /api/exports/cancel`：参数 `{ taskId }`，`cleaning` 不等于已取消，继续查询至终态。
+
+新请求返回 `succeeded` 才确认成片可打开；请求断线时先查询任务，不自动重发。测试使用本机合成素材和模拟供应商音频，不产生配音费用；导出测试实际运行 FFmpeg。验证记录见 [#25 验证记录](docs/validation/issue-25.md)。跨服务崩溃恢复与三平台宿主交付继续由 #26、#27—#30 承接。

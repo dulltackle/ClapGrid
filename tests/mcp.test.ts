@@ -26,7 +26,7 @@ test('MCP 修改和查询与面板 HTTP 读取同一服务，服务离线时明�
   await mcp.connect(serverTransport);
   await client.connect(clientTransport);
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map(tool => tool.name), ['clapgrid_status', 'clapgrid_modify', 'clapgrid_query_segments', 'clapgrid_process_segments', 'clapgrid_import_video', 'clapgrid_submit_speech', 'clapgrid_submit_speech_batch', 'clapgrid_speech_status', 'clapgrid_set_voice', 'clapgrid_export_settings', 'clapgrid_set_export_settings']);
+  assert.deepEqual(tools.map(tool => tool.name), ['clapgrid_status', 'clapgrid_modify', 'clapgrid_query_segments', 'clapgrid_process_segments', 'clapgrid_import_video', 'clapgrid_submit_speech', 'clapgrid_submit_speech_batch', 'clapgrid_speech_status', 'clapgrid_set_voice', 'clapgrid_export_settings', 'clapgrid_set_export_settings', 'clapgrid_submit_export', 'clapgrid_export_status', 'clapgrid_cancel_export']);
   const saved = await client.callTool({ name: 'clapgrid_modify', arguments: {
     changes: [{ kind: 'add', text: 'MCP 读取已保存文案' }],
   } });

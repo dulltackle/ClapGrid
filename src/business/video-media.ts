@@ -1,12 +1,12 @@
 import { constants, createReadStream, createWriteStream, fstatSync, lstatSync, openSync, closeSync, realpathSync, unlinkSync } from 'node:fs';
 import { basename, isAbsolute, join, resolve } from 'node:path';
-import { execFile, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { pipeline } from 'node:stream/promises';
-import { promisify } from 'node:util';
+import { mediaProcess } from './media-process.js';
 import type { VideoAsset } from '../shared/contracts.js';
 
-const execute = promisify(execFile);
+const execute = mediaProcess;
 // 排除播放列表、网络协议及外部引用格式，解码器只能读取已复制的单个媒体文件。
 const inputOptions = ['-protocol_whitelist', 'file,pipe', '-format_whitelist', 'mov,matroska,webm,avi,flv,mpeg,mpegts,ogg'];
 export function mediaPath(directory: string, id: string, kind: 'source' | 'preview' | 'thumbnail') {
@@ -17,7 +17,7 @@ export function verifyMedia(path: string) {
   if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || realpathSync(path) !== resolve(path)) throw new Error('媒体路径不安全或文件已丢失');
 }
 async function run(command: string, args: string[], signal: AbortSignal) {
-  try { return await execute(command, args, { signal, timeout: 10 * 60 * 1000, maxBuffer: 1024 * 1024 }); }
+  try { return await execute(command, args, { signal, timeout: 10 * 60 * 1000 }); }
   catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new Error('请安装提供 ffmpeg、ffprobe 和 libvpx 编码器的 FFmpeg 后重试');
     throw new Error('视频不可解码、处理超时或操作已取消');
@@ -42,9 +42,11 @@ export async function validateVideo(path: string, signal: AbortSignal) {
         first = Math.min(first, time); end = Math.max(end, time + frameDuration);
       }
     });
-    child.on('error', reject);
+    let failure: Error | undefined;
+    child.on('error', error => { failure = error; });
     child.on('close', code => {
       lines.close();
+      if (failure) { reject(failure); return; }
       if (code !== 0 || !Number.isFinite(end - first) || end <= first) reject(new Error('无法确认视频画面时长'));
       else resolve(Math.round((end - first) * 1_000_000) / 1_000_000);
     });

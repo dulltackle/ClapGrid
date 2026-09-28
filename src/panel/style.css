@@ -86,3 +86,5 @@ header { flex-wrap: wrap; }
 .audio-history p { margin: 0 0 var(--space-2); overflow-wrap: anywhere; }
 .audio-text { white-space: pre-wrap; }
 .media-dialog audio { display: block; width: 100%; margin-bottom: var(--space-3); }
+
+.export-tasks p, .export-tasks li { overflow-wrap: anywhere; }
