@@ -1,0 +1,12 @@
+{
+  "bootId": "d4d2e697-39ba-4a31-8b75-9623aa7f846c",
+  "priorBootId": "e8a2a5b8-2717-43ee-b5c2-e39905d9a7be",
+  "taskId": "0a9048fc-15f8-4aca-8122-c5fdac4e7acf",
+  "serviceOffline": true,
+  "workDirectoryPresent": true,
+  "mediaMarker": {
+    "bootId": "e8a2a5b8-2717-43ee-b5c2-e39905d9a7be",
+    "guardianPid": 13448,
+    "startedAt": "2026-09-28T16:28:48.736Z"
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "verifiedAt": "2026-09-28T15:31:13.100Z",
+  "userConfirmation": "用户在本会话确认“配音退出验收完成”；完全退出 Codex 的动作由用户执行，退出时刻未由脚本独立采集。",
+  "acceptedAt": "2026-09-28T15:29:56.703Z",
+  "completedAt": "2026-09-28T15:30:00.740Z",
+  "samples": 5,
+  "instanceId": "d4722473-ca5d-4b1f-907a-6596f77aafd6",
+  "pid": 319183,
+  "projectId": "418457e2-8bf2-45d3-9c6d-a3ebdbc552e2",
+  "taskId": "118f0d89-bdf8-44e4-9962-8541d86b5111",
+  "requestId": "9e8193bd-2587-4254-bbd8-dd9a061143ea",
+  "states": [
+    "accepted",
+    "running",
+    "succeeded"
+  ],
+  "runningSamplesLocked": true,
+  "result": {
+    "id": "118f0d89-bdf8-44e4-9962-8541d86b5111",
+    "requestId": "9e8193bd-2587-4254-bbd8-dd9a061143ea",
+    "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+    "input": {
+      "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+      "voice": {
+        "speaker": "zh_female_vv_uranus_bigtts",
+        "speechRate": 0
+      }
+    },
+    "state": "succeeded",
+    "message": "生成成功",
+    "createdAt": "2026-09-28T15:29:56.697Z",
+    "succeededAt": "2026-09-28T15:29:59.839Z"
+  },
+  "recording": {
+    "taskId": "118f0d89-bdf8-44e4-9962-8541d86b5111",
+    "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+    "input": {
+      "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+      "voice": {
+        "speaker": "zh_female_vv_uranus_bigtts",
+        "speechRate": 0
+      }
+    },
+    "createdAt": "2026-09-28T15:29:59.839Z",
+    "valid": true,
+    "url": "/api/speech/audio/118f0d89-bdf8-44e4-9962-8541d86b5111"
+  },
+  "media": {
+    "streams": [
+      {
+        "index": 0,
+        "codec_name": "mp3",
+        "codec_long_name": "MP3 (MPEG audio layer 3)",
+        "codec_type": "audio",
+        "codec_tag_string": "[0][0][0][0]",
+        "codec_tag": "0x0000",
+        "sample_fmt": "fltp",
+        "sample_rate": "24000",
+        "channels": 1,
+        "channel_layout": "mono",
+        "bits_per_sample": 0,
+        "initial_padding": 0,
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "time_base": "1/14112000",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 201519360,
+        "duration": "14.280000",
+        "bit_rate": "64000",
+        "disposition": {
+          "default": 0,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0
+        }
+      }
+    ],
+    "format": {
+      "filename": "/tmp/clapgrid-26-real-on4lcF/project/media/118f0d89-bdf8-44e4-9962-8541d86b5111.mp3",
+      "nb_streams": 1,
+      "nb_programs": 0,
+      "format_name": "mp3",
+      "format_long_name": "MP2/3 (MPEG audio layer 2/3)",
+      "start_time": "0.000000",
+      "duration": "14.280000",
+      "size": "114285",
+      "bit_rate": "64025",
+      "probe_score": 51,
+      "tags": {
+        "encoder": "Lavf58.76.100"
+      }
+    }
+  },
+  "sha256": "05cdc896a98b4613012072604f558b6a46f576d68ba11fd0586a535f9c6c83ed",
+  "fullDecodePassed": true
+}

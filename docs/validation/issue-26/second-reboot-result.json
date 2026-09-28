@@ -1,0 +1,183 @@
+{
+  "verifiedAt": "2026-09-28T16:35:59.285Z",
+  "priorBootId": "e8a2a5b8-2717-43ee-b5c2-e39905d9a7be",
+  "bootId": "d4d2e697-39ba-4a31-8b75-9623aa7f846c",
+  "lastBeforeShutdown": {
+    "at": "2026-09-28T16:28:58.854Z",
+    "instanceId": "51ac49b3-977a-46f7-b8fb-9c58b86cf5e1",
+    "pid": 13440,
+    "taskLocked": true,
+    "task": {
+      "id": "0a9048fc-15f8-4aca-8122-c5fdac4e7acf",
+      "createdAt": "2026-09-28T16:28:45.422Z",
+      "state": "rendering",
+      "message": "正在渲染片段 2（2/2）",
+      "completed": 1,
+      "total": 2,
+      "issues": [],
+      "warnings": [
+        {
+          "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+          "order": 2,
+          "field": "video",
+          "message": "视频剩余时长不足，末帧将冻结补足配音时长"
+        }
+      ],
+      "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c"
+    }
+  },
+  "status": {
+    "application": "clapgrid",
+    "apiVersion": 1,
+    "instanceId": "886742ba-0e65-4054-87ad-e623fdfc38a0",
+    "pid": 13394,
+    "startedAt": "2026-09-28T16:35:24.444Z",
+    "snapshot": {
+      "project": {
+        "id": "418457e2-8bf2-45d3-9c6d-a3ebdbc552e2",
+        "directory": "/home/forclaw/code/ClapGrid/.cache/issue-26-reboot/project",
+        "createdAt": "2026-09-28T10:37:46.734Z"
+      },
+      "storage": {
+        "database": "/home/forclaw/code/ClapGrid/.cache/issue-26-reboot/project/clapgrid.sqlite",
+        "mediaDirectory": "/home/forclaw/code/ClapGrid/.cache/issue-26-reboot/project/media"
+      },
+      "segments": [
+        {
+          "id": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+          "order": 1,
+          "text": "这是跨退出恢复验证的第一句。",
+          "video": {
+            "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+            "start": 0
+          }
+        },
+        {
+          "id": "e03e5715-61e8-4243-be16-0533e096dd9c",
+          "order": 2,
+          "text": "第1段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第2段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第3段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第4段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第5段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。",
+          "video": {
+            "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+            "start": 0
+          }
+        }
+      ],
+      "assets": [
+        {
+          "id": "30a87396-1689-4c6a-936c-52a097b87e72",
+          "name": "source.mp4",
+          "duration": 3
+        }
+      ],
+      "exportSettings": {
+        "codec": "libx264",
+        "fps": 60,
+        "fontFamily": "Noto Sans CJK SC",
+        "fontSize": 48
+      }
+    },
+    "taskLocked": false,
+    "modification": null
+  },
+  "recoveredTask": {
+    "id": "0a9048fc-15f8-4aca-8122-c5fdac4e7acf",
+    "createdAt": "2026-09-28T16:28:45.422Z",
+    "state": "interrupted",
+    "message": "导出已中断，本次文件已清理；不会自动重试，请重新导出",
+    "completed": 1,
+    "total": 2,
+    "issues": [],
+    "warnings": [
+      {
+        "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+        "order": 2,
+        "field": "video",
+        "message": "视频剩余时长不足，末帧将冻结补足配音时长"
+      }
+    ],
+    "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c"
+  },
+  "noAutomaticRetry": true,
+  "priorFilesVerified": [
+    {
+      "directory": "exports",
+      "name": "2026-09-28T10-40-18-893Z-351490a5-2662-4019-bbe4-998d7bc07955.mp4",
+      "sha256": "1e7cc788d7eb29c23d21101f177db19cc27b9872459f983c610386909f579a97"
+    },
+    {
+      "directory": "exports",
+      "name": "2026-09-28T10-42-42-826Z-e2b93247-cfee-44e6-907b-3f1c3170a60c.mp4",
+      "sha256": "d5c44608b19f473e47413609845be4283626a2fe729d33b1c06661d599fe9275"
+    },
+    {
+      "directory": "exports",
+      "name": "2026-09-28T15-24-34-671Z-779b66d4-2ded-4985-918e-30848a4765f3.mp4",
+      "sha256": "d5c44608b19f473e47413609845be4283626a2fe729d33b1c06661d599fe9275"
+    },
+    {
+      "directory": "exports",
+      "name": "2026-09-28T15-57-21-424Z-e7674f93-f21c-4b5c-b537-29133e1a0a8d.mp4",
+      "sha256": "167890753b94b34557b9d622a57c2280c8c75ef33e38be21439a74abda407ddc"
+    },
+    {
+      "directory": "media",
+      "name": "118f0d89-bdf8-44e4-9962-8541d86b5111.mp3",
+      "sha256": "05cdc896a98b4613012072604f558b6a46f576d68ba11fd0586a535f9c6c83ed"
+    },
+    {
+      "directory": "media",
+      "name": "30a87396-1689-4c6a-936c-52a097b87e72.png",
+      "sha256": "b55d509f1038b856a0b9ccc3ed70508146e2ad7dcf31261b33ebdbbdc917feeb"
+    },
+    {
+      "directory": "media",
+      "name": "30a87396-1689-4c6a-936c-52a097b87e72.source",
+      "sha256": "4d06db516a6b90ff19f05ac9fff0ac678a971932a9a8d37f9e8f43452973403b"
+    },
+    {
+      "directory": "media",
+      "name": "30a87396-1689-4c6a-936c-52a097b87e72.webm",
+      "sha256": "040dfdedaa8c8900f7a081fea2beded58a44db5385e55833c4c9910151d86b4f"
+    },
+    {
+      "directory": "media",
+      "name": "351490a5-2662-4019-bbe4-998d7bc07955.export.webm",
+      "sha256": "837c34cca125b22c5517f3d856706e209a857e73e549d9e7bde1e6b92c1b2fba"
+    },
+    {
+      "directory": "media",
+      "name": "71556904-01d5-4c1c-8248-fe3f2108ebbc.mp3",
+      "sha256": "3e74bc2925dab9a80f62d014489a81778365d2493a4d4ca74d45371a8521e479"
+    },
+    {
+      "directory": "media",
+      "name": "779b66d4-2ded-4985-918e-30848a4765f3.export.webm",
+      "sha256": "3be484fb5641c28d5ec5f2cfd804c7ae3abd971ee9acc48a4959e4b1da35b41d"
+    },
+    {
+      "directory": "media",
+      "name": "a300b036-0a49-4afc-8336-29c6a4880c65.mp3",
+      "sha256": "607a93bd879f76e24b0eebb9a82646eaaccd5a1c0de0e802276bcc9c8e056365"
+    },
+    {
+      "directory": "media",
+      "name": "dc35c6bf-489a-4650-86d3-a0ce7ae31a6d.mp3",
+      "sha256": "ade525f40780d1dd5f16c7bf62632284e68c2ae850f8acbb0b775ec86598145a"
+    },
+    {
+      "directory": "media",
+      "name": "e2b93247-cfee-44e6-907b-3f1c3170a60c.export.webm",
+      "sha256": "02323142e82261a8be321cc0427798017c4e03482b2e2d6b0dbe16cd0bffe5e4"
+    },
+    {
+      "directory": "media",
+      "name": "e7674f93-f21c-4b5c-b537-29133e1a0a8d.export.webm",
+      "sha256": "d9f75e289ec492dc61067ad2043f2314c03e450cc740275dd0996ef43609e70c"
+    }
+  ],
+  "workDirectoryRemoved": true,
+  "mediaActivityMarkerRemoved": true,
+  "speechTasksPreserved": 5,
+  "exportTaskCount": 6,
+  "stableAfterTwoSeconds": true
+}

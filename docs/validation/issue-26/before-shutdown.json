@@ -1,0 +1,336 @@
+{
+  "at": "2026-09-28T15:57:22.765Z",
+  "bootId": "bb30b8f0-e6d1-43cc-bf97-996010201b91",
+  "status": {
+    "application": "clapgrid",
+    "apiVersion": 1,
+    "instanceId": "5ad7ebbb-4be8-4c2f-9206-ec2fd9cefa03",
+    "pid": 543643,
+    "startedAt": "2026-09-28T15:55:07.073Z",
+    "snapshot": {
+      "project": {
+        "id": "418457e2-8bf2-45d3-9c6d-a3ebdbc552e2",
+        "directory": "/home/forclaw/code/ClapGrid/.cache/issue-26-reboot/project",
+        "createdAt": "2026-09-28T10:37:46.734Z"
+      },
+      "storage": {
+        "database": "/home/forclaw/code/ClapGrid/.cache/issue-26-reboot/project/clapgrid.sqlite",
+        "mediaDirectory": "/home/forclaw/code/ClapGrid/.cache/issue-26-reboot/project/media"
+      },
+      "segments": [
+        {
+          "id": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+          "order": 1,
+          "text": "这是跨退出恢复验证的第一句。",
+          "video": {
+            "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+            "start": 0
+          }
+        },
+        {
+          "id": "e03e5715-61e8-4243-be16-0533e096dd9c",
+          "order": 2,
+          "text": "第1段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第2段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第3段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第4段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第5段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。",
+          "video": {
+            "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+            "start": 0
+          }
+        }
+      ],
+      "assets": [
+        {
+          "id": "30a87396-1689-4c6a-936c-52a097b87e72",
+          "name": "source.mp4",
+          "duration": 3
+        }
+      ],
+      "exportSettings": {
+        "codec": "libx264",
+        "fps": 60,
+        "fontFamily": "Noto Sans CJK SC",
+        "fontSize": 48
+      }
+    },
+    "taskLocked": true,
+    "modification": null
+  },
+  "speech": {
+    "configured": true,
+    "configPath": "/home/forclaw/code/ClapGrid/.env",
+    "locked": false,
+    "operations": [
+      {
+        "id": "b7f39f77-8e72-4ee3-8883-e8f4bbd7002a",
+        "request": {
+          "requestId": "a44881cf-6791-4c29-8315-bc20d535217c",
+          "mode": "generate",
+          "scope": {
+            "kind": "ids",
+            "ids": [
+              "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+              "e03e5715-61e8-4243-be16-0533e096dd9c"
+            ]
+          }
+        },
+        "createdAt": "2026-09-28T10:38:45.348Z",
+        "results": [
+          {
+            "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+            "outcome": "accepted",
+            "message": "生成成功",
+            "taskId": "a300b036-0a49-4afc-8336-29c6a4880c65",
+            "state": "succeeded"
+          },
+          {
+            "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+            "outcome": "accepted",
+            "message": "配音已中断：结果未知，可能已计费。请核对供应商记录；不会自动重试。",
+            "taskId": "ccb81c3c-d765-4adf-85cc-c3b9fe82c1f0",
+            "state": "unknown"
+          }
+        ],
+        "summary": {
+          "accepted": 2,
+          "existing": 0,
+          "skipped": 0,
+          "rejected": 0,
+          "completed": 2,
+          "succeeded": 1,
+          "failed": 0,
+          "interrupted": 1,
+          "pending": 0
+        }
+      },
+      {
+        "id": "09bc5b15-4e7a-42c0-944d-6169097570ca",
+        "request": {
+          "requestId": "797f309f-47d0-4e55-a78b-617f6afb13ba",
+          "mode": "retry",
+          "scope": {
+            "kind": "failed_operation",
+            "operationId": "b7f39f77-8e72-4ee3-8883-e8f4bbd7002a"
+          }
+        },
+        "createdAt": "2026-09-28T10:39:55.574Z",
+        "results": [
+          {
+            "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+            "outcome": "accepted",
+            "message": "生成成功",
+            "taskId": "71556904-01d5-4c1c-8248-fe3f2108ebbc",
+            "state": "succeeded"
+          }
+        ],
+        "summary": {
+          "accepted": 1,
+          "existing": 0,
+          "skipped": 0,
+          "rejected": 0,
+          "completed": 1,
+          "succeeded": 1,
+          "failed": 0,
+          "interrupted": 0,
+          "pending": 0
+        }
+      }
+    ],
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "tasks": [
+      {
+        "id": "a300b036-0a49-4afc-8336-29c6a4880c65",
+        "requestId": "c0480d11-82c7-4c65-972d-0e76f31657c1",
+        "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+        "input": {
+          "text": "这是跨退出恢复验证的第一句。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "state": "succeeded",
+        "message": "生成成功",
+        "createdAt": "2026-09-28T10:38:45.348Z",
+        "succeededAt": "2026-09-28T10:38:46.395Z"
+      },
+      {
+        "id": "ccb81c3c-d765-4adf-85cc-c3b9fe82c1f0",
+        "requestId": "fa7e77af-3efd-4111-9a10-24c5790d9382",
+        "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+        "input": {
+          "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "state": "unknown",
+        "message": "配音已中断：结果未知，可能已计费。请核对供应商记录；不会自动重试。",
+        "createdAt": "2026-09-28T10:38:45.348Z"
+      },
+      {
+        "id": "71556904-01d5-4c1c-8248-fe3f2108ebbc",
+        "requestId": "d7334fa6-bfd5-4767-916d-3777f1cfe661",
+        "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+        "input": {
+          "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "state": "succeeded",
+        "message": "生成成功",
+        "createdAt": "2026-09-28T10:39:55.574Z",
+        "succeededAt": "2026-09-28T10:39:58.436Z"
+      },
+      {
+        "id": "118f0d89-bdf8-44e4-9962-8541d86b5111",
+        "requestId": "9e8193bd-2587-4254-bbd8-dd9a061143ea",
+        "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+        "input": {
+          "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "state": "succeeded",
+        "message": "生成成功",
+        "createdAt": "2026-09-28T15:29:56.697Z",
+        "succeededAt": "2026-09-28T15:29:59.839Z"
+      },
+      {
+        "id": "dc35c6bf-489a-4650-86d3-a0ce7ae31a6d",
+        "requestId": "fc568d7c-75c7-4fb8-b18b-60e63a7e0720",
+        "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+        "input": {
+          "text": "第1段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第2段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第3段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第4段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第5段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "state": "succeeded",
+        "message": "生成成功",
+        "createdAt": "2026-09-28T15:55:35.397Z",
+        "succeededAt": "2026-09-28T15:55:59.246Z"
+      }
+    ],
+    "audio": [
+      {
+        "taskId": "a300b036-0a49-4afc-8336-29c6a4880c65",
+        "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+        "input": {
+          "text": "这是跨退出恢复验证的第一句。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "createdAt": "2026-09-28T10:38:46.395Z",
+        "valid": true,
+        "url": "/api/speech/audio/a300b036-0a49-4afc-8336-29c6a4880c65"
+      },
+      {
+        "taskId": "71556904-01d5-4c1c-8248-fe3f2108ebbc",
+        "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+        "input": {
+          "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "createdAt": "2026-09-28T10:39:58.436Z",
+        "valid": false,
+        "url": "/api/speech/audio/71556904-01d5-4c1c-8248-fe3f2108ebbc"
+      },
+      {
+        "taskId": "118f0d89-bdf8-44e4-9962-8541d86b5111",
+        "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+        "input": {
+          "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "createdAt": "2026-09-28T15:29:59.839Z",
+        "valid": false,
+        "url": "/api/speech/audio/118f0d89-bdf8-44e4-9962-8541d86b5111"
+      },
+      {
+        "taskId": "dc35c6bf-489a-4650-86d3-a0ce7ae31a6d",
+        "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+        "input": {
+          "text": "第1段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第2段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第3段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第4段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。第5段。本次验证真实制作任务在电脑重新启动后的恢复行为。已经完成的配音和成片应当继续保留。尚未完成的导出应当显示已中断，不会自动重复执行。只有确认旧媒体进程已经终止，并且本次临时文件已经清理，项目才能恢复编辑。重新导出时，应当读取最新内容，从头生成一份新的成片。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "createdAt": "2026-09-28T15:55:59.246Z",
+        "valid": true,
+        "url": "/api/speech/audio/dc35c6bf-489a-4650-86d3-a0ce7ae31a6d"
+      }
+    ]
+  },
+  "preparationAudio": {
+    "format": {
+      "filename": "/home/forclaw/code/ClapGrid/.cache/issue-26-reboot/project/media/dc35c6bf-489a-4650-86d3-a0ce7ae31a6d.mp3",
+      "nb_streams": 1,
+      "nb_programs": 0,
+      "format_name": "mp3",
+      "format_long_name": "MP2/3 (MPEG audio layer 2/3)",
+      "start_time": "0.000000",
+      "duration": "132.096000",
+      "size": "1056813",
+      "bit_rate": "64002",
+      "probe_score": 51,
+      "tags": {
+        "encoder": "Lavf58.76.100"
+      }
+    }
+  },
+  "accepted": {
+    "id": "e7674f93-f21c-4b5c-b537-29133e1a0a8d",
+    "createdAt": "2026-09-28T15:57:21.424Z",
+    "state": "accepted",
+    "message": "已受理，尚未完成",
+    "completed": 0,
+    "total": 2,
+    "issues": [],
+    "warnings": []
+  },
+  "task": {
+    "id": "e7674f93-f21c-4b5c-b537-29133e1a0a8d",
+    "createdAt": "2026-09-28T15:57:21.424Z",
+    "state": "rendering",
+    "message": "正在渲染片段 1（1/2）",
+    "completed": 0,
+    "total": 2,
+    "issues": [],
+    "warnings": [
+      {
+        "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+        "order": 2,
+        "field": "video",
+        "message": "视频剩余时长不足，末帧将冻结补足配音时长"
+      }
+    ],
+    "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024"
+  },
+  "processes": [
+    {
+      "pid": 543659,
+      "comm": "node"
+    },
+    {
+      "pid": 547591,
+      "comm": "ffmpeg"
+    }
+  ]
+}
