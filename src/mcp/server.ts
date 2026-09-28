@@ -1,6 +1,6 @@
-import { submitSpeechSchema, voiceSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
+import { updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
+import { queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
 
 export function createBusinessMcp(url: string) {
   const baseUrl = localServiceUrl(url);
@@ -85,6 +85,20 @@ export function createBusinessMcp(url: string) {
     inputSchema: voiceSchema, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async input => {
     try { const result = await setVoice(baseUrl, input); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+  });
+  server.registerTool('clapgrid_export_settings', {
+    description: '读取项目全片导出设置、当前本机可选字体和环境校验问题。固定 16:9、1920×1080、MP4；字体字号首次为空，字号以 1080p 画布像素计。普通查询不持有修改权。',
+    inputSchema: {}, annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async () => {
+    try { const result = await queryExportSettings(baseUrl); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: { ...result } }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+  });
+  server.registerTool('clapgrid_set_export_settings', {
+    description: '修改并自动保存全片导出设置，必须携带查询所得 expected 与完整 settings。编码 libx264/mpeg4；帧率 24/25/30/50/60；fontFamily 从查询的 fonts 选择，fontSize 为 1–1080 整数 px，两者可为 null 表示未设置（不可导出）。取得普通修改权后重读并拒绝过时设置，任务锁期间拒绝；不生成配音或修改已有成片。',
+    inputSchema: updateExportSettingsSchema, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  }, async (input, extra) => {
+    try { const result = await saveExportSettings(baseUrl, input, undefined, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   return server;

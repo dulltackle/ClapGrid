@@ -15,11 +15,25 @@ export type VideoAsset = z.infer<typeof videoAssetSchema>;
 export const importVideoSchema = z.object({ sourcePath: z.string().min(1) }).strict();
 export type ImportVideo = z.infer<typeof importVideoSchema>;
 
+export const exportSettingsSchema = z.object({
+  codec: z.enum(['libx264', 'mpeg4'], { error: '编码仅支持 H.264（libx264）或 MPEG-4 Part 2（mpeg4）' }),
+  fps: z.union([z.literal(24), z.literal(25), z.literal(30), z.literal(50), z.literal(60)], { error: '帧率仅支持 24、25、30、50、60 fps' }),
+  fontFamily: z.string().trim().min(1).max(200).regex(/^[^,\r\n\x00]+$/, '字体名称不能含逗号、换行或空字符').nullable(),
+  fontSize: z.number({ error: '字幕字号必须为数值' }).int('字幕字号必须为整数').min(1, '字幕字号至少为 1 px').max(1080, '字幕字号至多为 1080 px').nullable(),
+}).strict();
+export type ExportSettings = z.infer<typeof exportSettingsSchema>;
+export const defaultExportSettings: ExportSettings = { codec: 'libx264', fps: 30, fontFamily: null, fontSize: null };
+export const exportOutput = { width: 1920, height: 1080, aspectRatio: '16:9', container: 'mp4', fontSizeUnit: 'px' } as const;
+export type ExportStatus = { settings: ExportSettings; output: typeof exportOutput; fonts: string[]; issues: string[] };
+export const updateExportSettingsSchema = z.object({ expected: exportSettingsSchema, settings: exportSettingsSchema }).strict();
+export type UpdateExportSettings = z.infer<typeof updateExportSettingsSchema>;
+
 export const snapshotSchema = z.object({
   project: z.object({ id: z.uuid(), directory: z.string(), createdAt: z.iso.datetime() }),
   storage: z.object({ database: z.string(), mediaDirectory: z.string() }),
   segments: z.array(segmentSchema),
   assets: z.array(videoAssetSchema),
+  exportSettings: exportSettingsSchema,
 });
 export const statusSchema = z.object({
   application: z.literal('clapgrid'),

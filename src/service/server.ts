@@ -153,7 +153,7 @@ export async function startService(options: ServiceOptions) {
         if (typeof token !== 'string') { reject(400, '缺少修改权凭据。'); return; }
         finishSession(token); json({ released: true }); return;
       }
-      if (path === '/api/video/import' || path === '/api/codex/import-video' || path === '/api/segments/add' || path === '/api/segments/edit' || path === '/api/codex/modify' || path === '/api/segments/modify' || path === '/api/codex/process') {
+      if ((path === '/api/export-settings' && request.method !== 'GET') || path === '/api/codex/export-settings' || path === '/api/video/import' || path === '/api/codex/import-video' || path === '/api/segments/add' || path === '/api/segments/edit' || path === '/api/codex/modify' || path === '/api/segments/modify' || path === '/api/codex/process') {
         if (request.method !== 'POST') {
           response.setHeader('Allow', 'POST'); reject(405, '请使用 POST 提交编辑。'); return;
         }
@@ -172,8 +172,9 @@ export async function startService(options: ServiceOptions) {
             token = supplied;
           }
         } catch (error) { reject(409, (error as Error).message); return; }
+        const exportUser = path === '/api/export-settings';
         const release = () => codex ? business.release(token) : finishSession(token);
-        response.on('close', release);
+        response.on('close', () => { if (!exportUser || !response.writableFinished) release(); });
         // 请求体断开或一直未完成都不能永久占用普通修改权。
         const timeout = setTimeout(() => { release(); request.destroy(); }, 10000);
         try {
@@ -191,7 +192,13 @@ export async function startService(options: ServiceOptions) {
           if (!business.owns(token, codex ? 'codex' : 'user')) {
             reject(409, '修改权已失效，请重新读取项目后编辑。'); return;
           }
-          if (path === '/api/video/import' || path === '/api/codex/import-video') {
+          if (path === '/api/export-settings' || path === '/api/codex/export-settings') {
+            try {
+              const settings = await business.setExportSettings(token, input as import('../shared/contracts.js').UpdateExportSettings);
+              if (!exportUser) release();
+              json({ settings, status: status() });
+            } catch (error) { if (!response.destroyed) reject(400, (error as Error).message); }
+          } else if (path === '/api/video/import' || path === '/api/codex/import-video') {
             const parsed = importVideoSchema.safeParse(input);
             if (!parsed.success) { reject(400, '请提供用户明确指定的视频路径'); return; }
             try {
@@ -220,7 +227,7 @@ export async function startService(options: ServiceOptions) {
           }
         } catch {
           if (!response.destroyed) reject(500, '保存失败，未确认本次编辑已保存；请检查项目目录或数据库占用后重试。');
-        } finally { clearTimeout(timeout); release(); }
+        } finally { clearTimeout(timeout); if (!exportUser) release(); }
         return;
       }
       if (request.method !== 'GET') {
@@ -254,6 +261,8 @@ export async function startService(options: ServiceOptions) {
           stream.pipe(response);
         } catch { if (!response.headersSent) reject(404, '素材不可读取'); else response.destroy(); }
         finally { if (descriptor !== undefined) closeSync(descriptor); }
+      } else if (path === '/api/export-settings') {
+        try { json(await business.getExportStatus()); } catch { reject(500, '读取导出设置失败'); }
       } else if (path === '/api/speech') {
         try { json(business.getSpeechStatus()); } catch { reject(500, '读取配音状态失败'); }
       } else if (path === '/api/status') {

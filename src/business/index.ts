@@ -1,3 +1,5 @@
+import { listExportFonts, missingExportSettings, verifyExportMedia } from './export-media.js';
+import { defaultExportSettings, exportSettingsSchema, exportOutput, updateExportSettingsSchema, type UpdateExportSettings, type ExportStatus } from '../shared/contracts.js';
 import { speechTasks } from './speech-tasks.js';
 import type { SpeechRuntime } from './speech.js';
 import { setImmediate } from 'node:timers/promises';
@@ -19,6 +21,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       PRAGMA journal_mode = WAL;
       PRAGMA busy_timeout = 1000;
       PRAGMA synchronous = FULL;
+      CREATE TABLE IF NOT EXISTS export_settings (singleton INTEGER PRIMARY KEY CHECK (singleton = 1), value TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS segments (
         id TEXT PRIMARY KEY,
         position INTEGER NOT NULL UNIQUE CHECK (position > 0),
@@ -47,12 +50,28 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
     return snapshotSchema.parse({
       project: { id: row.id, directory: projectDirectory, createdAt: row.created_at },
       storage: { database, mediaDirectory },
+      exportSettings: getExportSettings(),
       segments: db.prepare('SELECT id, ROW_NUMBER() OVER (ORDER BY position) AS "order", text FROM segments ORDER BY position').all().map(segment => {
         const video = db.prepare('SELECT asset_id AS assetId, start FROM segment_video WHERE segment_id = ?').get(segment.id!);
         return { ...segment, video: video ?? null };
       }),
       assets: db.prepare('SELECT id, name, duration FROM video_assets ORDER BY rowid').all(),
     });
+  }
+  function getExportSettings() {
+    const row = db.prepare('SELECT value FROM export_settings WHERE singleton = 1').get();
+    return exportSettingsSchema.parse(row ? JSON.parse(String(row.value)) : defaultExportSettings);
+  }
+  async function getExportStatus(): Promise<ExportStatus> {
+    const settings = getExportSettings();
+    const issues = missingExportSettings(settings);
+    let fonts: string[] = [];
+    try {
+      fonts = await listExportFonts();
+      if (settings.fontFamily && !fonts.includes(settings.fontFamily)) issues.push(`字幕字体不可用：${settings.fontFamily}，请安装该字体或重新选择`);
+    } catch (error) { issues.push((error as Error).message); }
+    try { await verifyExportMedia(settings); } catch (error) { issues.push((error as Error).message); }
+    return { settings, output: exportOutput, fonts, issues };
   }
   // 所有项目变更共用事务边界；仅在提交成功后向 UI / MCP 发布快照。
   function commit(change: () => void): Snapshot {
@@ -149,6 +168,38 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       const path = mediaPath(mediaDirectory, id, kind);
       verifyMedia(path);
       return path;
+    },
+    getExportStatus,
+    async setExportSettings(token: string, input: UpdateExportSettings) {
+      if (modification?.token !== token) throw new Error('修改权已失效');
+      const signal = modification.controller.signal;
+      speech.assertUnlocked();
+      const parsed = updateExportSettingsSchema.safeParse(input);
+      if (!parsed.success) throw new Error(parsed.error.issues.map(issue => issue.message).join('；'));
+      const { expected, settings } = parsed.data;
+      const check = () => {
+        if (modification?.token !== token) throw new Error('修改权已失效');
+        if (JSON.stringify(getExportSettings()) !== JSON.stringify(expected)) throw new Error('导出设置已变化，请重新读取后修改');
+      };
+      check();
+      if (settings.fontFamily && !(await listExportFonts()).includes(settings.fontFamily)) throw new Error(`字幕字体不可用：${settings.fontFamily}，请安装该字体或重新选择`);
+      check();
+      await verifyExportMedia(settings, signal);
+      check();
+      commit(() => {
+        check();
+        db.prepare('INSERT OR REPLACE INTO export_settings VALUES (1, ?)').run(JSON.stringify(settings));
+      });
+      return settings;
+    },
+    async getCurrentExportSettings() {
+      speech.assertUnlocked();
+      if (modification) throw new Error('项目正在修改，无法读取导出输入');
+      const status = await getExportStatus();
+      speech.assertUnlocked();
+      if (modification || JSON.stringify(getExportSettings()) !== JSON.stringify(status.settings)) throw new Error('导出设置已变化，请重新读取');
+      if (status.issues.length) throw new Error(status.issues.join('；'));
+      return { ...status.settings, ...exportOutput };
     },
     getSpeechStatus: speech.getSpeechStatus,
     submitSpeech: speech.submitSpeech,

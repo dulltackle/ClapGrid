@@ -181,3 +181,18 @@ export async function submitSpeech(baseUrl: string, input: { requestId: string; 
 export async function setVoice(baseUrl: string, input: import('./contracts.js').Voice) {
   return postJson(baseUrl, '/api/speech/voice', input, undefined, AbortSignal.timeout(5000));
 }
+
+export async function queryExportSettings(baseUrl: string): Promise<import('./contracts.js').ExportStatus> {
+  const response = await fetch(`${baseUrl}/api/export-settings`, { signal: AbortSignal.timeout(45000), redirect: 'error' });
+  if (!response.ok) throw new Error('读取导出设置失败，请检查本地服务');
+  return response.json();
+}
+export async function saveExportSettings(baseUrl: string, input: import('./contracts.js').UpdateExportSettings, token?: string, signal?: AbortSignal): Promise<{ settings: import('./contracts.js').ExportSettings; status: ServiceStatus }> {
+  const response = await fetch(`${baseUrl}/api/${token ? '' : 'codex/'}export-settings`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Edit-Token': token } : {}) },
+    body: JSON.stringify(input), signal: signal ?? AbortSignal.timeout(45000), redirect: 'error',
+  });
+  const body = await response.json();
+  if (!response.ok) throw new Error(body.error ?? '导出设置保存失败，请重新查询确认结果');
+  return { settings: body.settings, status: statusSchema.parse(body.status) };
+}

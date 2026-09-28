@@ -1,3 +1,4 @@
+import { ExportSettingsPanel } from './export-settings.js';
 import { StrictMode, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
@@ -27,6 +28,7 @@ const theme = themeQuartz.withParams({
 });
 
 function App() {
+  const [exportSettingsOpen, setExportSettingsOpen] = useState(false);
   const [status, setStatus] = useState<ServiceStatus>();
   const [speech, setSpeech] = useState<SpeechStatus>();
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -294,6 +296,7 @@ function App() {
   const selectedPosition = status?.snapshot.segments.findIndex(segment => segment.id === selectedIds[0]) ?? -1;
   return <main>
     <header><h1>口播片段</h1>
+      <button disabled={!status} onClick={() => setExportSettingsOpen(true)}>导出设置</button>
       <button disabled={disabled} onClick={() => { void openVideoEditor(); }}>导入本地视频</button>
       <button disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
     </header>
@@ -328,6 +331,7 @@ function App() {
       <p>文案通过 TokenDance seed-tts-2.0 生成配音，可能产生费用。配置位置：{speech.configPath}，键名 TOKENDANCE_KEY。已配置不代表服务已验证。</p>
       {speech.tasks.length > 0 && <details><summary>配音任务与请求标识</summary>{speech.tasks.map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{task.message}</p>)}</details>}
     </section>}
+    {exportSettingsOpen && status && <ExportSettingsPanel status={status} onStatus={setStatus} onClose={() => setExportSettingsOpen(false)} />}
     {audioHistory && <div className="modal-backdrop"><section role="dialog" aria-modal="true" aria-label="保留音频" className="media-dialog">
       <h2>保留音频</h2>
       <ul className="audio-history">{speech?.audio.filter(audio => audio.segmentId === audioHistory).slice().reverse().map(audio => <li key={audio.taskId}>
