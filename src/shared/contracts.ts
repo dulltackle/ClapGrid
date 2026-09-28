@@ -103,4 +103,25 @@ export const submitSpeechSchema = z.object({ requestId: z.uuid(), segmentId: z.u
 export type Voice = z.infer<typeof voiceSchema>;
 export type SpeechInput = { text: string; voice: Voice };
 export type SpeechTask = { id: string; requestId: string; segmentId: string; input: SpeechInput; state: 'accepted' | 'running' | 'succeeded' | 'failed' | 'unknown'; message: string; createdAt: string; succeededAt?: string; audioRemoved?: boolean };
-export type SpeechStatus = { configured: boolean; configPath: string; locked: boolean; voice: Voice; tasks: SpeechTask[]; audio: { taskId: string; segmentId: string; input: SpeechInput; createdAt: string; valid: boolean; url: string }[] };
+export type SpeechStatus = { configured: boolean; configPath: string; locked: boolean; operations: SpeechBatchResult[]; voice: Voice; tasks: SpeechTask[]; audio: { taskId: string; segmentId: string; input: SpeechInput; createdAt: string; valid: boolean; url: string }[] };
+
+export const speechBatchSchema = z.object({
+  requestId: z.uuid(),
+  mode: z.enum(['generate', 'retry']),
+  scope: z.union([scopeSchema,
+    z.object({ kind: z.literal('missing_or_stale') }).strict(),
+    z.object({ kind: z.literal('failed_project') }).strict(),
+    z.object({ kind: z.literal('failed_operation'), operationId: z.uuid() }).strict(),
+  ]),
+}).strict();
+export type SpeechBatchRequest = z.infer<typeof speechBatchSchema>;
+export type SpeechBatchItem = {
+  segmentId: string; outcome: 'accepted' | 'existing' | 'skipped' | 'rejected'; message: string;
+  taskId?: string; state?: SpeechTask['state'];
+};
+export type SpeechOperation = {
+  id: string; request: SpeechBatchRequest; createdAt: string; results: SpeechBatchItem[];
+};
+export type SpeechBatchResult = SpeechOperation & {
+  summary: Record<SpeechBatchItem['outcome'] | 'completed' | 'succeeded' | 'failed' | 'interrupted' | 'pending', number>;
+};

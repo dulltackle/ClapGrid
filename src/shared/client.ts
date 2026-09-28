@@ -196,3 +196,7 @@ export async function saveExportSettings(baseUrl: string, input: import('./contr
   if (!response.ok) throw new Error(body.error ?? '导出设置保存失败，请重新查询确认结果');
   return { settings: body.settings, status: statusSchema.parse(body.status) };
 }
+
+export async function submitSpeechBatch(baseUrl: string, input: import('./contracts.js').SpeechBatchRequest): Promise<import('./contracts.js').SpeechBatchResult> {
+  return postJson(baseUrl, '/api/speech/batch', input);
+}

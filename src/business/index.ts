@@ -100,7 +100,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
     // 只释放本次普通编辑；迟到的连接事件不能解除后续修改权或后台任务锁。
     if (modification?.token === token) { modification.controller.abort(); modification = null; }
   };
-  const speech = speechTasks(db, mediaDirectory, speechRuntime, getSnapshot, verify, () => !!modification);
+  const speech = speechTasks(db, mediaDirectory, speechRuntime, getSnapshot, verify, () => !!modification, scope => business.querySegments(scope));
   const tables = new Map<string, string[]>();
   const business = {
     connectTable() { const id = randomUUID(); tables.set(id, []); return id; },
@@ -203,6 +203,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
     },
     getSpeechStatus: speech.getSpeechStatus,
     submitSpeech: speech.submitSpeech,
+    submitSpeechBatch: speech.submitSpeechBatch,
     setVoice: speech.setVoice,
     getSpeechAudio: speech.getSpeechAudio,
     getCurrentSpeechAudio: speech.getCurrentSpeechAudio,

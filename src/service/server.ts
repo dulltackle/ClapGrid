@@ -78,7 +78,7 @@ export async function startService(options: ServiceOptions) {
         response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         response.end(JSON.stringify(body));
       };
-      if (path === '/api/speech/submit' || path === '/api/speech/voice') {
+      if (path === '/api/speech/submit' || path === '/api/speech/voice' || path === '/api/speech/batch') {
         if (request.method !== 'POST') { reject(405, '请使用 POST。'); return; }
         if (request.headers['content-type']?.split(';')[0]?.trim() !== 'application/json') { reject(415, '请使用 application/json。'); return; }
         const timeout = setTimeout(() => request.destroy(), 5000);
@@ -90,7 +90,7 @@ export async function startService(options: ServiceOptions) {
             chunks.push(Buffer.from(chunk));
           }
           const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-          json(path.endsWith('/submit') ? business.submitSpeech(input) : business.setVoice(input));
+          json(path.endsWith('/batch') ? business.submitSpeechBatch(input) : path.endsWith('/submit') ? business.submitSpeech(input) : business.setVoice(input));
         } catch (error) { if (!response.destroyed) reject(409, error instanceof Error ? error.message : '配音请求未受理'); }
         finally { clearTimeout(timeout); }
         return;

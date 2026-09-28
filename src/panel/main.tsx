@@ -126,7 +126,7 @@ function App() {
           <span>{audio ? audio.valid ? '有效配音' : '配音待更新' : '配音缺失'}</span>
           <span title={latest?.message}>最近任务：{taskLabel}</span>
         </div>
-        <button disabled={disabled || !segment.text.trim()} onClick={() => { void generateSpeech(segment.id); }}>{latest ? '重新生成' : '生成配音'}</button>
+        <button disabled={disabled || !segment.text.trim()} onClick={() => { void generateSpeech(segment.id); }}>{latest?.state === 'failed' || latest?.state === 'unknown' ? '重试配音' : latest ? '重新生成' : '生成配音'}</button>
         {audio && <button onClick={() => setAudioUrl(audio.url)}>试听{audio.valid ? '' : '（待更新）'}</button>}
         {recordings.length > 0 && <button aria-label={`展开片段 ${segment.order} 的保留音频`} onClick={() => setAudioHistory(segment.id)}>音频 {recordings.length}</button>}
       </div>;
@@ -329,6 +329,13 @@ function App() {
         <span>TokenDance 凭据：{speech.configured ? '已配置' : '未配置'}</span>
       </div>
       <p>文案通过 TokenDance seed-tts-2.0 生成配音，可能产生费用。配置位置：{speech.configPath}，键名 TOKENDANCE_KEY。已配置不代表服务已验证。</p>
+      {speech.operations.length > 0 && <section aria-label="批量配音进度" aria-live="polite">
+        {speech.operations.slice(-5).reverse().map(operation => <details key={operation.id} open={operation.summary.pending > 0}>
+          <summary>批量配音：完成 {operation.summary.completed} · 成功 {operation.summary.succeeded} · 失败 {operation.summary.failed} · 已中断 {operation.summary.interrupted} · 待完成 {operation.summary.pending} · 跳过 {operation.summary.skipped} · 拒绝 {operation.summary.rejected}</summary>
+          <p>操作 {operation.id} · 请求 {operation.request.requestId}</p>
+          {operation.results.map(item => <p key={item.segmentId}>片段 {status?.snapshot.segments.find(segment => segment.id === item.segmentId)?.order ?? item.segmentId}：{({ accepted: '已受理', existing: '已有任务', skipped: '已跳过', rejected: '被拒绝' })[item.outcome]} · {item.state ? ({ accepted: '尚未完成', running: '正在生成', succeeded: '成功', failed: '失败', unknown: '已中断／结果未知' })[item.state] : ''} · {item.message}</p>)}
+        </details>)}
+      </section>}
       {speech.tasks.length > 0 && <details><summary>配音任务与请求标识</summary>{speech.tasks.map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{task.message}</p>)}</details>}
     </section>}
     {exportSettingsOpen && status && <ExportSettingsPanel status={status} onStatus={setStatus} onClose={() => setExportSettingsOpen(false)} />}

@@ -1,6 +1,6 @@
-import { updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
+import { speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
+import { submitSpeechBatch, queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
 
 export function createBusinessMcp(url: string) {
   const baseUrl = localServiceUrl(url);
@@ -73,8 +73,16 @@ export function createBusinessMcp(url: string) {
     try { const result = await submitSpeech(baseUrl, input); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
+  server.registerTool('clapgrid_submit_speech_batch', {
+    description: '按用户明确范围批量配音或重试，文案发送至 TokenDance，可能计费。mode 为 generate 或 retry；scope 支持 ids、selected（多表需 tableId）、all、query、missing_or_stale、failed_operation（必填上次 operationId）及 failed_project。只有用户明确要求全项目失败项才用 failed_project；“刚才失败的片段”必须用对应 failed_operation，先查询操作标识。失败范围必须 mode=retry，重试采用最新输入。提交时固定稳定身份与输入，空选择不扩大范围；删除、已成功或生成中的目标不重复提交并逐项反馈。一次操作固定 UUID requestId，断线或重发复用原标识和参数，返回已有任务/结果；只有用户明确新生成或重试才换标识。返回 accepted 不是成功，使用 clapgrid_speech_status 的 operations 查询逐项终态与汇总；已有任务 existing、跳过 skipped、拒绝 rejected 均有原因。整批结束才解锁，局部失败继续，不自动重试或补生成。',
+    inputSchema: speechBatchSchema,
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  }, async input => {
+    try { const result = await submitSpeechBatch(baseUrl, input); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+  });
   server.registerTool('clapgrid_speech_status', {
-    description: '查询配音任务标识、请求标识、输入快照、进度和结果、完整音频试听路径，以及统一声音和凭据是否配置；不回显密钥。',
+    description: '查询批量 operations（id 为重试范围的 operationId）、逐片段反馈与完成/成功/失败/已中断/待完成汇总，以及配音任务标识、请求标识、输入快照、进度和结果、完整音频试听路径，以及统一声音和凭据是否配置；不回显密钥。',
     inputSchema: {}, annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async () => {
     try { const result = await querySpeech(baseUrl); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: { ...result } }; }
