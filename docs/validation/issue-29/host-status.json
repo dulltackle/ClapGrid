@@ -1,0 +1,29 @@
+{
+  "application": "clapgrid",
+  "apiVersion": 1,
+  "instanceId": "db6fe7f6-8a0d-4335-9dcd-9655f3b72e5c",
+  "pid": 103544,
+  "startedAt": "2026-09-28T17:14:30.521Z",
+  "snapshot": {
+    "project": {
+      "id": "1f9e49ba-e01b-4a8c-86d2-32105bcf7f75",
+      "directory": "/home/forclaw/code/ClapGrid/.cache/issue-29/project",
+      "createdAt": "2026-09-28T17:14:30.494Z"
+    },
+    "storage": {
+      "database": "/home/forclaw/code/ClapGrid/.cache/issue-29/project/clapgrid.sqlite",
+      "mediaDirectory": "/home/forclaw/code/ClapGrid/.cache/issue-29/project/media"
+    },
+    "segments": [],
+    "assets": [],
+    "exportSettings": {
+      "codec": "libx264",
+      "fps": 30,
+      "fontFamily": null,
+      "fontSize": null
+    }
+  },
+  "taskLocked": false,
+  "modification": null,
+  "url": "http://127.0.0.1:48929"
+}

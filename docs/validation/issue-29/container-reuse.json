@@ -1,0 +1,29 @@
+{
+  "application": "clapgrid",
+  "apiVersion": 1,
+  "instanceId": "3e4d41d6-cc9f-4547-b102-f51578e773ef",
+  "pid": 4863,
+  "startedAt": "2026-09-28T17:17:53.765Z",
+  "snapshot": {
+    "project": {
+      "id": "fb95ef72-0306-4a66-ba63-d1b9091cd26c",
+      "directory": "/tmp/formal-project",
+      "createdAt": "2026-09-28T17:17:53.743Z"
+    },
+    "storage": {
+      "database": "/tmp/formal-project/clapgrid.sqlite",
+      "mediaDirectory": "/tmp/formal-project/media"
+    },
+    "segments": [],
+    "assets": [],
+    "exportSettings": {
+      "codec": "libx264",
+      "fps": 30,
+      "fontFamily": null,
+      "fontSize": null
+    }
+  },
+  "taskLocked": false,
+  "modification": null,
+  "url": "http://127.0.0.1:48762"
+}

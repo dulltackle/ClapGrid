@@ -1,0 +1,509 @@
+{
+  "clapgrid_status": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"application\":\"clapgrid\",\"apiVersion\":1,\"instanceId\":\"db6fe7f6-8a0d-4335-9dcd-9655f3b72e5c\",\"pid\":103544,\"startedAt\":\"2026-09-28T17:14:30.521Z\",\"snapshot\":{\"project\":{\"id\":\"1f9e49ba-e01b-4a8c-86d2-32105bcf7f75\",\"directory\":\"/home/forclaw/code/ClapGrid/.cache/issue-29/project\",\"createdAt\":\"2026-09-28T17:14:30.494Z\"},\"storage\":{\"database\":\"/home/forclaw/code/ClapGrid/.cache/issue-29/project/clapgrid.sqlite\",\"mediaDirectory\":\"/home/forclaw/code/ClapGrid/.cache/issue-29/project/media\"},\"segments\":[{\"id\":\"af486b45-d391-462b-b0b0-1db81c6ce41a\",\"order\":1,\"text\":\"这是 Linux 正式插件验收。配音、画面和字幕共同生成一条完整视频。\",\"video\":null}],\"assets\":[{\"id\":\"c037d450-a647-4748-9215-bb70ddcc97a0\",\"name\":\"source.mp4\",\"duration\":6}],\"exportSettings\":{\"codec\":\"libx264\",\"fps\":30,\"fontFamily\":null,\"fontSize\":null}},\"taskLocked\":false,\"modification\":null}"
+      }
+    ],
+    "structuredContent": {
+      "application": "clapgrid",
+      "apiVersion": 1,
+      "instanceId": "db6fe7f6-8a0d-4335-9dcd-9655f3b72e5c",
+      "pid": 103544,
+      "startedAt": "2026-09-28T17:14:30.521Z",
+      "snapshot": {
+        "project": {
+          "id": "1f9e49ba-e01b-4a8c-86d2-32105bcf7f75",
+          "directory": "/home/forclaw/code/ClapGrid/.cache/issue-29/project",
+          "createdAt": "2026-09-28T17:14:30.494Z"
+        },
+        "storage": {
+          "database": "/home/forclaw/code/ClapGrid/.cache/issue-29/project/clapgrid.sqlite",
+          "mediaDirectory": "/home/forclaw/code/ClapGrid/.cache/issue-29/project/media"
+        },
+        "segments": [
+          {
+            "id": "af486b45-d391-462b-b0b0-1db81c6ce41a",
+            "order": 1,
+            "text": "这是 Linux 正式插件验收。配音、画面和字幕共同生成一条完整视频。",
+            "video": null
+          }
+        ],
+        "assets": [
+          {
+            "id": "c037d450-a647-4748-9215-bb70ddcc97a0",
+            "name": "source.mp4",
+            "duration": 6
+          }
+        ],
+        "exportSettings": {
+          "codec": "libx264",
+          "fps": 30,
+          "fontFamily": null,
+          "fontSize": null
+        }
+      },
+      "taskLocked": false,
+      "modification": null
+    }
+  },
+  "clapgrid_modify": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"results\":[{\"index\":0,\"id\":\"af486b45-d391-462b-b0b0-1db81c6ce41a\",\"outcome\":\"applied\",\"message\":\"已完成\"}],\"summary\":{\"applied\":1,\"changed\":0,\"deleted\":0,\"failed\":0},\"status\":{\"application\":\"clapgrid\",\"apiVersion\":1,\"instanceId\":\"db6fe7f6-8a0d-4335-9dcd-9655f3b72e5c\",\"pid\":103544,\"startedAt\":\"2026-09-28T17:14:30.521Z\",\"snapshot\":{\"project\":{\"id\":\"1f9e49ba-e01b-4a8c-86d2-32105bcf7f75\",\"directory\":\"/home/forclaw/code/ClapGrid/.cache/issue-29/project\",\"createdAt\":\"2026-09-28T17:14:30.494Z\"},\"storage\":{\"database\":\"/home/forclaw/code/ClapGrid/.cache/issue-29/project/clapgrid.sqlite\",\"mediaDirectory\":\"/home/forclaw/code/ClapGrid/.cache/issue-29/project/media\"},\"segments\":[{\"id\":\"af486b45-d391-462b-b0b0-1db81c6ce41a\",\"order\":1,\"text\":\"这是 Linux 正式插件验收。配音、画面和字幕共同生成一条完整视频。\",\"video\":{\"assetId\":\"c037d450-a647-4748-9215-bb70ddcc97a0\",\"start\":0}}],\"assets\":[{\"id\":\"c037d450-a647-4748-9215-bb70ddcc97a0\",\"name\":\"source.mp4\",\"duration\":6}],\"exportSettings\":{\"codec\":\"libx264\",\"fps\":30,\"fontFamily\":null,\"fontSize\":null}},\"taskLocked\":false,\"modification\":null}}"
+      }
+    ],
+    "structuredContent": {
+      "results": [
+        {
+          "index": 0,
+          "id": "af486b45-d391-462b-b0b0-1db81c6ce41a",
+          "outcome": "applied",
+          "message": "已完成"
+        }
+      ],
+      "summary": {
+        "applied": 1,
+        "changed": 0,
+        "deleted": 0,
+        "failed": 0
+      },
+      "status": {
+        "application": "clapgrid",
+        "apiVersion": 1,
+        "instanceId": "db6fe7f6-8a0d-4335-9dcd-9655f3b72e5c",
+        "pid": 103544,
+        "startedAt": "2026-09-28T17:14:30.521Z",
+        "snapshot": {
+          "project": {
+            "id": "1f9e49ba-e01b-4a8c-86d2-32105bcf7f75",
+            "directory": "/home/forclaw/code/ClapGrid/.cache/issue-29/project",
+            "createdAt": "2026-09-28T17:14:30.494Z"
+          },
+          "storage": {
+            "database": "/home/forclaw/code/ClapGrid/.cache/issue-29/project/clapgrid.sqlite",
+            "mediaDirectory": "/home/forclaw/code/ClapGrid/.cache/issue-29/project/media"
+          },
+          "segments": [
+            {
+              "id": "af486b45-d391-462b-b0b0-1db81c6ce41a",
+              "order": 1,
+              "text": "这是 Linux 正式插件验收。配音、画面和字幕共同生成一条完整视频。",
+              "video": {
+                "assetId": "c037d450-a647-4748-9215-bb70ddcc97a0",
+                "start": 0
+              }
+            }
+          ],
+          "assets": [
+            {
+              "id": "c037d450-a647-4748-9215-bb70ddcc97a0",
+              "name": "source.mp4",
+              "duration": 6
+            }
+          ],
+          "exportSettings": {
+            "codec": "libx264",
+            "fps": 30,
+            "fontFamily": null,
+            "fontSize": null
+          }
+        },
+        "taskLocked": false,
+        "modification": null
+      }
+    }
+  },
+  "clapgrid_import_video": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"asset\":{\"id\":\"c037d450-a647-4748-9215-bb70ddcc97a0\",\"name\":\"source.mp4\",\"duration\":6},\"status\":{\"application\":\"clapgrid\",\"apiVersion\":1,\"instanceId\":\"db6fe7f6-8a0d-4335-9dcd-9655f3b72e5c\",\"pid\":103544,\"startedAt\":\"2026-09-28T17:14:30.521Z\",\"snapshot\":{\"project\":{\"id\":\"1f9e49ba-e01b-4a8c-86d2-32105bcf7f75\",\"directory\":\"/home/forclaw/code/ClapGrid/.cache/issue-29/project\",\"createdAt\":\"2026-09-28T17:14:30.494Z\"},\"storage\":{\"database\":\"/home/forclaw/code/ClapGrid/.cache/issue-29/project/clapgrid.sqlite\",\"mediaDirectory\":\"/home/forclaw/code/ClapGrid/.cache/issue-29/project/media\"},\"segments\":[{\"id\":\"af486b45-d391-462b-b0b0-1db81c6ce41a\",\"order\":1,\"text\":\"这是 Linux 正式插件验收。配音、画面和字幕共同生成一条完整视频。\",\"video\":null}],\"assets\":[{\"id\":\"c037d450-a647-4748-9215-bb70ddcc97a0\",\"name\":\"source.mp4\",\"duration\":6}],\"exportSettings\":{\"codec\":\"libx264\",\"fps\":30,\"fontFamily\":null,\"fontSize\":null}},\"taskLocked\":false,\"modification\":null}}"
+      }
+    ],
+    "structuredContent": {
+      "asset": {
+        "id": "c037d450-a647-4748-9215-bb70ddcc97a0",
+        "name": "source.mp4",
+        "duration": 6
+      },
+      "status": {
+        "application": "clapgrid",
+        "apiVersion": 1,
+        "instanceId": "db6fe7f6-8a0d-4335-9dcd-9655f3b72e5c",
+        "pid": 103544,
+        "startedAt": "2026-09-28T17:14:30.521Z",
+        "snapshot": {
+          "project": {
+            "id": "1f9e49ba-e01b-4a8c-86d2-32105bcf7f75",
+            "directory": "/home/forclaw/code/ClapGrid/.cache/issue-29/project",
+            "createdAt": "2026-09-28T17:14:30.494Z"
+          },
+          "storage": {
+            "database": "/home/forclaw/code/ClapGrid/.cache/issue-29/project/clapgrid.sqlite",
+            "mediaDirectory": "/home/forclaw/code/ClapGrid/.cache/issue-29/project/media"
+          },
+          "segments": [
+            {
+              "id": "af486b45-d391-462b-b0b0-1db81c6ce41a",
+              "order": 1,
+              "text": "这是 Linux 正式插件验收。配音、画面和字幕共同生成一条完整视频。",
+              "video": null
+            }
+          ],
+          "assets": [
+            {
+              "id": "c037d450-a647-4748-9215-bb70ddcc97a0",
+              "name": "source.mp4",
+              "duration": 6
+            }
+          ],
+          "exportSettings": {
+            "codec": "libx264",
+            "fps": 30,
+            "fontFamily": null,
+            "fontSize": null
+          }
+        },
+        "taskLocked": false,
+        "modification": null
+      }
+    }
+  },
+  "clapgrid_export_settings": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"settings\":{\"codec\":\"libx264\",\"fps\":30,\"fontFamily\":null,\"fontSize\":null},\"output\":{\"width\":1920,\"height\":1080,\"aspectRatio\":\"16:9\",\"container\":\"mp4\",\"fontSizeUnit\":\"px\"},\"fonts\":[\"AR PL UKai CN\",\"AR PL UKai HK\",\"AR PL UKai TW\",\"AR PL UKai TW MBE\",\"AR PL UMing CN\",\"AR PL UMing HK\",\"AR PL UMing TW\",\"AR PL UMing TW MBE\",\"C059\",\"D050000L\",\"DejaVu Math TeX Gyre\",\"DejaVu Sans\",\"DejaVu Sans Mono\",\"DejaVu Serif\",\"Droid Sans Fallback\",\"GWZT-EN\",\"HYYeYXSJ\",\"HYZhongYuanB5\",\"Liberation Mono\",\"Liberation Sans\",\"Liberation Sans Narrow\",\"Liberation Serif\",\"Nimbus Mono PS\",\"Nimbus Roman\",\"Nimbus Sans\",\"Nimbus Sans Narrow\",\"Noto Color Emoji\",\"Noto Kufi Arabic\",\"Noto Looped Lao\",\"Noto Looped Thai\",\"Noto Mono\",\"Noto Music\",\"Noto Naskh Arabic\",\"Noto Nastaliq Urdu\",\"Noto Rashi Hebrew\",\"Noto Sans\",\"Noto Sans Adlam\",\"Noto Sans Adlam Unjoined\",\"Noto Sans Anatolian Hieroglyphs\",\"Noto Sans Arabic\",\"Noto Sans Armenian\",\"Noto Sans Avestan\",\"Noto Sans Balinese\",\"Noto Sans Bamum\",\"Noto Sans Bassa Vah\",\"Noto Sans Batak\",\"Noto Sans Bengali\",\"Noto Sans Bhaiksuki\",\"Noto Sans Brahmi\",\"Noto Sans Buginese\",\"Noto Sans Buhid\",\"Noto Sans CJK HK\",\"Noto Sans CJK JP\",\"Noto Sans CJK KR\",\"Noto Sans CJK SC\",\"Noto Sans CJK TC\",\"Noto Sans Canadian Aboriginal\",\"Noto Sans Carian\",\"Noto Sans Caucasian Albanian\",\"Noto Sans Chakma\",\"Noto Sans Cham\",\"Noto Sans Cherokee\",\"Noto Sans Coptic\",\"Noto Sans Cuneiform\",\"Noto Sans Cypriot\",\"Noto Sans Deseret\",\"Noto Sans Devanagari\",\"Noto Sans Display\",\"Noto Sans Duployan\",\"Noto Sans Egyptian Hieroglyphs\",\"Noto Sans Elbasan\",\"Noto Sans Elymaic\",\"Noto Sans Ethiopic\",\"Noto Sans Georgian\",\"Noto Sans Glagolitic\",\"Noto Sans Gothic\",\"Noto Sans Grantha\",\"Noto Sans Gujarati\",\"Noto Sans Gunjala Gondi\",\"Noto Sans Gurmukhi\",\"Noto Sans Hanifi Rohingya\",\"Noto Sans Hanunoo\",\"Noto Sans Hatran\",\"Noto Sans Hebrew\",\"Noto Sans Imperial Aramaic\",\"Noto Sans Indic Siyaq Numbers\",\"Noto Sans Inscriptional Pahlavi\",\"Noto Sans Inscriptional Parthian\",\"Noto Sans Javanese\",\"Noto Sans Kaithi\",\"Noto Sans Kannada\",\"Noto Sans Kayah Li\",\"Noto Sans Kharoshthi\",\"Noto Sans Khmer\",\"Noto Sans Khojki\",\"Noto Sans Khudawadi\",\"Noto Sans Lao\",\"Noto Sans Lepcha\",\"Noto Sans Limbu\",\"Noto Sans Linear A\",\"Noto Sans Linear B\",\"Noto Sans Lisu\",\"Noto Sans Lycian\",\"Noto Sans Lydian\",\"Noto Sans Mahajani\",\"Noto Sans Malayalam\",\"Noto Sans Mandaic\",\"Noto Sans Manichaean\",\"Noto Sans Marchen\",\"Noto Sans Masaram Gondi\",\"Noto Sans Math\",\"Noto Sans Mayan Numerals\",\"Noto Sans Medefaidrin\",\"Noto Sans Meetei Mayek\",\"Noto Sans Mende Kikakui\",\"Noto Sans Meroitic\",\"Noto Sans Miao\",\"Noto Sans Modi\",\"Noto Sans Mongolian\",\"Noto Sans Mono\",\"Noto Sans Mono CJK HK\",\"Noto Sans Mono CJK JP\",\"Noto Sans Mono CJK KR\",\"Noto Sans Mono CJK SC\",\"Noto Sans Mono CJK TC\",\"Noto Sans Mro\",\"Noto Sans Multani\",\"Noto Sans Myanmar\",\"Noto Sans NKo\",\"Noto Sans Nabataean\",\"Noto Sans New Tai Lue\",\"Noto Sans Newa\",\"Noto Sans Nushu\",\"Noto Sans Ogham\",\"Noto Sans Ol Chiki\",\"Noto Sans Old Hungarian\",\"Noto Sans Old Italic\",\"Noto Sans Old North Arabian\",\"Noto Sans Old Permic\",\"Noto Sans Old Persian\",\"Noto Sans Old Sogdian\",\"Noto Sans Old South Arabian\",\"Noto Sans Old Turkic\",\"Noto Sans Oriya\",\"Noto Sans Osage\",\"Noto Sans Osmanya\",\"Noto Sans Pahawh Hmong\",\"Noto Sans Palmyrene\",\"Noto Sans Pau Cin Hau\",\"Noto Sans PhagsPa\",\"Noto Sans Phoenician\",\"Noto Sans Psalter Pahlavi\",\"Noto Sans Rejang\",\"Noto Sans Runic\",\"Noto Sans Samaritan\",\"Noto Sans Saurashtra\",\"Noto Sans Sharada\",\"Noto Sans Shavian\",\"Noto Sans Siddham\",\"Noto Sans SignWriting\",\"Noto Sans Sinhala\",\"Noto Sans Sogdian\",\"Noto Sans Sora Sompeng\",\"Noto Sans Soyombo\",\"Noto Sans Sundanese\",\"Noto Sans Syloti Nagri\",\"Noto Sans Symbols\",\"Noto Sans Symbols2\",\"Noto Sans Syriac\",\"Noto Sans Tagalog\",\"Noto Sans Tagbanwa\",\"Noto Sans Tai Le\",\"Noto Sans Tai Tham\",\"Noto Sans Tai Viet\",\"Noto Sans Takri\",\"Noto Sans Tamil\",\"Noto Sans Tamil Supplement\",\"Noto Sans Telugu\",\"Noto Sans Thaana\",\"Noto Sans Thai\",\"Noto Sans Tifinagh\",\"Noto Sans Tifinagh APT\",\"Noto Sans Tifinagh Adrar\",\"Noto Sans Tifinagh Agraw Imazighen\",\"Noto Sans Tifinagh Ahaggar\",\"Noto Sans Tifinagh Air\",\"Noto Sans Tifinagh Azawagh\",\"Noto Sans Tifinagh Ghat\",\"Noto Sans Tifinagh Hawad\",\"Noto Sans Tifinagh Rhissa Ixa\",\"Noto Sans Tifinagh SIL\",\"Noto Sans Tifinagh Tawellemmet\",\"Noto Sans Tirhuta\",\"Noto Sans Ugaritic\",\"Noto Sans Vai\",\"Noto Sans Wancho\",\"Noto Sans Warang Citi\",\"Noto Sans Yi\",\"Noto Sans Zanabazar Square\",\"Noto Serif\",\"Noto Serif Ahom\",\"Noto Serif Armenian\",\"Noto Serif Balinese\",\"Noto Serif Bengali\",\"Noto Serif CJK HK\",\"Noto Serif CJK JP\",\"Noto Serif CJK KR\",\"Noto Serif CJK SC\",\"Noto Serif CJK TC\",\"Noto Serif Devanagari\",\"Noto Serif Display\",\"Noto Serif Dogra\",\"Noto Serif Ethiopic\",\"Noto Serif Georgian\",\"Noto Serif Grantha\",\"Noto Serif Gujarati\",\"Noto Serif Gurmukhi\",\"Noto Serif Hebrew\",\"Noto Serif Hmong Nyiakeng\",\"Noto Serif Kannada\",\"Noto Serif Khmer\",\"Noto Serif Khojki\",\"Noto Serif Lao\",\"Noto Serif Malayalam\",\"Noto Serif Myanmar\",\"Noto Serif Sinhala\",\"Noto Serif Tamil\",\"Noto Serif Tamil Slanted\",\"Noto Serif Tangut\",\"Noto Serif Telugu\",\"Noto Serif Thai\",\"Noto Serif Tibetan\",\"Noto Serif Yezidi\",\"Noto Traditional Nushu\",\"P052\",\"Source Han Serif KR\",\"Standard Symbols PS\",\"TsangerJinKai02\",\"URW Bookman\",\"URW Gothic\",\"Ubuntu\",\"Ubuntu Mono\",\"Ubuntu Sans\",\"Ubuntu Sans Mono\",\"Z003\"],\"issues\":[\"请设置字幕字体\",\"请设置字幕字号\"]}"
+      }
+    ],
+    "structuredContent": {
+      "settings": {
+        "codec": "libx264",
+        "fps": 30,
+        "fontFamily": null,
+        "fontSize": null
+      },
+      "output": {
+        "width": 1920,
+        "height": 1080,
+        "aspectRatio": "16:9",
+        "container": "mp4",
+        "fontSizeUnit": "px"
+      },
+      "fonts": [
+        "AR PL UKai CN",
+        "AR PL UKai HK",
+        "AR PL UKai TW",
+        "AR PL UKai TW MBE",
+        "AR PL UMing CN",
+        "AR PL UMing HK",
+        "AR PL UMing TW",
+        "AR PL UMing TW MBE",
+        "C059",
+        "D050000L",
+        "DejaVu Math TeX Gyre",
+        "DejaVu Sans",
+        "DejaVu Sans Mono",
+        "DejaVu Serif",
+        "Droid Sans Fallback",
+        "GWZT-EN",
+        "HYYeYXSJ",
+        "HYZhongYuanB5",
+        "Liberation Mono",
+        "Liberation Sans",
+        "Liberation Sans Narrow",
+        "Liberation Serif",
+        "Nimbus Mono PS",
+        "Nimbus Roman",
+        "Nimbus Sans",
+        "Nimbus Sans Narrow",
+        "Noto Color Emoji",
+        "Noto Kufi Arabic",
+        "Noto Looped Lao",
+        "Noto Looped Thai",
+        "Noto Mono",
+        "Noto Music",
+        "Noto Naskh Arabic",
+        "Noto Nastaliq Urdu",
+        "Noto Rashi Hebrew",
+        "Noto Sans",
+        "Noto Sans Adlam",
+        "Noto Sans Adlam Unjoined",
+        "Noto Sans Anatolian Hieroglyphs",
+        "Noto Sans Arabic",
+        "Noto Sans Armenian",
+        "Noto Sans Avestan",
+        "Noto Sans Balinese",
+        "Noto Sans Bamum",
+        "Noto Sans Bassa Vah",
+        "Noto Sans Batak",
+        "Noto Sans Bengali",
+        "Noto Sans Bhaiksuki",
+        "Noto Sans Brahmi",
+        "Noto Sans Buginese",
+        "Noto Sans Buhid",
+        "Noto Sans CJK HK",
+        "Noto Sans CJK JP",
+        "Noto Sans CJK KR",
+        "Noto Sans CJK SC",
+        "Noto Sans CJK TC",
+        "Noto Sans Canadian Aboriginal",
+        "Noto Sans Carian",
+        "Noto Sans Caucasian Albanian",
+        "Noto Sans Chakma",
+        "Noto Sans Cham",
+        "Noto Sans Cherokee",
+        "Noto Sans Coptic",
+        "Noto Sans Cuneiform",
+        "Noto Sans Cypriot",
+        "Noto Sans Deseret",
+        "Noto Sans Devanagari",
+        "Noto Sans Display",
+        "Noto Sans Duployan",
+        "Noto Sans Egyptian Hieroglyphs",
+        "Noto Sans Elbasan",
+        "Noto Sans Elymaic",
+        "Noto Sans Ethiopic",
+        "Noto Sans Georgian",
+        "Noto Sans Glagolitic",
+        "Noto Sans Gothic",
+        "Noto Sans Grantha",
+        "Noto Sans Gujarati",
+        "Noto Sans Gunjala Gondi",
+        "Noto Sans Gurmukhi",
+        "Noto Sans Hanifi Rohingya",
+        "Noto Sans Hanunoo",
+        "Noto Sans Hatran",
+        "Noto Sans Hebrew",
+        "Noto Sans Imperial Aramaic",
+        "Noto Sans Indic Siyaq Numbers",
+        "Noto Sans Inscriptional Pahlavi",
+        "Noto Sans Inscriptional Parthian",
+        "Noto Sans Javanese",
+        "Noto Sans Kaithi",
+        "Noto Sans Kannada",
+        "Noto Sans Kayah Li",
+        "Noto Sans Kharoshthi",
+        "Noto Sans Khmer",
+        "Noto Sans Khojki",
+        "Noto Sans Khudawadi",
+        "Noto Sans Lao",
+        "Noto Sans Lepcha",
+        "Noto Sans Limbu",
+        "Noto Sans Linear A",
+        "Noto Sans Linear B",
+        "Noto Sans Lisu",
+        "Noto Sans Lycian",
+        "Noto Sans Lydian",
+        "Noto Sans Mahajani",
+        "Noto Sans Malayalam",
+        "Noto Sans Mandaic",
+        "Noto Sans Manichaean",
+        "Noto Sans Marchen",
+        "Noto Sans Masaram Gondi",
+        "Noto Sans Math",
+        "Noto Sans Mayan Numerals",
+        "Noto Sans Medefaidrin",
+        "Noto Sans Meetei Mayek",
+        "Noto Sans Mende Kikakui",
+        "Noto Sans Meroitic",
+        "Noto Sans Miao",
+        "Noto Sans Modi",
+        "Noto Sans Mongolian",
+        "Noto Sans Mono",
+        "Noto Sans Mono CJK HK",
+        "Noto Sans Mono CJK JP",
+        "Noto Sans Mono CJK KR",
+        "Noto Sans Mono CJK SC",
+        "Noto Sans Mono CJK TC",
+        "Noto Sans Mro",
+        "Noto Sans Multani",
+        "Noto Sans Myanmar",
+        "Noto Sans NKo",
+        "Noto Sans Nabataean",
+        "Noto Sans New Tai Lue",
+        "Noto Sans Newa",
+        "Noto Sans Nushu",
+        "Noto Sans Ogham",
+        "Noto Sans Ol Chiki",
+        "Noto Sans Old Hungarian",
+        "Noto Sans Old Italic",
+        "Noto Sans Old North Arabian",
+        "Noto Sans Old Permic",
+        "Noto Sans Old Persian",
+        "Noto Sans Old Sogdian",
+        "Noto Sans Old South Arabian",
+        "Noto Sans Old Turkic",
+        "Noto Sans Oriya",
+        "Noto Sans Osage",
+        "Noto Sans Osmanya",
+        "Noto Sans Pahawh Hmong",
+        "Noto Sans Palmyrene",
+        "Noto Sans Pau Cin Hau",
+        "Noto Sans PhagsPa",
+        "Noto Sans Phoenician",
+        "Noto Sans Psalter Pahlavi",
+        "Noto Sans Rejang",
+        "Noto Sans Runic",
+        "Noto Sans Samaritan",
+        "Noto Sans Saurashtra",
+        "Noto Sans Sharada",
+        "Noto Sans Shavian",
+        "Noto Sans Siddham",
+        "Noto Sans SignWriting",
+        "Noto Sans Sinhala",
+        "Noto Sans Sogdian",
+        "Noto Sans Sora Sompeng",
+        "Noto Sans Soyombo",
+        "Noto Sans Sundanese",
+        "Noto Sans Syloti Nagri",
+        "Noto Sans Symbols",
+        "Noto Sans Symbols2",
+        "Noto Sans Syriac",
+        "Noto Sans Tagalog",
+        "Noto Sans Tagbanwa",
+        "Noto Sans Tai Le",
+        "Noto Sans Tai Tham",
+        "Noto Sans Tai Viet",
+        "Noto Sans Takri",
+        "Noto Sans Tamil",
+        "Noto Sans Tamil Supplement",
+        "Noto Sans Telugu",
+        "Noto Sans Thaana",
+        "Noto Sans Thai",
+        "Noto Sans Tifinagh",
+        "Noto Sans Tifinagh APT",
+        "Noto Sans Tifinagh Adrar",
+        "Noto Sans Tifinagh Agraw Imazighen",
+        "Noto Sans Tifinagh Ahaggar",
+        "Noto Sans Tifinagh Air",
+        "Noto Sans Tifinagh Azawagh",
+        "Noto Sans Tifinagh Ghat",
+        "Noto Sans Tifinagh Hawad",
+        "Noto Sans Tifinagh Rhissa Ixa",
+        "Noto Sans Tifinagh SIL",
+        "Noto Sans Tifinagh Tawellemmet",
+        "Noto Sans Tirhuta",
+        "Noto Sans Ugaritic",
+        "Noto Sans Vai",
+        "Noto Sans Wancho",
+        "Noto Sans Warang Citi",
+        "Noto Sans Yi",
+        "Noto Sans Zanabazar Square",
+        "Noto Serif",
+        "Noto Serif Ahom",
+        "Noto Serif Armenian",
+        "Noto Serif Balinese",
+        "Noto Serif Bengali",
+        "Noto Serif CJK HK",
+        "Noto Serif CJK JP",
+        "Noto Serif CJK KR",
+        "Noto Serif CJK SC",
+        "Noto Serif CJK TC",
+        "Noto Serif Devanagari",
+        "Noto Serif Display",
+        "Noto Serif Dogra",
+        "Noto Serif Ethiopic",
+        "Noto Serif Georgian",
+        "Noto Serif Grantha",
+        "Noto Serif Gujarati",
+        "Noto Serif Gurmukhi",
+        "Noto Serif Hebrew",
+        "Noto Serif Hmong Nyiakeng",
+        "Noto Serif Kannada",
+        "Noto Serif Khmer",
+        "Noto Serif Khojki",
+        "Noto Serif Lao",
+        "Noto Serif Malayalam",
+        "Noto Serif Myanmar",
+        "Noto Serif Sinhala",
+        "Noto Serif Tamil",
+        "Noto Serif Tamil Slanted",
+        "Noto Serif Tangut",
+        "Noto Serif Telugu",
+        "Noto Serif Thai",
+        "Noto Serif Tibetan",
+        "Noto Serif Yezidi",
+        "Noto Traditional Nushu",
+        "P052",
+        "Source Han Serif KR",
+        "Standard Symbols PS",
+        "TsangerJinKai02",
+        "URW Bookman",
+        "URW Gothic",
+        "Ubuntu",
+        "Ubuntu Mono",
+        "Ubuntu Sans",
+        "Ubuntu Sans Mono",
+        "Z003"
+      ],
+      "issues": [
+        "请设置字幕字体",
+        "请设置字幕字号"
+      ]
+    }
+  },
+  "clapgrid_set_export_settings": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"settings\":{\"codec\":\"libx264\",\"fps\":30,\"fontFamily\":\"Noto Sans CJK SC\",\"fontSize\":48},\"status\":{\"application\":\"clapgrid\",\"apiVersion\":1,\"instanceId\":\"db6fe7f6-8a0d-4335-9dcd-9655f3b72e5c\",\"pid\":103544,\"startedAt\":\"2026-09-28T17:14:30.521Z\",\"snapshot\":{\"project\":{\"id\":\"1f9e49ba-e01b-4a8c-86d2-32105bcf7f75\",\"directory\":\"/home/forclaw/code/ClapGrid/.cache/issue-29/project\",\"createdAt\":\"2026-09-28T17:14:30.494Z\"},\"storage\":{\"database\":\"/home/forclaw/code/ClapGrid/.cache/issue-29/project/clapgrid.sqlite\",\"mediaDirectory\":\"/home/forclaw/code/ClapGrid/.cache/issue-29/project/media\"},\"segments\":[{\"id\":\"af486b45-d391-462b-b0b0-1db81c6ce41a\",\"order\":1,\"text\":\"这是 Linux 正式插件验收。配音、画面和字幕共同生成一条完整视频。\",\"video\":{\"assetId\":\"c037d450-a647-4748-9215-bb70ddcc97a0\",\"start\":0}}],\"assets\":[{\"id\":\"c037d450-a647-4748-9215-bb70ddcc97a0\",\"name\":\"source.mp4\",\"duration\":6}],\"exportSettings\":{\"codec\":\"libx264\",\"fps\":30,\"fontFamily\":\"Noto Sans CJK SC\",\"fontSize\":48}},\"taskLocked\":false,\"modification\":null}}"
+      }
+    ],
+    "structuredContent": {
+      "settings": {
+        "codec": "libx264",
+        "fps": 30,
+        "fontFamily": "Noto Sans CJK SC",
+        "fontSize": 48
+      },
+      "status": {
+        "application": "clapgrid",
+        "apiVersion": 1,
+        "instanceId": "db6fe7f6-8a0d-4335-9dcd-9655f3b72e5c",
+        "pid": 103544,
+        "startedAt": "2026-09-28T17:14:30.521Z",
+        "snapshot": {
+          "project": {
+            "id": "1f9e49ba-e01b-4a8c-86d2-32105bcf7f75",
+            "directory": "/home/forclaw/code/ClapGrid/.cache/issue-29/project",
+            "createdAt": "2026-09-28T17:14:30.494Z"
+          },
+          "storage": {
+            "database": "/home/forclaw/code/ClapGrid/.cache/issue-29/project/clapgrid.sqlite",
+            "mediaDirectory": "/home/forclaw/code/ClapGrid/.cache/issue-29/project/media"
+          },
+          "segments": [
+            {
+              "id": "af486b45-d391-462b-b0b0-1db81c6ce41a",
+              "order": 1,
+              "text": "这是 Linux 正式插件验收。配音、画面和字幕共同生成一条完整视频。",
+              "video": {
+                "assetId": "c037d450-a647-4748-9215-bb70ddcc97a0",
+                "start": 0
+              }
+            }
+          ],
+          "assets": [
+            {
+              "id": "c037d450-a647-4748-9215-bb70ddcc97a0",
+              "name": "source.mp4",
+              "duration": 6
+            }
+          ],
+          "exportSettings": {
+            "codec": "libx264",
+            "fps": 30,
+            "fontFamily": "Noto Sans CJK SC",
+            "fontSize": 48
+          }
+        },
+        "taskLocked": false,
+        "modification": null
+      }
+    }
+  }
+}

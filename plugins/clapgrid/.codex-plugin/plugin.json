@@ -1,19 +1,19 @@
 {
   "name": "clapgrid",
-  "version": "0.1.0",
-  "description": "ClapGrid 工程骨架：口播片段空表格与独立本地服务",
+  "version": "0.1.0+codex.20260928172029",
+  "description": "ClapGrid \u53e3\u64ad\u89c6\u9891\u5236\u4f5c\uff1a\u7247\u6bb5\u8868\u683c\u3001\u914d\u97f3\u3001\u5e26\u5b57\u5e55\u7c97\u526a\u4e0e\u72ec\u7acb\u672c\u5730\u670d\u52a1",
   "author": {
     "name": "Local developer"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "ClapGrid",
-    "shortDescription": "打开口播片段表格并查询本地服务。",
-    "longDescription": "工程初始化入口，提供独立本地服务、空表格及只读业务 MCP。",
+    "shortDescription": "\u5728\u53f3\u4fa7\u8868\u683c\u4e2d\u7ec4\u7ec7\u53e3\u64ad\u7247\u6bb5\u5e76\u5236\u4f5c\u89c6\u9891\u3002",
+    "longDescription": "\u901a\u8fc7\u8868\u683c\u548c\u4e1a\u52a1 MCP \u5171\u7528\u9879\u76ee\uff0c\u652f\u6301\u89c6\u9891\u7d20\u6750\u3001\u914d\u97f3\u3001\u5b57\u5e55\u5bfc\u51fa\u53ca\u72ec\u7acb\u540e\u53f0\u4efb\u52a1\u3002Linux \u63d0\u4f9b\u7ec4\u4ef6\u68c0\u67e5\u548c\u5b89\u88c5\u5165\u53e3\u3002",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [],
-    "defaultPrompt": "打开 ClapGrid 表格。"
+    "defaultPrompt": "\u6253\u5f00 ClapGrid \u8868\u683c\u3002"
   },
   "mcpServers": "./.mcp.json"
 }

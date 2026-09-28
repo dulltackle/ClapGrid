@@ -1,13 +1,13 @@
 ---
 name: open-clapgrid
-description: 打开 ClapGrid 口播片段表格，连接或启动独立本地服务，并在 Codex 右侧查看工程骨架。
+description: 打开 ClapGrid 口播片段表格；在 Linux 检查或准备组件，连接独立本地服务并在 Codex 右侧制作视频。
 ---
 
 # 打开 ClapGrid
 
 插件根目录为本技能目录的 `../..`；先解析绝对路径。全程中文沟通。
 
-1. 从当前请求或已确认上下文取得本地项目目录；缺少时询问目录，不自行挑选用户文件夹。检查 `node --version` 至少 22.13；缺少组件时报告所需 Node.js 版本，由宿主许可的安装流程处理。
+1. 从当前请求或已确认上下文取得本地项目目录；缺少时询问目录，不自行挑选用户文件夹。Linux 先读取 [组件准备流程](references/linux.md)，完成 check；其他系统检查 Node.js 至少 22.13 及 FFmpeg/ffprobe。Linux 下本文所有 `node <插件根目录>/dist/runtime.js <操作>` 均使用 `bash <插件根目录>/scripts/runtime-linux.sh <操作>`，参数保持一致；这样可复用用户级 Node，MCP 也使用同一组件选择器。
 2. 运行 `node <插件根目录>/dist/runtime.js status --project <目录>`，成功后核对项目目录。默认端口 48762；自定义端口须对所有命令使用相同 `--port`，并给插件 MCP 的 `CLAPGRID_SERVICE_URL` 设置相应 `http://127.0.0.1:<端口>`。
 3. 服务不可达时，经宿主执行审批运行 `node <插件根目录>/dist/runtime.js start --project <目录>`。该命令会复用同项目服务；端口属于其他项目或服务时报告冲突，保留原服务。没有明确重试指令时不重复启动。
 4. **审批被拒时停止启动流程**，报告“宿主未允许启动，本次操作未执行”及拒绝原因。只读状态查询获允许时可查旧服务；不得更换执行路径绕过拒绝。

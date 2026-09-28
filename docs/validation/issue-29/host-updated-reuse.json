@@ -1,0 +1,45 @@
+{
+  "application": "clapgrid",
+  "apiVersion": 1,
+  "instanceId": "db6fe7f6-8a0d-4335-9dcd-9655f3b72e5c",
+  "pid": 103544,
+  "startedAt": "2026-09-28T17:14:30.521Z",
+  "snapshot": {
+    "project": {
+      "id": "1f9e49ba-e01b-4a8c-86d2-32105bcf7f75",
+      "directory": "/home/forclaw/code/ClapGrid/.cache/issue-29/project",
+      "createdAt": "2026-09-28T17:14:30.494Z"
+    },
+    "storage": {
+      "database": "/home/forclaw/code/ClapGrid/.cache/issue-29/project/clapgrid.sqlite",
+      "mediaDirectory": "/home/forclaw/code/ClapGrid/.cache/issue-29/project/media"
+    },
+    "segments": [
+      {
+        "id": "af486b45-d391-462b-b0b0-1db81c6ce41a",
+        "order": 1,
+        "text": "这是 Linux 正式插件验收。配音、画面和字幕共同生成一条完整视频。",
+        "video": {
+          "assetId": "c037d450-a647-4748-9215-bb70ddcc97a0",
+          "start": 0
+        }
+      }
+    ],
+    "assets": [
+      {
+        "id": "c037d450-a647-4748-9215-bb70ddcc97a0",
+        "name": "source.mp4",
+        "duration": 6
+      }
+    ],
+    "exportSettings": {
+      "codec": "libx264",
+      "fps": 30,
+      "fontFamily": "Noto Sans CJK SC",
+      "fontSize": 48
+    }
+  },
+  "taskLocked": false,
+  "modification": null,
+  "url": "http://127.0.0.1:48929"
+}

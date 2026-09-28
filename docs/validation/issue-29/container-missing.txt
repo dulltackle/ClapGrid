@@ -1,0 +1,2 @@
+运行组件缺失或不兼容：需要 Node.js >=22.13（含 SQLite）、FFmpeg/ffprobe（含视频编码与字幕自动换行）。本次未启动服务；由 Codex 经宿主许可执行 install 后重试。
+check_exit=10
