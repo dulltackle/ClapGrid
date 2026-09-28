@@ -154,6 +154,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
     submitSpeech: speech.submitSpeech,
     setVoice: speech.setVoice,
     getSpeechAudio: speech.getSpeechAudio,
+    getCurrentSpeechAudio: speech.getCurrentSpeechAudio,
     getSnapshot,
     acquire, release,
     getModification: () => modification ? { owner: modification.owner } : null,

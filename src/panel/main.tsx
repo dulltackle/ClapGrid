@@ -30,6 +30,7 @@ function App() {
   const [status, setStatus] = useState<ServiceStatus>();
   const [speech, setSpeech] = useState<SpeechStatus>();
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioHistory, setAudioHistory] = useState<string | null>(null);
   const [speechBusy, setSpeechBusy] = useState(false);
   const [error, setError] = useState('');
   const [videoEditor, setVideoEditor] = useState<{ segment: Segment; assetId: string; start: string } | null>(null);
@@ -111,16 +112,21 @@ function App() {
         <button disabled={disabled} onClick={() => { void openVideoEditor(segment.id); }}>{asset ? '更改' : '关联'}</button>
       </div>;
     } },
-    { headerName: '配音', width: 410, cellRenderer: (params: { data?: Segment }) => {
+    { headerName: '配音', width: 460, cellRendererParams: { suppressMouseEventHandling: () => true }, cellRenderer: (params: { data?: Segment }) => {
       const segment = params.data; if (!segment) return null;
       const tasks = speech?.tasks.filter(task => task.segmentId === segment.id) ?? [];
       const latest = tasks.at(-1);
+      const taskLabel = latest ? { accepted: '已受理', running: '生成中', succeeded: '生成成功', failed: '生成失败', unknown: '结果未知，可能已计费' }[latest.state] : '未生成';
       const recordings = speech?.audio.filter(audio => audio.segmentId === segment.id) ?? [];
       const audio = recordings.filter(audio => audio.valid).at(-1) ?? recordings.at(-1);
-      return <div className="video-cell">
+      return <div className="speech-cell">
+        <div className="speech-state">
+          <span>{audio ? audio.valid ? '有效配音' : '配音待更新' : '配音缺失'}</span>
+          <span title={latest?.message}>最近任务：{taskLabel}</span>
+        </div>
         <button disabled={disabled || !segment.text.trim()} onClick={() => { void generateSpeech(segment.id); }}>{latest ? '重新生成' : '生成配音'}</button>
         {audio && <button onClick={() => setAudioUrl(audio.url)}>试听{audio.valid ? '' : '（待更新）'}</button>}
-        <span title={latest?.message}>{latest?.message ?? '未生成'}</span>
+        {recordings.length > 0 && <button aria-label={`展开片段 ${segment.order} 的保留音频`} onClick={() => setAudioHistory(segment.id)}>音频 {recordings.length}</button>}
       </div>;
     } },
     { headerName: '画面说明', width: 180 },
@@ -322,6 +328,15 @@ function App() {
       <p>文案通过 TokenDance seed-tts-2.0 生成配音，可能产生费用。配置位置：{speech.configPath}，键名 TOKENDANCE_KEY。已配置不代表服务已验证。</p>
       {speech.tasks.length > 0 && <details><summary>配音任务与请求标识</summary>{speech.tasks.map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{task.message}</p>)}</details>}
     </section>}
+    {audioHistory && <div className="modal-backdrop"><section role="dialog" aria-modal="true" aria-label="保留音频" className="media-dialog">
+      <h2>保留音频</h2>
+      <ul className="audio-history">{speech?.audio.filter(audio => audio.segmentId === audioHistory).slice().reverse().map(audio => <li key={audio.taskId}>
+        <p><time dateTime={audio.createdAt}>{new Date(audio.createdAt).toLocaleString()}</time> · {audio.valid ? '有效配音' : '配音待更新'}</p>
+        <p className="audio-text">{audio.input.text}</p>
+        <audio controls preload="none" src={audio.url} aria-label={`试听 ${audio.input.text}`} />
+      </li>)}</ul>
+      <button onClick={() => setAudioHistory(null)}>关闭</button>
+    </section></div>}
     {audioUrl && <div className="modal-backdrop"><section role="dialog" aria-modal="true" aria-label="配音试听" className="media-dialog">
       <h2>配音试听</h2><audio controls autoPlay src={audioUrl} onError={() => { setSaveState('failed'); setSaveError('音频不可读取，请检查项目文件'); }} />
       <button onClick={() => setAudioUrl(null)}>关闭试听</button>
