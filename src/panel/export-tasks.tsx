@@ -33,7 +33,7 @@ export function ExportTasksPanel({ onStatus }: { onStatus: (status: ServiceStatu
     {error && <p role="alert">{error}</p>}
     {exports?.locked && <p role="status">导出进行中，项目已锁定；关闭面板后任务继续，取消清理完成后恢复编辑。</p>}
     {exports?.tasks.slice(-5).reverse().map(task => <details key={task.id} open={task.state !== 'succeeded'}>
-      <summary>{({ accepted: '已受理', validating: '正在校验', rendering: '正在导出', cleaning: '正在清理', succeeded: '导出成功', failed: '导出失败', cancelled: '已取消' })[task.state]} · {task.completed}/{task.total} 个片段 · {new Date(task.createdAt).toLocaleString()}</summary>
+      <summary>{({ accepted: '已受理', validating: '正在校验', rendering: '正在导出', cleaning: '正在清理', succeeded: '导出成功', failed: '导出失败', cancelled: '已取消', interrupted: '已中断' })[task.state]} · {task.completed}/{task.total} 个片段 · {new Date(task.createdAt).toLocaleString()}</summary>
       <p role="status">{task.message}</p>
       <p>任务 {task.id}</p>
       {task.state === 'rendering' && <progress value={task.completed} max={task.total} aria-label="导出进度" />}

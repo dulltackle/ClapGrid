@@ -33,7 +33,7 @@ export const exportTaskRequestSchema = z.object({ taskId: z.uuid() }).strict();
 export type ExportIssue = { segmentId?: string; order?: number; field: 'project' | 'video' | 'start' | 'speech' | 'settings'; message: string };
 export type ExportTask = {
   id: string; createdAt: string;
-  state: 'accepted' | 'validating' | 'rendering' | 'cleaning' | 'succeeded' | 'failed' | 'cancelled';
+  state: 'accepted' | 'validating' | 'rendering' | 'cleaning' | 'succeeded' | 'failed' | 'cancelled' | 'interrupted';
   message: string; completed: number; total: number; segmentId?: string;
   issues: ExportIssue[]; warnings: ExportIssue[];
   output?: { path: string; url: string; previewUrl?: string };

@@ -13,8 +13,9 @@ import { DatabaseSync } from 'node:sqlite';
 import { addSegmentSchema, editSegmentSchema, snapshotSchema, type Snapshot, batchSchema, type Batch, type ChangeResult, scopeSchema, selectionSchema, scopedOperationSchema, type SegmentScope, type ScopedOperation, type SegmentQueryResult } from '../shared/contracts.js';
 
 /** HTTP 和未来业务操作的唯一业务入口；数据库不向适配层开放。 */
-export function openBusiness(directory: string, speechRuntime: SpeechRuntime = { key: () => '', configPath: '.env' }) {
-  const { projectDirectory, database, mediaDirectory, verify } = projectPaths(directory);
+export function openBusiness(directory: string, speechRuntime: SpeechRuntime = { key: () => '', configPath: '.env' }, verifyRuntime: () => void = () => {}) {
+  const { projectDirectory, database, mediaDirectory, verify: verifyPaths } = projectPaths(directory);
+  const verify = () => { verifyRuntime(); verifyPaths(); };
   mkdirSync(mediaDirectory, { recursive: true });
   const db = new DatabaseSync(database);
   try {

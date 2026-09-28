@@ -13,7 +13,13 @@ export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: S
   db.prepare('INSERT OR IGNORE INTO voice_settings VALUES (1, ?)').run(JSON.stringify(defaultVoice));
   const tasks = (): SpeechTask[] => db.prepare('SELECT value FROM speech_tasks ORDER BY rowid').all().map(row => JSON.parse(String(row.value)));
   const save = (task: SpeechTask) => { verify(); db.prepare('INSERT INTO speech_tasks VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET value = excluded.value').run(task.id, task.requestId, JSON.stringify(task)); };
-  for (const task of tasks()) if (task.state === 'accepted' || task.state === 'running') save({ ...task, state: 'unknown', message: '配音已中断：结果未知，可能已计费。请核对供应商记录；不会自动重试。' });
+  for (const task of tasks()) if (task.state === 'accepted' || task.state === 'running' || task.state === 'unknown') {
+    // 成功终态未落盘的文件不作为可用配音，清理完成前不开放项目。
+    verify(); rmSync(join(mediaDirectory, `${task.id}.mp3`), { force: true });
+    if (task.state !== 'unknown') save({ ...task, state: 'unknown', message: task.state === 'accepted'
+      ? '配音已中断：尚未发送，不会自动重试。'
+      : '配音已中断：结果未知，可能已计费。请核对供应商记录；不会自动重试。' });
+  }
   let active: string | null = null;
   let closed = false;
   const controller = new AbortController();

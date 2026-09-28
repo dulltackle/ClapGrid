@@ -1,0 +1,1527 @@
+{
+  "speech-accepted": {
+    "status": {
+      "application": "clapgrid",
+      "apiVersion": 1,
+      "instanceId": "b4eb72c0-a3d6-4111-9ab3-66f21379e1a8",
+      "pid": 312947,
+      "startedAt": "2026-09-28T10:37:46.759Z",
+      "snapshot": {
+        "project": {
+          "id": "418457e2-8bf2-45d3-9c6d-a3ebdbc552e2",
+          "directory": "/tmp/clapgrid-26-real-on4lcF/project",
+          "createdAt": "2026-09-28T10:37:46.734Z"
+        },
+        "storage": {
+          "database": "/tmp/clapgrid-26-real-on4lcF/project/clapgrid.sqlite",
+          "mediaDirectory": "/tmp/clapgrid-26-real-on4lcF/project/media"
+        },
+        "segments": [
+          {
+            "id": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+            "order": 1,
+            "text": "这是跨退出恢复验证的第一句。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          },
+          {
+            "id": "e03e5715-61e8-4243-be16-0533e096dd9c",
+            "order": 2,
+            "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          }
+        ],
+        "assets": [
+          {
+            "id": "30a87396-1689-4c6a-936c-52a097b87e72",
+            "name": "source.mp4",
+            "duration": 3
+          }
+        ],
+        "exportSettings": {
+          "codec": "libx264",
+          "fps": 30,
+          "fontFamily": "Noto Sans CJK SC",
+          "fontSize": 48
+        }
+      },
+      "taskLocked": false,
+      "modification": null
+    },
+    "request": {
+      "requestId": "a44881cf-6791-4c29-8315-bc20d535217c",
+      "mode": "generate",
+      "scope": {
+        "kind": "ids",
+        "ids": [
+          "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+          "e03e5715-61e8-4243-be16-0533e096dd9c"
+        ]
+      }
+    },
+    "accepted": {
+      "id": "b7f39f77-8e72-4ee3-8883-e8f4bbd7002a",
+      "request": {
+        "requestId": "a44881cf-6791-4c29-8315-bc20d535217c",
+        "mode": "generate",
+        "scope": {
+          "kind": "ids",
+          "ids": [
+            "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+            "e03e5715-61e8-4243-be16-0533e096dd9c"
+          ]
+        }
+      },
+      "createdAt": "2026-09-28T10:38:45.348Z",
+      "results": [
+        {
+          "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+          "outcome": "accepted",
+          "message": "已受理，尚未完成",
+          "taskId": "a300b036-0a49-4afc-8336-29c6a4880c65",
+          "state": "accepted"
+        },
+        {
+          "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+          "outcome": "accepted",
+          "message": "已受理，尚未完成",
+          "taskId": "ccb81c3c-d765-4adf-85cc-c3b9fe82c1f0",
+          "state": "accepted"
+        }
+      ],
+      "summary": {
+        "accepted": 2,
+        "existing": 0,
+        "skipped": 0,
+        "rejected": 0,
+        "completed": 0,
+        "succeeded": 0,
+        "failed": 0,
+        "interrupted": 0,
+        "pending": 2
+      }
+    }
+  },
+  "speech-partial": {
+    "kept": {
+      "outcome": "kept",
+      "message": "有任务正在执行，默认保持服务。仅明确选择“中断任务并退出”才停止。"
+    },
+    "status": {
+      "application": "clapgrid",
+      "apiVersion": 1,
+      "instanceId": "b4eb72c0-a3d6-4111-9ab3-66f21379e1a8",
+      "pid": 312947,
+      "startedAt": "2026-09-28T10:37:46.759Z",
+      "snapshot": {
+        "project": {
+          "id": "418457e2-8bf2-45d3-9c6d-a3ebdbc552e2",
+          "directory": "/tmp/clapgrid-26-real-on4lcF/project",
+          "createdAt": "2026-09-28T10:37:46.734Z"
+        },
+        "storage": {
+          "database": "/tmp/clapgrid-26-real-on4lcF/project/clapgrid.sqlite",
+          "mediaDirectory": "/tmp/clapgrid-26-real-on4lcF/project/media"
+        },
+        "segments": [
+          {
+            "id": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+            "order": 1,
+            "text": "这是跨退出恢复验证的第一句。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          },
+          {
+            "id": "e03e5715-61e8-4243-be16-0533e096dd9c",
+            "order": 2,
+            "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          }
+        ],
+        "assets": [
+          {
+            "id": "30a87396-1689-4c6a-936c-52a097b87e72",
+            "name": "source.mp4",
+            "duration": 3
+          }
+        ],
+        "exportSettings": {
+          "codec": "libx264",
+          "fps": 30,
+          "fontFamily": "Noto Sans CJK SC",
+          "fontSize": 48
+        }
+      },
+      "taskLocked": true,
+      "modification": null
+    },
+    "speech": {
+      "configured": true,
+      "configPath": "/home/forclaw/code/ClapGrid/.env",
+      "locked": true,
+      "operations": [
+        {
+          "id": "b7f39f77-8e72-4ee3-8883-e8f4bbd7002a",
+          "request": {
+            "requestId": "a44881cf-6791-4c29-8315-bc20d535217c",
+            "mode": "generate",
+            "scope": {
+              "kind": "ids",
+              "ids": [
+                "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+                "e03e5715-61e8-4243-be16-0533e096dd9c"
+              ]
+            }
+          },
+          "createdAt": "2026-09-28T10:38:45.348Z",
+          "results": [
+            {
+              "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+              "outcome": "accepted",
+              "message": "生成成功",
+              "taskId": "a300b036-0a49-4afc-8336-29c6a4880c65",
+              "state": "succeeded"
+            },
+            {
+              "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+              "outcome": "accepted",
+              "message": "正在生成",
+              "taskId": "ccb81c3c-d765-4adf-85cc-c3b9fe82c1f0",
+              "state": "running"
+            }
+          ],
+          "summary": {
+            "accepted": 2,
+            "existing": 0,
+            "skipped": 0,
+            "rejected": 0,
+            "completed": 1,
+            "succeeded": 1,
+            "failed": 0,
+            "interrupted": 0,
+            "pending": 1
+          }
+        }
+      ],
+      "voice": {
+        "speaker": "zh_female_vv_uranus_bigtts",
+        "speechRate": 0
+      },
+      "tasks": [
+        {
+          "id": "a300b036-0a49-4afc-8336-29c6a4880c65",
+          "requestId": "c0480d11-82c7-4c65-972d-0e76f31657c1",
+          "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+          "input": {
+            "text": "这是跨退出恢复验证的第一句。",
+            "voice": {
+              "speaker": "zh_female_vv_uranus_bigtts",
+              "speechRate": 0
+            }
+          },
+          "state": "succeeded",
+          "message": "生成成功",
+          "createdAt": "2026-09-28T10:38:45.348Z",
+          "succeededAt": "2026-09-28T10:38:46.395Z"
+        },
+        {
+          "id": "ccb81c3c-d765-4adf-85cc-c3b9fe82c1f0",
+          "requestId": "fa7e77af-3efd-4111-9a10-24c5790d9382",
+          "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+          "input": {
+            "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+            "voice": {
+              "speaker": "zh_female_vv_uranus_bigtts",
+              "speechRate": 0
+            }
+          },
+          "state": "running",
+          "message": "正在生成",
+          "createdAt": "2026-09-28T10:38:45.348Z"
+        }
+      ],
+      "audio": [
+        {
+          "taskId": "a300b036-0a49-4afc-8336-29c6a4880c65",
+          "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+          "input": {
+            "text": "这是跨退出恢复验证的第一句。",
+            "voice": {
+              "speaker": "zh_female_vv_uranus_bigtts",
+              "speechRate": 0
+            }
+          },
+          "createdAt": "2026-09-28T10:38:46.395Z",
+          "valid": true,
+          "url": "/api/speech/audio/a300b036-0a49-4afc-8336-29c6a4880c65"
+        }
+      ]
+    }
+  },
+  "speech-recovered": {
+    "status": {
+      "application": "clapgrid",
+      "apiVersion": 1,
+      "instanceId": "65be80de-6066-4602-bafb-02e1d98f7da4",
+      "pid": 316270,
+      "startedAt": "2026-09-28T10:39:39.604Z",
+      "snapshot": {
+        "project": {
+          "id": "418457e2-8bf2-45d3-9c6d-a3ebdbc552e2",
+          "directory": "/tmp/clapgrid-26-real-on4lcF/project",
+          "createdAt": "2026-09-28T10:37:46.734Z"
+        },
+        "storage": {
+          "database": "/tmp/clapgrid-26-real-on4lcF/project/clapgrid.sqlite",
+          "mediaDirectory": "/tmp/clapgrid-26-real-on4lcF/project/media"
+        },
+        "segments": [
+          {
+            "id": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+            "order": 1,
+            "text": "这是跨退出恢复验证的第一句。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          },
+          {
+            "id": "e03e5715-61e8-4243-be16-0533e096dd9c",
+            "order": 2,
+            "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          }
+        ],
+        "assets": [
+          {
+            "id": "30a87396-1689-4c6a-936c-52a097b87e72",
+            "name": "source.mp4",
+            "duration": 3
+          }
+        ],
+        "exportSettings": {
+          "codec": "libx264",
+          "fps": 30,
+          "fontFamily": "Noto Sans CJK SC",
+          "fontSize": 48
+        }
+      },
+      "taskLocked": false,
+      "modification": null
+    },
+    "recovered": {
+      "configured": true,
+      "configPath": "/home/forclaw/code/ClapGrid/.env",
+      "locked": false,
+      "operations": [
+        {
+          "id": "b7f39f77-8e72-4ee3-8883-e8f4bbd7002a",
+          "request": {
+            "requestId": "a44881cf-6791-4c29-8315-bc20d535217c",
+            "mode": "generate",
+            "scope": {
+              "kind": "ids",
+              "ids": [
+                "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+                "e03e5715-61e8-4243-be16-0533e096dd9c"
+              ]
+            }
+          },
+          "createdAt": "2026-09-28T10:38:45.348Z",
+          "results": [
+            {
+              "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+              "outcome": "accepted",
+              "message": "生成成功",
+              "taskId": "a300b036-0a49-4afc-8336-29c6a4880c65",
+              "state": "succeeded"
+            },
+            {
+              "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+              "outcome": "accepted",
+              "message": "配音已中断：结果未知，可能已计费。请核对供应商记录；不会自动重试。",
+              "taskId": "ccb81c3c-d765-4adf-85cc-c3b9fe82c1f0",
+              "state": "unknown"
+            }
+          ],
+          "summary": {
+            "accepted": 2,
+            "existing": 0,
+            "skipped": 0,
+            "rejected": 0,
+            "completed": 2,
+            "succeeded": 1,
+            "failed": 0,
+            "interrupted": 1,
+            "pending": 0
+          }
+        }
+      ],
+      "voice": {
+        "speaker": "zh_female_vv_uranus_bigtts",
+        "speechRate": 0
+      },
+      "tasks": [
+        {
+          "id": "a300b036-0a49-4afc-8336-29c6a4880c65",
+          "requestId": "c0480d11-82c7-4c65-972d-0e76f31657c1",
+          "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+          "input": {
+            "text": "这是跨退出恢复验证的第一句。",
+            "voice": {
+              "speaker": "zh_female_vv_uranus_bigtts",
+              "speechRate": 0
+            }
+          },
+          "state": "succeeded",
+          "message": "生成成功",
+          "createdAt": "2026-09-28T10:38:45.348Z",
+          "succeededAt": "2026-09-28T10:38:46.395Z"
+        },
+        {
+          "id": "ccb81c3c-d765-4adf-85cc-c3b9fe82c1f0",
+          "requestId": "fa7e77af-3efd-4111-9a10-24c5790d9382",
+          "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+          "input": {
+            "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+            "voice": {
+              "speaker": "zh_female_vv_uranus_bigtts",
+              "speechRate": 0
+            }
+          },
+          "state": "unknown",
+          "message": "配音已中断：结果未知，可能已计费。请核对供应商记录；不会自动重试。",
+          "createdAt": "2026-09-28T10:38:45.348Z"
+        }
+      ],
+      "audio": [
+        {
+          "taskId": "a300b036-0a49-4afc-8336-29c6a4880c65",
+          "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+          "input": {
+            "text": "这是跨退出恢复验证的第一句。",
+            "voice": {
+              "speaker": "zh_female_vv_uranus_bigtts",
+              "speechRate": 0
+            }
+          },
+          "createdAt": "2026-09-28T10:38:46.395Z",
+          "valid": true,
+          "url": "/api/speech/audio/a300b036-0a49-4afc-8336-29c6a4880c65"
+        }
+      ]
+    },
+    "repeated": {
+      "id": "b7f39f77-8e72-4ee3-8883-e8f4bbd7002a",
+      "request": {
+        "requestId": "a44881cf-6791-4c29-8315-bc20d535217c",
+        "mode": "generate",
+        "scope": {
+          "kind": "ids",
+          "ids": [
+            "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+            "e03e5715-61e8-4243-be16-0533e096dd9c"
+          ]
+        }
+      },
+      "createdAt": "2026-09-28T10:38:45.348Z",
+      "results": [
+        {
+          "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+          "outcome": "existing",
+          "message": "已有任务，不重复提交；生成成功",
+          "taskId": "a300b036-0a49-4afc-8336-29c6a4880c65",
+          "state": "succeeded"
+        },
+        {
+          "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+          "outcome": "existing",
+          "message": "已有任务，不重复提交；配音已中断：结果未知，可能已计费。请核对供应商记录；不会自动重试。",
+          "taskId": "ccb81c3c-d765-4adf-85cc-c3b9fe82c1f0",
+          "state": "unknown"
+        }
+      ],
+      "summary": {
+        "accepted": 0,
+        "existing": 2,
+        "skipped": 0,
+        "rejected": 0,
+        "completed": 2,
+        "succeeded": 1,
+        "failed": 0,
+        "interrupted": 1,
+        "pending": 0
+      }
+    }
+  },
+  "speech-retry": {
+    "request": {
+      "requestId": "797f309f-47d0-4e55-a78b-617f6afb13ba",
+      "mode": "retry",
+      "scope": {
+        "kind": "failed_operation",
+        "operationId": "b7f39f77-8e72-4ee3-8883-e8f4bbd7002a"
+      }
+    },
+    "accepted": {
+      "id": "09bc5b15-4e7a-42c0-944d-6169097570ca",
+      "request": {
+        "requestId": "797f309f-47d0-4e55-a78b-617f6afb13ba",
+        "mode": "retry",
+        "scope": {
+          "kind": "failed_operation",
+          "operationId": "b7f39f77-8e72-4ee3-8883-e8f4bbd7002a"
+        }
+      },
+      "createdAt": "2026-09-28T10:39:55.574Z",
+      "results": [
+        {
+          "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+          "outcome": "accepted",
+          "message": "已受理，尚未完成",
+          "taskId": "71556904-01d5-4c1c-8248-fe3f2108ebbc",
+          "state": "accepted"
+        }
+      ],
+      "summary": {
+        "accepted": 1,
+        "existing": 0,
+        "skipped": 0,
+        "rejected": 0,
+        "completed": 0,
+        "succeeded": 0,
+        "failed": 0,
+        "interrupted": 0,
+        "pending": 1
+      }
+    }
+  },
+  "speech-completed": {
+    "configured": true,
+    "configPath": "/home/forclaw/code/ClapGrid/.env",
+    "locked": false,
+    "operations": [
+      {
+        "id": "b7f39f77-8e72-4ee3-8883-e8f4bbd7002a",
+        "request": {
+          "requestId": "a44881cf-6791-4c29-8315-bc20d535217c",
+          "mode": "generate",
+          "scope": {
+            "kind": "ids",
+            "ids": [
+              "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+              "e03e5715-61e8-4243-be16-0533e096dd9c"
+            ]
+          }
+        },
+        "createdAt": "2026-09-28T10:38:45.348Z",
+        "results": [
+          {
+            "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+            "outcome": "accepted",
+            "message": "生成成功",
+            "taskId": "a300b036-0a49-4afc-8336-29c6a4880c65",
+            "state": "succeeded"
+          },
+          {
+            "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+            "outcome": "accepted",
+            "message": "配音已中断：结果未知，可能已计费。请核对供应商记录；不会自动重试。",
+            "taskId": "ccb81c3c-d765-4adf-85cc-c3b9fe82c1f0",
+            "state": "unknown"
+          }
+        ],
+        "summary": {
+          "accepted": 2,
+          "existing": 0,
+          "skipped": 0,
+          "rejected": 0,
+          "completed": 2,
+          "succeeded": 1,
+          "failed": 0,
+          "interrupted": 1,
+          "pending": 0
+        }
+      },
+      {
+        "id": "09bc5b15-4e7a-42c0-944d-6169097570ca",
+        "request": {
+          "requestId": "797f309f-47d0-4e55-a78b-617f6afb13ba",
+          "mode": "retry",
+          "scope": {
+            "kind": "failed_operation",
+            "operationId": "b7f39f77-8e72-4ee3-8883-e8f4bbd7002a"
+          }
+        },
+        "createdAt": "2026-09-28T10:39:55.574Z",
+        "results": [
+          {
+            "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+            "outcome": "accepted",
+            "message": "生成成功",
+            "taskId": "71556904-01d5-4c1c-8248-fe3f2108ebbc",
+            "state": "succeeded"
+          }
+        ],
+        "summary": {
+          "accepted": 1,
+          "existing": 0,
+          "skipped": 0,
+          "rejected": 0,
+          "completed": 1,
+          "succeeded": 1,
+          "failed": 0,
+          "interrupted": 0,
+          "pending": 0
+        }
+      }
+    ],
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "tasks": [
+      {
+        "id": "a300b036-0a49-4afc-8336-29c6a4880c65",
+        "requestId": "c0480d11-82c7-4c65-972d-0e76f31657c1",
+        "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+        "input": {
+          "text": "这是跨退出恢复验证的第一句。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "state": "succeeded",
+        "message": "生成成功",
+        "createdAt": "2026-09-28T10:38:45.348Z",
+        "succeededAt": "2026-09-28T10:38:46.395Z"
+      },
+      {
+        "id": "ccb81c3c-d765-4adf-85cc-c3b9fe82c1f0",
+        "requestId": "fa7e77af-3efd-4111-9a10-24c5790d9382",
+        "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+        "input": {
+          "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "state": "unknown",
+        "message": "配音已中断：结果未知，可能已计费。请核对供应商记录；不会自动重试。",
+        "createdAt": "2026-09-28T10:38:45.348Z"
+      },
+      {
+        "id": "71556904-01d5-4c1c-8248-fe3f2108ebbc",
+        "requestId": "d7334fa6-bfd5-4767-916d-3777f1cfe661",
+        "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+        "input": {
+          "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "state": "succeeded",
+        "message": "生成成功",
+        "createdAt": "2026-09-28T10:39:55.574Z",
+        "succeededAt": "2026-09-28T10:39:58.436Z"
+      }
+    ],
+    "audio": [
+      {
+        "taskId": "a300b036-0a49-4afc-8336-29c6a4880c65",
+        "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+        "input": {
+          "text": "这是跨退出恢复验证的第一句。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "createdAt": "2026-09-28T10:38:46.395Z",
+        "valid": true,
+        "url": "/api/speech/audio/a300b036-0a49-4afc-8336-29c6a4880c65"
+      },
+      {
+        "taskId": "71556904-01d5-4c1c-8248-fe3f2108ebbc",
+        "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+        "input": {
+          "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+          "voice": {
+            "speaker": "zh_female_vv_uranus_bigtts",
+            "speechRate": 0
+          }
+        },
+        "createdAt": "2026-09-28T10:39:58.436Z",
+        "valid": true,
+        "url": "/api/speech/audio/71556904-01d5-4c1c-8248-fe3f2108ebbc"
+      }
+    ]
+  },
+  "export-accepted": {
+    "status": {
+      "application": "clapgrid",
+      "apiVersion": 1,
+      "instanceId": "65be80de-6066-4602-bafb-02e1d98f7da4",
+      "pid": 316270,
+      "startedAt": "2026-09-28T10:39:39.604Z",
+      "snapshot": {
+        "project": {
+          "id": "418457e2-8bf2-45d3-9c6d-a3ebdbc552e2",
+          "directory": "/tmp/clapgrid-26-real-on4lcF/project",
+          "createdAt": "2026-09-28T10:37:46.734Z"
+        },
+        "storage": {
+          "database": "/tmp/clapgrid-26-real-on4lcF/project/clapgrid.sqlite",
+          "mediaDirectory": "/tmp/clapgrid-26-real-on4lcF/project/media"
+        },
+        "segments": [
+          {
+            "id": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+            "order": 1,
+            "text": "这是跨退出恢复验证的第一句。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          },
+          {
+            "id": "e03e5715-61e8-4243-be16-0533e096dd9c",
+            "order": 2,
+            "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          }
+        ],
+        "assets": [
+          {
+            "id": "30a87396-1689-4c6a-936c-52a097b87e72",
+            "name": "source.mp4",
+            "duration": 3
+          }
+        ],
+        "exportSettings": {
+          "codec": "libx264",
+          "fps": 30,
+          "fontFamily": "Noto Sans CJK SC",
+          "fontSize": 48
+        }
+      },
+      "taskLocked": true,
+      "modification": null
+    },
+    "accepted": {
+      "id": "351490a5-2662-4019-bbe4-998d7bc07955",
+      "createdAt": "2026-09-28T10:40:18.893Z",
+      "state": "accepted",
+      "message": "已受理，尚未完成",
+      "completed": 0,
+      "total": 2,
+      "issues": [],
+      "warnings": []
+    }
+  },
+  "export-completed": {
+    "status": {
+      "application": "clapgrid",
+      "apiVersion": 1,
+      "instanceId": "65be80de-6066-4602-bafb-02e1d98f7da4",
+      "pid": 316270,
+      "startedAt": "2026-09-28T10:39:39.604Z",
+      "snapshot": {
+        "project": {
+          "id": "418457e2-8bf2-45d3-9c6d-a3ebdbc552e2",
+          "directory": "/tmp/clapgrid-26-real-on4lcF/project",
+          "createdAt": "2026-09-28T10:37:46.734Z"
+        },
+        "storage": {
+          "database": "/tmp/clapgrid-26-real-on4lcF/project/clapgrid.sqlite",
+          "mediaDirectory": "/tmp/clapgrid-26-real-on4lcF/project/media"
+        },
+        "segments": [
+          {
+            "id": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+            "order": 1,
+            "text": "这是跨退出恢复验证的第一句。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          },
+          {
+            "id": "e03e5715-61e8-4243-be16-0533e096dd9c",
+            "order": 2,
+            "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          }
+        ],
+        "assets": [
+          {
+            "id": "30a87396-1689-4c6a-936c-52a097b87e72",
+            "name": "source.mp4",
+            "duration": 3
+          }
+        ],
+        "exportSettings": {
+          "codec": "libx264",
+          "fps": 30,
+          "fontFamily": "Noto Sans CJK SC",
+          "fontSize": 48
+        }
+      },
+      "taskLocked": false,
+      "modification": null
+    },
+    "result": {
+      "id": "351490a5-2662-4019-bbe4-998d7bc07955",
+      "createdAt": "2026-09-28T10:40:18.893Z",
+      "state": "succeeded",
+      "message": "导出成功",
+      "completed": 2,
+      "total": 2,
+      "issues": [],
+      "warnings": [
+        {
+          "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+          "order": 2,
+          "field": "video",
+          "message": "视频剩余时长不足，末帧将冻结补足配音时长"
+        }
+      ],
+      "output": {
+        "path": "/tmp/clapgrid-26-real-on4lcF/project/exports/2026-09-28T10-40-18-893Z-351490a5-2662-4019-bbe4-998d7bc07955.mp4",
+        "url": "/api/exports/351490a5-2662-4019-bbe4-998d7bc07955/file",
+        "previewUrl": "/api/exports/351490a5-2662-4019-bbe4-998d7bc07955/preview"
+      }
+    },
+    "sha256": "1e7cc788d7eb29c23d21101f177db19cc27b9872459f983c610386909f579a97",
+    "media": {
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+          "profile": "High",
+          "codec_type": "video",
+          "codec_tag_string": "avc1",
+          "codec_tag": "0x31637661",
+          "width": 1920,
+          "height": 1080,
+          "coded_width": 1920,
+          "coded_height": 1080,
+          "closed_captions": 0,
+          "film_grain": 0,
+          "has_b_frames": 2,
+          "sample_aspect_ratio": "1:1",
+          "display_aspect_ratio": "16:9",
+          "pix_fmt": "yuv420p",
+          "level": 40,
+          "chroma_location": "left",
+          "field_order": "progressive",
+          "refs": 1,
+          "is_avc": "true",
+          "nal_length_size": "4",
+          "id": "0x1",
+          "r_frame_rate": "30/1",
+          "avg_frame_rate": "30/1",
+          "time_base": "1/15360",
+          "start_pts": 0,
+          "start_time": "0.000000",
+          "duration_ts": 262656,
+          "duration": "17.100000",
+          "bit_rate": "1111584",
+          "bits_per_raw_sample": "8",
+          "nb_frames": "513",
+          "extradata_size": 47,
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "VideoHandler",
+            "vendor_id": "[0][0][0][0]",
+            "encoder": "Lavc60.31.102 libx264"
+          }
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_long_name": "AAC (Advanced Audio Coding)",
+          "profile": "LC",
+          "codec_type": "audio",
+          "codec_tag_string": "mp4a",
+          "codec_tag": "0x6134706d",
+          "sample_fmt": "fltp",
+          "sample_rate": "48000",
+          "channels": 1,
+          "channel_layout": "mono",
+          "bits_per_sample": 0,
+          "initial_padding": 0,
+          "id": "0x2",
+          "r_frame_rate": "0/0",
+          "avg_frame_rate": "0/0",
+          "time_base": "1/48000",
+          "start_pts": 0,
+          "start_time": "0.000000",
+          "duration_ts": 821376,
+          "duration": "17.112000",
+          "bit_rate": "70368",
+          "nb_frames": "804",
+          "extradata_size": 5,
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "SoundHandler",
+            "vendor_id": "[0][0][0][0]"
+          }
+        }
+      ],
+      "format": {
+        "filename": "/tmp/clapgrid-26-real-on4lcF/project/exports/2026-09-28T10-40-18-893Z-351490a5-2662-4019-bbe4-998d7bc07955.mp4",
+        "nb_streams": 2,
+        "nb_programs": 0,
+        "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+        "format_long_name": "QuickTime / MOV",
+        "start_time": "0.000000",
+        "duration": "17.112000",
+        "size": "2546989",
+        "bit_rate": "1190738",
+        "probe_score": 100,
+        "tags": {
+          "major_brand": "isom",
+          "minor_version": "512",
+          "compatible_brands": "isomiso2avc1mp41",
+          "encoder": "Lavf60.16.100"
+        }
+      }
+    }
+  },
+  "export-before-crash": {
+    "status": {
+      "application": "clapgrid",
+      "apiVersion": 1,
+      "instanceId": "65be80de-6066-4602-bafb-02e1d98f7da4",
+      "pid": 316270,
+      "startedAt": "2026-09-28T10:39:39.604Z",
+      "snapshot": {
+        "project": {
+          "id": "418457e2-8bf2-45d3-9c6d-a3ebdbc552e2",
+          "directory": "/tmp/clapgrid-26-real-on4lcF/project",
+          "createdAt": "2026-09-28T10:37:46.734Z"
+        },
+        "storage": {
+          "database": "/tmp/clapgrid-26-real-on4lcF/project/clapgrid.sqlite",
+          "mediaDirectory": "/tmp/clapgrid-26-real-on4lcF/project/media"
+        },
+        "segments": [
+          {
+            "id": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+            "order": 1,
+            "text": "这是跨退出恢复验证的第一句。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          },
+          {
+            "id": "e03e5715-61e8-4243-be16-0533e096dd9c",
+            "order": 2,
+            "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          }
+        ],
+        "assets": [
+          {
+            "id": "30a87396-1689-4c6a-936c-52a097b87e72",
+            "name": "source.mp4",
+            "duration": 3
+          }
+        ],
+        "exportSettings": {
+          "codec": "libx264",
+          "fps": 30,
+          "fontFamily": "Noto Sans CJK SC",
+          "fontSize": 48
+        }
+      },
+      "taskLocked": false,
+      "modification": null
+    },
+    "accepted": {
+      "id": "c5cf79d5-462d-4596-b59a-18d03c165faf",
+      "createdAt": "2026-09-28T10:41:22.856Z",
+      "state": "accepted",
+      "message": "已受理，尚未完成",
+      "completed": 0,
+      "total": 2,
+      "issues": [],
+      "warnings": []
+    },
+    "snapshot": {
+      "locked": true,
+      "tasks": [
+        {
+          "id": "351490a5-2662-4019-bbe4-998d7bc07955",
+          "createdAt": "2026-09-28T10:40:18.893Z",
+          "state": "succeeded",
+          "message": "导出成功",
+          "completed": 2,
+          "total": 2,
+          "issues": [],
+          "warnings": [
+            {
+              "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+              "order": 2,
+              "field": "video",
+              "message": "视频剩余时长不足，末帧将冻结补足配音时长"
+            }
+          ],
+          "output": {
+            "path": "/tmp/clapgrid-26-real-on4lcF/project/exports/2026-09-28T10-40-18-893Z-351490a5-2662-4019-bbe4-998d7bc07955.mp4",
+            "url": "/api/exports/351490a5-2662-4019-bbe4-998d7bc07955/file",
+            "previewUrl": "/api/exports/351490a5-2662-4019-bbe4-998d7bc07955/preview"
+          }
+        },
+        {
+          "id": "c5cf79d5-462d-4596-b59a-18d03c165faf",
+          "createdAt": "2026-09-28T10:41:22.856Z",
+          "state": "rendering",
+          "message": "正在渲染片段 1（1/2）",
+          "completed": 0,
+          "total": 2,
+          "issues": [],
+          "warnings": [
+            {
+              "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+              "order": 2,
+              "field": "video",
+              "message": "视频剩余时长不足，末帧将冻结补足配音时长"
+            }
+          ],
+          "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024"
+        }
+      ]
+    },
+    "processes": [
+      {
+        "pid": 316278,
+        "comm": "node"
+      },
+      {
+        "pid": 318425,
+        "comm": "ffmpeg"
+      }
+    ],
+    "at": "2026-09-28T10:41:23.832Z"
+  },
+  "export-recovered": {
+    "status": {
+      "application": "clapgrid",
+      "apiVersion": 1,
+      "instanceId": "1752c016-228a-4f2d-88dc-f9d0c54cfb7a",
+      "pid": 318660,
+      "startedAt": "2026-09-28T10:41:49.890Z",
+      "snapshot": {
+        "project": {
+          "id": "418457e2-8bf2-45d3-9c6d-a3ebdbc552e2",
+          "directory": "/tmp/clapgrid-26-real-on4lcF/project",
+          "createdAt": "2026-09-28T10:37:46.734Z"
+        },
+        "storage": {
+          "database": "/tmp/clapgrid-26-real-on4lcF/project/clapgrid.sqlite",
+          "mediaDirectory": "/tmp/clapgrid-26-real-on4lcF/project/media"
+        },
+        "segments": [
+          {
+            "id": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+            "order": 1,
+            "text": "这是跨退出恢复验证的第一句。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          },
+          {
+            "id": "e03e5715-61e8-4243-be16-0533e096dd9c",
+            "order": 2,
+            "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          }
+        ],
+        "assets": [
+          {
+            "id": "30a87396-1689-4c6a-936c-52a097b87e72",
+            "name": "source.mp4",
+            "duration": 3
+          }
+        ],
+        "exportSettings": {
+          "codec": "libx264",
+          "fps": 30,
+          "fontFamily": "Noto Sans CJK SC",
+          "fontSize": 48
+        }
+      },
+      "taskLocked": false,
+      "modification": null
+    },
+    "exports": {
+      "locked": false,
+      "tasks": [
+        {
+          "id": "351490a5-2662-4019-bbe4-998d7bc07955",
+          "createdAt": "2026-09-28T10:40:18.893Z",
+          "state": "succeeded",
+          "message": "导出成功",
+          "completed": 2,
+          "total": 2,
+          "issues": [],
+          "warnings": [
+            {
+              "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+              "order": 2,
+              "field": "video",
+              "message": "视频剩余时长不足，末帧将冻结补足配音时长"
+            }
+          ],
+          "output": {
+            "path": "/tmp/clapgrid-26-real-on4lcF/project/exports/2026-09-28T10-40-18-893Z-351490a5-2662-4019-bbe4-998d7bc07955.mp4",
+            "url": "/api/exports/351490a5-2662-4019-bbe4-998d7bc07955/file",
+            "previewUrl": "/api/exports/351490a5-2662-4019-bbe4-998d7bc07955/preview"
+          }
+        },
+        {
+          "id": "c5cf79d5-462d-4596-b59a-18d03c165faf",
+          "createdAt": "2026-09-28T10:41:22.856Z",
+          "state": "interrupted",
+          "message": "导出已中断，本次文件已清理；不会自动重试，请重新导出",
+          "completed": 0,
+          "total": 2,
+          "issues": [],
+          "warnings": [
+            {
+              "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+              "order": 2,
+              "field": "video",
+              "message": "视频剩余时长不足，末帧将冻结补足配音时长"
+            }
+          ],
+          "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024"
+        }
+      ]
+    },
+    "processes": [
+      {
+        "pid": 316278,
+        "comm": "node",
+        "stat": "gone"
+      },
+      {
+        "pid": 318425,
+        "comm": "ffmpeg",
+        "stat": "gone"
+      }
+    ],
+    "sha256": "1e7cc788d7eb29c23d21101f177db19cc27b9872459f983c610386909f579a97",
+    "files": [
+      "2026-09-28T10-40-18-893Z-351490a5-2662-4019-bbe4-998d7bc07955.mp4"
+    ],
+    "at": "2026-09-28T10:41:49.939Z"
+  },
+  "export-latest-accepted": {
+    "status": {
+      "application": "clapgrid",
+      "apiVersion": 1,
+      "instanceId": "d4722473-ca5d-4b1f-907a-6596f77aafd6",
+      "pid": 319183,
+      "startedAt": "2026-09-28T10:42:41.650Z",
+      "snapshot": {
+        "project": {
+          "id": "418457e2-8bf2-45d3-9c6d-a3ebdbc552e2",
+          "directory": "/tmp/clapgrid-26-real-on4lcF/project",
+          "createdAt": "2026-09-28T10:37:46.734Z"
+        },
+        "storage": {
+          "database": "/tmp/clapgrid-26-real-on4lcF/project/clapgrid.sqlite",
+          "mediaDirectory": "/tmp/clapgrid-26-real-on4lcF/project/media"
+        },
+        "segments": [
+          {
+            "id": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+            "order": 1,
+            "text": "这是跨退出恢复验证的第一句。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          },
+          {
+            "id": "e03e5715-61e8-4243-be16-0533e096dd9c",
+            "order": 2,
+            "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          }
+        ],
+        "assets": [
+          {
+            "id": "30a87396-1689-4c6a-936c-52a097b87e72",
+            "name": "source.mp4",
+            "duration": 3
+          }
+        ],
+        "exportSettings": {
+          "codec": "libx264",
+          "fps": 25,
+          "fontFamily": "Noto Sans CJK SC",
+          "fontSize": 48
+        }
+      },
+      "taskLocked": true,
+      "modification": null
+    },
+    "task": {
+      "id": "e2b93247-cfee-44e6-907b-3f1c3170a60c",
+      "createdAt": "2026-09-28T10:42:42.826Z",
+      "state": "accepted",
+      "message": "已受理，尚未完成",
+      "completed": 0,
+      "total": 2,
+      "issues": [],
+      "warnings": []
+    }
+  },
+  "export-latest-completed": {
+    "status": {
+      "application": "clapgrid",
+      "apiVersion": 1,
+      "instanceId": "d4722473-ca5d-4b1f-907a-6596f77aafd6",
+      "pid": 319183,
+      "startedAt": "2026-09-28T10:42:41.650Z",
+      "snapshot": {
+        "project": {
+          "id": "418457e2-8bf2-45d3-9c6d-a3ebdbc552e2",
+          "directory": "/tmp/clapgrid-26-real-on4lcF/project",
+          "createdAt": "2026-09-28T10:37:46.734Z"
+        },
+        "storage": {
+          "database": "/tmp/clapgrid-26-real-on4lcF/project/clapgrid.sqlite",
+          "mediaDirectory": "/tmp/clapgrid-26-real-on4lcF/project/media"
+        },
+        "segments": [
+          {
+            "id": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+            "order": 1,
+            "text": "这是跨退出恢复验证的第一句。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          },
+          {
+            "id": "e03e5715-61e8-4243-be16-0533e096dd9c",
+            "order": 2,
+            "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+            "video": {
+              "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+              "start": 0
+            }
+          }
+        ],
+        "assets": [
+          {
+            "id": "30a87396-1689-4c6a-936c-52a097b87e72",
+            "name": "source.mp4",
+            "duration": 3
+          }
+        ],
+        "exportSettings": {
+          "codec": "libx264",
+          "fps": 25,
+          "fontFamily": "Noto Sans CJK SC",
+          "fontSize": 48
+        }
+      },
+      "taskLocked": false,
+      "modification": null
+    },
+    "result": {
+      "id": "e2b93247-cfee-44e6-907b-3f1c3170a60c",
+      "createdAt": "2026-09-28T10:42:42.826Z",
+      "state": "succeeded",
+      "message": "导出成功",
+      "completed": 2,
+      "total": 2,
+      "issues": [],
+      "warnings": [
+        {
+          "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+          "order": 2,
+          "field": "video",
+          "message": "视频剩余时长不足，末帧将冻结补足配音时长"
+        }
+      ],
+      "output": {
+        "path": "/tmp/clapgrid-26-real-on4lcF/project/exports/2026-09-28T10-42-42-826Z-e2b93247-cfee-44e6-907b-3f1c3170a60c.mp4",
+        "url": "/api/exports/e2b93247-cfee-44e6-907b-3f1c3170a60c/file",
+        "previewUrl": "/api/exports/e2b93247-cfee-44e6-907b-3f1c3170a60c/preview"
+      }
+    },
+    "media": {
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+          "profile": "High",
+          "codec_type": "video",
+          "codec_tag_string": "avc1",
+          "codec_tag": "0x31637661",
+          "width": 1920,
+          "height": 1080,
+          "coded_width": 1920,
+          "coded_height": 1080,
+          "closed_captions": 0,
+          "film_grain": 0,
+          "has_b_frames": 2,
+          "sample_aspect_ratio": "1:1",
+          "display_aspect_ratio": "16:9",
+          "pix_fmt": "yuv420p",
+          "level": 40,
+          "chroma_location": "left",
+          "field_order": "progressive",
+          "refs": 1,
+          "is_avc": "true",
+          "nal_length_size": "4",
+          "id": "0x1",
+          "r_frame_rate": "25/1",
+          "avg_frame_rate": "25/1",
+          "time_base": "1/12800",
+          "start_pts": 0,
+          "start_time": "0.000000",
+          "duration_ts": 219136,
+          "duration": "17.120000",
+          "bit_rate": "1114321",
+          "bits_per_raw_sample": "8",
+          "nb_frames": "428",
+          "extradata_size": 47,
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "VideoHandler",
+            "vendor_id": "[0][0][0][0]",
+            "encoder": "Lavc60.31.102 libx264"
+          }
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_long_name": "AAC (Advanced Audio Coding)",
+          "profile": "LC",
+          "codec_type": "audio",
+          "codec_tag_string": "mp4a",
+          "codec_tag": "0x6134706d",
+          "sample_fmt": "fltp",
+          "sample_rate": "48000",
+          "channels": 1,
+          "channel_layout": "mono",
+          "bits_per_sample": 0,
+          "initial_padding": 0,
+          "id": "0x2",
+          "r_frame_rate": "0/0",
+          "avg_frame_rate": "0/0",
+          "time_base": "1/48000",
+          "start_pts": 0,
+          "start_time": "0.000000",
+          "duration_ts": 821376,
+          "duration": "17.112000",
+          "bit_rate": "70368",
+          "nb_frames": "804",
+          "extradata_size": 5,
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "SoundHandler",
+            "vendor_id": "[0][0][0][0]"
+          }
+        }
+      ],
+      "format": {
+        "filename": "/tmp/clapgrid-26-real-on4lcF/project/exports/2026-09-28T10-42-42-826Z-e2b93247-cfee-44e6-907b-3f1c3170a60c.mp4",
+        "nb_streams": 2,
+        "nb_programs": 0,
+        "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+        "format_long_name": "QuickTime / MOV",
+        "start_time": "0.000000",
+        "duration": "17.120000",
+        "size": "2549866",
+        "bit_rate": "1191526",
+        "probe_score": 100,
+        "tags": {
+          "major_brand": "isom",
+          "minor_version": "512",
+          "compatible_brands": "isomiso2avc1mp41",
+          "encoder": "Lavf60.16.100"
+        }
+      }
+    },
+    "sha256": "d5c44608b19f473e47413609845be4283626a2fe729d33b1c06661d599fe9275"
+  },
+  "runtime-reuse": {
+    "application": "clapgrid",
+    "apiVersion": 1,
+    "instanceId": "d4722473-ca5d-4b1f-907a-6596f77aafd6",
+    "pid": 319183,
+    "startedAt": "2026-09-28T10:42:41.650Z",
+    "snapshot": {
+      "project": {
+        "id": "418457e2-8bf2-45d3-9c6d-a3ebdbc552e2",
+        "directory": "/tmp/clapgrid-26-real-on4lcF/project",
+        "createdAt": "2026-09-28T10:37:46.734Z"
+      },
+      "storage": {
+        "database": "/tmp/clapgrid-26-real-on4lcF/project/clapgrid.sqlite",
+        "mediaDirectory": "/tmp/clapgrid-26-real-on4lcF/project/media"
+      },
+      "segments": [
+        {
+          "id": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+          "order": 1,
+          "text": "这是跨退出恢复验证的第一句。",
+          "video": {
+            "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+            "start": 0
+          }
+        },
+        {
+          "id": "e03e5715-61e8-4243-be16-0533e096dd9c",
+          "order": 2,
+          "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+          "video": {
+            "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+            "start": 0
+          }
+        }
+      ],
+      "assets": [
+        {
+          "id": "30a87396-1689-4c6a-936c-52a097b87e72",
+          "name": "source.mp4",
+          "duration": 3
+        }
+      ],
+      "exportSettings": {
+        "codec": "libx264",
+        "fps": 25,
+        "fontFamily": "Noto Sans CJK SC",
+        "fontSize": 48
+      }
+    },
+    "taskLocked": false,
+    "modification": null,
+    "url": "http://127.0.0.1:48926"
+  },
+  "wrong-project": "端口上的服务属于其他项目，请保留该服务并明确选择其他端口。"
+}

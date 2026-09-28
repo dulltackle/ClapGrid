@@ -9,8 +9,10 @@ import { queryStatus } from './shared/client.js';
 
 try {
   const action = process.argv[2];
-  if (action !== 'start' && action !== 'status') throw new Error('用法：runtime start|status --project <目录> [--port <端口>]');
-  const options = serviceOptions(process.argv.slice(3));
+  if (action !== 'start' && action !== 'status' && action !== 'stop') throw new Error('用法：runtime start|status|stop --project <目录> [--port <端口>] [--interrupt]');
+  const interrupt = process.argv.slice(3).includes('--interrupt');
+  if (interrupt && action !== 'stop') throw new Error('--interrupt 仅用于明确中断任务并退出服务');
+  const options = serviceOptions(process.argv.slice(3).filter(arg => arg !== '--interrupt'));
   if (options.dev) throw new Error('后台入口仅使用构建产物；开发模式使用 npm run dev。');
   const url = `http://127.0.0.1:${options.port}`;
   const verify = async () => {
@@ -20,7 +22,16 @@ try {
     }
     return { ...status, url };
   };
-  if (action === 'status') {
+  if (action === 'stop') {
+    const status = await verify();
+    const response = await fetch(`${url}/api/service/stop`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ instanceId: status.instanceId, interrupt }), signal: AbortSignal.timeout(5000), redirect: 'error',
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error ?? '退出请求失败');
+    console.log(JSON.stringify(result, null, 2));
+  } else if (action === 'status') {
     console.log(JSON.stringify(await verify(), null, 2));
   } else {
     // 只在明确拒绝连接时启动；未知服务、超时或身份不符均保留现场。

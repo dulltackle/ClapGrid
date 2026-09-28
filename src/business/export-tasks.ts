@@ -37,7 +37,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
     if (removeOutput) await rm(outputPath(task), { force: true });
   };
   // 由独立服务所有权保证此处没有前一服务仍在运行；不自动重试中断任务。
-  const interrupted = tasks().filter(task => !['succeeded', 'failed', 'cancelled'].includes(task.state));
+  const interrupted = tasks().filter(task => !['succeeded', 'failed', 'cancelled', 'interrupted'].includes(task.state));
   if (interrupted.length) {
     active = interrupted[0];
     running = (async () => {
@@ -45,7 +45,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
         task.state = 'cleaning'; task.message = '正在清理中断导出'; save(task);
         await cleanup(task, true);
         await rm(previewPath(task), { force: true });
-        task.state = 'failed'; task.message = '导出已中断，请重新导出'; save(task);
+        task.state = 'interrupted'; task.message = '导出已中断，本次文件已清理；不会自动重试，请重新导出'; save(task);
       }
       active = undefined;
     })().catch(error => { if (active) { active.message = `清理失败，项目仍锁定：${(error as Error).message}`; } });
@@ -147,7 +147,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
         // 取消也可能发生在异步清理期间，发布文件须再次核对。
         if (published && signal.aborted) { inputs.verify(); await rm(outputPath(task), { force: true }); }
         if (previewPublished && (!succeeded || signal.aborted)) { inputs.verify(); await rm(previewPath(task), { force: true }); }
-        if (signal.aborted) { task.state = 'cancelled'; task.message = '导出已取消，本次文件已清理'; }
+        if (signal.aborted) { task.state = closed ? 'interrupted' : 'cancelled'; task.message = closed ? '导出已中断，本次文件已清理；不会自动重试' : '导出已取消，本次文件已清理'; }
         else if (succeeded) {
           task.state = 'succeeded'; task.message = '导出成功';
           task.output = { path: outputPath(task), url: `/api/exports/${task.id}/file`, previewUrl: `/api/exports/${task.id}/preview` };

@@ -1,7 +1,10 @@
+import { mediaScope } from './media-guardian.js';
 import { spawn } from 'node:child_process';
 
 /** 取消必须等 close：收到 AbortError 不代表子进程已经停止写文件。 */
 export function mediaProcess(command: string, args: string[], options: { signal?: AbortSignal; cwd?: string; timeout?: number } = {}): Promise<{ stdout: string; stderr: string }> {
+  const guardian = mediaScope.getStore();
+  if (guardian) return guardian(command, args, options);
   options.signal?.throwIfAborted();
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { cwd: options.cwd, stdio: ['ignore', 'pipe', 'pipe'] });

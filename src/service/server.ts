@@ -1,3 +1,5 @@
+import { mediaScope, startMediaGuardian } from '../business/media-guardian.js';
+import { z } from 'zod';
 import { localSpeechRuntime } from './speech-config.js';
 import type { SpeechRuntime } from '../business/speech.js';
 import { randomUUID } from 'node:crypto';
@@ -17,10 +19,18 @@ export interface ServiceOptions {
 }
 
 export async function startService(options: ServiceOptions) {
-  const releaseOwnership = claimProjectService(options.projectDirectory);
+  const releaseProject = claimProjectService(options.projectDirectory);
+  let guardian: Awaited<ReturnType<typeof startMediaGuardian>>;
+  try { guardian = await startMediaGuardian(options.projectDirectory); }
+  catch (error) { releaseProject(); throw error; }
+  const releaseOwnership = async () => { await guardian.close(); releaseProject(); };
+  return mediaScope.run(guardian.run, () => startOwnedService(options, releaseOwnership, guardian.verify));
+}
+
+async function startOwnedService(options: ServiceOptions, releaseOwnership: () => Promise<void>, verifyRuntime: () => void) {
   let business: ReturnType<typeof openBusiness>;
-  try { business = openBusiness(options.projectDirectory, options.speechRuntime ?? localSpeechRuntime()); }
-  catch (error) { releaseOwnership(); throw error; }
+  try { business = openBusiness(options.projectDirectory, options.speechRuntime ?? localSpeechRuntime(), verifyRuntime); }
+  catch (error) { await releaseOwnership(); throw error; }
   const instanceId = randomUUID();
   const startedAt = new Date().toISOString();
   let vite: import('vite').ViteDevServer | undefined;
@@ -57,6 +67,24 @@ export async function startService(options: ServiceOptions) {
       sessions.get(token)?.();
       sessions.delete(token);
     };
+    let stopping = false;
+    let closing: Promise<void> | undefined;
+    const close = () => closing ??= (async () => {
+      stopping = true;
+      for (const id of tableSessions.keys()) finishTable(id);
+      for (const token of sessions.keys()) finishSession(token);
+      server.closeAllConnections();
+      await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+      await vite?.close();
+      await business.close();
+      await releaseOwnership();
+    })();
+    const requestStop = (interrupt = false) => {
+      if (!interrupt && status().taskLocked) return { outcome: 'kept', message: '有任务正在执行，默认保持服务。仅明确选择“中断任务并退出”才停止。' };
+      stopping = true;
+      setImmediate(() => { void close().catch(error => console.error('服务清理失败，不能确认已退出：', error)); });
+      return { outcome: 'stopping', message: '正在停止服务，等待任务结束和清理。' };
+    };
     const server = createServer(async (request, response) => {
       const host = `127.0.0.1:${(server.address() as import('node:net').AddressInfo).port}`;
       response.setHeader('X-Content-Type-Options', 'nosniff');
@@ -78,7 +106,26 @@ export async function startService(options: ServiceOptions) {
         response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         response.end(JSON.stringify(body));
       };
-      if (path === '/api/exports/submit' || path === '/api/exports/cancel') {
+      if (stopping && request.method !== 'GET') { reject(503, '服务正在退出，不能受理新操作'); return; }
+      if (path === '/api/service/stop') {
+        if (request.method !== 'POST') { reject(405, '请使用 POST。'); return; }
+        if (request.headers['content-type']?.split(';')[0]?.trim() !== 'application/json') { reject(415, '请使用 application/json。'); return; }
+        const timer = setTimeout(() => request.destroy(), 5000);
+        try {
+          const chunks: Buffer[] = []; let size = 0;
+          for await (const chunk of request) {
+            size += chunk.length;
+            if (size > 4096) { reject(413, '请求内容过大'); return; }
+            chunks.push(Buffer.from(chunk));
+          }
+          const input = z.object({ instanceId: z.uuid(), interrupt: z.boolean().default(false) }).strict().parse(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+          if (input.instanceId !== instanceId) { reject(409, '服务实例已改变，请重新查询再决定退出'); return; }
+          json(requestStop(input.interrupt));
+        } catch { if (!response.destroyed) reject(400, '退出请求无效'); }
+        finally { clearTimeout(timer); }
+        return;
+      }
+      if (path === '/api/exports/submit'  || path === '/api/exports/cancel') {
         if (request.method !== 'POST') { reject(405, '请使用 POST。'); return; }
         if (request.headers['content-type']?.split(';')[0]?.trim() !== 'application/json') { reject(415, '请使用 application/json。'); return; }
         const timeout = setTimeout(() => request.destroy(), 5000);
@@ -312,25 +359,12 @@ export async function startService(options: ServiceOptions) {
       });
     });
     const port = (server.address() as import('node:net').AddressInfo).port;
-    let closing: Promise<void> | undefined;
-    return {
-      url: `http://127.0.0.1:${port}`,
-      close() {
-        return closing ??= (async () => {
-          for (const id of tableSessions.keys()) finishTable(id);
-          for (const token of sessions.keys()) finishSession(token);
-          server.closeAllConnections();
-          await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
-          await vite?.close();
-          await business.close();
-          releaseOwnership();
-        })();
-      },
-    };
+    return { url: `http://127.0.0.1:${port}`, close, requestStop };
+
   } catch (error) {
     await vite?.close();
     await business.close();
-    releaseOwnership();
+    await releaseOwnership();
     throw error;
   }
 }
