@@ -26,42 +26,32 @@
   font-synthesis: none;
 }
 * { box-sizing: border-box; }
+html, body, #root { height: 100%; overflow: hidden; }
 body { margin: 0; }
-main { padding: var(--space-6); max-width: 1600px; min-width: 0; margin: auto; }
-header { margin-bottom: var(--space-4); }
+/* 主表格获得工具栏与状态栏之外的全部真实剩余高度。 */
+main { height: 100dvh; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); max-width: 1600px; min-width: 0; margin: auto; }
 h1 { font-size: 18px; line-height: 1.5; margin: 0; font-weight: 600; }
-.connection { margin-bottom: var(--space-4); color: var(--color-ink-secondary); }
-.connection-status { margin: 0; }
-.connection-error {
-  padding: var(--space-3);
-  color: var(--color-error);
-  background: var(--color-error-surface);
-  border-radius: var(--radius-control);
-}
-.diagnostics { margin-top: var(--space-2); font-size: 12px; }
+.diagnostics { font-size: 12px; }
 summary { width: fit-content; padding: var(--space-1) var(--space-2); border-radius: var(--radius-control); cursor: pointer; }
 summary:hover { background: var(--color-hover); }
 summary:active { background: var(--color-border); }
 :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
-.diagnostics dl { margin: var(--space-2) 0 0; padding: var(--space-3); background: var(--color-surface-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-control); }
+.diagnostics { margin: var(--space-2) 0 0; padding: var(--space-3); background: var(--color-surface-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-control); }
 .diagnostics dt { font-weight: 600; color: var(--color-ink); }
 .diagnostics dd { margin: 0 0 var(--space-2); overflow-wrap: anywhere; }
 .diagnostics dd:last-child { margin-bottom: 0; }
-.grid { width: 100%; min-width: 0; height: max(340px, calc(100dvh - 170px)); }
-@media (max-width: 600px) { main { padding: var(--space-4); } }
+.grid { width: 100%; min-width: 0; flex: 1; min-height: 0; }
 
-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+header { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 button { font: inherit; color: var(--color-ink); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-1) var(--space-3); cursor: pointer; }
 button:hover:not(:disabled) { background: var(--color-hover); }
 button:disabled { opacity: .5; cursor: default; }
 .save-status { margin: 0 0 var(--space-2); color: var(--color-ink-secondary); }
 .save-error { color: var(--color-error); }
 
-.organization { margin-bottom: var(--space-4); }
+.organization { flex: none; }
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
-.toolbar span, .selection-status { font-size: 12px; color: var(--color-ink-secondary); }
-.selection-status { margin: var(--space-2) 0; }
-.selection-status button { margin-left: var(--space-2); }
+.toolbar span { font-size: 12px; color: var(--color-ink-secondary); }
 input, textarea { font: inherit; border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-1) var(--space-2); }
 textarea { display: block; width: 100%; min-height: 100px; margin: var(--space-2) 0; resize: vertical; }
 
@@ -90,3 +80,19 @@ header { flex-wrap: wrap; }
 .export-tasks p, .export-tasks li { overflow-wrap: anywhere; }
 
 .media-dialog [data-focus-guard] { position: fixed; width: 1px; height: 1px; overflow: hidden; opacity: 0; }
+
+.export-scope { margin: 0; font-size: 12px; color: var(--color-ink-secondary); }
+.status-bar { flex: none; border-top: 1px solid var(--color-border); padding-top: var(--space-2); font-size: 12px; color: var(--color-ink-secondary); }
+.status-bar p { margin: 0; overflow-wrap: anywhere; }
+.status-line { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
+.status-line .save-status { margin: 0; }
+.status-errors { color: var(--color-error); background: var(--color-error-surface); max-height: 22dvh; overflow: auto; }
+.more-actions { display: grid; gap: var(--space-2); margin-bottom: var(--space-4); }
+@media (max-width: 600px) {
+  main { padding: var(--space-2); }
+  header { gap: var(--space-1); }
+  header .toolbar { gap: var(--space-1); }
+  header button { padding-inline: var(--space-2); }
+}
+
+.lock-status { min-height: 18px; }

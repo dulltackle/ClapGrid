@@ -19,6 +19,10 @@ const script = String.raw`
   const dialog = () => document.querySelector('[role="dialog"], dialog');
   const field = label => document.querySelector('[aria-label="' + label + '"]');
   const click = async node => { await act(async () => { check(node && !node.disabled, '入口必须可用'); node.focus(); node.click(); await settle(); }); await settle(); };
+  const visibleControl = async label => {
+    for (let attempt = 0; attempt < 100; attempt++) { const node = field(label); if (node) return node; await settle(); }
+    throw Error('表格虚拟滚动后入口未出现：' + label);
+  };
   const key = async (key, shift = false) => { await act(async () => { await window.browserInput({ key, shift }); await settle(); }); await settle(); };
   const poll = async () => { await act(async () => { [...intervals.values()].forEach(callback => callback()); await settle(); }); await settle(); };
   const input = async (node, value) => { await act(async () => {
@@ -43,8 +47,8 @@ const script = String.raw`
       const root = createRoot(document.getElementById('root'));
       await act(async () => { root.render(<StrictMode><App /></StrictMode>); await settle(); });
       await settle();
-      const settings = button('导出设置');
-      await click(settings);
+      const settings = button('更多');
+      await click(button('更多')); await click(button('导出设置'));
       check(dialog()?.getAttribute('aria-label') === '全片导出设置', '设置必须有可访问名称');
       check(dialog().contains(document.activeElement), '打开设置后焦点必须进入浮层');
       await screenshot('settings');
@@ -63,10 +67,12 @@ const script = String.raw`
       const rowId = 'segment-20';
       const checkbox = document.querySelector('[row-id="' + rowId + '"] input[type="checkbox"]');
       await click(checkbox);
+      // 焦点移动也会触发表格滚动；等待该次手势结束后再操作横向滚动条。
+      await new Promise(resolve => setTimeout(resolve, 200));
       horizontal.scrollLeft = 700; await settle();
       const before = JSON.stringify(state.status.snapshot.segments);
       const scrollTop = body.scrollTop, scrollLeft = horizontal.scrollLeft;
-      const history = field('展开片段 21 的保留音频');
+      const history = await visibleControl('展开片段 21 的保留音频');
       check(history, '真实 AG Grid 必须显示保留音频入口');
       cell(rowId, '1').focus(); await key('Tab');
       check(document.activeElement.tagName === 'BUTTON', 'Tab 应能从配音单元格进入按钮');
@@ -93,7 +99,7 @@ const script = String.raw`
       await key('Escape');
       check(state.saves === 0 && state.mutations.length === 0 && JSON.stringify(state.status.snapshot.segments) === before, '连续查看视频与试听不改变片段或触发任务');
 
-      await click(button('导出设置')); await click(button('编辑设置'));
+      await click(button('更多')); await click(button('导出设置')); await click(button('编辑设置'));
       const lease = state.current;
       state.saveGate = deferred();
       await act(async () => { const fps = field('导出帧率'); fps.value = '60'; fps.dispatchEvent(new Event('change', { bubbles: true })); });
@@ -109,7 +115,7 @@ const script = String.raw`
       check(!dialog() && lease.closes === 1 && state.status.snapshot.exportSettings.fontSize === 48, '保存完成后关闭并释放一次修改权');
       await poll();
       state.status.modification = { owner: 'codex' }; await poll();
-      await click(button('导出设置'));
+      await click(button('更多')); await click(button('导出设置'));
       check(button('编辑设置').disabled, 'Codex 修改期间设置保持只读');
       await key('Escape'); state.status.modification = null; await poll();
 
@@ -127,12 +133,12 @@ const script = String.raw`
       await click(button('保存关联与起点')); await settle();
       check(!dialog() && state.status.snapshot.segments.find(segment => segment.id === rowId).video.start === 5, '素材保存保持原有行为');
       await poll();
-      await click(button('导入本地视频')); await input(field('视频文件绝对路径'), '/tmp/example.mp4');
+      await click(button('更多')); await click(button('导入本地视频')); await input(field('视频文件绝对路径'), '/tmp/example.mp4');
       state.saveGate = deferred(); await click(button('导入并复制'));
       const oldSave = state.saveGate; state.saveGate = null; const importLease = state.current;
       await key('Escape');
       check(!dialog() && importLease.closes === 1, '处理期间 Esc 沿用已有取消路径并释放修改权');
-      await poll(); await click(button('导出设置')); await click(button('编辑设置'));
+      await poll(); await click(button('更多')); await click(button('导出设置')); await click(button('编辑设置'));
       const newLease = state.current;
       await act(async () => { oldSave.resolve(); await settle(); });
       check(state.current === newLease && newLease.closes === 0, '已取消处理的迟到结果不得释放新编辑');

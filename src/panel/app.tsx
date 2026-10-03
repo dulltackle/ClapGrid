@@ -1,6 +1,6 @@
 import { Dialog } from './dialog.js';
 import { dialogReturnFocus } from './dialog-focus.js';
-import { ExportTasksPanel } from './export-tasks.js';
+import { ExportTaskDetails, exportStateLabel, useExportTasks } from './export-tasks.js';
 import { ExportSettingsPanel } from './export-settings.js';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
@@ -43,9 +43,14 @@ const cellControlKeyboard: NonNullable<ColDef<Segment>['suppressKeyboardEvent']>
   event.preventDefault(); buttons[next]!.focus(); return true;
 };
 
+function EmptyProject({ message }: { message: string }) { return <span>{message}</span>; }
+
 export function App() {
   const [editing] = useState(() => projectEditing(() => beginEdit(window.location.origin)));
   const editState = useSyncExternalStore(editing.subscribe, editing.getState);
+  const [detail, setDetail] = useState<'more' | 'voice' | 'paste' | 'tasks' | 'diagnostics' | null>(null);
+  const moreButton = useRef<HTMLButtonElement>(null);
+  const exports = useExportTasks(() => { void editing.refresh(() => queryStatus(window.location.origin), setStatus, () => {}); });
   const [exportSettingsOpen, setExportSettingsOpen] = useState(false);
   const [status, setStatus] = useState<ServiceStatus>();
   const [speech, setSpeech] = useState<SpeechStatus>();
@@ -67,10 +72,11 @@ export function App() {
   const [saveError, setSaveError] = useState('');
   const grid = useRef<GridApi<Segment> | null>(null);
   const tableFallback = useRef<HTMLInputElement>(null);
-  const returnFocus = useRef({ settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {} });
+  const returnFocus = useRef({ settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, detail: () => {} });
   const rememberOrigin = (trigger: HTMLElement, detail: keyof typeof returnFocus.current) => {
     returnFocus.current[detail] = dialogReturnFocus(trigger, () => grid.current, () => tableFallback.current);
   };
+  const openDetail = (next: typeof detail, trigger: HTMLElement) => { rememberOrigin(trigger, 'detail'); setDetail(next); };
   const failed = (cause: Error) => { setSaveState('failed'); setSaveError(cause.message); };
   const disconnected = () => {
     setVideoEditor(null); setImporting(false);
@@ -133,12 +139,13 @@ export function App() {
     const storageKey = `clapgrid-speech:${status.snapshot.project.id}:${segmentId}`;
     const requestId = localStorage.getItem(storageKey) ?? crypto.randomUUID();
     localStorage.setItem(storageKey, requestId);
-    const task = await submitSpeech(window.location.origin, { requestId, segmentId });
+    await submitSpeech(window.location.origin, { requestId, segmentId });
     localStorage.removeItem(storageKey);
     const next = await querySpeech(window.location.origin);
-    action.apply(() => { setSaveError(`任务 ${task.id}：${task.message}`); setSaveState('saved'); setSpeech(next); });
+    action.apply(() => { setSaveError(''); setSaveState('saved'); setSpeech(next); });
   }, failed);
   const changeVoice = (voice: Voice) => editing.run(async action => {
+    setSaveError('');
     await setVoice(window.location.origin, voice);
     const next = await querySpeech(window.location.origin);
     action.apply(() => { setSpeech(next); setSaveState('saved'); });
@@ -246,27 +253,34 @@ export function App() {
   }, [editing]);
   const disabled = !status || !speech || speech.locked || status.taskLocked || editState.busy || editState.editing || !!status.modification;
   const selectedPosition = status?.snapshot.segments.findIndex(segment => segment.id === selectedIds[0]) ?? -1;
+  const speechTask = speech?.tasks.at(-1);
+  const speechProblems = speech?.tasks.filter(task => task.state === 'failed' || task.state === 'unknown') ?? [];
+  const batchTask = speech?.operations.at(-1);
+  const exportTask = exports.exports?.tasks.at(-1);
+  const exportProblems = exports.exports?.tasks.filter(task => task.state === 'failed' || task.state === 'interrupted') ?? [];
+  const lock = speech?.locked ? '配音进行中，项目已锁定；可查询和试听' : status?.taskLocked || exports.exports?.locked ? '导出进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : '';
   return <main>
     <header><h1>口播片段</h1>
-      <button disabled={!status} onClick={event => { rememberOrigin(event.currentTarget, 'settings'); setExportSettingsOpen(true); }}>导出设置</button>
-      <button disabled={disabled} onClick={event => { rememberOrigin(event.currentTarget, 'video'); void openVideoEditor(); }}>导入本地视频</button>
-      <button disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
+      <div className="toolbar">
+        <button disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
+        <button disabled={exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { void exports.run(); }}>导出全片</button>
+        <button ref={moreButton} aria-haspopup="dialog" onClick={event => openDetail('more', event.currentTarget)}>更多</button>
+      </div>
     </header>
-    <p className={`save-status${saveState === 'failed' ? ' save-error' : ''}`} role="status">
-      {saveState === 'saving' ? '保存中…' : saveState === 'failed' ? saveError : speech?.locked ? '配音进行中，项目已锁定；可查询和试听，关闭面板不终止任务' : status?.taskLocked ? '导出进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : status ? '已保存' : '等待读取项目'}
-    </p>
-    <section className={`connection${error ? ' connection-error' : ''}`} aria-label="服务连接">
-      <p className="connection-status" role="status">{error || (status ? '本地服务已连接' : '正在连接本地服务…')}</p>
-      {status && <details className="diagnostics">
-        <summary>诊断信息</summary>
-        <dl>
-          <dt>项目路径</dt><dd>{status.snapshot.project.directory}</dd>
-          <dt>服务实例</dt><dd>{status.instanceId}</dd>
-          <dt>PID</dt><dd>{status.pid}</dd>
-        </dl>
-      </details>}
-    </section>
-    {speech && <section className="organization" aria-label="统一声音设置">
+    <p id="export-scope" className="export-scope">全片导出：筛选与勾选不改变范围</p>
+    {detail === 'more' && <Dialog label="更多操作" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
+      <h2>更多操作</h2>
+      <div className="more-actions">
+        <button disabled={disabled} onClick={() => { rememberOrigin(moreButton.current!, 'video'); setDetail(null); void openVideoEditor(); }}>导入本地视频</button>
+        <button disabled={disabled} onClick={() => setDetail('paste')}>粘贴多行文案</button>
+        <button disabled={!speech} onClick={() => setDetail('voice')}>声音设置</button>
+        <button disabled={!status} onClick={() => { rememberOrigin(moreButton.current!, 'settings'); setDetail(null); setExportSettingsOpen(true); }}>导出设置</button>
+        <button onClick={() => setDetail('tasks')}>任务记录</button>
+      </div>
+      <button onClick={() => setDetail(null)}>关闭</button>
+    </Dialog>}
+    {detail === 'voice' && speech && <Dialog label="统一声音设置" onClose={() => { if (!editState.busy) setDetail(null); }} restoreFocus={returnFocus.current.detail}>
+      <h2>统一声音设置</h2>
       <div className="toolbar">
         <label>统一音色 <select aria-label="统一音色" disabled={disabled} value={speech.voice.speaker} onChange={event => { void changeVoice({ ...speech.voice, speaker: event.target.value as Voice['speaker'] }); }}>
           <option value="zh_female_vv_uranus_bigtts">vivi 2.0</option>
@@ -281,17 +295,45 @@ export function App() {
         <span>TokenDance 凭据：{speech.configured ? '已配置' : '未配置'}</span>
       </div>
       <p>文案通过 TokenDance seed-tts-2.0 生成配音，可能产生费用。配置位置：{speech.configPath}，键名 TOKENDANCE_KEY。已配置不代表服务已验证。</p>
+      {saveState === 'failed' && <p role="alert">{saveError}</p>}
+      <button disabled={editState.busy} onClick={() => setDetail(null)}>关闭声音设置</button>
+    </Dialog>}
+    {detail === 'tasks' && <Dialog label="任务记录" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
+      <h2>任务记录</h2>
+      {speech && <section aria-label="配音任务">
       {speech.operations.length > 0 && <section aria-label="批量配音进度" aria-live="polite">
-        {speech.operations.slice(-5).reverse().map(operation => <details key={operation.id} open={operation.summary.pending > 0}>
+        {speech.operations.slice().reverse().map(operation => <details key={operation.id} open={operation.summary.pending > 0}>
           <summary>批量配音：完成 {operation.summary.completed} · 成功 {operation.summary.succeeded} · 失败 {operation.summary.failed} · 已中断 {operation.summary.interrupted} · 待完成 {operation.summary.pending} · 跳过 {operation.summary.skipped} · 拒绝 {operation.summary.rejected}</summary>
           <p>操作 {operation.id} · 请求 {operation.request.requestId}</p>
           {operation.results.map(item => <p key={item.segmentId}>片段 {status?.snapshot.segments.find(segment => segment.id === item.segmentId)?.order ?? item.segmentId}：{({ accepted: '已受理', existing: '已有任务', skipped: '已跳过', rejected: '被拒绝' })[item.outcome]} · {item.state ? ({ accepted: '尚未完成', running: '正在生成', succeeded: '成功', failed: '失败', unknown: '已中断／结果未知' })[item.state] : ''} · {item.message}</p>)}
         </details>)}
       </section>}
-      {speech.tasks.length > 0 && <details><summary>配音任务与请求标识</summary>{speech.tasks.map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{task.message}</p>)}</details>}
-    </section>}
-    <ExportTasksPanel onStatus={() => { void editing.refresh(() => queryStatus(window.location.origin), setStatus, () => {}); }} />
-    {exportSettingsOpen && status && <ExportSettingsPanel restoreFocus={returnFocus.current.settings} editing={editing} status={status} onStatus={setStatus} onClose={() => setExportSettingsOpen(false)} />}
+      {speech.tasks.length > 0 && <details open><summary>配音任务与请求标识</summary>{speech.tasks.map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{task.message}</p>)}</details>}
+        {!speech.tasks.length && <p>暂无配音任务</p>}
+      </section>}
+      <ExportTaskDetails controller={exports} />
+      <button onClick={() => setDetail(null)}>关闭任务记录</button>
+    </Dialog>}
+    {detail === 'diagnostics' && <Dialog label="连接诊断" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
+      <h2>连接诊断</h2><p>{error || (status ? '本地服务已连接' : '正在连接本地服务…')}</p>
+      {status && <dl className="diagnostics">
+        <dt>项目路径</dt><dd>{status.snapshot.project.directory}</dd>
+        <dt>服务实例</dt><dd>{status.instanceId}</dd>
+        <dt>PID</dt><dd>{status.pid}</dd>
+      </dl>}
+      <p>{selectionState}</p>
+      <button onClick={() => setDetail(null)}>关闭诊断</button>
+    </Dialog>}
+    {detail === 'paste' && <Dialog label="粘贴多行文案" onClose={() => { if (!editState.busy) setDetail(null); }} restoreFocus={returnFocus.current.detail}>
+      <h2>粘贴多行文案</h2>
+      {saveState === 'failed' && <p role="alert">{saveError}</p>}
+      <textarea aria-label="多行文案" value={paste} disabled={editState.busy} onChange={event => setPaste(event.target.value)} placeholder="每个非空行创建一个口播片段" />
+      <div className="toolbar">
+        <button disabled={disabled || !paste.trim()} onClick={() => { void organize({ changes: [{ kind: 'paste', text: paste }] }); }}>按非空行新增</button>
+        <button disabled={editState.busy} onClick={() => setDetail(null)}>关闭</button>
+      </div>
+    </Dialog>}
+    {exportSettingsOpen && status && <ExportSettingsPanel restoreFocus={returnFocus.current.settings} editing={editing} status={status} onStatus={setStatus} onSaveState={(state, message = '') => { setSaveState(state); setSaveError(message); }} onClose={() => setExportSettingsOpen(false)} />}
     {audioHistory && <Dialog label="保留音频" onClose={() => setAudioHistory(null)} restoreFocus={returnFocus.current.history}>
       <h2>保留音频</h2>
       <ul className="audio-history">{speech?.audio.filter(audio => audio.segmentId === audioHistory).slice().reverse().map(audio => <li key={audio.taskId}>
@@ -316,13 +358,6 @@ export function App() {
         <button disabled={disabled || selectedIds.length !== 1 || selectedPosition <= 0} onClick={() => move(-1)}>项目顺序上移</button>
         <button disabled={disabled || selectedIds.length !== 1 || selectedPosition < 0 || selectedPosition >= (status?.snapshot.segments.length ?? 0) - 1} onClick={() => move(1)}>项目顺序下移</button>
       </div>
-      <p className="selection-status" role="status">{selectionState}
-        {selectionState.includes('断开') && <button onClick={() => setConnectionVersion(version => version + 1)}>重新连接勾选</button>}
-      </p>
-      <details><summary>粘贴多行文案</summary>
-        <textarea aria-label="多行文案" value={paste} onChange={event => setPaste(event.target.value)} placeholder="每个非空行创建一个口播片段" />
-        <button disabled={disabled || !paste.trim()} onClick={() => { void organize({ changes: [{ kind: 'paste', text: paste }] }); }}>按非空行新增</button>
-      </details>
     </section>
     {(videoEditor || importing) && <Dialog label={importing ? '导入本地视频' : '关联视频'} onClose={cancelVideo} restoreFocus={returnFocus.current.video}>
       <h2>{importing ? '导入本地视频' : '关联视频'}</h2>
@@ -360,7 +395,31 @@ export function App() {
       theme={theme} loading={!status && !error} columnDefs={columns} rowData={status?.snapshot.segments ?? []}
       defaultColDef={{ editable: false, sortable: false, resizable: true }}
       overlayLoadingTemplate="<span>正在连接本地服务…</span>"
-      overlayNoRowsTemplate={error ? '<span>暂时无法读取口播片段</span>' : '<span>暂无口播片段</span>'} /></AgGridProvider></div>
+      noRowsOverlayComponent={EmptyProject}
+      noRowsOverlayComponentParams={{ message: error ? '暂时无法读取口播片段' : '暂无口播片段' }} /></AgGridProvider></div>
+    <footer className="status-bar" aria-label="项目状态">
+      <div className="status-line" role="status">
+        <span>{error ? '服务连接失败' : status ? '本地服务已连接' : '正在连接本地服务…'}</span>
+        <span className={`save-status${saveState === 'failed' ? ' save-error' : ''}`}>{saveState === 'saving' ? '保存中…' : saveState === 'failed' ? '保存失败' : status ? '已保存' : '等待读取项目'}</span>
+        <button onClick={event => openDetail('diagnostics', event.currentTarget)}>连接诊断</button>
+        <button onClick={event => openDetail('tasks', event.currentTarget)}>任务详情</button>
+      </div>
+      <p className="lock-status" role="status">{lock}</p>
+      <p className="task-summary" role="status">
+        {exportTask ? `${exportStateLabel[exportTask.state]} ${exportTask.completed}/${exportTask.total}` : '暂无导出任务'}
+        {speechTask && ` · 配音：${({ accepted: '已受理', running: '生成中', succeeded: '生成成功', failed: '生成失败', unknown: '结果未知，可能已计费' })[speechTask.state]}`}
+        {batchTask && ` · 批量配音：完成 ${batchTask.summary.completed}，待完成 ${batchTask.summary.pending}，失败 ${batchTask.summary.failed}，中断 ${batchTask.summary.interrupted}`}
+      </p>
+      {(error || saveError || exports.connectionError || exports.operationError || speechProblems.length > 0 || exportProblems.length > 0 || selectionState.includes('断开')) && <div className="status-errors" aria-label="操作异常">
+        {error && <p role="alert">{error}</p>}
+        {saveError && <p role={saveState === 'failed' ? 'alert' : 'status'}>{saveError}</p>}
+        {exports.connectionError && <p role="alert">{exports.connectionError}</p>}
+        {exports.operationError && <p role="alert">{exports.operationError}</p>}
+        {speechProblems.length > 0 && <p role="alert">配音异常 {speechProblems.length} 项{speechProblems.some(task => task.state === 'unknown') ? ' · 结果未知，可能已计费' : ' · 生成失败'}，请查看任务详情</p>}
+        {exportProblems.length > 0 && <p role="alert">导出失败或中断 {exportProblems.length} 项，请查看任务详情</p>}
+        {selectionState.includes('断开') && <p role="alert">{selectionState} <button onClick={() => setConnectionVersion(version => version + 1)}>重新连接勾选</button></p>}
+      </div>}
+    </footer>
   </main>;
 }
 

@@ -6,15 +6,16 @@ export const fixture = String.raw`
       project: { id: 'project', directory: '/tmp/project' }, assets: [],
       segments: [{ id: 'segment', order: 1, text: '原文', video: null }],
       exportSettings: { codec: 'libx264', fps: 30, fontFamily: 'Test', fontSize: 32 },
-    } }, queries: [], delayQuery: false, acquireGate: null, saveGate: null, current: null, leases: [], saves: 0, mutations: [], speech: null,
+    } }, queries: [], delayQuery: false, acquireGate: null, saveGate: null, current: null, leases: [], saves: 0, mutations: [], speech: null, exports: { locked: false, tasks: [] }, statusFailure: false, exportFailure: false, submitFailure: false, cancelFailure: false, saveFailure: false, selectionFailure: false, voiceFailure: false, batchFailure: false, exportRequests: [], exportQueries: 0,
   };
   export async function queryStatus() {
+    if (state.statusFailure) throw Error('项目读取失败');
     const result = copy(state.status);
     if (state.delayQuery) { const gate = deferred(); state.queries.push({ gate, result }); await gate.promise; }
     return result;
   }
   export async function querySpeech() { return copy(state.speech) ?? { locked: false, voice: { speaker: 'zh_female_vv_uranus_bigtts', speechRate: 0 }, configured: false, configPath: '/tmp/config', operations: [], tasks: [], audio: [] }; }
-  export async function queryExports() { return { locked: false, tasks: [] }; }
+  export async function queryExports() { state.exportQueries++; if (state.exportFailure) throw Error('读取导出任务失败'); return copy(state.exports); }
   export async function queryExportSettings() { return { settings: copy(state.status.snapshot.exportSettings), fonts: ['Test'], issues: [] }; }
   export async function beginEdit() {
     if (state.current) throw Error('用户正在编辑');
@@ -28,6 +29,7 @@ export const fixture = String.raw`
     return lease;
   }
   export async function saveExportSettings(_, { settings }) {
+    if (state.saveFailure) throw Error('设置保存失败');
     state.saves++; state.status.snapshot.exportSettings = copy(settings);
     const result = { settings: copy(settings), status: copy(state.status) };
     if (state.saveGate) await state.saveGate.promise;
@@ -46,11 +48,13 @@ export const fixture = String.raw`
     if (state.saveGate) await state.saveGate.promise;
     return result;
   }
-  export async function connectTable() { const done = deferred(); return { tableId: 'table', select: async () => {}, closed: done.promise, close: async () => done.resolve() }; }
-  export async function submitSpeech() { state.mutations.push('配音'); } export async function setVoice() { state.mutations.push('声音设置'); }
+  export async function connectTable() { const done = deferred(); return { tableId: 'table', select: async () => { if (state.selectionFailure) throw Error('勾选同步失败'); }, closed: done.promise, close: async () => done.resolve() }; }
+  export async function submitSpeech() { state.mutations.push('配音'); } export async function setVoice(_, voice) { if (state.voiceFailure) throw Error('声音保存失败'); state.mutations.push('声音设置'); if (state.saveGate) await state.saveGate.promise; if (state.speech) state.speech.voice = copy(voice); }
   export async function modifyUserBatch(_, batch) {
+    if (state.batchFailure) throw Error('多行新增失败');
     state.saves++; state.mutations.push('片段');
     for (const change of batch.changes) {
+      if (change.kind === 'paste') for (const text of change.text.split('\n').filter(line => line.trim())) state.status.snapshot.segments.push({ id: 'paste-' + state.status.snapshot.segments.length, order: state.status.snapshot.segments.length + 1, text, video: null });
       if (change.kind === 'video') {
         const segment = state.status.snapshot.segments.find(item => item.id === change.expected.id);
         segment.video = change.assetId ? { assetId: change.assetId, start: change.start } : null;
@@ -60,6 +64,6 @@ export const fixture = String.raw`
     if (state.saveGate) await state.saveGate.promise;
     return result;
   }
-  export async function submitExport() { state.mutations.push('导出'); } export async function cancelExport() { state.mutations.push('取消导出'); }
+  export async function submitExport(...args) { state.exportRequests.push(args); if (state.submitFailure) throw Error('Codex 正在修改'); state.mutations.push('导出'); } export async function cancelExport() { if (state.cancelFailure) throw Error('取消导出失败'); state.mutations.push('取消导出'); }
 `;
 

@@ -1,0 +1,132 @@
+{
+  "browser": "Codex In-app Browser",
+  "browserId": "2",
+  "viewport": [
+    420,
+    720
+  ],
+  "observations": [
+    {
+      "dialog": {
+        "bottom": 520.71875,
+        "height": 321.4375,
+        "left": 17,
+        "right": 403,
+        "top": 199.28125,
+        "width": 386,
+        "x": 17,
+        "y": 199.28125
+      },
+      "focus": "统一声音设置",
+      "grid": {
+        "bottom": 631,
+        "height": 441,
+        "left": 8,
+        "right": 412,
+        "top": 190,
+        "width": 404,
+        "x": 8,
+        "y": 190
+      },
+      "overflow": false,
+      "scene": "voice"
+    },
+    {
+      "focus": "更多",
+      "grid": {
+        "bottom": 631,
+        "height": 441,
+        "left": 8,
+        "right": 412,
+        "top": 190,
+        "width": 404,
+        "x": 8,
+        "y": 190
+      },
+      "scene": "detail-closed"
+    },
+    {
+      "dialog": {
+        "bottom": 578.125,
+        "height": 436.2578125,
+        "left": 17,
+        "right": 403,
+        "top": 141.8671875,
+        "width": 386,
+        "x": 17,
+        "y": 141.8671875
+      },
+      "grid": {
+        "bottom": 631,
+        "height": 441,
+        "left": 8,
+        "right": 412,
+        "top": 190,
+        "width": 404,
+        "x": 8,
+        "y": 190
+      },
+      "overflow": false,
+      "scene": "running-detail"
+    },
+    {
+      "focus": "任务详情",
+      "footer": "本地服务已连接\n已保存\n连接诊断\n任务详情\n\n导出失败 18/60 · 配音：结果未知，可能已计费\n\nCodex 正在修改；请查询任务确认是否已受理，不会自动重发。\n\n配音异常 1 项 · 结果未知，可能已计费，请查看任务详情\n\n导出失败或中断 1 项，请查看任务详情",
+      "grid": {
+        "bottom": 577,
+        "height": 387,
+        "left": 8,
+        "right": 412,
+        "top": 190,
+        "width": 404,
+        "x": 8,
+        "y": 190
+      },
+      "pageHeight": 720,
+      "scene": "error-after-details"
+    },
+    {
+      "focusColumn": "text",
+      "focusRow": "s-0",
+      "page": [
+        420,
+        720
+      ],
+      "scene": "table-end",
+      "scroll": {
+        "left": 0,
+        "top": 0
+      },
+      "visibleHeaders": [
+        "",
+        "序号",
+        "文案",
+        "画面素材"
+      ]
+    },
+    {
+      "headers": [
+        "配音",
+        "画面说明"
+      ],
+      "page": [
+        420,
+        720
+      ],
+      "scene": "table-scrolled",
+      "scroll": {
+        "left": 893,
+        "top": 2017
+      }
+    },
+    {
+      "column": "序号",
+      "scene": "resize-column",
+      "viewport": [
+        1280,
+        720
+      ],
+      "width": 130
+    }
+  ]
+}

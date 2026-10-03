@@ -4,8 +4,8 @@ import { queryExportSettings, saveExportSettings } from '../shared/client.js';
 import type { ExportSettings, ExportStatus, ServiceStatus } from '../shared/contracts.js';
 import type { ProjectEditing } from './project-editing.js';
 
-type Props = { restoreFocus: () => void; editing: ProjectEditing; status: ServiceStatus; onStatus: (status: ServiceStatus) => void; onClose: () => void };
-export function ExportSettingsPanel({ editing, status, onStatus, onClose, restoreFocus }: Props) {
+type Props = { onSaveState: (state: 'saved' | 'saving' | 'failed', message?: string) => void; restoreFocus: () => void; editing: ProjectEditing; status: ServiceStatus; onStatus: (status: ServiceStatus) => void; onClose: () => void };
+export function ExportSettingsPanel({ editing, status, onStatus, onClose, restoreFocus, onSaveState }: Props) {
   const [details, setDetails] = useState<ExportStatus>();
   const [draft, setDraft] = useState<ExportSettings>(status.snapshot.exportSettings);
   const [size, setSize] = useState(status.snapshot.exportSettings.fontSize?.toString() ?? '');
@@ -33,16 +33,17 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose, restor
     setMessage('修改后自动保存；字号输入完成后离开输入框保存');
   }, () => {
     setSize(saved.current.fontSize?.toString() ?? '');
+    onSaveState('failed', '编辑连接已断开，未提交输入已取消，请重新读取后编辑');
     setMessage(current => `${current === '已保存' || current.startsWith('保存失败：') ? current + '；' : ''}编辑连接已断开，未提交输入已取消，请重新读取后编辑`);
   }, error => setMessage(error.message));
   const save = (settings: ExportSettings) => {
     if (JSON.stringify(settings) === JSON.stringify(draft)) { setSize(draft.fontSize?.toString() ?? ''); return; }
     return editing.save('settings', { retain: true }, async (token, action) => {
-      setMessage('保存中…');
+      setMessage('保存中…'); onSaveState('saving');
       const result = await saveExportSettings(window.location.origin, { expected: draft, settings }, token);
-      action.apply(() => { adopt(result.settings); onStatus(result.status); setMessage('已保存'); });
+      action.apply(() => { adopt(result.settings); onStatus(result.status); setMessage('已保存'); onSaveState('saved'); });
     }, error => {
-      setSize(saved.current.fontSize?.toString() ?? ''); setMessage(`保存失败：${error.message}`);
+      setSize(saved.current.fontSize?.toString() ?? ''); setMessage(`保存失败：${error.message}`); onSaveState('failed', `保存失败：${error.message}`);
     });
   };
   const close = async () => {
