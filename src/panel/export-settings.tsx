@@ -1,17 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
-import { beginEdit, queryExportSettings, queryStatus, saveExportSettings, type EditSession } from '../shared/client.js';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { queryExportSettings, saveExportSettings } from '../shared/client.js';
 import type { ExportSettings, ExportStatus, ServiceStatus } from '../shared/contracts.js';
+import type { ProjectEditing } from './project-editing.js';
 
-type Props = { status: ServiceStatus; onStatus: (status: ServiceStatus) => void; onClose: () => void };
-export function ExportSettingsPanel({ status, onStatus, onClose }: Props) {
+type Props = { editing: ProjectEditing; status: ServiceStatus; onStatus: (status: ServiceStatus) => void; onClose: () => void };
+export function ExportSettingsPanel({ editing, status, onStatus, onClose }: Props) {
   const [details, setDetails] = useState<ExportStatus>();
   const [draft, setDraft] = useState<ExportSettings>(status.snapshot.exportSettings);
   const [size, setSize] = useState(status.snapshot.exportSettings.fontSize?.toString() ?? '');
-  const [mode, setMode] = useState<'view' | 'editing' | 'saving'>('view');
+  const activity = useSyncExternalStore(editing.subscribe, editing.getState);
+  const owns = activity.owner === 'settings';
+  const mode = owns && activity.busy ? 'saving' : owns && activity.editing ? 'editing' : 'view';
   const [message, setMessage] = useState('正在检查媒体组件与字体…');
-  const session = useRef<EditSession | null>(null);
-  const busy = useRef(false);
-  const alive = useRef(true);
+  const saved = useRef(status.snapshot.exportSettings);
   const settingsKey = JSON.stringify(status.snapshot.exportSettings);
   useEffect(() => {
     let active = true;
@@ -19,58 +20,39 @@ export function ExportSettingsPanel({ status, onStatus, onClose }: Props) {
       if (!active) return;
       setDetails(result);
       setMessage(current => current === '正在检查媒体组件与字体…' ? '设置按项目自动保存' : current);
-      if (!session.current) { setDraft(result.settings); setSize(result.settings.fontSize?.toString() ?? ''); }
-    }).catch(error => { if (active) setMessage(error.message); });
+    }).catch(error => { if (active) setMessage(current => current === '正在检查媒体组件与字体…' ? error.message : current); });
     return () => { active = false; };
   }, [settingsKey]);
-  useEffect(() => {
-    alive.current = true;
-    const release = () => { const previous = session.current; session.current = null; void previous?.close().catch(() => {}); };
-    window.addEventListener('pagehide', release);
-    return () => { alive.current = false; window.removeEventListener('pagehide', release); release(); };
-  }, []);
-  const edit = async () => {
-    if (busy.current) return;
-    busy.current = true;
-    try {
-      const next = await beginEdit(window.location.origin);
-      if (!alive.current) { await next.close(); return; }
-      session.current = next;
-      onStatus(next.status); setDraft(next.status.snapshot.exportSettings); setSize(next.status.snapshot.exportSettings.fontSize?.toString() ?? '');
-      setMode('editing'); setMessage('修改后自动保存；字号输入完成后离开输入框保存');
-      void next.closed.then(() => {
-        if (!alive.current || session.current !== next) return;
-        session.current = null; setMode('view'); setMessage('编辑连接已断开，未提交输入已取消，请重新读取后编辑');
-      });
-    } catch (error) { setMessage((error as Error).message); }
-    finally { busy.current = false; }
+  useEffect(() => () => { void editing.cancel('settings'); }, [editing]);
+  const adopt = (settings: ExportSettings) => {
+    saved.current = settings; setDraft(settings); setSize(settings.fontSize?.toString() ?? '');
   };
-  const save = async (settings: ExportSettings) => {
-    const current = session.current;
-    if (!current || busy.current) return;
+  const edit = () => editing.begin('settings', next => {
+    onStatus(next); adopt(next.snapshot.exportSettings);
+    setMessage('修改后自动保存；字号输入完成后离开输入框保存');
+  }, () => {
+    setSize(saved.current.fontSize?.toString() ?? '');
+    setMessage(current => `${current === '已保存' || current.startsWith('保存失败：') ? current + '；' : ''}编辑连接已断开，未提交输入已取消，请重新读取后编辑`);
+  }, error => setMessage(error.message));
+  const save = (settings: ExportSettings) => {
     if (JSON.stringify(settings) === JSON.stringify(draft)) { setSize(draft.fontSize?.toString() ?? ''); return; }
-    busy.current = true; setMode('saving'); setMessage('保存中…');
-    try {
-      const result = await saveExportSettings(window.location.origin, { expected: draft, settings }, current.token);
-      if (!alive.current) return;
-      setDraft(result.settings); setSize(result.settings.fontSize?.toString() ?? ''); onStatus(result.status); setMessage('已保存');
-    } catch (error) {
-      if (alive.current) { setSize(draft.fontSize?.toString() ?? ''); setMessage(`保存失败：${(error as Error).message}`); }
-    } finally { busy.current = false; if (alive.current) setMode(session.current ? 'editing' : 'view'); }
+    return editing.save('settings', { retain: true }, async (token, action) => {
+      setMessage('保存中…');
+      const result = await saveExportSettings(window.location.origin, { expected: draft, settings }, token);
+      action.apply(() => { adopt(result.settings); onStatus(result.status); setMessage('已保存'); });
+    }, error => {
+      setSize(saved.current.fontSize?.toString() ?? ''); setMessage(`保存失败：${error.message}`);
+    });
   };
   const close = async () => {
-    if (busy.current) return;
-    if (session.current && size !== (draft.fontSize?.toString() ?? '')) {
+    if (activity.busy) return;
+    if (owns && size !== (draft.fontSize?.toString() ?? '')) {
       setMessage('字号尚未保存，请先离开输入框完成保存'); return;
     }
-    const previous = session.current; session.current = null;
-    await previous?.close().catch(() => {});
-    const latest = await queryStatus(window.location.origin).catch(() => undefined);
-    if (latest) onStatus(latest);
-    onClose();
+    if (!owns || await editing.cancel('settings')) onClose();
   };
   const disabled = mode !== 'editing';
-  const settings = session.current ? draft : status.snapshot.exportSettings;
+  const settings = owns ? draft : status.snapshot.exportSettings;
   const issues = details?.issues ?? [];
   return <div className="modal-backdrop"><section role="dialog" aria-modal="true" aria-label="全片导出设置" className="media-dialog">
     <h2>全片导出设置</h2>
@@ -87,12 +69,12 @@ export function ExportSettingsPanel({ status, onStatus, onClose }: Props) {
       {settings.fontFamily && !details?.fonts.includes(settings.fontFamily) && <option value={settings.fontFamily}>{settings.fontFamily}（当前不可用）</option>}
       {details?.fonts.map(font => <option key={font} value={font}>{font}</option>)}
     </select></label>
-    <label>字幕字号（px）<input aria-label="字幕字号（px）" type="number" min="1" max="1080" step="1" disabled={disabled} value={size} onChange={event => setSize(event.target.value)} onBlur={() => { void save({ ...draft, fontSize: size.trim() === '' ? null : Number(size) }); }} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }} /></label>
+    <label>字幕字号（px）<input aria-label="字幕字号（px）" type="number" min="1" max="1080" step="1" disabled={disabled} value={owns ? size : status.snapshot.exportSettings.fontSize?.toString() ?? ''} onChange={event => setSize(event.target.value)} onBlur={() => { void save({ ...draft, fontSize: size.trim() === '' ? null : Number(size) }); }} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }} /></label>
     <p>字号为 1080p 画布像素，范围 1–1080 的整数；字体与字号均须主动设置。字体来自本机 Fontconfig，安装字体后可关闭并重开此入口刷新。</p>
     {!!issues.length && <ul aria-label="导出设置待解决项">{issues.map(issue => <li key={issue}>{issue}</li>)}</ul>}
     <p role="status">{message}</p>
     <div className="toolbar">
-      {mode === 'view' && <button disabled={status.taskLocked || !!status.modification} onClick={() => { void edit(); }}>编辑设置</button>}
+      {mode === 'view' && <button disabled={activity.busy || activity.editing || status.taskLocked || !!status.modification} onClick={() => { void edit(); }}>编辑设置</button>}
       <button disabled={mode === 'saving'} onClick={() => { void close(); }}>关闭设置</button>
     </div>
   </section></div>;

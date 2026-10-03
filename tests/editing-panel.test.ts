@@ -1,0 +1,143 @@
+import { test } from 'node:test';
+import { checkBrowser, chrome } from './helpers/browser.js';
+
+const fixture = String.raw`
+  export function deferred() { let resolve; const promise = new Promise(r => resolve = r); return { promise, resolve }; }
+  const copy = value => structuredClone(value);
+  export const state = {
+    status: { instanceId: 'test', pid: 1, modification: null, taskLocked: false, snapshot: {
+      project: { id: 'project', directory: '/tmp/project' }, assets: [],
+      segments: [{ id: 'segment', order: 1, text: '原文', video: null }],
+      exportSettings: { codec: 'libx264', fps: 30, fontFamily: 'Test', fontSize: 32 },
+    } }, queries: [], delayQuery: false, acquireGate: null, saveGate: null, current: null, leases: [], saves: 0,
+  };
+  export async function queryStatus() {
+    const result = copy(state.status);
+    if (state.delayQuery) { const gate = deferred(); state.queries.push({ gate, result }); await gate.promise; }
+    return result;
+  }
+  export async function querySpeech() { return { locked: false, voice: { speaker: 'zh_female_vv_uranus_bigtts', speechRate: 0 }, configured: false, configPath: '/tmp/config', operations: [], tasks: [], audio: [] }; }
+  export async function queryExports() { return { locked: false, tasks: [] }; }
+  export async function queryExportSettings() { return { settings: copy(state.status.snapshot.exportSettings), fonts: ['Test'], issues: [] }; }
+  export async function beginEdit() {
+    if (state.current) throw Error('用户正在编辑');
+    const ended = deferred();
+    const lease = { token: 'lease-' + state.leases.length, closed: ended.promise, closes: 0,
+      disconnect() { if (state.current === lease) { state.current = null; state.status.modification = null; } ended.resolve(); },
+      async close() { lease.closes++; lease.disconnect(); },
+    };
+    state.current = lease; state.leases.push(lease); state.status.modification = { owner: 'user' }; lease.status = copy(state.status);
+    if (state.acquireGate) await state.acquireGate.promise;
+    return lease;
+  }
+  export async function saveExportSettings(_, { settings }) {
+    state.saves++; state.status.snapshot.exportSettings = copy(settings);
+    const result = { settings: copy(settings), status: copy(state.status) };
+    if (state.saveGate) await state.saveGate.promise;
+    return result;
+  }
+  export async function saveSegment(_, change) {
+    state.saves++;
+    if (change.id) state.status.snapshot.segments[0].text = change.text;
+    state.current.disconnect();
+    const result = copy(state.status);
+    if (state.saveGate) await state.saveGate.promise;
+    return result;
+  }
+  export async function importVideo() {
+    state.saves++; const result = { status: copy(state.status) };
+    if (state.saveGate) await state.saveGate.promise;
+    return result;
+  }
+  export async function connectTable() { const done = deferred(); return { tableId: 'table', select: async () => {}, closed: done.promise, close: async () => done.resolve() }; }
+  export async function submitSpeech() {} export async function setVoice() {}
+  export async function modifyUserBatch() {} export async function submitExport() {} export async function cancelExport() {}
+`;
+
+test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿和单次保存正常关闭均符合约定', {
+  skip: chrome ? false : '需要 Chrome/Chromium，可通过 CHROME_BIN 指定', timeout: 30000,
+}, async t => checkBrowser(t, String.raw`
+  import { act, StrictMode } from 'react';
+  import { createRoot } from 'react-dom/client';
+  import { App } from './src/panel/app.tsx';
+  import { state, deferred } from 'editing-fixture';
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const intervals = new Map(); let nextTimer = 0;
+  window.setInterval = callback => { const id = ++nextTimer; intervals.set(id, callback); return id; };
+  window.clearInterval = id => intervals.delete(id);
+  const root = createRoot(document.getElementById('root'));
+  const result = document.getElementById('result');
+  const check = (value, message) => { if (!value) throw Error(message); };
+  const settle = () => new Promise(resolve => setTimeout(resolve, 30));
+  const button = text => [...document.querySelectorAll('button')].find(node => node.textContent === text);
+  const field = label => document.querySelector('[aria-label="' + label + '"]');
+  const click = async text => { await act(async () => { const node = button(text); check(node && !node.disabled, '按钮不可用：' + text); node.click(); await settle(); }); };
+  const input = async (node, value) => { await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(node, value);
+    node.dispatchEvent(new Event('input', { bubbles: true }));
+  }); };
+  const change = async (label, value) => { await act(async () => { const node = field(label); node.value = value; node.dispatchEvent(new Event('change', { bubbles: true })); }); };
+  const poll = async () => { await act(async () => { [...intervals.values()].forEach(callback => callback()); await settle(); }); };
+  (async () => {
+    try {
+      await act(async () => { root.render(<StrictMode><App /></StrictMode>); await settle(); });
+      await poll();
+      state.delayQuery = true; await poll();
+      check(state.queries.length > 0, '必须先发出一条会迟到的项目查询');
+      await click('导出设置'); await click('编辑设置');
+      const settingsLease = state.current;
+      await change('导出帧率', '60');
+      await change('导出编码', 'mpeg4');
+      check(state.current === settingsLease && settingsLease.closes === 0, '设置连续保存应保持同一修改权');
+      state.delayQuery = false;
+      await act(async () => { state.queries.splice(0).forEach(item => item.gate.resolve()); });
+      await click('关闭设置'); await click('导出设置');
+      check(field('导出帧率').value === '60' && field('导出编码').value === 'mpeg4', '旧查询不能覆盖设置保存后的父级快照');
+      check(settingsLease.closes === 1, '关闭设置应释放修改权一次');
+      await poll(); await click('编辑设置');
+      await input(field('字幕字号（px）'), '99');
+      await act(async () => { state.current.disconnect(); });
+      check(field('字幕字号（px）').value === '32' && field('字幕字号（px）').disabled, '断线后取消尚未提交的字号');
+      await click('关闭设置'); await poll();
+      await act(async () => {
+        const cell = document.querySelector('.ag-row[row-id="segment"] [col-id="text"]');
+        check(cell, '应显示真实表格文案单元格');
+        cell.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await settle();
+      });
+      const editor = document.querySelector('.ag-cell-inline-editing input');
+      check(editor, '双击应打开真实文案编辑器');
+      await input(editor, '已保存的新文案');
+      state.saveGate = deferred();
+      await act(async () => { editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await settle(); });
+      check(document.querySelector('.save-status').textContent.includes('保存中'), '连接先正常关闭时仍等待保存响应');
+      await act(async () => { state.saveGate.resolve(); state.saveGate = null; await settle(); });
+      check(document.querySelector('.save-status').textContent === '已保存', '连接先关闭、保存后成功不能误报失败');
+      check(document.querySelector('.ag-row[row-id="segment"] [col-id="text"]').textContent === '已保存的新文案', '表格应显示保存结果');
+      await click('导入本地视频');
+      await input(field('视频文件绝对路径'), '/tmp/example.mp4');
+      state.saveGate = deferred();
+      await click('导入并复制');
+      const oldSave = state.saveGate; state.saveGate = null;
+      await click('取消'); await poll();
+      await click('导出设置'); await click('编辑设置');
+      const newLease = state.current;
+      await change('导出帧率', '24');
+      await act(async () => { oldSave.resolve(); });
+      check(state.current === newLease && newLease.closes === 0, '取消后的迟到保存不得释放新编辑');
+      check(field('导出帧率').value === '24', '取消后的迟到保存不得覆盖新设置');
+      await click('关闭设置'); await poll();
+      state.acquireGate = deferred();
+      await click('导入本地视频');
+      const lateLease = state.current;
+      await act(async () => { window.dispatchEvent(new Event('pagehide')); state.acquireGate.resolve(); state.acquireGate = null; await settle(); });
+      check(lateLease.closes === 1 && !field('视频文件绝对路径'), '离页后迟到的修改权必须释放且不打开编辑器');
+      await act(async () => { window.dispatchEvent(new Event('pageshow')); await settle(); });
+      await click('导出设置'); await click('编辑设置');
+      check(state.current, '返回页面后仍可重新编辑');
+      const unmountedLease = state.current;
+      await act(async () => { root.unmount(); });
+      check(unmountedLease.closes === 1, '卸载时释放修改权');
+      result.dataset.state = 'passed'; result.textContent = '全部编辑时序验证通过';
+    } catch (error) { result.dataset.state = 'failed'; result.textContent = error.stack + '\n界面：' + document.getElementById('root').innerText; }
+  })();
+`, fixture));
