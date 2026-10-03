@@ -36,24 +36,38 @@ test('先受理再汇总空项目及设置问题，重复请求共享任务且�
   assert.equal(business.getSpeechStatus().tasks.length, 0);
 });
 
-test('汇总逐片段缺失视频、配音与修改占用，不自动配音或跳过片段', async t => {
+test('汇总逐片段缺失视频和配音，不自动配音或跳过片段', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-invalid-'));
   const business = openBusiness(directory);
   t.after(async () => { await business.close(); rmSync(directory, { recursive: true, force: true }); });
   const first = business.addSegment('甲').segments[0]!;
   const second = business.addSegment('乙').segments[1]!;
-  const token = business.acquire('user');
   const task = business.submitExport();
   const result = await finished(business, task.id);
   assert.equal(result.state, 'failed');
-  assert.ok(result.issues.some(issue => /用户正在编辑/.test(issue.message)));
   for (const segment of [first, second]) {
     assert.ok(result.issues.some(issue => issue.segmentId === segment.id && issue.order === segment.order && issue.field === 'video'));
     assert.ok(result.issues.some(issue => issue.segmentId === segment.id && issue.field === 'speech'));
   }
   assert.equal(business.getSpeechStatus().tasks.length, 0);
-  assert.deepEqual(business.getModification(), { owner: 'user' });
+});
+
+for (const owner of ['user', 'codex'] as const) test(`${owner} 持有修改权时拒绝导出，不创建任务且原编辑可以继续`, async t => {
+  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-editing-'));
+  const business = openBusiness(directory);
+  t.after(async () => { await business.close(); rmSync(directory, { recursive: true, force: true }); });
+  const token = business.acquire(owner);
+  const before = business.getSnapshot();
+  assert.throws(() => business.submitExport(), owner === 'user' ? /用户正在编辑/ : /Codex 正在修改/);
+  assert.deepEqual(business.getExportTasks(), { locked: false, tasks: [] });
+  assert.equal(existsSync(join(directory, 'exports')), false);
+  assert.deepEqual(business.getSnapshot(), before);
+  assert.equal(business.owns(token, owner), true);
+  business.addSegment('继续编辑', token);
   business.release(token);
+  const task = business.submitExport();
+  assert.equal(task.state, 'accepted');
+  assert.equal((await finished(business, task.id)).state, 'failed');
 });
 
 async function ready(t: import('node:test').TestContext, options: { duration?: number; sar?: number } = {}) {

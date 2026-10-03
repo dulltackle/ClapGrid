@@ -52,7 +52,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
     }
     const status = (): ServiceStatus => ({
       application: 'clapgrid', apiVersion: 1, instanceId, pid: process.pid,
-      startedAt, snapshot: business.getSnapshot(), modification: business.getModification(), taskLocked: business.getSpeechStatus().locked || business.getExportTasks().locked,
+      startedAt, snapshot: business.getSnapshot(), ...business.getActivity(),
     });
     const tableSessions = new Map<string, () => void>();
     const finishTable = (id: string) => {
@@ -80,7 +80,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       await releaseOwnership();
     })();
     const requestStop = (interrupt = false) => {
-      if (!interrupt && status().taskLocked) return { outcome: 'kept', message: '有任务正在执行，默认保持服务。仅明确选择“中断任务并退出”才停止。' };
+      if (!interrupt && business.getActivity().taskLocked) return { outcome: 'kept', message: '有任务正在执行，默认保持服务。仅明确选择“中断任务并退出”才停止。' };
       stopping = true;
       setImmediate(() => { void close().catch(error => console.error('服务清理失败，不能确认已退出：', error)); });
       return { outcome: 'stopping', message: '正在停止服务，等待任务结束和清理。' };

@@ -1,3 +1,4 @@
+import { projectAccess } from './project-access.js';
 import { exportTasks } from './export-tasks.js';
 import { listExportFonts, missingExportSettings, verifyExportMedia } from './export-media.js';
 import { defaultExportSettings, exportSettingsSchema, exportOutput, updateExportSettingsSchema, type UpdateExportSettings, type ExportStatus } from '../shared/contracts.js';
@@ -75,10 +76,10 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
     try { await verifyExportMedia(settings, signal); } catch (error) { issues.push((error as Error).message); }
     return { settings, output: exportOutput, fonts, issues };
   }
+  const access = projectAccess();
   // 所有项目变更共用事务边界；仅在提交成功后向 UI / MCP 发布快照。
-  function commit(change: () => void): Snapshot {
-    exports.assertUnlocked();
-    speech.assertUnlocked();
+  function commit(change: () => void, token?: string): Snapshot {
+    access.assertWritable(token);
     verify();
     db.exec('BEGIN IMMEDIATE');
     try {
@@ -91,24 +92,11 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       throw error;
     }
   }
-  let modification: { token: string; owner: 'user' | 'codex'; controller: AbortController } | null = null;
-  const acquire = (owner: 'user' | 'codex') => {
-    exports.assertUnlocked();
-    speech.assertUnlocked();
-    if (modification) throw new Error(modification.owner === 'user' ? '用户正在编辑' : 'Codex 正在修改');
-    const token = randomUUID();
-    modification = { token, owner, controller: new AbortController() };
-    return token;
-  };
-  const release = (token: string) => {
-    // 只释放本次普通编辑；迟到的连接事件不能解除后续修改权或后台任务锁。
-    if (modification?.token === token) { modification.controller.abort(); modification = null; }
-  };
-  const speech = speechTasks(db, mediaDirectory, speechRuntime, getSnapshot, verify, () => !!modification, scope => business.querySegments(scope));
+  const speech = speechTasks(db, mediaDirectory, speechRuntime, getSnapshot, verify, access, scope => business.querySegments(scope));
   const exports = exportTasks(db, {
     snapshot: getSnapshot, settings: getExportStatus, speech: speech.getSpeechStatus,
     verify, video: id => business.getMedia(id, 'source'), audio: speech.getSpeechAudio,
-    busy: () => [modification ? (modification.owner === 'user' ? '用户正在编辑' : 'Codex 正在修改') : ''].filter(Boolean),
+    access,
   });
   const tables = new Map<string, string[]>();
   const business = {
@@ -133,7 +121,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       return { segments: segments.filter(segment => scope.kind === 'all' || (scope.kind === 'ids' ? scope.ids.includes(segment.id) : segment.text.includes(scope.textContains))), availability: 'available', tables: connected };
     },
     async processScope(token: string, input: ScopedOperation) {
-      if (!modification || modification.token !== token) throw new Error('修改权已失效');
+      access.editSignal(token);
       const operation = scopedOperationSchema.parse(input);
       // 在第一次让出执行权之前解析并复制目标；后续勾选、筛选及断线不能改变它。
       const targets = business.querySegments(operation.scope);
@@ -159,15 +147,14 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       return business.modifyBatch(token, { changes });
     },
     async importVideo(token: string, input: ImportVideo) {
-      if (modification?.token !== token) throw new Error('修改权已失效');
+      const signal = access.editSignal(token);
       const { sourcePath } = importVideoSchema.parse(input);
-      const signal = modification.controller.signal;
       verify();
       const id = randomUUID();
       try {
         const asset = await prepareVideo(mediaDirectory, id, sourcePath, signal);
-        if (modification?.token !== token) throw new Error('修改权已失效');
-        commit(() => { db.prepare('INSERT INTO video_assets VALUES (?, ?, ?)').run(asset.id, asset.name, asset.duration); });
+        access.editSignal(token);
+        commit(() => { db.prepare('INSERT INTO video_assets VALUES (?, ?, ?)').run(asset.id, asset.name, asset.duration); }, token);
         return asset;
       } catch (error) { discardImport(mediaDirectory, id); throw error; }
     },
@@ -180,15 +167,12 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
     },
     getExportStatus,
     async setExportSettings(token: string, input: UpdateExportSettings) {
-      if (modification?.token !== token) throw new Error('修改权已失效');
-      const signal = modification.controller.signal;
-      exports.assertUnlocked();
-      speech.assertUnlocked();
+      const signal = access.editSignal(token);
       const parsed = updateExportSettingsSchema.safeParse(input);
       if (!parsed.success) throw new Error(parsed.error.issues.map(issue => issue.message).join('；'));
       const { expected, settings } = parsed.data;
       const check = () => {
-        if (modification?.token !== token) throw new Error('修改权已失效');
+        access.editSignal(token);
         if (JSON.stringify(getExportSettings()) !== JSON.stringify(expected)) throw new Error('导出设置已变化，请重新读取后修改');
       };
       check();
@@ -199,24 +183,21 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       commit(() => {
         check();
         db.prepare('INSERT OR REPLACE INTO export_settings VALUES (1, ?)').run(JSON.stringify(settings));
-      });
+      }, token);
       return settings;
     },
     async getCurrentExportSettings() {
-      exports.assertUnlocked();
-      speech.assertUnlocked();
-      if (modification) throw new Error('项目正在修改，无法读取导出输入');
+      access.assertAllowed('edit');
       const status = await getExportStatus();
-      exports.assertUnlocked();
-      speech.assertUnlocked();
-      if (modification || JSON.stringify(getExportSettings()) !== JSON.stringify(status.settings)) throw new Error('导出设置已变化，请重新读取');
+      access.assertAllowed('edit');
+      if (JSON.stringify(getExportSettings()) !== JSON.stringify(status.settings)) throw new Error('导出设置已变化，请重新读取');
       if (status.issues.length) throw new Error(status.issues.join('；'));
       return { ...status.settings, ...exportOutput };
     },
     getSpeechStatus: speech.getSpeechStatus,
-    submitSpeech(input: Parameters<typeof speech.submitSpeech>[0]) { exports.assertUnlocked(); return speech.submitSpeech(input); },
-    submitSpeechBatch(input: Parameters<typeof speech.submitSpeechBatch>[0]) { exports.assertUnlocked(); return speech.submitSpeechBatch(input); },
-    setVoice(input: unknown) { exports.assertUnlocked(); return speech.setVoice(input); },
+    submitSpeech: speech.submitSpeech,
+    submitSpeechBatch: speech.submitSpeechBatch,
+    setVoice: speech.setVoice,
     submitExport: exports.submitExport,
     getExportTasks: exports.getExportTasks,
     cancelExport: exports.cancelExport,
@@ -224,34 +205,38 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
     getSpeechAudio: speech.getSpeechAudio,
     getCurrentSpeechAudio: speech.getCurrentSpeechAudio,
     getSnapshot,
-    acquire, release,
-    getModification: () => modification ? { owner: modification.owner } : null,
-    owns: (token: string, owner: 'user' | 'codex') => modification?.token === token && modification.owner === owner,
+    acquire: access.acquire, release: access.release,
+    getModification: () => access.getActivity().modification,
+    getActivity() {
+      const { modification, task } = access.getActivity();
+      return { modification, taskLocked: task !== null };
+    },
+    owns: access.owns,
     addSegment(text: string, token?: string): Snapshot {
-      if ((modification && modification.token !== token) || (token && modification?.token !== token)) throw new Error('未持有有效修改权');
+      access.assertWritable(token);
       addSegmentSchema.parse({ text });
       return commit(() => {
         db.prepare('INSERT INTO segments (id, position, text) SELECT ?, COALESCE(MAX(position), 0) + 1, ? FROM segments')
           .run(randomUUID(), text);
-      });
+      }, token);
     },
     editSegment(id: string, text: string, token?: string): Snapshot {
-      if ((modification && modification.token !== token) || (token && modification?.token !== token)) throw new Error('未持有有效修改权');
+      access.assertWritable(token);
       editSegmentSchema.parse({ id, text });
       return commit(() => {
         const result = db.prepare('UPDATE segments SET text = ? WHERE id = ?').run(text, id);
         if (result.changes !== 1) throw new Error('口播片段不存在，请刷新后重试。');
-      });
+      }, token);
     },
     async modifyBatch(token: string, input: Batch) {
-      if (!modification || modification.token !== token) throw new Error('修改权已失效');
+      access.editSignal(token);
       const { changes } = batchSchema.parse(input);
       const results: ChangeResult[] = [];
       // 同批删除造成的序号收缩不算外部变化，内容仍逐项重读核对。
       const submittedOrder = new Map(getSnapshot().segments.map(segment => [segment.id, segment.order]));
       for (const [index, change] of changes.entries()) {
         await setImmediate();
-        if (!modification || modification.token !== token) throw new Error('修改连接已断开，未完成目标停止处理');
+        access.editSignal(token, '修改连接已断开，未完成目标停止处理');
         const id = 'expected' in change ? change.expected.id : undefined;
         try {
           // 每个目标都在持有修改权的事务内重新读取；比较与提交之间不让出执行权。
@@ -266,9 +251,9 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
           if (change.kind === 'video' && change.assetId) {
             const asset = getSnapshot().assets.find(asset => asset.id === change.assetId);
             if (!asset) throw new Error('素材不存在');
-            const duration = await validateVideo(business.getMedia(asset.id, 'source'), modification!.controller.signal);
+            const duration = await validateVideo(business.getMedia(asset.id, 'source'), access.editSignal(token));
             if (change.start >= duration) throw new Error('视频起点必须大于等于零且严格小于视频时长');
-            if (modification?.token !== token) throw new Error('修改权已失效');
+            access.editSignal(token);
           }
           commit(() => {
             if (change.kind === 'reorder') {
@@ -312,7 +297,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
               db.prepare('DELETE FROM segment_video WHERE segment_id = ?').run(id!);
               db.prepare('DELETE FROM segments WHERE id = ?').run(id!);
             }
-          });
+          }, token);
           results.push(result);
         } catch (error) {
           results.push({ index, id, outcome: 'failed', message: error instanceof Error ? `保存失败：${error.message}` : '保存失败，本项未提交' });

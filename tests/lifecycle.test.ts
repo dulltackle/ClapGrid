@@ -5,7 +5,23 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { startService } from '../src/service/server.js';
-import { queryStatus, submitSpeech, modifyBatch, querySpeech, submitSpeechBatch } from '../src/shared/client.js';
+import { beginEdit, queryStatus, submitSpeech, modifyBatch, querySpeech, submitSpeechBatch } from '../src/shared/client.js';
+
+test('普通编辑不是后台任务，默认退出仍能释放修改权并停止', async t => {
+  const root = mkdtempSync(join(tmpdir(), 'clapgrid-edit-stop-'));
+  const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
+  const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
+  t.after(async () => { await service.close(); rmSync(root, { recursive: true, force: true }); });
+  const edit = await beginEdit(service.url);
+  const status = await queryStatus(service.url);
+  assert.deepEqual(status.modification, { owner: 'user' });
+  assert.equal(status.taskLocked, false);
+  const response = await fetch(`${service.url}/api/service/stop`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instanceId: status.instanceId }),
+  });
+  assert.equal((await response.json()).outcome, 'stopping');
+  await service.close(); await edit.closed;
+});
 
 test('退出服务默认保持配音与锁，明确中断后重开保留同一任务且不自动重试', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-lifecycle-'));

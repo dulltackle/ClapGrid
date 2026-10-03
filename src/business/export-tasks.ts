@@ -1,3 +1,4 @@
+import type { ProjectAccess } from './project-access.js';
 import { randomUUID } from 'node:crypto';
 import { constants, mkdirSync } from 'node:fs';
 import { copyFile, link, mkdir, rm } from 'node:fs/promises';
@@ -10,7 +11,7 @@ import { assembleExport, prepareExportAudio, renderExportSegment, renderExportPr
 type ExportInputs = {
   snapshot: () => Snapshot;
   settings: (signal?: AbortSignal) => Promise<ExportStatus>;
-  busy: () => string[];
+  access: ProjectAccess;
   speech: () => SpeechStatus;
   video: (id: string) => string;
   audio: (id: string) => string;
@@ -27,7 +28,6 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
   let running: Promise<void> | undefined;
   let controller: AbortController | undefined;
   let closed = false;
-  const assertUnlocked = () => { if (active) throw new Error('导出进行中，项目已锁定；可查询、试听和取消导出'); };
   const workPath = (task: ExportTask) => join(directory, `.work-${task.id}`);
   const previewPath = (task: ExportTask) => join(inputs.snapshot().storage.mediaDirectory, `${task.id}.export.webm`);
   const outputPath = (task: ExportTask) => join(directory, `${task.createdAt.replace(/[:.]/g, '-')}-${task.id}.mp4`);
@@ -39,6 +39,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
   // 由独立服务所有权保证此处没有前一服务仍在运行；不自动重试中断任务。
   const interrupted = tasks().filter(task => !['succeeded', 'failed', 'cancelled', 'interrupted'].includes(task.state));
   if (interrupted.length) {
+    const release = inputs.access.beginTask('export');
     active = interrupted[0];
     running = (async () => {
       for (const task of interrupted) {
@@ -47,24 +48,25 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
         await rm(previewPath(task), { force: true });
         task.state = 'interrupted'; task.message = '导出已中断，本次文件已清理；不会自动重试，请重新导出'; save(task);
       }
-      active = undefined;
+      active = undefined; release();
     })().catch(error => { if (active) { active.message = `清理失败，项目仍锁定：${(error as Error).message}`; } });
   }
   const api = {
-    assertUnlocked,
     getExportTasks(): ExportTasksStatus {
       const all = tasks();
-      return { locked: !!active, tasks: all.map(task => task.id === active?.id ? structuredClone(active) : task) };
+      return { locked: inputs.access.getActivity().task === 'export', tasks: all.map(task => task.id === active?.id ? structuredClone(active) : task) };
     },
     submitExport(): ExportTask {
       if (closed) throw new Error('服务正在退出');
       if (active) return structuredClone(active);
+      inputs.access.assertAllowed('export');
       const snapshot = inputs.snapshot();
       const speech = inputs.speech();
-      if (speech.locked) throw new Error('配音任务尚未结束，不能开始导出；允许查询和试听');
       const task: ExportTask = { id: randomUUID(), createdAt: new Date().toISOString(), state: 'accepted', message: '已受理，尚未完成', completed: 0, total: snapshot.segments.length,
-        issues: inputs.busy().map(message => ({ field: 'project', message })), warnings: [] };
-      save(task); active = task;
+        issues: [], warnings: [] };
+      const release = inputs.access.beginTask('export');
+      try { save(task); } catch (error) { release(); throw error; }
+      active = task;
       controller = new AbortController(); const signal = controller.signal;
       running = (async () => {
         await new Promise<void>(resolve => setImmediate(resolve));
@@ -153,7 +155,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
           task.state = 'succeeded'; task.message = '导出成功';
           task.output = { path: outputPath(task), url: `/api/exports/${task.id}/file`, previewUrl: `/api/exports/${task.id}/preview` };
         } else { task.state = 'failed'; task.message = resultMessage; }
-        save(task); active = undefined; controller = undefined;
+        save(task); active = undefined; controller = undefined; release();
       })().catch(error => {
         // 清理或终态持久化失败时保留锁，不把仍存在的半成品说成已清理。
         task.state = 'cleaning'; task.message = `清理或保存失败，项目仍锁定：${(error as Error).message}`;

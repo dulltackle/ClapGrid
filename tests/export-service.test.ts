@@ -10,6 +10,46 @@ import { createBusinessMcp } from '../src/mcp/server.js';
 import { beginEdit, queryExportSettings, saveExportSettings, queryStatus, submitSpeech } from '../src/shared/client.js';
 import type { ExportStatus } from '../src/shared/contracts.js';
 import { randomUUID } from 'node:crypto';
+import { request } from 'node:http';
+import { existsSync } from 'node:fs';
+import { queryExports, submitExport } from '../src/shared/client.js';
+
+for (const owner of ['user', 'codex'] as const) test(`${owner} 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权`, async t => {
+  const root = mkdtempSync(join(tmpdir(), 'clapgrid-edit-export-'));
+  const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
+  const projectDirectory = join(root, 'project');
+  const service = await startService({ projectDirectory, panelDirectory, port: 0 });
+  const mcp = createBusinessMcp(service.url); const client = new Client({ name: '编辑期间拒绝导出', version: '1' });
+  const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
+  let release: (() => Promise<void>) | undefined;
+  t.after(async () => { await release?.(); await client.close(); await mcp.close(); await service.close(); rmSync(root, { recursive: true, force: true }); });
+  if (owner === 'user') {
+    const edit = await beginEdit(service.url);
+    release = edit.close;
+  } else {
+    // 不完整的请求体让真实 Codex 修改连接保持修改权。
+    const pending = request(`${service.url}/api/codex/modify`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    pending.on('error', () => {}); pending.write('{"changes":');
+    release = async () => { pending.destroy(); };
+  }
+  for (let i = 0; i < 100 && !(await queryStatus(service.url)).modification; i++) await new Promise(resolve => setTimeout(resolve, 10));
+  const before = await queryStatus(service.url);
+  assert.deepEqual(before.modification, { owner });
+  assert.equal(before.taskLocked, false);
+  const message = owner === 'user' ? /用户正在编辑/ : /Codex 正在修改/;
+  await assert.rejects(submitExport(service.url), message);
+  const rejected = await client.callTool({ name: 'clapgrid_submit_export', arguments: {} });
+  assert.equal(rejected.isError, true); assert.match(JSON.stringify(rejected.content), message);
+  assert.deepEqual(await queryExports(service.url), { locked: false, tasks: [] });
+  assert.equal(existsSync(join(projectDirectory, 'exports')), false);
+  const after = await queryStatus(service.url);
+  assert.deepEqual(after.snapshot, before.snapshot);
+  assert.deepEqual(after.modification, { owner });
+  assert.equal(after.taskLocked, false);
+  await release(); release = undefined;
+  for (let i = 0; i < 100 && (await queryStatus(service.url)).modification; i++) await new Promise(resolve => setTimeout(resolve, 10));
+  assert.equal((await submitExport(service.url)).state, 'accepted');
+});
 
 test('表格 HTTP 与 MCP 共享导出设置，自动保存恢复并遵守普通修改权及任务锁', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-export-http-'));
