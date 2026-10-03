@@ -29,9 +29,10 @@ export function dialogReturnFocus(trigger: HTMLElement, grid: () => GridApi<Segm
         }
         if (!document.querySelector(selector)) api.ensureColumnVisible(colId);
         const cell = document.querySelector<HTMLElement>(selector);
-        if (cell) {
+        // 先无滚动聚焦，再同步表格焦点；反序会按重排动画中的位置滚动，动画结束后遮住目标。
+        if (focus(cell)) {
           api.setFocusedCell(index, colId);
-          if (focus(cell)) return;
+          return;
         }
       }
     }

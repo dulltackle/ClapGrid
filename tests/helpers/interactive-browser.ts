@@ -61,7 +61,7 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
             writeFileSync(join(process.env.PANEL_EVIDENCE_DIR, `${width}-${screenshot}.png`), Buffer.from(data, 'base64'));
           }
         } else {
-          const code = { Tab: 9, Escape: 27, Enter: 13, ' ': 32 }[key as string];
+          const code = { Tab: 9, Escape: 27, Enter: 13, ' ': 32, F2: 113, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, Home: 36, End: 35 }[key as string];
           await send('Input.dispatchKeyEvent', { type: 'keyDown', key, text: key === 'Enter' ? '\r' : key === ' ' ? ' ' : undefined, code: key === ' ' ? 'Space' : key, windowsVirtualKeyCode: code, modifiers: shift ? 8 : 0 });
           await send('Input.dispatchKeyEvent', { type: 'keyUp', key, code: key === ' ' ? 'Space' : key, windowsVirtualKeyCode: code, modifiers: shift ? 8 : 0 });
         }

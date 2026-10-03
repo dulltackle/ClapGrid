@@ -41,6 +41,11 @@ summary:active { background: var(--color-border); }
 .diagnostics dd { margin: 0 0 var(--space-2); overflow-wrap: anywhere; }
 .diagnostics dd:last-child { margin-bottom: 0; }
 .grid { width: 100%; min-width: 0; flex: 1; min-height: 0; }
+.text-cell { display: flex; align-items: center; }
+.text-summary { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 22px; max-height: 66px; }
+.text-editor { width: min(560px, calc(100vw - 32px)); padding: var(--space-2); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); box-shadow: 0 4px 16px #0002; }
+.text-editor textarea { height: min(240px, 45dvh); min-height: 0; margin: 0; resize: none; line-height: 22px; color: var(--color-ink); background: var(--color-surface); }
+.text-editor p { margin: var(--space-2) 0 0; font-size: 12px; line-height: 18px; color: var(--color-ink-secondary); white-space: normal; }
 
 header { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 button { font: inherit; color: var(--color-ink); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-1) var(--space-3); cursor: pointer; }

@@ -159,9 +159,18 @@ const script = String.raw`
       state.status.snapshot.segments = originalOrder.filter(segment => segment.id !== rowId);
       state.status.snapshot.segments.splice(10, 0, moved);
       await poll(); await key('Escape');
+      // 行重排带有位移动画；等待真实可见位置，避免在动画中途判断恢复结果。
+      for (let attempt = 0; attempt < 25; attempt++) {
+        const rect = document.activeElement.getBoundingClientRect(), viewport = body.getBoundingClientRect();
+        if (document.activeElement === cell(rowId, '1') && rect.top >= viewport.top && rect.bottom <= viewport.bottom) break;
+        await settle();
+      }
       const restoredRect = document.activeElement.getBoundingClientRect();
       const viewportRect = body.getBoundingClientRect();
-      check(document.activeElement === cell(rowId, '1') && restoredRect.top >= viewportRect.top && restoredRect.bottom <= viewportRect.bottom, '合法重排到缓冲行后，恢复的单元格必须可见');
+      check(document.activeElement === cell(rowId, '1') && restoredRect.top >= viewportRect.top && restoredRect.bottom <= viewportRect.bottom, '合法重排到缓冲行后，恢复的单元格必须可见：' + JSON.stringify({ active: document.activeElement.outerHTML.slice(0, 150), restored: restoredRect.toJSON(), viewport: viewportRect.toJSON() }));
+      await key('ArrowDown');
+      check(document.activeElement.closest('[row-id]')?.getAttribute('row-id') === 'segment-10', '重排后继续从恢复的片段位置键盘导航');
+      await key('ArrowUp');
       await click(field('展开片段 21 的保留音频'));
       state.status.snapshot.segments = originalOrder; await poll(); await key('Escape');
       await click(field('展开片段 21 的保留音频'));

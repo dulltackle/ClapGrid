@@ -9,6 +9,7 @@ import { AgGridProvider, AgGridReact } from 'ag-grid-react';
 import { queryStatus, querySpeech, submitSpeech, setVoice, importVideo, saveSegment, beginEdit, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
 import type { Segment, ServiceStatus, SpeechStatus, Voice, Batch } from '../shared/contracts.js';
 import { projectEditing } from './project-editing.js';
+import { TextEditor } from './text-editor.js';
 import './style.css';
 
 // 页面与表格共享语义变量；固定亮色，不跟随宿主主题。
@@ -27,7 +28,7 @@ const theme = themeQuartz.withParams({
   borderRadius: 'var(--radius-control)',
   wrapperBorderRadius: 'var(--radius-panel)',
   headerHeight: 40,
-  rowHeight: 40,
+  rowHeight: 80,
 });
 
 // AG Grid 默认处理 Tab/Enter；单元格内的原生按钮需要自己的键盘路径。
@@ -97,6 +98,8 @@ export function App() {
   const columns: ColDef<Segment>[] = [
     { headerName: '序号', field: 'order', width: 80, sortable: true },
     { headerName: '文案', field: 'text', sortable: true, flex: 1, minWidth: 200, editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
+      cellClass: 'text-cell', cellRenderer: (params: { value?: string }) => <span className="text-summary">{params.value}</span>,
+      cellEditor: TextEditor, cellEditorPopup: true,
       suppressKeyboardEvent: params => {
         if (params.editing && params.event.key === 'Tab') { params.api.stopEditing(); return true; }
         return !params.editing && (['Enter', 'F2', 'Backspace', 'Delete'].includes(params.event.key) || params.event.key.length === 1);
@@ -379,7 +382,7 @@ export function App() {
       <p>从 {preview.start} 秒开始，预览默认静音。</p><button onClick={() => setPreview(null)}>关闭预览</button>
     </Dialog>}
     <div className="grid"><AgGridProvider modules={[AllCommunityModule]}><AgGridReact
-      readOnlyEdit stopEditingWhenCellsLoseFocus suppressClickEdit
+      readOnlyEdit stopEditingWhenCellsLoseFocus suppressClickEdit popupParent={document.body}
       rowSelection={{ mode: 'multiRow', selectAll: 'filtered', enableClickSelection: false }}
       quickFilterText={filter}
       onSelectionChanged={event => synchronizeSelection(event.api.getSelectedRows().map(segment => segment.id))}
@@ -422,4 +425,3 @@ export function App() {
     </footer>
   </main>;
 }
-

@@ -35,7 +35,9 @@ export const fixture = String.raw`
     if (state.saveGate) await state.saveGate.promise;
     return result;
   }
-  export async function saveSegment(_, change) {
+  export async function saveSegment(_, change, token) {
+    (state.segmentRequests ??= []).push({ change: copy(change), token });
+    if (state.segmentFailure) throw Error('文案保存失败');
     state.saves++;
     if (change.id) state.status.snapshot.segments[0].text = change.text;
     state.current.disconnect();
@@ -66,4 +68,3 @@ export const fixture = String.raw`
   }
   export async function submitExport(...args) { state.exportRequests.push(args); if (state.submitFailure) throw Error('Codex 正在修改'); state.mutations.push('导出'); } export async function cancelExport() { if (state.cancelFailure) throw Error('取消导出失败'); state.mutations.push('取消导出'); }
 `;
-

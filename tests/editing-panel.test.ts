@@ -22,7 +22,7 @@ test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿�
   const field = label => document.querySelector('[aria-label="' + label + '"]');
   const click = async text => { await act(async () => { const node = button(text); check(node && !node.disabled, '按钮不可用：' + text); node.click(); await settle(); }); };
   const input = async (node, value) => { await act(async () => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(node, value);
+    Object.getOwnPropertyDescriptor(node instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype, 'value').set.call(node, value);
     node.dispatchEvent(new Event('input', { bubbles: true }));
   }); };
   const change = async (label, value) => { await act(async () => { const node = field(label); node.value = value; node.dispatchEvent(new Event('change', { bubbles: true })); }); };
@@ -53,7 +53,7 @@ test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿�
         check(cell, '应显示真实表格文案单元格');
         cell.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await settle();
       });
-      const editor = document.querySelector('.ag-cell-inline-editing input');
+      const editor = field('文案全文');
       check(editor, '双击应打开真实文案编辑器');
       await input(editor, '已保存的新文案');
       state.saveGate = deferred();
