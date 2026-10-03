@@ -1,10 +1,11 @@
+import { Dialog } from './dialog.js';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { queryExportSettings, saveExportSettings } from '../shared/client.js';
 import type { ExportSettings, ExportStatus, ServiceStatus } from '../shared/contracts.js';
 import type { ProjectEditing } from './project-editing.js';
 
-type Props = { editing: ProjectEditing; status: ServiceStatus; onStatus: (status: ServiceStatus) => void; onClose: () => void };
-export function ExportSettingsPanel({ editing, status, onStatus, onClose }: Props) {
+type Props = { restoreFocus: () => void; editing: ProjectEditing; status: ServiceStatus; onStatus: (status: ServiceStatus) => void; onClose: () => void };
+export function ExportSettingsPanel({ editing, status, onStatus, onClose, restoreFocus }: Props) {
   const [details, setDetails] = useState<ExportStatus>();
   const [draft, setDraft] = useState<ExportSettings>(status.snapshot.exportSettings);
   const [size, setSize] = useState(status.snapshot.exportSettings.fontSize?.toString() ?? '');
@@ -54,7 +55,7 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose }: Prop
   const disabled = mode !== 'editing';
   const settings = owns ? draft : status.snapshot.exportSettings;
   const issues = details?.issues ?? [];
-  return <div className="modal-backdrop"><section role="dialog" aria-modal="true" aria-label="全片导出设置" className="media-dialog">
+  return <Dialog label="全片导出设置" onClose={() => { void close(); }} restoreFocus={restoreFocus}>
     <h2>全片导出设置</h2>
     <p>适用于全片 · 16:9 · 1920×1080 · MP4</p>
     <p>修改设置不会生成配音或更改已有成片，下一次导出采用当前设置。</p>
@@ -77,5 +78,5 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose }: Prop
       {mode === 'view' && <button disabled={activity.busy || activity.editing || status.taskLocked || !!status.modification} onClick={() => { void edit(); }}>编辑设置</button>}
       <button disabled={mode === 'saving'} onClick={() => { void close(); }}>关闭设置</button>
     </div>
-  </section></div>;
+  </Dialog>;
 }

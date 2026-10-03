@@ -1,3 +1,5 @@
+import { Dialog } from './dialog.js';
+import { dialogReturnFocus } from './dialog-focus.js';
 import { ExportTasksPanel } from './export-tasks.js';
 import { ExportSettingsPanel } from './export-settings.js';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
@@ -28,6 +30,19 @@ const theme = themeQuartz.withParams({
   rowHeight: 40,
 });
 
+// AG Grid 默认处理 Tab/Enter；单元格内的原生按钮需要自己的键盘路径。
+const cellControlKeyboard: NonNullable<ColDef<Segment>['suppressKeyboardEvent']> = ({ event }) => {
+  const target = event.target as HTMLElement;
+  if (target.closest('button') && ['Enter', ' '].includes(event.key)) return true;
+  if (event.key !== 'Tab') return false;
+  const cell = target.closest('[role="gridcell"]');
+  const buttons = [...(cell?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? [])];
+  const current = buttons.indexOf(target as HTMLButtonElement);
+  const next = current + (event.shiftKey ? -1 : 1);
+  if (next < 0 || next >= buttons.length) return false;
+  event.preventDefault(); buttons[next]!.focus(); return true;
+};
+
 export function App() {
   const [editing] = useState(() => projectEditing(() => beginEdit(window.location.origin)));
   const editState = useSyncExternalStore(editing.subscribe, editing.getState);
@@ -51,6 +66,11 @@ export function App() {
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'failed'>('saved');
   const [saveError, setSaveError] = useState('');
   const grid = useRef<GridApi<Segment> | null>(null);
+  const tableFallback = useRef<HTMLInputElement>(null);
+  const returnFocus = useRef({ settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {} });
+  const rememberOrigin = (trigger: HTMLElement, detail: keyof typeof returnFocus.current) => {
+    returnFocus.current[detail] = dialogReturnFocus(trigger, () => grid.current, () => tableFallback.current);
+  };
   const failed = (cause: Error) => { setSaveState('failed'); setSaveError(cause.message); };
   const disconnected = () => {
     setVideoEditor(null); setImporting(false);
@@ -75,19 +95,19 @@ export function App() {
         if (params.editing && params.event.key === 'Tab') { params.api.stopEditing(); return true; }
         return !params.editing && (['Enter', 'F2', 'Backspace', 'Delete'].includes(params.event.key) || params.event.key.length === 1);
       } },
-    { headerName: '画面素材', width: 310, cellRenderer: (params: { data?: Segment }) => {
+    { headerName: '画面素材', width: 310, suppressKeyboardEvent: cellControlKeyboard, cellRenderer: (params: { data?: Segment }) => {
       const segment = params.data;
       if (!segment) return null;
       const asset = status?.snapshot.assets.find(asset => asset.id === segment.video?.assetId);
       return <div className="video-cell">
-        {asset && <button className="thumbnail" aria-label={`播放 ${asset.name}`} onClick={() => setPreview(segment.video)}>
+        {asset && <button className="thumbnail" aria-label={`播放 ${asset.name}`} onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(segment.video); }}>
           <img src={`/api/media/${asset.id}/thumbnail`} alt={asset.name} />
         </button>}
         <span>{asset ? `${asset.name} · ${segment.video!.start} 秒` : '未关联视频'}</span>
-        <button disabled={disabled} onClick={() => { void openVideoEditor(segment.id); }}>{asset ? '更改' : '关联'}</button>
+        <button disabled={disabled} onClick={event => { rememberOrigin(event.currentTarget, 'video'); void openVideoEditor(segment.id); }}>{asset ? '更改' : '关联'}</button>
       </div>;
     } },
-    { headerName: '配音', width: 460, cellRendererParams: { suppressMouseEventHandling: () => true }, cellRenderer: (params: { data?: Segment }) => {
+    { headerName: '配音', width: 460, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: () => true }, cellRenderer: (params: { data?: Segment }) => {
       const segment = params.data; if (!segment) return null;
       const tasks = speech?.tasks.filter(task => task.segmentId === segment.id) ?? [];
       const latest = tasks.at(-1);
@@ -100,8 +120,8 @@ export function App() {
           <span title={latest?.message}>最近任务：{taskLabel}</span>
         </div>
         <button disabled={disabled || !segment.text.trim()} onClick={() => { void generateSpeech(segment.id); }}>{latest?.state === 'failed' || latest?.state === 'unknown' ? '重试配音' : latest ? '重新生成' : '生成配音'}</button>
-        {audio && <button onClick={() => setAudioUrl(audio.url)}>试听{audio.valid ? '' : '（待更新）'}</button>}
-        {recordings.length > 0 && <button aria-label={`展开片段 ${segment.order} 的保留音频`} onClick={() => setAudioHistory(segment.id)}>音频 {recordings.length}</button>}
+        {audio && <button onClick={event => { rememberOrigin(event.currentTarget, 'audio'); setAudioUrl(audio.url); }}>试听{audio.valid ? '' : '（待更新）'}</button>}
+        {recordings.length > 0 && <button aria-label={`展开片段 ${segment.order} 的保留音频`} onClick={event => { rememberOrigin(event.currentTarget, 'history'); setAudioHistory(segment.id); }}>音频 {recordings.length}</button>}
       </div>;
     } },
     { headerName: '画面说明', width: 180 },
@@ -146,7 +166,7 @@ export function App() {
       if (!segment) throw new Error('口播片段已删除');
       setVideoEditor({ segment, assetId: segment.video?.assetId ?? '', start: String(segment.video?.start ?? 0) });
     } else { setSourcePath(''); setImporting(true); }
-  }, disconnected, failed);
+  }, disconnected, cause => { failed(cause); requestAnimationFrame(returnFocus.current.video); });
   const cancelVideo = () => {
     setVideoEditor(null); setImporting(false); setSaveState('saved');
     void editing.cancel('segments');
@@ -228,8 +248,8 @@ export function App() {
   const selectedPosition = status?.snapshot.segments.findIndex(segment => segment.id === selectedIds[0]) ?? -1;
   return <main>
     <header><h1>口播片段</h1>
-      <button disabled={!status} onClick={() => setExportSettingsOpen(true)}>导出设置</button>
-      <button disabled={disabled} onClick={() => { void openVideoEditor(); }}>导入本地视频</button>
+      <button disabled={!status} onClick={event => { rememberOrigin(event.currentTarget, 'settings'); setExportSettingsOpen(true); }}>导出设置</button>
+      <button disabled={disabled} onClick={event => { rememberOrigin(event.currentTarget, 'video'); void openVideoEditor(); }}>导入本地视频</button>
       <button disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
     </header>
     <p className={`save-status${saveState === 'failed' ? ' save-error' : ''}`} role="status">
@@ -271,8 +291,8 @@ export function App() {
       {speech.tasks.length > 0 && <details><summary>配音任务与请求标识</summary>{speech.tasks.map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{task.message}</p>)}</details>}
     </section>}
     <ExportTasksPanel onStatus={() => { void editing.refresh(() => queryStatus(window.location.origin), setStatus, () => {}); }} />
-    {exportSettingsOpen && status && <ExportSettingsPanel editing={editing} status={status} onStatus={setStatus} onClose={() => setExportSettingsOpen(false)} />}
-    {audioHistory && <div className="modal-backdrop"><section role="dialog" aria-modal="true" aria-label="保留音频" className="media-dialog">
+    {exportSettingsOpen && status && <ExportSettingsPanel restoreFocus={returnFocus.current.settings} editing={editing} status={status} onStatus={setStatus} onClose={() => setExportSettingsOpen(false)} />}
+    {audioHistory && <Dialog label="保留音频" onClose={() => setAudioHistory(null)} restoreFocus={returnFocus.current.history}>
       <h2>保留音频</h2>
       <ul className="audio-history">{speech?.audio.filter(audio => audio.segmentId === audioHistory).slice().reverse().map(audio => <li key={audio.taskId}>
         <p><time dateTime={audio.createdAt}>{new Date(audio.createdAt).toLocaleString()}</time> · {audio.valid ? '有效配音' : '配音待更新'}</p>
@@ -280,14 +300,14 @@ export function App() {
         <audio controls preload="none" src={audio.url} aria-label={`试听 ${audio.input.text}`} />
       </li>)}</ul>
       <button onClick={() => setAudioHistory(null)}>关闭</button>
-    </section></div>}
-    {audioUrl && <div className="modal-backdrop"><section role="dialog" aria-modal="true" aria-label="配音试听" className="media-dialog">
+    </Dialog>}
+    {audioUrl && <Dialog label="配音试听" onClose={() => setAudioUrl(null)} restoreFocus={returnFocus.current.audio}>
       <h2>配音试听</h2><audio controls autoPlay src={audioUrl} onError={() => { setSaveState('failed'); setSaveError('音频不可读取，请检查项目文件'); }} />
       <button onClick={() => setAudioUrl(null)}>关闭试听</button>
-    </section></div>}
+    </Dialog>}
     <section className="organization" aria-label="组织口播片段">
       <div className="toolbar">
-        <label>筛选文案 <input aria-label="筛选文案" value={filter} onChange={event => setFilter(event.target.value)} /></label>
+        <label>筛选文案 <input ref={tableFallback} aria-label="筛选文案" value={filter} onChange={event => setFilter(event.target.value)} /></label>
         <span>已勾选 {selectedIds.length} 个片段（含筛选隐藏项）</span>
         <button disabled={disabled || !selectedIds.length} onClick={() => {
           const targets = status!.snapshot.segments.filter(segment => selectedIds.includes(segment.id));
@@ -304,9 +324,9 @@ export function App() {
         <button disabled={disabled || !paste.trim()} onClick={() => { void organize({ changes: [{ kind: 'paste', text: paste }] }); }}>按非空行新增</button>
       </details>
     </section>
-    {(videoEditor || importing) && <div className="modal-backdrop"><section role="dialog" aria-modal="true" aria-label={importing ? '导入本地视频' : '关联视频'} className="media-dialog">
+    {(videoEditor || importing) && <Dialog label={importing ? '导入本地视频' : '关联视频'} onClose={cancelVideo} restoreFocus={returnFocus.current.video}>
       <h2>{importing ? '导入本地视频' : '关联视频'}</h2>
-      {importing ? <label>视频文件绝对路径<input autoFocus aria-label="视频文件绝对路径" value={sourcePath} disabled={saveState === 'saving'} onChange={event => setSourcePath(event.target.value)} placeholder="粘贴要导入的本地视频完整路径" /></label>
+      {importing ? <label>视频文件绝对路径<input aria-label="视频文件绝对路径" value={sourcePath} disabled={saveState === 'saving'} onChange={event => setSourcePath(event.target.value)} placeholder="粘贴要导入的本地视频完整路径" /></label>
         : videoEditor && <>
           <label>素材<select aria-label="关联素材" value={videoEditor.assetId} disabled={saveState === 'saving'} onChange={event => setVideoEditor({ ...videoEditor, assetId: event.target.value, start: '0' })}>
             <option value="">解除关联</option>
@@ -318,11 +338,11 @@ export function App() {
       {importing && <p>只读取指定文件，复制到项目并生成静音预览。原文件之后可移动或改名。</p>}
       <div className="toolbar"><button disabled={saveState === 'saving' || (importing && !sourcePath.trim())} onClick={() => { void saveVideo(); }}>{saveState === 'saving' ? '正在处理…' : importing ? '导入并复制' : '保存关联与起点'}</button>
         <button onClick={() => { void cancelVideo(); }}>取消</button></div>
-    </section></div>}
-    {preview && <div className="modal-backdrop"><section role="dialog" aria-modal="true" aria-label="视频预览" className="media-dialog">
+    </Dialog>}
+    {preview && <Dialog label="视频预览" onClose={() => setPreview(null)} restoreFocus={returnFocus.current.preview}>
       <h2>视频预览</h2><video key={preview.assetId} controls muted autoPlay src={`/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
       <p>从 {preview.start} 秒开始，预览默认静音。</p><button onClick={() => setPreview(null)}>关闭预览</button>
-    </section></div>}
+    </Dialog>}
     <div className="grid"><AgGridProvider modules={[AllCommunityModule]}><AgGridReact
       readOnlyEdit stopEditingWhenCellsLoseFocus suppressClickEdit
       rowSelection={{ mode: 'multiRow', selectAll: 'filtered', enableClickSelection: false }}
