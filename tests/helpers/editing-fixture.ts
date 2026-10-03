@@ -50,18 +50,22 @@ export const fixture = String.raw`
     if (state.saveGate) await state.saveGate.promise;
     return result;
   }
-  export async function connectTable() { const done = deferred(); return { tableId: 'table', select: async () => { if (state.selectionFailure) throw Error('勾选同步失败'); }, closed: done.promise, close: async () => done.resolve() }; }
+  export async function connectTable() { const done = deferred(); (state.tableConnections ??= []).push(done); return { tableId: 'table', select: async ids => { (state.selectionRequests ??= []).push(copy(ids)); if (state.selectionFailure) throw Error('勾选同步失败'); }, closed: done.promise, close: async () => done.resolve() }; }
   export async function submitSpeech() { state.mutations.push('配音'); } export async function setVoice(_, voice) { if (state.voiceFailure) throw Error('声音保存失败'); state.mutations.push('声音设置'); if (state.saveGate) await state.saveGate.promise; if (state.speech) state.speech.voice = copy(voice); }
   export async function modifyUserBatch(_, batch) {
+    (state.batchRequests ??= []).push(copy(batch));
     if (state.batchFailure) throw Error('多行新增失败');
     state.saves++; state.mutations.push('片段');
     for (const change of batch.changes) {
       if (change.kind === 'paste') for (const text of change.text.split('\n').filter(line => line.trim())) state.status.snapshot.segments.push({ id: 'paste-' + state.status.snapshot.segments.length, order: state.status.snapshot.segments.length + 1, text, video: null });
+      if (change.kind === 'delete') state.status.snapshot.segments = state.status.snapshot.segments.filter(item => item.id !== change.expected.id);
+      if (change.kind === 'reorder') state.status.snapshot.segments = change.ids.map(id => state.status.snapshot.segments.find(item => item.id === id));
       if (change.kind === 'video') {
         const segment = state.status.snapshot.segments.find(item => item.id === change.expected.id);
         segment.video = change.assetId ? { assetId: change.assetId, start: change.start } : null;
       }
     }
+    state.status.snapshot.segments.forEach((segment, index) => { segment.order = index + 1; });
     const result = { status: copy(state.status), summary: { applied: batch.changes.length }, results: [] };
     if (state.saveGate) await state.saveGate.promise;
     return result;

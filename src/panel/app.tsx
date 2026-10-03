@@ -353,13 +353,15 @@ export function App() {
     <section className="organization" aria-label="组织口播片段">
       <div className="toolbar">
         <label>筛选文案 <input ref={tableFallback} aria-label="筛选文案" value={filter} onChange={event => setFilter(event.target.value)} /></label>
-        <span>已勾选 {selectedIds.length} 个片段（含筛选隐藏项）</span>
-        <button disabled={disabled || !selectedIds.length} onClick={() => {
-          const targets = status!.snapshot.segments.filter(segment => selectedIds.includes(segment.id));
-          void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) });
-        }}>删除勾选</button>
-        <button disabled={disabled || selectedIds.length !== 1 || selectedPosition <= 0} onClick={() => move(-1)}>项目顺序上移</button>
-        <button disabled={disabled || selectedIds.length !== 1 || selectedPosition < 0 || selectedPosition >= (status?.snapshot.segments.length ?? 0) - 1} onClick={() => move(1)}>项目顺序下移</button>
+        {selectedIds.length > 0 && <>
+          <span>已勾选 {selectedIds.length} 个片段（含筛选隐藏项）</span>
+          <button disabled={disabled || !selectedIds.length} onClick={() => {
+            const targets = status!.snapshot.segments.filter(segment => selectedIds.includes(segment.id));
+            void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) });
+          }}>删除勾选</button>
+          <button disabled={disabled || selectedIds.length !== 1 || selectedPosition <= 0} onClick={() => move(-1)}>项目顺序上移</button>
+          <button disabled={disabled || selectedIds.length !== 1 || selectedPosition < 0 || selectedPosition >= (status?.snapshot.segments.length ?? 0) - 1} onClick={() => move(1)}>项目顺序下移</button>
+        </>}
       </div>
     </section>
     {(videoEditor || importing) && <Dialog label={importing ? '导入本地视频' : '关联视频'} onClose={cancelVideo} restoreFocus={returnFocus.current.video}>
