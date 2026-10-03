@@ -1,11 +1,9 @@
 import type { ProjectAccess } from './project-access.js';
 import { randomUUID } from 'node:crypto';
-import { constants, mkdirSync } from 'node:fs';
-import { copyFile, link, mkdir, rm } from 'node:fs/promises';
-import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import type { ExportTask, ExportTasksStatus, ExportStatus, Snapshot, SpeechStatus } from '../shared/contracts.js';
-import { validateVideo, verifyMedia } from './video-media.js';
+import { validateVideo } from './video-media.js';
+import { exportFiles } from './export-files.js';
 import { assembleExport, prepareExportAudio, renderExportSegment, renderExportPreview, type RenderSegment } from './export-render.js';
 
 type ExportInputs = {
@@ -23,19 +21,12 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
   db.exec('CREATE TABLE IF NOT EXISTS export_tasks (id TEXT PRIMARY KEY, value TEXT NOT NULL)');
   const tasks = (): ExportTask[] => db.prepare('SELECT value FROM export_tasks ORDER BY rowid').all().map(row => JSON.parse(String(row.value)));
   const save = (task: ExportTask) => { inputs.verify(); db.prepare('INSERT INTO export_tasks VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET value = excluded.value').run(task.id, JSON.stringify(task)); };
-  const directory = join(inputs.snapshot().project.directory, 'exports');
+  const project = inputs.snapshot();
+  const files = exportFiles({ directory: project.project.directory, mediaDirectory: project.storage.mediaDirectory }, inputs.verify);
   let active: ExportTask | undefined;
   let running: Promise<void> | undefined;
   let controller: AbortController | undefined;
   let closed = false;
-  const workPath = (task: ExportTask) => join(directory, `.work-${task.id}`);
-  const previewPath = (task: ExportTask) => join(inputs.snapshot().storage.mediaDirectory, `${task.id}.export.webm`);
-  const outputPath = (task: ExportTask) => join(directory, `${task.createdAt.replace(/[:.]/g, '-')}-${task.id}.mp4`);
-  const cleanup = async (task: ExportTask, removeOutput: boolean) => {
-    inputs.verify();
-    await rm(workPath(task), { recursive: true, force: true });
-    if (removeOutput) await rm(outputPath(task), { force: true });
-  };
   // 由独立服务所有权保证此处没有前一服务仍在运行；不自动重试中断任务。
   const interrupted = tasks().filter(task => !['succeeded', 'failed', 'cancelled', 'interrupted'].includes(task.state));
   if (interrupted.length) {
@@ -44,8 +35,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
     running = (async () => {
       for (const task of interrupted) {
         task.state = 'cleaning'; task.message = '正在清理中断导出'; save(task);
-        await cleanup(task, true);
-        await rm(previewPath(task), { force: true });
+        await files.recover(task);
         task.state = 'interrupted'; task.message = '导出已中断，本次文件已清理；不会自动重试，请重新导出'; save(task);
       }
       active = undefined; release();
@@ -70,15 +60,12 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
       controller = new AbortController(); const signal = controller.signal;
       running = (async () => {
         await new Promise<void>(resolve => setImmediate(resolve));
-        let succeeded = false;
-        let published = false;
-        let previewPublished = false;
+        const outputFiles = files.open(task, signal);
         try {
           signal.throwIfAborted();
           task.state = 'validating'; task.message = '正在汇总导出问题'; save(task);
           if (!snapshot.segments.length) task.issues.push({ field: 'project', message: '空项目不能导出' });
-          inputs.verify(); mkdirSync(directory, { recursive: true }); inputs.verify();
-          const workspace = workPath(task); await mkdir(workspace);
+          const workspace = await outputFiles.prepare();
           const render: RenderSegment[] = [];
           const videos = new Map<string, { path: string; duration: number }>();
           for (const [index, segment] of snapshot.segments.entries()) {
@@ -91,9 +78,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
                 video = videos.get(segment.video.assetId);
                 if (!video) {
                   const source = inputs.video(segment.video.assetId);
-                  const path = join(workspace, `video-${index}.source`);
-                  await copyFile(source, path, constants.COPYFILE_EXCL);
-                  signal.throwIfAborted();
+                  const path = await outputFiles.copy('video', index, source);
                   video = { path, duration: await validateVideo(path, signal) };
                   videos.set(segment.video.assetId, video);
                 }
@@ -108,8 +93,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
             else {
               try {
                 const source = inputs.audio(current.taskId);
-                const copied = join(workspace, `speech-${index}.mp3`);
-                await copyFile(source, copied, constants.COPYFILE_EXCL);
+                const copied = await outputFiles.copy('speech', index, source);
                 const audio = await prepareExportAudio(copied, workspace, index, signal);
                 if (video && segment.video) {
                   render.push({ segment, video: video.path, ...audio });
@@ -134,28 +118,21 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
           const result = await assembleExport(render, snapshot.exportSettings, workspace, signal);
           task.message = '正在生成播放预览'; save(task);
           const preview = await renderExportPreview(workspace, signal);
-          signal.throwIfAborted(); inputs.verify();
-          await link(preview, previewPath(task)); previewPublished = true;
-          await link(result, outputPath(task));
-          published = true;
-          signal.throwIfAborted();
-          succeeded = true;
+          await outputFiles.publish(result, preview);
         } catch (error) {
           task.message = signal.aborted ? '导出已取消' : (error as Error).message;
           if (task.segmentId) task.issues.push({ segmentId: task.segmentId, order: snapshot.segments.find(segment => segment.id === task.segmentId)?.order, field: 'video', message: task.message });
         }
         const resultMessage = task.message;
         task.state = 'cleaning'; task.message = '正在停止任务并清理本次临时文件'; save(task);
-        await cleanup(task, published && (!succeeded || signal.aborted));
-        // 取消也可能发生在异步清理期间，发布文件须再次核对。
-        if (published && signal.aborted) { inputs.verify(); await rm(outputPath(task), { force: true }); }
-        if (previewPublished && (!succeeded || signal.aborted)) { inputs.verify(); await rm(previewPath(task), { force: true }); }
-        if (signal.aborted) { task.state = closed ? 'interrupted' : 'cancelled'; task.message = closed ? '导出已中断，本次文件已清理；不会自动重试' : '导出已取消，本次文件已清理'; }
-        else if (succeeded) {
-          task.state = 'succeeded'; task.message = '导出成功';
-          task.output = { path: outputPath(task), url: `/api/exports/${task.id}/file`, previewUrl: `/api/exports/${task.id}/preview` };
-        } else { task.state = 'failed'; task.message = resultMessage; }
-        save(task); active = undefined; controller = undefined; release();
+        await outputFiles.finish(output => {
+          if (signal.aborted) { task.state = closed ? 'interrupted' : 'cancelled'; task.message = closed ? '导出已中断，本次文件已清理；不会自动重试' : '导出已取消，本次文件已清理'; }
+          else if (output) {
+            task.state = 'succeeded'; task.message = '导出成功';
+            task.output = output;
+          } else { task.state = 'failed'; task.message = resultMessage; }
+          save(task); active = undefined; controller = undefined; release();
+        });
       })().catch(error => {
         // 清理或终态持久化失败时保留锁，不把仍存在的半成品说成已清理。
         task.state = 'cleaning'; task.message = `清理或保存失败，项目仍锁定：${(error as Error).message}`;
@@ -165,7 +142,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
     getExportFile(id: string, kind: 'file' | 'preview' = 'file') {
       const task = tasks().find(task => task.id === id && task.state === 'succeeded');
       if (!task) throw new Error('成片不存在或导出未成功');
-      inputs.verify(); const path = kind === 'preview' ? previewPath(task) : outputPath(task); verifyMedia(path); return path;
+      return files.read(task, kind);
     },
     cancelExport(id: string): ExportTask {
       const task = active?.id === id ? active : tasks().find(task => task.id === id);

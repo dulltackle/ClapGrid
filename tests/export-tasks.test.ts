@@ -5,6 +5,8 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import fs from 'node:fs/promises';
+import { DatabaseSync } from 'node:sqlite';
 import { openBusiness } from '../src/business/index.js';
 import type { ExportTask } from '../src/shared/contracts.js';
 
@@ -81,7 +83,9 @@ async function ready(t: import('node:test').TestContext, options: { duration?: n
   const business = openBusiness(directory, { key: () => 'test-key', configPath: '.env', fetch: (async () => failSpeech
     ? new Response('失败', { status: 500 })
     : new Response(`data: {"code":0,"data":"${payload}"}\n\ndata: {"code":20000000}\n\n`)) as typeof fetch });
-  t.after(async () => { await business.close(); rmSync(root, { recursive: true, force: true }); });
+  let closing: Promise<void> | undefined;
+  const close = () => closing ??= business.close();
+  t.after(async () => { await close(); rmSync(root, { recursive: true, force: true }); });
   const token = business.acquire('codex');
   const asset = await business.importVideo(token, { sourcePath: source });
   const first = business.addSegment('第一句字幕，整句随配音显示。', token).segments[0]!;
@@ -98,12 +102,108 @@ async function ready(t: import('node:test').TestContext, options: { duration?: n
     assert.equal(business.getSpeechStatus().locked, false);
   };
   for (const segment of [first, second]) { business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id }); await waitSpeech(); }
-  return { root, directory, business, asset, first, second, waitSpeech, failNextSpeech: () => { failSpeech = true; } };
+  return { root, directory, business, close, asset, first, second, waitSpeech, failNextSpeech: () => { failSpeech = true; } };
 }
 
 function probe(path: string) { return JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', path], { encoding: 'utf8' })); }
 function frame(path: string, seconds: number) { return execFileSync('ffmpeg', ['-v', 'error', '-ss', String(seconds), '-i', path, '-frames:v', '1', '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-'], { maxBuffer: 8 * 1024 * 1024 }); }
 function pixel(data: Buffer, x: number, y: number) { return [...data.subarray((y * 1920 + x) * 3, (y * 1920 + x) * 3 + 3)]; }
+
+async function until(check: () => boolean) {
+  const deadline = Date.now() + 60000;
+  while (!check()) {
+    if (Date.now() >= deadline) assert.fail('导出未在限时内达到预期');
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+}
+
+test('预览发布后成片目标冲突：撤销本次预览，不覆盖或删除原有文件', async t => {
+  const { business, directory } = await ready(t);
+  const task = business.submitExport();
+  const exports = join(directory, 'exports');
+  mkdirSync(exports, { recursive: true });
+  const collision = join(exports, `${task.createdAt.replace(/[:.]/g, '-')}-${task.id}.mp4`);
+  writeFileSync(collision, '原有文件');
+  const result = await finished(business, task.id);
+  assert.equal(result.state, 'failed');
+  assert.match(result.message, /EEXIST/);
+  assert.equal(result.completed, result.total);
+  assert.deepEqual(readdirSync(exports), [collision.split('/').at(-1)]);
+  assert.equal(readFileSync(collision, 'utf8'), '原有文件');
+  assert.equal(existsSync(join(business.getSnapshot().storage.mediaDirectory, `${task.id}.export.webm`)), false);
+  assert.throws(() => business.getExportFile(task.id), /导出未成功/);
+  assert.equal(business.getExportTasks().locked, false);
+});
+
+test('成片和预览已发布后在清理期间取消：撤销两份文件，终态保存前保持占用', async t => {
+  const { business, directory } = await ready(t);
+  const task = business.submitExport();
+  const workspace = join(directory, 'exports', `.work-${task.id}`);
+  let cleaning = false;
+  let resume!: () => void;
+  const paused = new Promise<void>(resolve => { resume = resolve; });
+  const remove = fs.rm;
+  // 只延迟本次真实目录删除，精确控制取消发生在清理尚未完成时。
+  const mock = t.mock.method(fs, 'rm', async (...[path, options]: Parameters<typeof fs.rm>) => {
+    if (path === workspace) { cleaning = true; await paused; }
+    return remove(path, options);
+  });
+  t.after(() => { resume(); mock.mock.restore(); });
+  try {
+    await until(() => cleaning);
+    const preview = join(business.getSnapshot().storage.mediaDirectory, `${task.id}.export.webm`);
+    assert.equal(existsSync(preview), true);
+    assert.equal(readdirSync(join(directory, 'exports')).filter(name => name.endsWith('.mp4')).length, 1);
+    assert.equal(business.cancelExport(task.id).state, 'cleaning');
+    assert.equal(business.getExportTasks().locked, true);
+    assert.throws(() => business.acquire('user'), /导出/);
+    assert.throws(() => business.getExportFile(task.id), /导出未成功/);
+    resume();
+    assert.equal((await finished(business, task.id)).state, 'cancelled');
+    assert.deepEqual(readdirSync(join(directory, 'exports')), []);
+    assert.equal(existsSync(preview), false);
+    assert.equal(business.getExportTasks().locked, false);
+  } finally { resume(); }
+});
+
+test('成功产物已发布但终态保存失败：继续锁定且不可读取，重开清理后标记中断', async t => {
+  const { business, directory, close } = await ready(t);
+  const history = await finished(business, business.submitExport().id);
+  assert.equal(history.state, 'succeeded');
+  const historicalFile = business.getExportFile(history.id);
+  const historicalPreview = business.getExportFile(history.id, 'preview');
+  const historicalBytes = readFileSync(historicalFile);
+  const db = new DatabaseSync(business.getSnapshot().storage.database);
+  t.after(() => db.close());
+  db.exec(`CREATE TRIGGER reject_export_success BEFORE UPDATE ON export_tasks
+    WHEN json_extract(NEW.value, '$.state') = 'succeeded'
+    BEGIN SELECT RAISE(ABORT, '模拟成功状态保存失败'); END`);
+  const task = business.submitExport();
+  await until(() => business.getExportTasks().tasks.some(item => item.id === task.id && item.message.includes('清理或保存失败')));
+  const pending = business.getExportTasks().tasks.find(item => item.id === task.id)!;
+  assert.equal(pending.state, 'cleaning');
+  const pendingFile = join(directory, 'exports', `${task.createdAt.replace(/[:.]/g, '-')}-${task.id}.mp4`);
+  const pendingPreview = join(business.getSnapshot().storage.mediaDirectory, `${task.id}.export.webm`);
+  assert.equal(existsSync(pendingFile), true); assert.equal(existsSync(pendingPreview), true);
+  assert.equal(existsSync(join(directory, 'exports', `.work-${task.id}`)), false);
+  assert.throws(() => business.getExportFile(task.id), /导出未成功/);
+  assert.throws(() => business.getExportFile(task.id, 'preview'), /导出未成功/);
+  assert.throws(() => business.acquire('user'), /导出/);
+  assert.equal(business.getExportTasks().locked, true);
+  await close();
+  db.exec('DROP TRIGGER reject_export_success');
+  const reopened = openBusiness(directory);
+  try {
+    await until(() => !reopened.getExportTasks().locked);
+    const recovered = reopened.getExportTasks().tasks.find(item => item.id === task.id)!;
+    assert.equal(recovered.state, 'interrupted');
+    assert.equal(reopened.getExportTasks().tasks.length, 2, '重开不自动创建新的导出任务');
+    assert.equal(existsSync(pendingFile), false); assert.equal(existsSync(pendingPreview), false);
+    assert.deepEqual(readFileSync(reopened.getExportFile(history.id)), historicalBytes);
+    assert.equal(reopened.getExportFile(history.id, 'preview'), historicalPreview);
+    const token = reopened.acquire('user'); reopened.release(token);
+  } finally { await reopened.close(); }
+});
 
 test('真实全片按项目顺序导出：起点、冻结、留边、烧录字幕与 MP4 参数，失败的最新配音不妨碍有效旧配音', async t => {
   const { business, first, second, failNextSpeech, waitSpeech, directory, asset } = await ready(t);
