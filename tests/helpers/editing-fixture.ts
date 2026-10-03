@@ -51,7 +51,7 @@ export const fixture = String.raw`
     return result;
   }
   export async function connectTable() { const done = deferred(); (state.tableConnections ??= []).push(done); return { tableId: 'table', select: async ids => { (state.selectionRequests ??= []).push(copy(ids)); if (state.selectionFailure) throw Error('勾选同步失败'); }, closed: done.promise, close: async () => done.resolve() }; }
-  export async function submitSpeech() { state.mutations.push('配音'); } export async function setVoice(_, voice) { if (state.voiceFailure) throw Error('声音保存失败'); state.mutations.push('声音设置'); if (state.saveGate) await state.saveGate.promise; if (state.speech) state.speech.voice = copy(voice); }
+  export async function submitSpeech(_, request) { (state.speechRequests ??= []).push(copy(request)); state.mutations.push('配音'); if (state.speechGate) await state.speechGate.promise; if (state.speechFailure) throw Error('配音请求断开'); } export async function setVoice(_, voice) { if (state.voiceFailure) throw Error('声音保存失败'); state.mutations.push('声音设置'); if (state.saveGate) await state.saveGate.promise; if (state.speech) state.speech.voice = copy(voice); }
   export async function modifyUserBatch(_, batch) {
     (state.batchRequests ??= []).push(copy(batch));
     if (state.batchFailure) throw Error('多行新增失败');

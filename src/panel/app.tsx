@@ -55,7 +55,8 @@ export function App() {
   const [exportSettingsOpen, setExportSettingsOpen] = useState(false);
   const [status, setStatus] = useState<ServiceStatus>();
   const [speech, setSpeech] = useState<SpeechStatus>();
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [listening, setListening] = useState<SpeechStatus['audio'][number] | null>(null);
+  const [videoDetails, setVideoDetails] = useState<string | null>(null);
   const [audioHistory, setAudioHistory] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [videoEditor, setVideoEditor] = useState<{ segment: Segment; assetId: string; start: string } | null>(null);
@@ -73,7 +74,7 @@ export function App() {
   const [saveError, setSaveError] = useState('');
   const grid = useRef<GridApi<Segment> | null>(null);
   const tableFallback = useRef<HTMLInputElement>(null);
-  const returnFocus = useRef({ settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, detail: () => {} });
+  const returnFocus = useRef({ settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, material: () => {}, detail: () => {} });
   const rememberOrigin = (trigger: HTMLElement, detail: keyof typeof returnFocus.current) => {
     returnFocus.current[detail] = dialogReturnFocus(trigger, () => grid.current, () => tableFallback.current);
   };
@@ -104,19 +105,19 @@ export function App() {
         if (params.editing && params.event.key === 'Tab') { params.api.stopEditing(); return true; }
         return !params.editing && (['Enter', 'F2', 'Backspace', 'Delete'].includes(params.event.key) || params.event.key.length === 1);
       } },
-    { headerName: '画面素材', width: 310, suppressKeyboardEvent: cellControlKeyboard, cellRenderer: (params: { data?: Segment }) => {
+    { headerName: '画面素材', initialWidth: 230, minWidth: 180, suppressKeyboardEvent: cellControlKeyboard, cellRenderer: (params: { data?: Segment }) => {
       const segment = params.data;
       if (!segment) return null;
       const asset = status?.snapshot.assets.find(asset => asset.id === segment.video?.assetId);
       return <div className="video-cell">
         {asset && <button className="thumbnail" aria-label={`播放 ${asset.name}`} onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(segment.video); }}>
-          <img src={`/api/media/${asset.id}/thumbnail`} alt={asset.name} />
+          <img src={`/api/media/${asset.id}/thumbnail`} alt="" />
         </button>}
-        <span>{asset ? `${asset.name} · ${segment.video!.start} 秒` : '未关联视频'}</span>
-        <button disabled={disabled} onClick={event => { rememberOrigin(event.currentTarget, 'video'); void openVideoEditor(segment.id); }}>{asset ? '更改' : '关联'}</button>
+        <span>{asset ? asset.name : '未关联视频'}</span>
+        <button aria-label={`查看片段 ${segment.order} 的画面素材详情`} onClick={event => { rememberOrigin(event.currentTarget, 'material'); setVideoDetails(segment.id); }}>详情</button>
       </div>;
     } },
-    { headerName: '配音', width: 460, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: () => true }, cellRenderer: (params: { data?: Segment }) => {
+    { headerName: '配音', initialWidth: 290, minWidth: 290, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: () => true }, cellRenderer: (params: { data?: Segment }) => {
       const segment = params.data; if (!segment) return null;
       const tasks = speech?.tasks.filter(task => task.segmentId === segment.id) ?? [];
       const latest = tasks.at(-1);
@@ -126,11 +127,11 @@ export function App() {
       return <div className="speech-cell">
         <div className="speech-state">
           <span>{audio ? audio.valid ? '有效配音' : '配音待更新' : '配音缺失'}</span>
-          <span title={latest?.message}>最近任务：{taskLabel}</span>
+          {latest && latest.state !== 'succeeded' && <span className={latest.state === 'failed' || latest.state === 'unknown' ? 'speech-warning' : ''}>最近任务：{taskLabel}</span>}
         </div>
-        <button disabled={disabled || !segment.text.trim()} onClick={() => { void generateSpeech(segment.id); }}>{latest?.state === 'failed' || latest?.state === 'unknown' ? '重试配音' : latest ? '重新生成' : '生成配音'}</button>
-        {audio && <button onClick={event => { rememberOrigin(event.currentTarget, 'audio'); setAudioUrl(audio.url); }}>试听{audio.valid ? '' : '（待更新）'}</button>}
-        {recordings.length > 0 && <button aria-label={`展开片段 ${segment.order} 的保留音频`} onClick={event => { rememberOrigin(event.currentTarget, 'history'); setAudioHistory(segment.id); }}>音频 {recordings.length}</button>}
+        <div className="speech-actions"><button disabled={disabled || !segment.text.trim()} onClick={() => { void generateSpeech(segment.id); }}>{latest?.state === 'failed' || latest?.state === 'unknown' ? '重试配音' : latest ? '重新生成' : '生成配音'}</button>
+        {audio && <button onClick={event => { rememberOrigin(event.currentTarget, 'audio'); setListening(audio); }}>试听{audio.valid ? '' : '（待更新）'}</button>}
+        <button aria-label={`展开片段 ${segment.order} 的保留音频`} onClick={event => { rememberOrigin(event.currentTarget, 'history'); setAudioHistory(segment.id); }}>详情</button></div>
       </div>;
     } },
     { headerName: '画面说明', width: 180 },
@@ -256,6 +257,7 @@ export function App() {
   }, [editing]);
   const disabled = !status || !speech || speech.locked || status.taskLocked || editState.busy || editState.editing || !!status.modification;
   const selectedPosition = status?.snapshot.segments.findIndex(segment => segment.id === selectedIds[0]) ?? -1;
+  const currentListening = speech?.audio.find(audio => audio.taskId === listening?.taskId && audio.segmentId === listening?.segmentId);
   const speechTask = speech?.tasks.at(-1);
   const speechProblems = speech?.tasks.filter(task => task.state === 'failed' || task.state === 'unknown') ?? [];
   const batchTask = speech?.operations.at(-1);
@@ -338,7 +340,9 @@ export function App() {
     </Dialog>}
     {exportSettingsOpen && status && <ExportSettingsPanel restoreFocus={returnFocus.current.settings} editing={editing} status={status} onStatus={setStatus} onSaveState={(state, message = '') => { setSaveState(state); setSaveError(message); }} onClose={() => setExportSettingsOpen(false)} />}
     {audioHistory && <Dialog label="保留音频" onClose={() => setAudioHistory(null)} restoreFocus={returnFocus.current.history}>
-      <h2>保留音频</h2>
+      <h2>配音详情与保留音频</h2>
+      <section aria-label="配音任务记录">{speech?.tasks.filter(task => task.segmentId === audioHistory).slice().reverse().map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{({ accepted: '已受理', running: '生成中', succeeded: '生成成功', failed: '生成失败', unknown: '结果未知，可能已计费' })[task.state]}<br />{task.message}</p>)}</section>
+      {!speech?.audio.some(audio => audio.segmentId === audioHistory) && <p>暂无保留音频</p>}
       <ul className="audio-history">{speech?.audio.filter(audio => audio.segmentId === audioHistory).slice().reverse().map(audio => <li key={audio.taskId}>
         <p><time dateTime={audio.createdAt}>{new Date(audio.createdAt).toLocaleString()}</time> · {audio.valid ? '有效配音' : '配音待更新'}</p>
         <p className="audio-text">{audio.input.text}</p>
@@ -346,9 +350,9 @@ export function App() {
       </li>)}</ul>
       <button onClick={() => setAudioHistory(null)}>关闭</button>
     </Dialog>}
-    {audioUrl && <Dialog label="配音试听" onClose={() => setAudioUrl(null)} restoreFocus={returnFocus.current.audio}>
-      <h2>配音试听</h2><audio controls autoPlay src={audioUrl} onError={() => { setSaveState('failed'); setSaveError('音频不可读取，请检查项目文件'); }} />
-      <button onClick={() => setAudioUrl(null)}>关闭试听</button>
+    {listening && <Dialog label="配音试听" onClose={() => setListening(null)} restoreFocus={returnFocus.current.audio}>
+      <h2>配音试听</h2><p>{!currentListening ? '配音状态无法确认：此音频已不在当前保留音频列表中。' : currentListening.valid ? '有效配音' : '配音待更新：此音频与当前文案或声音设置不一致。'}</p><audio controls autoPlay src={listening.url} onError={() => { setSaveState('failed'); setSaveError('音频不可读取，请检查项目文件'); }} />
+      <button onClick={() => setListening(null)}>关闭试听</button>
     </Dialog>}
     <section className="organization" aria-label="组织口播片段">
       <div className="toolbar">
@@ -364,6 +368,23 @@ export function App() {
         </>}
       </div>
     </section>
+    {videoDetails && <Dialog label="画面素材详情" onClose={() => setVideoDetails(null)} restoreFocus={returnFocus.current.material}>
+      <h2>画面素材详情</h2>
+      {(() => {
+        const segment = status?.snapshot.segments.find(segment => segment.id === videoDetails);
+        const asset = status?.snapshot.assets.find(asset => asset.id === segment?.video?.assetId);
+        return segment ? <>
+          <p>{asset?.name ?? '未关联视频'}</p>
+          {asset && segment.video && <>
+            <p>时长 {asset.duration.toFixed(2)} 秒 · 播放起点 {segment.video.start} 秒</p>
+            <button onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(segment.video); }}>播放预览</button>
+          </>}
+          <button disabled={disabled} onClick={event => { rememberOrigin(event.currentTarget, 'video'); void openVideoEditor(segment.id); }}>{asset ? '更改' : '关联'}</button>
+          <p>当前支持关联一份本地视频；更改中可解除关联及调整播放起点。</p>
+        </> : <p>口播片段已不存在。</p>;
+      })()}
+      <button onClick={() => setVideoDetails(null)}>关闭详情</button>
+    </Dialog>}
     {(videoEditor || importing) && <Dialog label={importing ? '导入本地视频' : '关联视频'} onClose={cancelVideo} restoreFocus={returnFocus.current.video}>
       <h2>{importing ? '导入本地视频' : '关联视频'}</h2>
       {importing ? <label>视频文件绝对路径<input aria-label="视频文件绝对路径" value={sourcePath} disabled={saveState === 'saving'} onChange={event => setSourcePath(event.target.value)} placeholder="粘贴要导入的本地视频完整路径" /></label>

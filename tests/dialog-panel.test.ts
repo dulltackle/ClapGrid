@@ -16,7 +16,7 @@ const script = String.raw`
   const check = (value, message) => { if (!value) throw Error(message); };
   const settle = () => new Promise(resolve => setTimeout(resolve, 40));
   const button = text => [...document.querySelectorAll('button')].find(node => node.textContent === text);
-  const dialog = () => document.querySelector('[role="dialog"], dialog');
+  const dialog = () => document.activeElement.closest('dialog[open]') ?? document.querySelector('dialog[open]');
   const field = label => document.querySelector('[aria-label="' + label + '"]');
   const click = async node => { await act(async () => { check(node && !node.disabled, '入口必须可用'); node.focus(); node.click(); await settle(); }); await settle(); };
   const visibleControl = async label => {
@@ -69,7 +69,7 @@ const script = String.raw`
       await click(checkbox);
       // 焦点移动也会触发表格滚动；等待该次手势结束后再操作横向滚动条。
       await new Promise(resolve => setTimeout(resolve, 200));
-      horizontal.scrollLeft = 700; await settle();
+      horizontal.scrollLeft = 520; await settle();
       const before = JSON.stringify(state.status.snapshot.segments);
       const scrollTop = body.scrollTop, scrollLeft = horizontal.scrollLeft;
       const history = await visibleControl('展开片段 21 的保留音频');
@@ -93,7 +93,7 @@ const script = String.raw`
       await key('Tab'); await key('Tab', true); check(dialog().contains(document.activeElement), '视频控件保持浮层焦点');
       await click(button('关闭预览'));
       check(document.activeElement === cell(rowId, '0'), '关闭预览回到画面素材单元格');
-      horizontal.scrollLeft = 700; await settle();
+      horizontal.scrollLeft = 520; await settle();
       const listen = [...cell(rowId, '1').querySelectorAll('button')].find(node => node.textContent === '试听');
       await click(listen); check(dialog()?.getAttribute('aria-label') === '配音试听', '切换至配音试听');
       await key('Escape');
@@ -120,19 +120,23 @@ const script = String.raw`
       await key('Escape'); state.status.modification = null; await poll();
 
       horizontal.scrollLeft = 250; await settle();
-      const videoButton = () => [...cell(rowId, '0').querySelectorAll('button')].find(node => node.textContent === '更改');
-      await click(videoButton());
+      const videoButton = async () => {
+        await click([...cell(rowId, '0').querySelectorAll('button')].find(node => node.textContent === '详情'));
+        return button('更改');
+      };
+      await click(await videoButton());
       check(dialog()?.getAttribute('aria-label') === '关联视频' && dialog().contains(document.activeElement), '异步取得修改权后进入素材调整');
       const videoLease = state.current;
       await input(field('播放起点（秒）'), '8');
       await screenshot('video-editor');
       await key('Escape');
-      check(!dialog() && videoLease.closes === 1 && state.status.snapshot.segments.find(segment => segment.id === rowId).video.start === 2, 'Esc 取消素材草稿并释放修改权');
-      check(document.activeElement === cell(rowId, '0'), '修改权释放后恢复素材单元格');
-      await poll(); await click(videoButton()); await input(field('播放起点（秒）'), '5');
+      check(dialog()?.getAttribute('aria-label') === '画面素材详情' && videoLease.closes === 1 && state.status.snapshot.segments.find(segment => segment.id === rowId).video.start === 2, 'Esc 取消素材草稿并释放修改权');
+      await key('Escape');
+      check(document.activeElement === cell(rowId, '0'), '关闭详情后恢复素材单元格');
+      await poll(); await click(await videoButton()); await input(field('播放起点（秒）'), '5');
       await click(button('保存关联与起点')); await settle();
-      check(!dialog() && state.status.snapshot.segments.find(segment => segment.id === rowId).video.start === 5, '素材保存保持原有行为');
-      await poll();
+      check(dialog()?.getAttribute('aria-label') === '画面素材详情' && state.status.snapshot.segments.find(segment => segment.id === rowId).video.start === 5, '素材保存保持原有行为');
+      await key('Escape'); await poll();
       await click(button('更多')); await click(button('导入本地视频')); await input(field('视频文件绝对路径'), '/tmp/example.mp4');
       state.saveGate = deferred(); await click(button('导入并复制'));
       const oldSave = state.saveGate; state.saveGate = null; const importLease = state.current;
@@ -144,8 +148,8 @@ const script = String.raw`
       check(state.current === newLease && newLease.closes === 0, '已取消处理的迟到结果不得释放新编辑');
       await key('Escape'); await poll();
       horizontal.scrollLeft = 250; await settle();
-      state.acquireGate = deferred(); await click(videoButton());
-      horizontal.scrollLeft = 700; await settle();
+      state.acquireGate = deferred(); await click(await videoButton()); await key('Escape');
+      horizontal.scrollLeft = 520; await settle();
       await click(field('展开片段 21 的保留音频'));
       await act(async () => { state.acquireGate.resolve(); state.acquireGate = null; await settle(); });
       check(document.querySelector('dialog[aria-label="关联视频"]').contains(document.activeElement), '异步打开素材调整时焦点进入最新浮层');
