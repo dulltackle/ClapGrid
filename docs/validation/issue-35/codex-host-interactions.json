@@ -1,0 +1,458 @@
+{
+  "environment": {
+    "browser": "Codex In-app Browser",
+    "browserId": "2",
+    "tabId": "1",
+    "url": "http://127.0.0.1:48735/",
+    "viewportOverride": {
+      "width": 420,
+      "height": 720
+    },
+    "sourceCommit": "333629a",
+    "fixtureBoundary": "现有 HTTP 客户端适配模块"
+  },
+  "observations": [
+    {
+      "key": "Tab",
+      "inside": true,
+      "tag": "BUTTON",
+      "text": "编辑设置"
+    },
+    {
+      "key": "Tab",
+      "inside": true,
+      "tag": "BUTTON",
+      "text": "关闭设置"
+    },
+    {
+      "key": "Tab",
+      "inside": true,
+      "tag": "BUTTON",
+      "text": "编辑设置"
+    },
+    {
+      "key": "Tab",
+      "inside": true,
+      "tag": "BUTTON",
+      "text": "关闭设置"
+    },
+    {
+      "key": "shift+Tab",
+      "inside": true,
+      "tag": "BUTTON",
+      "text": "编辑设置"
+    },
+    {
+      "key": "shift+Tab",
+      "inside": true,
+      "tag": "BUTTON",
+      "text": "关闭设置"
+    },
+    {
+      "key": "shift+Tab",
+      "inside": true,
+      "tag": "BUTTON",
+      "text": "编辑设置"
+    },
+    {
+      "key": "shift+Tab",
+      "inside": true,
+      "tag": "BUTTON",
+      "text": "关闭设置"
+    },
+    {
+      "step": "素材浮层打开",
+      "bounds": {
+        "bottom": 492.21875,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 227.78125
+      },
+      "dialog": "关联视频",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "DIALOG",
+        "text": "关联视频素材解除关联示例素材的长名称.mp4（60.00 秒）播放起点（秒）保存关联与起点取消"
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "素材 Tab",
+      "bounds": {
+        "bottom": 492.21875,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 227.78125
+      },
+      "dialog": "关联视频",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "BUTTON",
+        "text": "保存关联与起点"
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "素材 Tab",
+      "bounds": {
+        "bottom": 492.21875,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 227.78125
+      },
+      "dialog": "关联视频",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "BUTTON",
+        "text": "取消"
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "素材 Tab",
+      "bounds": {
+        "bottom": 492.21875,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 227.78125
+      },
+      "dialog": "关联视频",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "SELECT",
+        "text": "解除关联示例素材的长名称.mp4（60.00 秒）"
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "素材 shift+Tab",
+      "bounds": {
+        "bottom": 492.21875,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 227.78125
+      },
+      "dialog": "关联视频",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "BUTTON",
+        "text": "取消"
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "素材 shift+Tab",
+      "bounds": {
+        "bottom": 492.21875,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 227.78125
+      },
+      "dialog": "关联视频",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "BUTTON",
+        "text": "保存关联与起点"
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "素材取消返回",
+      "bounds": null,
+      "dialog": null,
+      "filter": "保留片段 1",
+      "focus": {
+        "column": "0",
+        "row": "segment-0",
+        "tag": "DIV",
+        "text": "示例素材的长名称.mp4 · 2 秒更改"
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "视频预览",
+      "bounds": {
+        "bottom": 520.96875,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 199.03125
+      },
+      "dialog": "视频预览",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "DIALOG",
+        "text": "视频预览从 2 秒开始，预览默认静音。关闭预览"
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "保留音频",
+      "bounds": {
+        "bottom": 495.96875,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 224.03125
+      },
+      "dialog": "保留音频",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "DIALOG",
+        "text": "保留音频2026/10/2 17:00:00 · 有效配音保留片段 1关闭"
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "音频 Tab",
+      "bounds": {
+        "bottom": 495.96875,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 224.03125
+      },
+      "dialog": "保留音频",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "AUDIO",
+        "text": ""
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "音频 Tab",
+      "bounds": {
+        "bottom": 495.96875,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 224.03125
+      },
+      "dialog": "保留音频",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "AUDIO",
+        "text": ""
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "音频 Tab",
+      "bounds": {
+        "bottom": 495.96875,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 224.03125
+      },
+      "dialog": "保留音频",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "AUDIO",
+        "text": ""
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "音频 shift+Tab",
+      "bounds": {
+        "bottom": 495.96875,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 224.03125
+      },
+      "dialog": "保留音频",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "AUDIO",
+        "text": ""
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "音频 shift+Tab",
+      "bounds": {
+        "bottom": 495.96875,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 224.03125
+      },
+      "dialog": "保留音频",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "AUDIO",
+        "text": ""
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "历史返回",
+      "bounds": null,
+      "dialog": null,
+      "filter": "保留片段 1",
+      "focus": {
+        "column": "1",
+        "row": "segment-0",
+        "tag": "DIV",
+        "text": "有效配音最近任务：未生成生成配音试听音频 1"
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "配音试听",
+      "bounds": {
+        "bottom": 454.46875,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 265.53125
+      },
+      "dialog": "配音试听",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "DIALOG",
+        "text": "配音试听关闭试听"
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "视频预览重新验证",
+      "bounds": {
+        "bottom": 536.25,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 183.75
+      },
+      "dialog": "视频预览",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "DIALOG",
+        "text": "视频预览从 2 秒开始，预览默认静音。关闭预览"
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "预览返回",
+      "bounds": null,
+      "dialog": null,
+      "filter": "保留片段 1",
+      "focus": {
+        "column": "0",
+        "row": "segment-0",
+        "tag": "DIV",
+        "text": "示例素材的长名称.mp4 · 2 秒更改"
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "设置草稿阻止关闭",
+      "bounds": {
+        "bottom": 664.21875,
+        "clientWidth": 369,
+        "left": 17,
+        "right": 388,
+        "scrollWidth": 369,
+        "top": 55.78125
+      },
+      "dialog": "全片导出设置",
+      "filter": "保留片段 1",
+      "focus": {
+        "inside": true,
+        "tag": "INPUT",
+        "text": ""
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    },
+    {
+      "step": "字号提交后关闭",
+      "bounds": null,
+      "dialog": null,
+      "filter": "保留片段 1",
+      "focus": {
+        "tag": "BUTTON",
+        "text": "导出设置"
+      },
+      "height": 720,
+      "selected": "true",
+      "width": 420
+    }
+  ]
+}
