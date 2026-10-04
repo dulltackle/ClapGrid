@@ -1,0 +1,22 @@
+{
+  "id": "36696fde-9b25-4a0e-8c24-50d04b0c96e5",
+  "createdAt": "2026-10-04T02:31:06.422Z",
+  "state": "succeeded",
+  "message": "导出成功",
+  "completed": 2,
+  "total": 2,
+  "issues": [],
+  "warnings": [
+    {
+      "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+      "order": 2,
+      "field": "video",
+      "message": "视频剩余时长不足，末帧将冻结补足配音时长"
+    }
+  ],
+  "output": {
+    "path": "/home/forclaw/code/ClapGrid/.cache/issue-29/media-project/exports/2026-10-04T02-31-06-422Z-36696fde-9b25-4a0e-8c24-50d04b0c96e5.mp4",
+    "url": "/api/exports/36696fde-9b25-4a0e-8c24-50d04b0c96e5/file",
+    "previewUrl": "/api/exports/36696fde-9b25-4a0e-8c24-50d04b0c96e5/preview"
+  }
+}
