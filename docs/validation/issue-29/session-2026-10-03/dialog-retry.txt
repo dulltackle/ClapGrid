@@ -1,0 +1,22 @@
+TAP version 13
+# Subtest: 真实主视图浮层键盘与焦点恢复（1600px）
+ok 1 - 真实主视图浮层键盘与焦点恢复（1600px）
+  ---
+  duration_ms: 19095.233406
+  type: 'test'
+  ...
+# Subtest: 真实主视图浮层键盘与焦点恢复（420px）
+ok 2 - 真实主视图浮层键盘与焦点恢复（420px）
+  ---
+  duration_ms: 16303.699729
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 35595.948036

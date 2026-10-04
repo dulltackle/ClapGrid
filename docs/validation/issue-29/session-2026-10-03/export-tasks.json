@@ -1,0 +1,47 @@
+[
+  {
+    "id": "0f4597e9-bb39-4be6-b627-2a03150362b4",
+    "createdAt": "2026-10-04T02:12:58.363Z",
+    "state": "failed",
+    "message": "导出校验失败，请修正全部问题后重试",
+    "completed": 0,
+    "total": 2,
+    "issues": [
+      {
+        "segmentId": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+        "order": 1,
+        "field": "video",
+        "message": "视频不可读或不可解码：无法确认视频画面时长"
+      },
+      {
+        "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+        "order": 2,
+        "field": "video",
+        "message": "视频不可读或不可解码：无法确认视频画面时长"
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "id": "cb6c0150-093c-410d-950f-d5a4f8e83e21",
+    "createdAt": "2026-10-04T02:15:37.172Z",
+    "state": "succeeded",
+    "message": "导出成功",
+    "completed": 2,
+    "total": 2,
+    "issues": [],
+    "warnings": [
+      {
+        "segmentId": "e03e5715-61e8-4243-be16-0533e096dd9c",
+        "order": 2,
+        "field": "video",
+        "message": "视频剩余时长不足，末帧将冻结补足配音时长"
+      }
+    ],
+    "output": {
+      "path": "/home/forclaw/code/ClapGrid/.cache/issue-29/media-project/exports/2026-10-04T02-15-37-172Z-cb6c0150-093c-410d-950f-d5a4f8e83e21.mp4",
+      "url": "/api/exports/cb6c0150-093c-410d-950f-d5a4f8e83e21/file",
+      "previewUrl": "/api/exports/cb6c0150-093c-410d-950f-d5a4f8e83e21/preview"
+    }
+  }
+]

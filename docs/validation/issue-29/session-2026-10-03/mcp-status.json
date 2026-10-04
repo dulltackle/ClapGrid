@@ -1,0 +1,53 @@
+{
+  "application": "clapgrid",
+  "apiVersion": 1,
+  "instanceId": "e241fd4a-6039-4a2a-9b61-65ecf9dd183e",
+  "pid": 3035637,
+  "startedAt": "2026-10-04T02:11:25.088Z",
+  "snapshot": {
+    "project": {
+      "id": "418457e2-8bf2-45d3-9c6d-a3ebdbc552e2",
+      "directory": "/home/forclaw/code/ClapGrid/.cache/issue-29/media-project",
+      "createdAt": "2026-09-28T10:37:46.734Z"
+    },
+    "storage": {
+      "database": "/home/forclaw/code/ClapGrid/.cache/issue-29/media-project/clapgrid.sqlite",
+      "mediaDirectory": "/home/forclaw/code/ClapGrid/.cache/issue-29/media-project/media"
+    },
+    "segments": [
+      {
+        "id": "75613e4a-8eed-4fb3-9ad6-beb5cacf8024",
+        "order": 1,
+        "text": "这是跨退出恢复验证的第一句。",
+        "video": {
+          "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+          "start": 0
+        }
+      },
+      {
+        "id": "e03e5715-61e8-4243-be16-0533e096dd9c",
+        "order": 2,
+        "text": "这是第二句真实配音。我们正在验证本地服务独立运行，关闭表格之后任务继续，重新打开仍然看到同一项目。服务中断后保留已经完成的结果，未完成任务不会自动重试。",
+        "video": {
+          "assetId": "30a87396-1689-4c6a-936c-52a097b87e72",
+          "start": 0
+        }
+      }
+    ],
+    "assets": [
+      {
+        "id": "30a87396-1689-4c6a-936c-52a097b87e72",
+        "name": "source.mp4",
+        "duration": 3
+      }
+    ],
+    "exportSettings": {
+      "codec": "libx264",
+      "fps": 25,
+      "fontFamily": "Noto Sans CJK SC",
+      "fontSize": 48
+    }
+  },
+  "taskLocked": false,
+  "modification": null
+}

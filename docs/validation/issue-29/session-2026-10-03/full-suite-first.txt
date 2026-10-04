@@ -1,0 +1,901 @@
+
+> clapgrid@0.1.0 test
+> tsx --test tests/*.test.ts
+
+TAP version 13
+# (node:159) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 共享业务层初始化 SQLite，重开后保留项目标识与创建时间
+ok 1 - 共享业务层初始化 SQLite，重开后保留项目标识与创建时间
+  ---
+  duration_ms: 43.708327
+  type: 'test'
+  ...
+# Subtest: 新增与编辑口播片段后重开，稳定身份、文案和项目顺序保留
+ok 2 - 新增与编辑口播片段后重开，稳定身份、文案和项目顺序保留
+  ---
+  duration_ms: 27.219829
+  type: 'test'
+  ...
+# Subtest: 拒绝项目内 clapgrid.sqlite 符号链接，不触碰项目外文件
+ok 3 - 拒绝项目内 clapgrid.sqlite 符号链接，不触碰项目外文件
+  ---
+  duration_ms: 10.995685
+  type: 'test'
+  ...
+# Subtest: 拒绝项目内 clapgrid.sqlite-wal 符号链接，不触碰项目外文件
+ok 4 - 拒绝项目内 clapgrid.sqlite-wal 符号链接，不触碰项目外文件
+  ---
+  duration_ms: 3.308497
+  type: 'test'
+  ...
+# Subtest: 拒绝项目内 clapgrid.sqlite-shm 符号链接，不触碰项目外文件
+ok 5 - 拒绝项目内 clapgrid.sqlite-shm 符号链接，不触碰项目外文件
+  ---
+  duration_ms: 2.464384
+  type: 'test'
+  ...
+# Subtest: 拒绝项目内 clapgrid.sqlite-journal 符号链接，不触碰项目外文件
+ok 6 - 拒绝项目内 clapgrid.sqlite-journal 符号链接，不触碰项目外文件
+  ---
+  duration_ms: 1.789637
+  type: 'test'
+  ...
+# Subtest: 拒绝项目内 media 符号链接，不触碰项目外文件
+ok 7 - 拒绝项目内 media 符号链接，不触碰项目外文件
+  ---
+  duration_ms: 8.717709
+  type: 'test'
+  ...
+# Subtest: 真实主视图浮层键盘与焦点恢复（1600px）
+not ok 8 - 真实主视图浮层键盘与焦点恢复（1600px）
+  ---
+  duration_ms: 40374.605047
+  type: 'test'
+  location: '/home/forclaw/code/ClapGrid/tests/dialog-panel.test.ts:192:3'
+  failureType: 'testTimeoutFailure'
+  error: 'test timed out after 40000ms'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: 真实主视图浮层键盘与焦点恢复（420px）
+ok 9 - 真实主视图浮层键盘与焦点恢复（420px）
+  ---
+  duration_ms: 23298.509402
+  type: 'test'
+  ...
+# Subtest: 真实编辑视图共享刷新仲裁，连续保存、断线取消草稿和单次保存正常关闭均符合约定
+ok 10 - 真实编辑视图共享刷新仲裁，连续保存、断线取消草稿和单次保存正常关闭均符合约定
+  ---
+  duration_ms: 9765.570601
+  type: 'test'
+  ...
+# Subtest: 主视图全片导出与取消错误跨详情和连接恢复持续可见（1600px）
+ok 11 - 主视图全片导出与取消错误跨详情和连接恢复持续可见（1600px）
+  ---
+  duration_ms: 12583.52748
+  type: 'test'
+  ...
+# Subtest: 主视图全片导出与取消错误跨详情和连接恢复持续可见（420px）
+ok 12 - 主视图全片导出与取消错误跨详情和连接恢复持续可见（420px）
+  ---
+  duration_ms: 12795.313133
+  type: 'test'
+  ...
+# (node:173) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:706) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: user 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权
+ok 13 - user 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权
+  ---
+  duration_ms: 849.047345
+  type: 'test'
+  ...
+# (node:1544) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: codex 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权
+ok 14 - codex 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权
+  ---
+  duration_ms: 761.242157
+  type: 'test'
+  ...
+# (node:2061) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:10784) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 表格 HTTP 与 MCP 共享导出设置，自动保存恢复并遵守普通修改权及任务锁
+ok 15 - 表格 HTTP 与 MCP 共享导出设置，自动保存恢复并遵守普通修改权及任务锁
+  ---
+  duration_ms: 23371.442391
+  type: 'test'
+  ...
+# (node:11973) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 表格与 MCP 共用全片导出任务，立即受理、重复提交、进度及取消状态一致
+ok 16 - 表格与 MCP 共用全片导出任务，立即受理、重复提交、进度及取消状态一致
+  ---
+  duration_ms: 648.991888
+  type: 'test'
+  ...
+# (node:179) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 首次导出设置提供编码帧率默认值，字体字号留空且阻止导出
+ok 17 - 首次导出设置提供编码帧率默认值，字体字号留空且阻止导出
+  ---
+  duration_ms: 4344.007189
+  type: 'test'
+  ...
+# Subtest: 导出设置持有普通修改权保存，拒绝过时快照与无效参数，重开恢复
+ok 18 - 导出设置持有普通修改权保存，拒绝过时快照与无效参数，重开恢复
+  ---
+  duration_ms: 17181.72212
+  type: 'test'
+  ...
+# Subtest: 媒体组件缺失时准确反馈并拒绝保存，原设置保留
+ok 19 - 媒体组件缺失时准确反馈并拒绝保存，原设置保留
+  ---
+  duration_ms: 4982.458108
+  type: 'test'
+  ...
+# Subtest: 两个编码与全部支持帧率经真实 1080p MP4 编码解码验证
+    # Subtest: libx264 / 24 fps
+    ok 1 - libx264 / 24 fps
+      ---
+      duration_ms: 1881.550796
+      type: 'test'
+      ...
+    # Subtest: libx264 / 25 fps
+    ok 2 - libx264 / 25 fps
+      ---
+      duration_ms: 1861.320694
+      type: 'test'
+      ...
+    # Subtest: libx264 / 30 fps
+    ok 3 - libx264 / 30 fps
+      ---
+      duration_ms: 1437.549275
+      type: 'test'
+      ...
+    # Subtest: libx264 / 50 fps
+    ok 4 - libx264 / 50 fps
+      ---
+      duration_ms: 1688.929629
+      type: 'test'
+      ...
+    # Subtest: libx264 / 60 fps
+    ok 5 - libx264 / 60 fps
+      ---
+      duration_ms: 1955.632246
+      type: 'test'
+      ...
+    # Subtest: mpeg4 / 24 fps
+    ok 6 - mpeg4 / 24 fps
+      ---
+      duration_ms: 1553.522405
+      type: 'test'
+      ...
+    # Subtest: mpeg4 / 25 fps
+    ok 7 - mpeg4 / 25 fps
+      ---
+      duration_ms: 1425.935439
+      type: 'test'
+      ...
+    # Subtest: mpeg4 / 30 fps
+    ok 8 - mpeg4 / 30 fps
+      ---
+      duration_ms: 1165.48438
+      type: 'test'
+      ...
+    # Subtest: mpeg4 / 50 fps
+    ok 9 - mpeg4 / 50 fps
+      ---
+      duration_ms: 1409.339926
+      type: 'test'
+      ...
+    # Subtest: mpeg4 / 60 fps
+    ok 10 - mpeg4 / 60 fps
+      ---
+      duration_ms: 1446.49333
+      type: 'test'
+      ...
+    1..10
+ok 20 - 两个编码与全部支持帧率经真实 1080p MP4 编码解码验证
+  ---
+  duration_ms: 15851.060356
+  type: 'test'
+  ...
+# Subtest: 设置修改不改变有效配音或已有成片，配音任务锁与断开的修改权阻止保存
+ok 21 - 设置修改不改变有效配音或已有成片，配音任务锁与断开的修改权阻止保存
+  ---
+  duration_ms: 3775.975903
+  type: 'test'
+  ...
+# Subtest: 已保存字体从当前环境消失后阻止导出，不悄悄采用替代字体
+ok 22 - 已保存字体从当前环境消失后阻止导出，不悄悄采用替代字体
+  ---
+  duration_ms: 5209.822829
+  type: 'test'
+  ...
+# Subtest: 字体枚举期间编辑断开返回修改权失效，并保留已保存值
+ok 23 - 字体枚举期间编辑断开返回修改权失效，并保留已保存值
+  ---
+  duration_ms: 1256.794913
+  type: 'test'
+  ...
+# (node:185) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 先受理再汇总空项目及设置问题，重复请求共享任务且校验期间锁定
+ok 24 - 先受理再汇总空项目及设置问题，重复请求共享任务且校验期间锁定
+  ---
+  duration_ms: 2305.433726
+  type: 'test'
+  ...
+# Subtest: 汇总逐片段缺失视频和配音，不自动配音或跳过片段
+ok 25 - 汇总逐片段缺失视频和配音，不自动配音或跳过片段
+  ---
+  duration_ms: 3770.29561
+  type: 'test'
+  ...
+# Subtest: user 持有修改权时拒绝导出，不创建任务且原编辑可以继续
+ok 26 - user 持有修改权时拒绝导出，不创建任务且原编辑可以继续
+  ---
+  duration_ms: 2086.726498
+  type: 'test'
+  ...
+# Subtest: codex 持有修改权时拒绝导出，不创建任务且原编辑可以继续
+ok 27 - codex 持有修改权时拒绝导出，不创建任务且原编辑可以继续
+  ---
+  duration_ms: 2192.770118
+  type: 'test'
+  ...
+# Subtest: 预览发布后成片目标冲突：撤销本次预览，不覆盖或删除原有文件
+ok 28 - 预览发布后成片目标冲突：撤销本次预览，不覆盖或删除原有文件
+  ---
+  duration_ms: 20523.917228
+  type: 'test'
+  ...
+# Subtest: 成片和预览已发布后在清理期间取消：撤销两份文件，终态保存前保持占用
+ok 29 - 成片和预览已发布后在清理期间取消：撤销两份文件，终态保存前保持占用
+  ---
+  duration_ms: 13278.117291
+  type: 'test'
+  ...
+# Subtest: 成功产物已发布但终态保存失败：继续锁定且不可读取，重开清理后标记中断
+ok 30 - 成功产物已发布但终态保存失败：继续锁定且不可读取，重开清理后标记中断
+  ---
+  duration_ms: 12733.168625
+  type: 'test'
+  ...
+# Subtest: 真实全片按项目顺序导出：起点、冻结、留边、烧录字幕与 MP4 参数，失败的最新配音不妨碍有效旧配音
+ok 31 - 真实全片按项目顺序导出：起点、冻结、留边、烧录字幕与 MP4 参数，失败的最新配音不妨碍有效旧配音
+  ---
+  duration_ms: 5554.682769
+  type: 'test'
+  ...
+# Subtest: 取消真实渲染显示清理状态，停止并删除本次文件后才解锁，保留历史成片
+ok 32 - 取消真实渲染显示清理状态，停止并删除本次文件后才解锁，保留历史成片
+  ---
+  duration_ms: 2745.747253
+  type: 'test'
+  ...
+# Subtest: 渲染器失败定位片段并清理半成品，已有成片保留且项目恢复编辑
+ok 33 - 渲染器失败定位片段并清理半成品，已有成片保留且项目恢复编辑
+  ---
+  duration_ms: 2700.491481
+  type: 'test'
+  ...
+# Subtest: 损坏视频、真实时长变化导致起点失效、待更新或损坏配音一次汇总且不产生成片
+ok 34 - 损坏视频、真实时长变化导致起点失效、待更新或损坏配音一次汇总且不产生成片
+  ---
+  duration_ms: 3465.802119
+  type: 'test'
+  ...
+# Subtest: 再次导出使用新内容和设置，生成唯一文件且保留原成片，长文案多行烧录不阻止导出
+ok 35 - 再次导出使用新内容和设置，生成唯一文件且保留原成片，长文案多行烧录不阻止导出
+  ---
+  duration_ms: 12245.927114
+  type: 'test'
+  ...
+# Subtest: 配音刚受理及生成时拒绝导出且不创建任务，结束后恢复前置校验
+ok 36 - 配音刚受理及生成时拒绝导出且不创建任务，结束后恢复前置校验
+  ---
+  duration_ms: 684.843313
+  type: 'test'
+  ...
+# Subtest: 配音时长不是视频帧整倍数时，拼接处不插入静音间隔
+ok 37 - 配音时长不是视频帧整倍数时，拼接处不插入静音间隔
+  ---
+  duration_ms: 4359.004796
+  type: 'test'
+  ...
+# Subtest: 非方形像素视频按显示宽高比缩放，不能压成方形
+ok 38 - 非方形像素视频按显示宽高比缩放，不能压成方形
+  ---
+  duration_ms: 5453.719327
+  type: 'test'
+  ...
+# Subtest: 合法起点落在视频末帧持续区间内时，使用末帧冻结而不是丢失画面
+ok 39 - 合法起点落在视频末帧持续区间内时，使用末帧冻结而不是丢失画面
+  ---
+  duration_ms: 5692.1202
+  type: 'test'
+  ...
+# Subtest: 成片提供含字幕和声音的浏览器兼容预览，MP4 原文件仍独立保留
+ok 40 - 成片提供含字幕和声音的浏览器兼容预览，MP4 原文件仍独立保留
+  ---
+  duration_ms: 5525.96529
+  type: 'test'
+  ...
+# Subtest: 主视图入口迁移与剩余空间布局（1600px）
+ok 41 - 主视图入口迁移与剩余空间布局（1600px）
+  ---
+  duration_ms: 13762.774915
+  type: 'test'
+  ...
+# Subtest: 主视图入口迁移与剩余空间布局（420px）
+ok 42 - 主视图入口迁移与剩余空间布局（420px）
+  ---
+  duration_ms: 15535.43809
+  type: 'test'
+  ...
+# Subtest: 读取状态及迁移表单保留保存、取消与互斥规则
+ok 43 - 读取状态及迁移表单保留保存、取消与互斥规则
+  ---
+  duration_ms: 9601.170262
+  type: 'test'
+  ...
+# (node:199) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体再清理，保留成片并从最新输入重新导出
+ok 44 - 真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体再清理，保留成片并从最新输入重新导出
+  ---
+  duration_ms: 46040.658825
+  type: 'test'
+  ...
+# Subtest: 打包后台入口重复启动复用同一项目，拒绝其他项目，停止后恢复原项目身份
+ok 45 - 打包后台入口重复启动复用同一项目，拒绝其他项目，停止后恢复原项目身份
+  ---
+  duration_ms: 7301.371062
+  type: 'test'
+  ...
+# (node:213) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:565) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 普通编辑不是后台任务，默认退出仍能释放修改权并停止
+ok 46 - 普通编辑不是后台任务，默认退出仍能释放修改权并停止
+  ---
+  duration_ms: 681.022403
+  type: 'test'
+  ...
+# (node:818) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:1323) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 退出服务默认保持配音与锁，明确中断后重开保留同一任务且不自动重试
+ok 47 - 退出服务默认保持配音与锁，明确中断后重开保留同一任务且不自动重试
+  ---
+  duration_ms: 1817.01019
+  type: 'test'
+  ...
+# (node:2180) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:2587) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 批量部分完成后中断保留成功音频，运行项提示结果未知，未发送项说明中断且不重新提交
+ok 48 - 批量部分完成后中断保留成功音频，运行项提示结果未知，未发送项说明中断且不重新提交
+  ---
+  duration_ms: 2250.988589
+  type: 'test'
+  ...
+# Subtest: 组件缺失时检查返回可重试的明确错误，不尝试启动服务
+ok 49 - 组件缺失时检查返回可重试的明确错误，不尝试启动服务
+  ---
+  duration_ms: 40.98867
+  type: 'test'
+  ...
+# Subtest: 安装基础工具缺失时说明原因与重试方式，恢复组件后重试成功
+ok 50 - 安装基础工具缺失时说明原因与重试方式，恢复组件后重试成功 # SKIP
+  ---
+  duration_ms: 0.332169
+  type: 'test'
+  ...
+# Subtest: 已有可用组件时重复安装直接复用，无需管理员权限或网络
+ok 51 - 已有可用组件时重复安装直接复用，无需管理员权限或网络
+  ---
+  duration_ms: 2306.926192
+  type: 'test'
+  ...
+# Subtest: 有媒体编码器但缺少字体工具时不能宣称组件就绪
+ok 52 - 有媒体编码器但缺少字体工具时不能宣称组件就绪
+  ---
+  duration_ms: 1919.899262
+  type: 'test'
+  ...
+# Subtest: 长文案摘要及全文编辑可读可操作（1600px）
+ok 53 - 长文案摘要及全文编辑可读可操作（1600px）
+  ---
+  duration_ms: 15180.244962
+  type: 'test'
+  ...
+# Subtest: 长文案摘要及全文编辑可读可操作（420px）
+ok 54 - 长文案摘要及全文编辑可读可操作（420px）
+  ---
+  duration_ms: 13412.440355
+  type: 'test'
+  ...
+# (node:245) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:884) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: MCP 修改和查询与面板 HTTP 读取同一服务，服务离线时明确失败
+ok 55 - MCP 修改和查询与面板 HTTP 读取同一服务，服务离线时明确失败
+  ---
+  duration_ms: 1154.675831
+  type: 'test'
+  ...
+# Subtest: 素材和配音紧凑单元格及按需详情（1600px）
+ok 56 - 素材和配音紧凑单元格及按需详情（1600px）
+  ---
+  duration_ms: 18730.410961
+  type: 'test'
+  ...
+# Subtest: 素材和配音紧凑单元格及按需详情（420px）
+ok 57 - 素材和配音紧凑单元格及按需详情（420px）
+  ---
+  duration_ms: 16466.395901
+  type: 'test'
+  ...
+# (node:403) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:1326) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 用户编辑期间拒绝 Codex 和无修改权保存，取消后立即可修改，旧连接不释放新修改权
+ok 58 - 用户编辑期间拒绝 Codex 和无修改权保存，取消后立即可修改，旧连接不释放新修改权
+  ---
+  duration_ms: 718.638456
+  type: 'test'
+  ...
+# (node:1901) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Codex 收到写请求即占用修改权，查询不受阻；中断及格式异常后释放
+ok 59 - Codex 收到写请求即占用修改权，查询不受阻；中断及格式异常后释放
+  ---
+  duration_ms: 835.531187
+  type: 'test'
+  ...
+# (node:2339) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 持有修改权重读目标：返回变化信息、跳过删除目标，其余逐项提交且不覆盖新文案
+ok 60 - 持有修改权重读目标：返回变化信息、跳过删除目标，其余逐项提交且不覆盖新文案
+  ---
+  duration_ms: 623.344081
+  type: 'test'
+  ...
+# (node:2490) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 用户连接断开释放修改权，旧取消凭据不能解除下一次编辑，异常保存也释放
+ok 61 - 用户连接断开释放修改权，旧取消凭据不能解除下一次编辑，异常保存也释放
+  ---
+  duration_ms: 1039.088504
+  type: 'test'
+  ...
+# (node:2800) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Codex 存储异常逐项反馈失败，整批结束释放修改权且不提交失败内容
+ok 62 - Codex 存储异常逐项反馈失败，整批结束释放修改权且不提交失败内容
+  ---
+  duration_ms: 1744.759815
+  type: 'test'
+  ...
+# (node:3625) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:3992) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 同一项目不能由不同端口的两个服务同时修改，关闭所有者后可以重开
+ok 63 - 同一项目不能由不同端口的两个服务同时修改，关闭所有者后可以重开
+  ---
+  duration_ms: 1142.650429
+  type: 'test'
+  ...
+# (node:4178) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 表格选择连接独立于修改权，断开后不能使用旧选择，表格可批量粘贴删除重排
+ok 64 - 表格选择连接独立于修改权，断开后不能使用旧选择，表格可批量粘贴删除重排
+  ---
+  duration_ms: 592.899342
+  type: 'test'
+  ...
+# (node:2017) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 多行粘贴忽略空白行，原子重排保留稳定身份并拒绝过时顺序
+ok 65 - 多行粘贴忽略空白行，原子重排保留稳定身份并拒绝过时顺序
+  ---
+  duration_ms: 118.733286
+  type: 'test'
+  ...
+# Subtest: 选中操作固定稳定身份，改选和断开不扩大范围，明确查询仍可用
+ok 66 - 选中操作固定稳定身份，改选和断开不扩大范围，明确查询仍可用
+  ---
+  duration_ms: 51.965146
+  type: 'test'
+  ...
+# Subtest: 删除后项目序号连续，批量删除不会因自身引起的序号变化跳过目标
+ok 67 - 删除后项目序号连续，批量删除不会因自身引起的序号变化跳过目标
+  ---
+  duration_ms: 27.253004
+  type: 'test'
+  ...
+# Subtest: 条件查询后的内容变化和明确身份删除逐项反馈，不静默丢失旧目标
+ok 68 - 条件查询后的内容变化和明确身份删除逐项反馈，不静默丢失旧目标
+  ---
+  duration_ms: 39.768455
+  type: 'test'
+  ...
+# Subtest: 超过五百个片段仍可全选查询和按固定范围处理
+ok 69 - 超过五百个片段仍可全选查询和按固定范围处理
+  ---
+  duration_ms: 10980.963647
+  type: 'test'
+  ...
+# (node:2623) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 单片段配音受理保存失败后释放占用，不留下任务或阻止后续编辑
+ok 70 - 单片段配音受理保存失败后释放占用，不留下任务或阻止后续编辑
+  ---
+  duration_ms: 72.418168
+  type: 'test'
+  ...
+# Subtest: 批量配音受理保存失败后释放占用，不留下任务或阻止后续编辑
+ok 71 - 批量配音受理保存失败后释放占用，不留下任务或阻止后续编辑
+  ---
+  duration_ms: 115.044567
+  type: 'test'
+  ...
+# Subtest: 导出受理保存失败后释放占用，不留下任务或阻止后续编辑
+ok 72 - 导出受理保存失败后释放占用，不留下任务或阻止后续编辑
+  ---
+  duration_ms: 37.246032
+  type: 'test'
+  ...
+# (node:3336) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:3626) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: speech终态保存失败时查询、准入和默认退出均保持锁定，重开恢复后解锁
+ok 73 - speech终态保存失败时查询、准入和默认退出均保持锁定，重开恢复后解锁
+  ---
+  duration_ms: 1163.995062
+  type: 'test'
+  ...
+# (node:3886) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:5216) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: export终态保存失败时查询、准入和默认退出均保持锁定，重开恢复后解锁
+ok 74 - export终态保存失败时查询、准入和默认退出均保持锁定，重开恢复后解锁
+  ---
+  duration_ms: 3739.597969
+  type: 'test'
+  ...
+# Subtest: 中断导出恢复清理失败时继续占用，修复文件后重开才开放编辑
+ok 75 - 中断导出恢复清理失败时继续占用，修复文件后重开才开放编辑
+  ---
+  duration_ms: 61.328963
+  type: 'test'
+  ...
+# Subtest: 单次保存先关闭连接再返回成功仍确认保存，释放后旧连接不影响新编辑
+ok 76 - 单次保存先关闭连接再返回成功仍确认保存，释放后旧连接不影响新编辑
+  ---
+  duration_ms: 32.537268
+  type: 'test'
+  ...
+# Subtest: 设置连续保存持有同一修改权，保存时断线等待请求结果但不恢复旧会话
+ok 77 - 设置连续保存持有同一修改权，保存时断线等待请求结果但不恢复旧会话
+  ---
+  duration_ms: 16.770311
+  type: 'test'
+  ...
+# Subtest: 旧查询成功或失败均不能覆盖设置编辑；同轮查询按最新请求接受
+ok 78 - 旧查询成功或失败均不能覆盖设置编辑；同轮查询按最新请求接受
+  ---
+  duration_ms: 10.927448
+  type: 'test'
+  ...
+# Subtest: 离页后迟到的修改权立即释放，重新激活后旧响应不打开编辑器
+ok 79 - 离页后迟到的修改权立即释放，重新激活后旧响应不打开编辑器
+  ---
+  duration_ms: 3.872055
+  type: 'test'
+  ...
+# Subtest: 取消保存后旧回调、错误和释放都不能影响后续编辑，未知结果不重试
+ok 80 - 取消保存后旧回调、错误和释放都不能影响后续编辑，未知结果不重试
+  ---
+  duration_ms: 1.391816
+  type: 'test'
+  ...
+# Subtest: 查询慢于轮询间隔时仍接收已完成结果，新查询完成后忽略旧失败
+ok 81 - 查询慢于轮询间隔时仍接收已完成结果，新查询完成后忽略旧失败
+  ---
+  duration_ms: 0.86772
+  type: 'test'
+  ...
+# Subtest: 单次保存结果未知时释放修改权、只报告一次失败且不重试
+ok 82 - 单次保存结果未知时释放修改权、只报告一次失败且不重试
+  ---
+  duration_ms: 1.311289
+  type: 'test'
+  ...
+# Subtest: 勾选操作显示、筛选范围与项目顺序（1600px）
+ok 83 - 勾选操作显示、筛选范围与项目顺序（1600px）
+  ---
+  duration_ms: 30571.469107
+  type: 'test'
+  ...
+# Subtest: 勾选操作显示、筛选范围与项目顺序（420px）
+ok 84 - 勾选操作显示、筛选范围与项目顺序（420px）
+  ---
+  duration_ms: 24893.740506
+  type: 'test'
+  ...
+# (node:4377) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:4828) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: HTTP 查询共享业务层，静态面板与项目数据隔离，拒绝向查询接口写入
+ok 85 - HTTP 查询共享业务层，静态面板与项目数据隔离，拒绝向查询接口写入
+  ---
+  duration_ms: 700.316711
+  type: 'test'
+  ...
+# (node:5043) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 异常请求路径返回 400，服务仍能查询项目状态
+ok 86 - 异常请求路径返回 400，服务仍能查询项目状态
+  ---
+  duration_ms: 438.823572
+  type: 'test'
+  ...
+# (node:5305) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: HTTP 完成编辑才返回已提交快照，数据库占用时保存失败且重开保留原值
+ok 87 - HTTP 完成编辑才返回已提交快照，数据库占用时保存失败且重开保留原值
+  ---
+  duration_ms: 1865.201038
+  type: 'test'
+  ...
+# (node:4538) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 批量固定勾选、局部失败继续、整批终态解锁且重发不重复付费
+ok 88 - 批量固定勾选、局部失败继续、整批终态解锁且重发不重复付费
+  ---
+  duration_ms: 315.123739
+  type: 'test'
+  ...
+# Subtest: 失败范围限定操作，显式重试读取最新输入并跳过已成功与已删除目标
+ok 89 - 失败范围限定操作，显式重试读取最新输入并跳过已成功与已删除目标
+  ---
+  duration_ms: 138.786318
+  type: 'test'
+  ...
+# Subtest: 缺失或待更新范围、空选择及逐项拒绝不会静默扩大或追加任务
+ok 90 - 缺失或待更新范围、空选择及逐项拒绝不会静默扩大或追加任务
+  ---
+  duration_ms: 68.769677
+  type: 'test'
+  ...
+# Subtest: 重开批量操作保留成功结果，未完成显示已中断，不续跑且重发不产生请求
+ok 91 - 重开批量操作保留成功结果，未完成显示已中断，不续跑且重发不产生请求
+  ---
+  duration_ms: 81.856578
+  type: 'test'
+  ...
+# Subtest: 只读取明确的本机配置，缺失为空，换密钥后重新读取
+ok 92 - 只读取明确的本机配置，缺失为空，换密钥后重新读取
+  ---
+  duration_ms: 16.554637
+  type: 'test'
+  ...
+# (node:5228) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:6148) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，成功后恢复校验
+ok 93 - 可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，成功后恢复校验
+  ---
+  duration_ms: 22291.941759
+  type: 'test'
+  ...
+# (node:14857) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，明确失败后恢复校验
+ok 94 - 可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，明确失败后恢复校验
+  ---
+  duration_ms: 12536.585519
+  type: 'test'
+  ...
+# (node:20635) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:23432) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，中断后恢复校验
+ok 95 - 可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，中断后恢复校验
+  ---
+  duration_ms: 8947.43491
+  type: 'test'
+  ...
+# Subtest: 跨网络分块拼接 SSE，只有完成标记后才返回完整音频
+ok 96 - 跨网络分块拼接 SSE，只有完成标记后才返回完整音频
+  ---
+  duration_ms: 97.966458
+  type: 'test'
+  ...
+# Subtest: HTTP 401 返回原因与下一步且不泄露响应正文
+ok 97 - HTTP 401 返回原因与下一步且不泄露响应正文
+  ---
+  duration_ms: 4.616223
+  type: 'test'
+  ...
+# Subtest: HTTP 402 返回原因与下一步且不泄露响应正文
+ok 98 - HTTP 402 返回原因与下一步且不泄露响应正文
+  ---
+  duration_ms: 1.984497
+  type: 'test'
+  ...
+# Subtest: HTTP 429 返回原因与下一步且不泄露响应正文
+ok 99 - HTTP 429 返回原因与下一步且不泄露响应正文
+  ---
+  duration_ms: 0.896705
+  type: 'test'
+  ...
+# Subtest: HTTP 503 返回原因与下一步且不泄露响应正文
+ok 100 - HTTP 503 返回原因与下一步且不泄露响应正文
+  ---
+  duration_ms: 0.848304
+  type: 'test'
+  ...
+# Subtest: 部分音频与断流标记结果未知，空成功响应不算成功
+ok 101 - 部分音频与断流标记结果未知，空成功响应不算成功
+  ---
+  duration_ms: 3.449928
+  type: 'test'
+  ...
+# Subtest: 供应商缺失或非法状态码不能确认为失败，必须提示可能已计费
+ok 102 - 供应商缺失或非法状态码不能确认为失败，必须提示可能已计费
+  ---
+  duration_ms: 3.76743
+  type: 'test'
+  ...
+# (node:5472) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 成功后只保留最近三个音频，清理不丢失请求去重记录，失败不清理
+ok 103 - 成功后只保留最近三个音频，清理不丢失请求去重记录，失败不清理
+  ---
+  duration_ms: 259.509194
+  type: 'test'
+  ...
+# Subtest: 有效配音供导出读取，改回恢复旧音频，重新生成成功替换当前配音
+ok 104 - 有效配音供导出读取，改回恢复旧音频，重新生成成功替换当前配音
+  ---
+  duration_ms: 43.843399
+  type: 'test'
+  ...
+# Subtest: 视频关联与项目重排不影响有效性，清理音频不删除导入视频
+ok 105 - 视频关联与项目重排不影响有效性，清理音频不删除导入视频
+  ---
+  duration_ms: 4871.246759
+  type: 'test'
+  ...
+# Subtest: 旧服务迟到结果不能恢复重开后已删除的片段或写入音频
+ok 106 - 旧服务迟到结果不能恢复重开后已删除的片段或写入音频
+  ---
+  duration_ms: 110.460534
+  type: 'test'
+  ...
+# Subtest: 旧项目按成功时间清理，优先保留当前有效配音而非仅保留最新三个
+ok 107 - 旧项目按成功时间清理，优先保留当前有效配音而非仅保留最新三个
+  ---
+  duration_ms: 36.042228
+  type: 'test'
+  ...
+# (node:5795) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:6340) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: HTTP 单行提交与 MCP 共用任务，面板断开不解锁且支持查询与范围试听
+ok 108 - HTTP 单行提交与 MCP 共用任务，面板断开不解锁且支持查询与范围试听
+  ---
+  duration_ms: 675.507055
+  type: 'test'
+  ...
+# (node:6617) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: MCP 批量提交返回逐项受理，HTTP 查询与重发共享持久化结果
+ok 109 - MCP 批量提交返回逐项受理，HTTP 查询与重发共享持久化结果
+  ---
+  duration_ms: 765.990402
+  type: 'test'
+  ...
+# (node:5939) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 缺凭据时提交前拒绝且不发送付费请求
+ok 110 - 缺凭据时提交前拒绝且不发送付费请求
+  ---
+  duration_ms: 50.301711
+  type: 'test'
+  ...
+# Subtest: 受理后持续锁定、重发去重，完整成功音频及输入快照重开仍保留
+ok 111 - 受理后持续锁定、重发去重，完整成功音频及输入快照重开仍保留
+  ---
+  duration_ms: 117.180339
+  type: 'test'
+  ...
+# Subtest: 统一声音保存并校验范围，改变输入只改变配音有效性
+ok 112 - 统一声音保存并校验范围，改变输入只改变配音有效性
+  ---
+  duration_ms: 25.934521
+  type: 'test'
+  ...
+# Subtest: 服务异常不重试，失败保留旧配音；中断任务重开标记未知且不重新请求
+ok 113 - 服务异常不重试，失败保留旧配音；中断任务重开标记未知且不重新请求
+  ---
+  duration_ms: 40.458355
+  type: 'test'
+  ...
+# (node:6564) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:7232) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: MCP 与表格共用视频导入和关联规则，预览支持范围播放且不开放任意文件
+ok 114 - MCP 与表格共用视频导入和关联规则，预览支持范围播放且不开放任意文件
+  ---
+  duration_ms: 10649.179797
+  type: 'test'
+  ...
+# (node:6962) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 指定的项目外视频复制到项目，源文件变化后仍可复用并重开
+ok 115 - 指定的项目外视频复制到项目，源文件变化后仍可复用并重开
+  ---
+  duration_ms: 6581.54142
+  type: 'test'
+  ...
+# Subtest: 拒绝不可解码媒体与无效起点，替换、解除和删除片段保留素材
+ok 116 - 拒绝不可解码媒体与无效起点，替换、解除和删除片段保留素材
+  ---
+  duration_ms: 9629.361698
+  type: 'test'
+  ...
+# Subtest: 目标已删除时跳过关联，不因损坏素材把已删除目标报告为失败
+ok 117 - 目标已删除时跳过关联，不因损坏素材把已删除目标报告为失败
+  ---
+  duration_ms: 16.358519
+  type: 'test'
+  ...
+# Subtest: 视频时长由画面决定，较长音轨不能放宽播放起点
+ok 118 - 视频时长由画面决定，较长音轨不能放宽播放起点
+  ---
+  duration_ms: 3948.908847
+  type: 'test'
+  ...
+# Subtest: 导入不跟随来源链接或播放列表，断开修改权会取消尚未提交的导入
+ok 119 - 导入不跟随来源链接或播放列表，断开修改权会取消尚未提交的导入
+  ---
+  duration_ms: 633.81395
+  type: 'test'
+  ...
+# Subtest: 多视频轨道素材的缩略图与预览使用同一画面
+ok 120 - 多视频轨道素材的缩略图与预览使用同一画面
+  ---
+  duration_ms: 2475.693416
+  type: 'test'
+  ...
+1..120
+# tests 130
+# suites 0
+# pass 128
+# fail 0
+# cancelled 1
+# skipped 1
+# todo 0
+# duration_ms 106221.855949

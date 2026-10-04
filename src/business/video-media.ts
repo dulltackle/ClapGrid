@@ -31,13 +31,14 @@ export async function validateVideo(path: string, signal: AbortSignal) {
   await run('ffmpeg', ['-v', 'error', '-xerror', ...inputOptions, '-i', path, '-map', '0:v:0', '-an', '-f', 'null', '-'], signal);
   // 逐帧读取时间戳与持续时间；流式消费以免长视频堆积探测输出。
   const duration = await new Promise<number>((resolve, reject) => {
-    const child = spawn('ffprobe', ['-v', 'error', ...inputOptions, '-select_streams', 'v:0', '-show_frames', '-show_entries', 'frame=best_effort_timestamp_time,pkt_duration_time', '-of', 'compact=p=0:nk=0', path], { signal, timeout: 10 * 60 * 1000, stdio: ['ignore', 'pipe', 'ignore'] });
+    const child = spawn('ffprobe', ['-v', 'error', ...inputOptions, '-select_streams', 'v:0', '-show_frames', '-show_entries', 'frame=best_effort_timestamp_time,duration_time,pkt_duration_time', '-of', 'compact=p=0:nk=0', path], { signal, timeout: 10 * 60 * 1000, stdio: ['ignore', 'pipe', 'ignore'] });
     let first = Infinity; let end = -Infinity;
     const lines = createInterface({ input: child.stdout });
     lines.on('line', line => {
       const fields = Object.fromEntries(line.split('|').map(field => field.split('=')));
       const time = Number(fields.best_effort_timestamp_time);
-      const frameDuration = Number(fields.pkt_duration_time);
+      // 新版 FFmpeg 使用 duration_time，旧版仍输出 pkt_duration_time。
+      const frameDuration = Number(fields.duration_time ?? fields.pkt_duration_time);
       if (Number.isFinite(time) && Number.isFinite(frameDuration) && frameDuration > 0) {
         first = Math.min(first, time); end = Math.max(end, time + frameDuration);
       }

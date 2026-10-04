@@ -1,0 +1,84 @@
+TAP version 13
+# (node:33) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 指定的项目外视频复制到项目，源文件变化后仍可复用并重开
+not ok 1 - 指定的项目外视频复制到项目，源文件变化后仍可复用并重开
+  ---
+  duration_ms: 276.811106
+  type: 'test'
+  location: '/home/forclaw/code/ClapGrid/tests/video.test.ts:9:1'
+  failureType: 'testCodeFailure'
+  error: '无法确认视频画面时长'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    ChildProcess.<anonymous> (/home/forclaw/code/ClapGrid/src/business/video-media.ts:50:79)
+    ChildProcess.emit (node:events:519:28)
+    maybeClose (node:internal/child_process:1101:16)
+    ChildProcess._handle.onexit (node:internal/child_process:304:5)
+  ...
+# Subtest: 拒绝不可解码媒体与无效起点，替换、解除和删除片段保留素材
+not ok 2 - 拒绝不可解码媒体与无效起点，替换、解除和删除片段保留素材
+  ---
+  duration_ms: 260.32358
+  type: 'test'
+  location: '/home/forclaw/code/ClapGrid/tests/video.test.ts:37:1'
+  failureType: 'testCodeFailure'
+  error: '无法确认视频画面时长'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    ChildProcess.<anonymous> (/home/forclaw/code/ClapGrid/src/business/video-media.ts:50:79)
+    ChildProcess.emit (node:events:519:28)
+    maybeClose (node:internal/child_process:1101:16)
+    ChildProcess._handle.onexit (node:internal/child_process:304:5)
+  ...
+# Subtest: 目标已删除时跳过关联，不因损坏素材把已删除目标报告为失败
+ok 3 - 目标已删除时跳过关联，不因损坏素材把已删除目标报告为失败
+  ---
+  duration_ms: 12.442121
+  type: 'test'
+  ...
+# Subtest: 视频时长由画面决定，较长音轨不能放宽播放起点
+not ok 4 - 视频时长由画面决定，较长音轨不能放宽播放起点
+  ---
+  duration_ms: 258.286769
+  type: 'test'
+  location: '/home/forclaw/code/ClapGrid/tests/video.test.ts:92:1'
+  failureType: 'testCodeFailure'
+  error: '无法确认视频画面时长'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    ChildProcess.<anonymous> (/home/forclaw/code/ClapGrid/src/business/video-media.ts:50:79)
+    ChildProcess.emit (node:events:519:28)
+    maybeClose (node:internal/child_process:1101:16)
+    ChildProcess._handle.onexit (node:internal/child_process:304:5)
+  ...
+# Subtest: 导入不跟随来源链接或播放列表，断开修改权会取消尚未提交的导入
+ok 5 - 导入不跟随来源链接或播放列表，断开修改权会取消尚未提交的导入
+  ---
+  duration_ms: 129.759045
+  type: 'test'
+  ...
+# Subtest: 多视频轨道素材的缩略图与预览使用同一画面
+not ok 6 - 多视频轨道素材的缩略图与预览使用同一画面
+  ---
+  duration_ms: 250.253233
+  type: 'test'
+  location: '/home/forclaw/code/ClapGrid/tests/video.test.ts:130:1'
+  failureType: 'testCodeFailure'
+  error: '无法确认视频画面时长'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    ChildProcess.<anonymous> (/home/forclaw/code/ClapGrid/src/business/video-media.ts:50:79)
+    ChildProcess.emit (node:events:519:28)
+    maybeClose (node:internal/child_process:1101:16)
+    ChildProcess._handle.onexit (node:internal/child_process:304:5)
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 2
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1483.352796

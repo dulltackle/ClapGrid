@@ -1,0 +1,21 @@
+{
+  "source": "Codex 内置浏览器，正式表格点击试听及视频预览后的 DOM 媒体状态",
+  "audio": {
+    "segmentOrder": 2,
+    "currentTime": 14.28,
+    "duration": 14.28,
+    "paused": true,
+    "muted": false,
+    "readyState": 4,
+    "error": null,
+    "userConfirmation": "听到了，声音正常"
+  },
+  "video": {
+    "currentTime": 3,
+    "duration": 3,
+    "paused": true,
+    "muted": true,
+    "readyState": 4,
+    "error": null
+  }
+}
