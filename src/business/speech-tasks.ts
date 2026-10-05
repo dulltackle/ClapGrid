@@ -7,7 +7,7 @@ import { speechBatchSchema, type SpeechBatchRequest, type SpeechOperation, type 
 import { synthesize, SpeechFailure, type SpeechRuntime } from './speech.js';
 import { verifyMedia } from './video-media.js';
 
-export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: SpeechRuntime, snapshot: () => Snapshot, verify: () => void, access: ProjectAccess, querySegments: (scope: SegmentScope) => SegmentQueryResult) {
+export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: SpeechRuntime, snapshot: () => Snapshot, verify: () => void, access: ProjectAccess, querySegments: (scope: SegmentScope, owner?: string) => SegmentQueryResult) {
   db.exec(`CREATE TABLE IF NOT EXISTS voice_settings (singleton INTEGER PRIMARY KEY, value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS speech_operations (id TEXT PRIMARY KEY, request_id TEXT UNIQUE NOT NULL, value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS speech_tasks (id TEXT PRIMARY KEY, request_id TEXT UNIQUE NOT NULL, value TEXT NOT NULL);`);
@@ -119,7 +119,7 @@ export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: S
       run([task], key, release);
       return { ...task, input: structuredClone(task.input) };
     },
-    submitSpeechBatch(input: SpeechBatchRequest): SpeechBatchResult {
+    submitSpeechBatch(input: SpeechBatchRequest, owner?: string): SpeechBatchResult {
       access.assertAllowed('speech-replay');
       const request = speechBatchSchema.parse(input);
       const previous = operations().find(operation => operation.request.requestId === request.requestId);
@@ -144,8 +144,8 @@ export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: S
         ids = segments.filter(segment => !valid.some(task => task.segmentId === segment.id)).map(segment => segment.id);
       } else if (scope.kind === 'ids') ids = scope.ids;
       else {
-        const selection = querySegments(scope);
-        if (selection.availability !== 'available') throw new Error(selection.availability === 'ambiguous' ? '多个表格已连接，请明确 tableId' : '无可用选择');
+        const selection = querySegments(scope, owner);
+        if (selection.availability !== 'available') throw new Error(selection.availability === 'ambiguous' ? '当前对话面板关联不明确，请明确指定片段' : '当前对话无可用选择，请明确指定片段或重新勾选');
         ids = selection.segments.map(segment => segment.id);
       }
       const key = runtime.key().trim(); const pending: SpeechTask[] = [];

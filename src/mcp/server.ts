@@ -74,7 +74,7 @@ export function createBusinessMcp(url?: string) {
     }
   });
   server.registerTool('clapgrid_query_segments', {
-    description: '按 all、明确 ids、文案包含条件 query 或表格当前勾选 selected 查询片段。返回项目顺序、稳定身份及已连接表格的勾选。selected 没有选择/已断开返回 unavailable；多个表格需指定 tableId，否则 ambiguous。不会扩大为全项目。',
+    description: '按 all、明确 ids、文案包含条件 query 或表格当前勾选 selected 查询片段。返回项目顺序、稳定身份及当前对话面板的勾选。selected 没有选择、关联缺失或已断开返回 unavailable；当前对话多个面板返回 ambiguous。关联不明时请用户明确指定片段，不能猜测其他对话面板；tableId 仍须属于当前对话。不会扩大为全项目。',
     inputSchema: segmentQuerySchema,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async (input, extra) => {
@@ -118,7 +118,7 @@ export function createBusinessMcp(url?: string) {
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   server.registerTool('clapgrid_submit_speech_batch', {
-    description: '按用户明确范围批量配音或重试，文案发送至 TokenDance，可能计费。mode 为 generate 或 retry；scope 支持 ids、selected（多表需 tableId）、all、query、missing_or_stale、failed_operation（必填上次 operationId）及 failed_project。只有用户明确要求全项目失败项才用 failed_project；“刚才失败的片段”必须用对应 failed_operation，先查询操作标识。失败范围必须 mode=retry，重试采用最新输入。提交时固定稳定身份与输入，空选择不扩大范围；删除、已成功或生成中的目标不重复提交并逐项反馈。一次操作固定 UUID requestId，断线或重发复用原标识和参数，返回已有任务/结果；只有用户明确新生成或重试才换标识。返回 accepted 不是成功，使用 clapgrid_speech_status 的 operations 查询逐项终态与汇总；已有任务 existing、跳过 skipped、拒绝 rejected 均有原因。整批结束才解锁，局部失败继续，不自动重试或补生成。',
+    description: '按用户明确范围批量配音或重试，文案发送至 TokenDance，可能计费。mode 为 generate 或 retry；scope 支持 ids、selected（仅当前对话面板，关联不明请明确指定片段）、all、query、missing_or_stale、failed_operation（必填上次 operationId）及 failed_project。只有用户明确要求全项目失败项才用 failed_project；“刚才失败的片段”必须用对应 failed_operation，先查询操作标识。失败范围必须 mode=retry，重试采用最新输入。提交时固定稳定身份与输入，空选择不扩大范围；删除、已成功或生成中的目标不重复提交并逐项反馈。一次操作固定 UUID requestId，断线或重发复用原标识和参数，返回已有任务/结果；只有用户明确新生成或重试才换标识。返回 accepted 不是成功，使用 clapgrid_speech_status 的 operations 查询逐项终态与汇总；已有任务 existing、跳过 skipped、拒绝 rejected 均有原因。整批结束才解锁，局部失败继续，不自动重试或补生成。',
     inputSchema: speechBatchSchema,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
   }, async (input, extra) => {

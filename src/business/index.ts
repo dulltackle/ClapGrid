@@ -92,41 +92,44 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       throw error;
     }
   }
-  const speech = speechTasks(db, mediaDirectory, speechRuntime, getSnapshot, verify, access, scope => business.querySegments(scope));
+  const speech = speechTasks(db, mediaDirectory, speechRuntime, getSnapshot, verify, access, (scope, owner) => business.querySegments(scope, owner));
   const exports = exportTasks(db, {
     snapshot: getSnapshot, settings: getExportStatus, speech: speech.getSpeechStatus,
     verify, video: id => business.getMedia(id, 'source'), audio: speech.getSpeechAudio,
     access,
   });
-  const tables = new Map<string, string[]>();
+  const tables = new Map<string, { owner?: string; ids: string[] }>();
   const business = {
-    connectTable() { const id = randomUUID(); tables.set(id, []); return id; },
-    disconnectTable(id: string) { tables.delete(id); },
-    selectSegments(tableId: string, ids: string[]) {
-      selectionSchema.parse({ tableId, ids });
-      if (!tables.has(tableId)) throw new Error('表格连接已断开');
-      const available = new Set(getSnapshot().segments.map(segment => segment.id));
-      tables.set(tableId, [...new Set(ids)].filter(id => available.has(id)));
+    connectTable(owner?: string) { const id = randomUUID(); tables.set(id, { owner, ids: [] }); return id; },
+    assertTableOwner(tableId: string, owner?: string) {
+      if (!tables.has(tableId) || tables.get(tableId)!.owner !== owner) throw new Error('表格连接已断开或无法确认当前对话面板，请明确指定片段或关闭重开。');
     },
-    querySegments(input: SegmentScope): SegmentQueryResult {
+    disconnectTable(id: string) { tables.delete(id); },
+    selectSegments(tableId: string, ids: string[], owner?: string) {
+      selectionSchema.parse({ tableId, ids });
+      business.assertTableOwner(tableId, owner);
+      const available = new Set(getSnapshot().segments.map(segment => segment.id));
+      tables.set(tableId, { owner, ids: [...new Set(ids)].filter(id => available.has(id)) });
+    },
+    querySegments(input: SegmentScope, owner?: string): SegmentQueryResult {
       const scope = scopeSchema.parse(input);
       const segments = getSnapshot().segments;
-      const connected = [...tables].map(([tableId, ids]) => ({ tableId, ids: ids.filter(id => segments.some(segment => segment.id === id)) }));
+      const connected = [...tables].filter(([, table]) => table.owner === owner).map(([tableId, { ids }]) => ({ tableId, ids: ids.filter(id => segments.some(segment => segment.id === id)) }));
       if (scope.kind === 'selected') {
-        if (!scope.tableId && connected.length > 1) return { segments: [], availability: 'ambiguous', tables: connected };
+        if (!scope.tableId && connected.length > 1) return { segments: [], availability: 'ambiguous', message: '当前对话连接多个面板，关联不明确，请明确指定片段。', tables: connected };
         const table = scope.tableId ? connected.find(table => table.tableId === scope.tableId) : connected[0];
         const selected = segments.filter(segment => table?.ids.includes(segment.id));
-        return { segments: selected, availability: selected.length ? 'available' : 'unavailable', tables: connected };
+        return { segments: selected, availability: selected.length ? 'available' : 'unavailable', ...(!selected.length ? { message: '当前对话无可用勾选或面板关联已失效，请明确指定片段或重新勾选。' } : {}), tables: connected };
       }
       return { segments: segments.filter(segment => scope.kind === 'all' || (scope.kind === 'ids' ? scope.ids.includes(segment.id) : segment.text.includes(scope.textContains))), availability: 'available', tables: connected };
     },
-    async processScope(token: string, input: ScopedOperation) {
+    async processScope(token: string, input: ScopedOperation, owner?: string) {
       access.editSignal(token);
       const operation = scopedOperationSchema.parse(input);
       // 在第一次让出执行权之前解析并复制目标；后续勾选、筛选及断线不能改变它。
-      const targets = business.querySegments(operation.scope);
-      if (targets.availability === 'ambiguous') throw new Error('多个表格已连接，请明确 tableId 后重新查询');
-      if (targets.availability === 'unavailable') throw new Error('无可用选择');
+      const targets = business.querySegments(operation.scope, owner);
+      if (targets.availability === 'ambiguous') throw new Error('当前对话面板关联不明确，请明确指定片段');
+      if (targets.availability === 'unavailable') throw new Error('当前对话无可用选择，请明确指定片段或重新勾选');
       const scope = operation.scope;
       const expectedById = new Map(operation.expected.map(segment => [segment.id, segment]));
       if (expectedById.size !== operation.expected.length) throw new Error('片段快照身份重复，请重新查询后提交');

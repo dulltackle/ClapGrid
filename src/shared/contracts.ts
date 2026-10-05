@@ -102,6 +102,7 @@ export type ScopedOperation = z.input<typeof scopedOperationSchema>;
 export const queryResultSchema = z.object({
   segments: z.array(segmentSchema),
   availability: z.enum(['available', 'unavailable', 'ambiguous']),
+  message: z.string().optional(),
   tables: z.array(z.object({ tableId: z.uuid(), ids: z.array(z.uuid()) })),
 });
 export type SegmentQueryResult = z.infer<typeof queryResultSchema>;

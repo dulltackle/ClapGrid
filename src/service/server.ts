@@ -115,6 +115,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
         reject(400, '请求路径无效。'); return;
       }
       let bindingPrefix = '';
+      let tableOwner: string | undefined;
       let verifyBinding = async () => {};
       const match = /^\/binding\/([^/]+)(\/.*)?$/.exec(path);
       if (match) {
@@ -131,6 +132,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
         // 宿主核对期间可能已经断线，不能在错过 close 事件后再取得会话或修改权。
         if (response.destroyed) return;
         bindingPrefix = `/binding/${token}`;
+        tableOwner = threadId;
         path = match[2] ?? '/';
       }
       if (workspace && !bindingPrefix && path !== '/api/identity' && path !== '/api/binding' && !path.startsWith('/assets/')) {
@@ -219,14 +221,14 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
           }
           const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
           await verifyBinding();
-          json(path.endsWith('/batch') ? business.submitSpeechBatch(input) : path.endsWith('/submit') ? business.submitSpeech(input) : business.setVoice(input));
+          json(path.endsWith('/batch') ? business.submitSpeechBatch(input, tableOwner) : path.endsWith('/submit') ? business.submitSpeech(input) : business.setVoice(input));
         } catch (error) { if (!response.destroyed) reject(409, error instanceof Error ? error.message : '配音请求未受理'); }
         finally { clearTimeout(timeout); }
         return;
       }
       if (path === '/api/table-session') {
         if (request.method !== 'POST') { reject(405, '请使用 POST 连接表格。'); return; }
-        const tableId = business.connectTable();
+        const tableId = business.connectTable(tableOwner);
         response.writeHead(200, { 'Content-Type': 'application/x-ndjson; charset=utf-8' });
         response.write(JSON.stringify({ tableId }) + '\n');
         const timer = heartbeat(() => finishTable(tableId));
@@ -248,12 +250,13 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
           const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
           await verifyBinding();
           if (path === '/api/segments/query') {
-            json(business.querySegments(segmentQuerySchema.parse(input).scope));
+            json(business.querySegments(segmentQuerySchema.parse(input).scope, tableOwner));
           } else if (path === '/api/table-selection') {
             const { tableId, ids } = selectionSchema.parse(input);
-            business.selectSegments(tableId, ids); json({ updated: true });
+            business.selectSegments(tableId, ids, tableOwner); json({ updated: true });
           } else {
             const { tableId } = selectionSchema.pick({ tableId: true }).parse(input);
+            business.assertTableOwner(tableId, tableOwner);
             finishTable(tableId); json({ released: true });
           }
         } catch { if (!response.destroyed) reject(400, '查询或勾选请求无效，表格连接可能已断开。'); }
@@ -340,7 +343,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
             const parsed = scopedOperationSchema.safeParse(input);
             if (!parsed.success) { reject(400, '请提供明确范围、查询快照和有效操作。'); return; }
             try {
-              const result = await business.processScope(token, parsed.data);
+              const result = await business.processScope(token, parsed.data, tableOwner);
               release(); json({ ...result, status: status() });
             } catch (error) { reject(409, (error as Error).message); }
           } else if (codex || path === '/api/segments/modify') {
