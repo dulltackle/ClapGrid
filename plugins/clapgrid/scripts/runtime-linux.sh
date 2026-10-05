@@ -107,7 +107,7 @@ case "$action" in
     node_ready && media_ready || missing
     exec "$node_bin" "$plugin_dir/dist/runtime.js" "$action" "$@"
     ;;
-  status|stop|workspace-status|workspace-stop)
+  status|stop|workspace-status|workspace-stop|import-project)
     node_ready || missing
     exec "$node_bin" "$plugin_dir/dist/runtime.js" "$action" "$@"
     ;;

@@ -1,3 +1,4 @@
+import { importProject } from './project-import.js';
 import { workspaceRuntime } from './workspace-runtime.js';
 import { spawn } from 'node:child_process';
 import { realpathSync, existsSync, openSync, closeSync } from 'node:fs';
@@ -10,7 +11,9 @@ import { queryStatus } from './shared/client.js';
 
 try {
   const action = process.argv[2];
-  if (action === 'open' || action === 'workspace-status' || action === 'workspace-stop') {
+  if (action === 'import-project') {
+    console.log(JSON.stringify(await importProject(process.argv.slice(3)), null, 2));
+  } else if (action === 'open' || action === 'workspace-status' || action === 'workspace-stop') {
     console.log(JSON.stringify(await workspaceRuntime(action, process.argv.slice(3)), null, 2));
   } else {
   if (action !== 'start' && action !== 'status' && action !== 'stop') throw new Error('用法：runtime start|status|stop --project <目录> [--port <端口>] [--interrupt]');

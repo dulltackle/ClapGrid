@@ -1,9 +1,13 @@
-import { lstatSync, mkdirSync, realpathSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, lstatSync, mkdirSync, realpathSync } from 'node:fs';
+import { basename, dirname, join, resolve } from 'node:path';
 
 /** 用户指定根目录可使用别名；项目内部的存储入口不能链接至其他位置。 */
 export function projectPaths(directory: string) {
+  const reservation = join(dirname(resolve(directory)), `.${basename(resolve(directory))}-import`);
+  const assertNotImporting = () => { if (existsSync(reservation)) throw new Error('项目正在迁入或迁入曾中断，请检查迁入现场后重新打开。'); };
+  assertNotImporting();
   mkdirSync(directory, { recursive: true });
+  assertNotImporting();
   const projectDirectory = realpathSync(directory);
   const verify = () => {
     if (realpathSync(projectDirectory) !== projectDirectory) throw new Error('项目根路径已改变，请重新打开。');
