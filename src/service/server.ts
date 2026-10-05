@@ -36,6 +36,8 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
   catch (error) { await releaseOwnership(); throw error; }
   const instanceId = randomUUID();
   const bindingKey = randomBytes(32);
+  // 每个对话只保留当前代次；重复 MCP 绑定复用它，核对失败删除并使旧 URL 永久失效。
+  const bindingGenerations = new Map<string, string>();
   const signature = (value: string) => createHmac('sha256', bindingKey).update(value).digest('base64url');
   let workspace: string | undefined;
   try {
@@ -65,17 +67,18 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       application: 'clapgrid', apiVersion: 1, instanceId, pid: process.pid,
       startedAt, snapshot: business.getSnapshot(), ...business.getActivity(),
     });
-    const tableSessions = new Map<string, () => void>();
+    const tableSessions = new Map<string, { binding: string; close: () => void }>();
     const finishTable = (id: string) => {
       business.disconnectTable(id);
       const close = tableSessions.get(id);
       tableSessions.delete(id);
-      close?.();
+      close?.close();
     };
-    const sessions = new Map<string, () => void>();
+    const pendingEdits = new Map<string, { binding: string; cancel: () => void }>();
+    const sessions = new Map<string, { binding: string; close: () => void }>();
     const finishSession = (token: string) => {
       business.release(token);
-      sessions.get(token)?.();
+      sessions.get(token)?.close();
       sessions.delete(token);
     };
     let stopping = false;
@@ -120,13 +123,23 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       const match = /^\/binding\/([^/]+)(\/.*)?$/.exec(path);
       if (match) {
         const token = match[1]!;
-        const [threadId, signed, extra] = token.split('.');
-        const expected = threadId ? signature(threadId) : '';
-        if (!workspace || extra || !signed || !/^[A-Za-z0-9_-]{43}$/.test(signed) || signed.length !== expected.length || !timingSafeEqual(Buffer.from(signed), Buffer.from(expected))) {
+        const [threadId, generation, signed, extra] = token.split('.');
+        const expected = threadId && generation ? signature(`${threadId}.${generation}`) : '';
+        if (!workspace || extra || !threadId || !generation || bindingGenerations.get(threadId) !== generation || !signed || !/^[A-Za-z0-9_-]{43}$/.test(signed) || signed.length !== expected.length || !timingSafeEqual(Buffer.from(signed), Buffer.from(expected))) {
           reject(409, '工作空间或服务身份已改变，请关闭重开 ClapGrid。'); return;
         }
         verifyBinding = async () => {
-          if (await readHostWorkspace(threadId!) !== workspace) throw new Error('当前工作空间已改变，请关闭重开。');
+          try {
+            if (await readHostWorkspace(threadId) !== workspace || bindingGenerations.get(threadId) !== generation) throw new Error('当前工作空间已改变，请关闭重开。');
+          } catch (error) {
+            if (bindingGenerations.get(threadId) === generation) bindingGenerations.delete(threadId);
+            // 清理该代次的面板，避免重新绑定后在下一次心跳前读取旧勾选或持有旧修改权。
+            const revoked = `/binding/${token}`;
+            for (const [id, session] of tableSessions) if (session.binding === revoked) finishTable(id);
+            for (const [id, session] of sessions) if (session.binding === revoked) finishSession(id);
+            for (const operation of pendingEdits.values()) if (operation.binding === revoked) operation.cancel();
+            throw error;
+          }
         };
         try { await verifyBinding(); } catch { reject(409, '当前工作空间已改变或无法核对，请关闭重开 ClapGrid。'); return; }
         // 宿主核对期间可能已经断线，不能在错过 close 事件后再取得会话或修改权。
@@ -155,7 +168,10 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
           if (input.workspace !== workspace || input.projectId !== business.getSnapshot().project.id || input.instanceId !== instanceId || await readHostWorkspace(input.threadId) !== workspace) {
             throw new Error('工作空间或服务身份不一致。');
           }
-          json({ binding: `${input.threadId}.${signature(input.threadId)}` });
+          const generation = bindingGenerations.get(input.threadId) ?? randomUUID();
+          bindingGenerations.set(input.threadId, generation);
+          const value = `${input.threadId}.${generation}`;
+          json({ binding: `${value}.${signature(value)}` });
         } catch { reject(409, '无法核对工作空间绑定，请关闭重开。'); }
         finally { clearTimeout(timeout); }
         return;
@@ -232,7 +248,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
         response.writeHead(200, { 'Content-Type': 'application/x-ndjson; charset=utf-8' });
         response.write(JSON.stringify({ tableId }) + '\n');
         const timer = heartbeat(() => finishTable(tableId));
-        tableSessions.set(tableId, () => { clearInterval(timer); response.end(); });
+        tableSessions.set(tableId, { binding: bindingPrefix, close: () => { clearInterval(timer); response.end(); } });
         response.on('close', () => finishTable(tableId));
         return;
       }
@@ -266,7 +282,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       if (path === '/api/edit-session') {
         if (request.method !== 'POST') { reject(405, '请使用 POST 申请修改权。'); return; }
         let token: string;
-        try { token = business.acquire('user'); }
+        try { token = business.acquire('user', verifyBinding); }
         catch (error) { reject(409, (error as Error).message); return; }
         try {
           const initial = { token, status: status() };
@@ -275,7 +291,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
           // 长连接属于一次编辑；心跳让失联连接可被发现，关闭时只释放该 token。
           const timer = heartbeat(() => finishSession(token));
           const cleanup = () => { clearInterval(timer); response.end(); };
-          sessions.set(token, cleanup);
+          sessions.set(token, { binding: bindingPrefix, close: cleanup });
           response.on('close', () => finishSession(token));
         } catch { finishSession(token); reject(500, '读取项目失败，修改权已释放。'); }
         return;
@@ -296,7 +312,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
         const codex = path.startsWith('/api/codex/');
         let token: string;
         try {
-          if (codex) token = business.acquire('codex');
+          if (codex) token = business.acquire('codex', verifyBinding);
           else {
             const supplied = request.headers['x-edit-token'];
             if (typeof supplied !== 'string' || !business.owns(supplied, 'user')) {
@@ -305,6 +321,8 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
             token = supplied;
           }
         } catch (error) { reject(409, (error as Error).message); return; }
+        const completeEdit = business.retainEdit(token);
+        pendingEdits.set(token, { binding: bindingPrefix, cancel: () => business.release(token) });
         const exportUser = path === '/api/export-settings';
         const release = () => codex ? business.release(token) : finishSession(token);
         response.on('close', () => { if (!exportUser || !response.writableFinished) release(); });
@@ -329,6 +347,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
           if (path === '/api/export-settings' || path === '/api/codex/export-settings') {
             try {
               const settings = await business.setExportSettings(token, input as import('../shared/contracts.js').UpdateExportSettings);
+              completeEdit();
               if (!exportUser) release();
               json({ settings, status: status() });
             } catch (error) { if (!response.destroyed) reject(400, (error as Error).message); }
@@ -337,31 +356,31 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
             if (!parsed.success) { reject(400, '请提供用户明确指定的视频路径'); return; }
             try {
               const asset = await business.importVideo(token, parsed.data);
-              release(); json({ asset, status: status() });
+              completeEdit(); release(); json({ asset, status: status() });
             } catch (error) { if (!response.destroyed) reject(400, (error as Error).message); }
           } else if (path === '/api/codex/process') {
             const parsed = scopedOperationSchema.safeParse(input);
             if (!parsed.success) { reject(400, '请提供明确范围、查询快照和有效操作。'); return; }
             try {
               const result = await business.processScope(token, parsed.data, tableOwner);
-              release(); json({ ...result, status: status() });
+              completeEdit(); release(); json({ ...result, status: status() });
             } catch (error) { reject(409, (error as Error).message); }
           } else if (codex || path === '/api/segments/modify') {
             const parsed = batchSchema.safeParse(input);
             if (!parsed.success) { reject(400, '批量修改格式无效；修改和删除必须提供查询时的目标快照。'); return; }
             const result = await business.modifyBatch(token, parsed.data);
-            release(); json({ ...result, status: status() });
+            completeEdit(); release(); json({ ...result, status: status() });
           } else {
             const parsed = (path.endsWith('/add') ? addSegmentSchema : editSegmentSchema).safeParse(input);
             if (!parsed.success) { reject(400, '请提供有效的片段身份和文案，不允许修改其他状态。'); return; }
             const data = parsed.data;
             if ('id' in data) business.editSegment(editSegmentSchema.parse(data).id, data.text, token);
             else business.addSegment(data.text, token);
-            release(); json(status());
+            completeEdit(); release(); json(status());
           }
         } catch {
           if (!response.destroyed) reject(500, '保存失败，未确认本次编辑已保存；请检查项目目录或数据库占用后重试。');
-        } finally { clearTimeout(timeout); if (!exportUser) release(); }
+        } finally { clearTimeout(timeout); if (!exportUser) release(); pendingEdits.delete(token); completeEdit(); }
         return;
       }
       if (request.method !== 'GET') {

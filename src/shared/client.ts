@@ -2,7 +2,10 @@ import { statusSchema, type ServiceStatus, type Batch, type BatchResult, queryRe
 
 export async function queryStatus(baseUrl: string): Promise<ServiceStatus> {
   const response = await fetch(`${baseUrl}/api/status`, { signal: AbortSignal.timeout(3000), redirect: 'error' });
-  if (!response.ok) throw new Error(`服务查询失败：HTTP ${response.status}`);
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(typeof body.error === 'string' ? body.error : `服务查询失败：HTTP ${response.status}`);
+  }
   return statusSchema.parse(await response.json());
 }
 
@@ -161,7 +164,10 @@ export async function importVideo(baseUrl: string, sourcePath: string, token?: s
 
 export async function querySpeech(baseUrl: string): Promise<import('./contracts.js').SpeechStatus> {
   const response = await fetch(`${baseUrl}/api/speech`, { signal: AbortSignal.timeout(5000), redirect: 'error' });
-  if (!response.ok) throw new Error('配音状态查询失败');
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(typeof body.error === 'string' ? body.error : '配音状态查询失败');
+  }
   return response.json();
 }
 export async function submitSpeech(baseUrl: string, input: { requestId: string; segmentId: string }): Promise<import('./contracts.js').SpeechTask> {

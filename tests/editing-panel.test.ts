@@ -75,6 +75,10 @@ test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿�
       check(state.current === newLease && newLease.closes === 0, '取消后的迟到保存不得释放新编辑');
       check(field('导出帧率').value === '24', '取消后的迟到保存不得覆盖新设置');
       await click('关闭设置'); await poll();
+      state.statusFailure = true; await poll();
+      check(document.body.textContent.includes('关闭重开 ClapGrid'), '连接失效时明确提示关闭重开和核对工作空间');
+      check(button('新增口播片段').disabled && button('导出全片').disabled, '状态不可用时旧面板禁止新增及导出');
+      state.statusFailure = false; await poll();
       state.acquireGate = deferred();
       await click('更多'); await click('导入本地视频');
       const lateLease = state.current;

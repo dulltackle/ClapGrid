@@ -246,7 +246,7 @@ export function App() {
     const refresh = () => editing.refresh(
       () => Promise.all([queryStatus(panelServiceUrl()), querySpeech(panelServiceUrl())]),
       ([next, nextSpeech]) => { setStatus(next); setSpeech(nextSpeech); setError(''); },
-      () => { setStatus(undefined); setError('服务连接失败，请通过 Codex 检查本地服务。'); },
+      cause => { setStatus(undefined); setError(`服务连接失败：${cause.message}。请关闭重开 ClapGrid 并核对当前工作空间。`); },
     );
     void refresh();
     const timer = window.setInterval(() => { void refresh(); }, 1000);
@@ -269,7 +269,7 @@ export function App() {
     <header><h1>口播片段</h1>
       <div className="toolbar">
         <button disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
-        <button disabled={exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { void exports.run(); }}>导出全片</button>
+        <button disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { void exports.run(); }}>导出全片</button>
         <button ref={moreButton} aria-haspopup="dialog" onClick={event => openDetail('more', event.currentTarget)}>更多</button>
       </div>
     </header>

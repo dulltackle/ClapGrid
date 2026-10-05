@@ -156,7 +156,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       const id = randomUUID();
       try {
         const asset = await prepareVideo(mediaDirectory, id, sourcePath, signal);
-        access.editSignal(token);
+        await access.verifyEdit(token);
         commit(() => { db.prepare('INSERT INTO video_assets VALUES (?, ?, ?)').run(asset.id, asset.name, asset.duration); }, token);
         return asset;
       } catch (error) { discardImport(mediaDirectory, id); throw error; }
@@ -182,6 +182,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       if (settings.fontFamily && !(await listExportFonts()).includes(settings.fontFamily)) throw new Error(`字幕字体不可用：${settings.fontFamily}，请安装该字体或重新选择`);
       check();
       await verifyExportMedia(settings, signal);
+      await access.verifyEdit(token);
       check();
       commit(() => {
         check();
@@ -208,7 +209,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
     getSpeechAudio: speech.getSpeechAudio,
     getCurrentSpeechAudio: speech.getCurrentSpeechAudio,
     getSnapshot,
-    acquire: access.acquire, release: access.release,
+    acquire: access.acquire, release: access.release, retainEdit: access.retainEdit,
     getModification: () => access.getActivity().modification,
     getActivity() {
       const { modification, task } = access.getActivity();
@@ -239,7 +240,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       const submittedOrder = new Map(getSnapshot().segments.map(segment => [segment.id, segment.order]));
       for (const [index, change] of changes.entries()) {
         await setImmediate();
-        access.editSignal(token, '修改连接已断开，未完成目标停止处理');
+        await access.verifyEdit(token);
         const id = 'expected' in change ? change.expected.id : undefined;
         try {
           // 每个目标都在持有修改权的事务内重新读取；比较与提交之间不让出执行权。
@@ -256,7 +257,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
             if (!asset) throw new Error('素材不存在');
             const duration = await validateVideo(business.getMedia(asset.id, 'source'), access.editSignal(token));
             if (change.start >= duration) throw new Error('视频起点必须大于等于零且严格小于视频时长');
-            access.editSignal(token);
+            await access.verifyEdit(token);
           }
           commit(() => {
             if (change.kind === 'reorder') {

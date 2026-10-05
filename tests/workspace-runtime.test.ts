@@ -1,4 +1,4 @@
-import { beginEdit, connectTable } from '../src/shared/client.js';
+import { beginEdit, connectTable, queryStatus, querySpeech } from '../src/shared/client.js';
 import { createServer, request } from 'node:http';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -40,6 +40,7 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   const running = new Map<string, { id: string; boundUrl: string; workspace: string }>();
   const stop = async (url: string, instanceId: string) => {
     const record = running.get(url)!; setWorkspace(record.workspace);
+    record.boundUrl = (await cli('open', record.workspace)).url;
     await fetch(`${record.boundUrl}/api/service/stop`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instanceId }) });
     for (let i = 0; i < 100; i++) {
       try { await fetch(`${url}/api/identity`); } catch { running.delete(url); return; }
@@ -104,10 +105,17 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   const editing = await beginEdit(opened.url);
   const table = await connectTable(opened.url);
   setWorkspace(second);
+  await assert.rejects(queryStatus(opened.url), /关闭重开/);
+  setWorkspace(first);
+  const reverified = await cli('open', first);
+  assert.equal((await queryStatus(reverified.url)).modification, null, '绑定撤销立即释放旧代次修改权，无需等待心跳');
+  setWorkspace(second);
   await Promise.race([Promise.all([editing.closed, table.closed]), new Promise((_, reject) => setTimeout(() => reject(new Error('旧工作空间连接未释放')), 3500))]);
   assert.equal((await fetch(`${origin}/api/service/stop`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instanceId: opened.instanceId, interrupt: true }) })).status, 409);
   assert.equal((await fetch(`${opened.url}/api/service/stop`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instanceId: opened.instanceId, interrupt: true }) })).status, 409);
   assert.equal((await fetch(`${opened.url}/api/status`)).status, 409);
+  await assert.rejects(queryStatus(opened.url), /关闭重开/);
+  await assert.rejects(querySpeech(opened.url), /关闭重开/);
   assert.equal((await tool('clapgrid_modify', { changes: [{ kind: 'add', text: '不应写入原项目' }] })).isError, true);
   const other = await cli('open', second);
   const otherOrigin = new URL(other.url).origin; running.set(otherOrigin, { id: other.instanceId, boundUrl: other.url, workspace: second });
@@ -118,6 +126,10 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   assert.equal((await tool('clapgrid_status')).isError, true);
   assert.equal((await fetch(`${other.url}/api/status`)).status, 409);
   setWorkspace(first);
+  assert.equal((await fetch(`${opened.url}/api/status`)).status, 409, '回到原目录不能复活已经失效的旧面板绑定');
+  const returnOpened = await cli('open', first);
+  assert.equal(returnOpened.instanceId, opened.instanceId);
+  assert.equal((await fetch(`${returnOpened.url}/api/status`)).status, 200);
   await stop(origin, opened.instanceId);
   const replacement = createServer((_request, response) => { response.statusCode = 404; response.end('其他服务'); });
   await new Promise<void>(resolve => replacement.listen(Number(new URL(origin).port), '127.0.0.1', resolve));
