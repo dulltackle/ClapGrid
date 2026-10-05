@@ -1,0 +1,46 @@
+{
+  "at": "2026-10-05T15:37:21.706Z",
+  "platform": "linux",
+  "node": "v22.23.3",
+  "sourceCommit": "9bc0f2a",
+  "realSpeechTask": "944bdbbe-7961-4dcf-8b36-615dcff2d656",
+  "start": 1791214375879,
+  "end": 1791214377496,
+  "execCalls": [],
+  "tracePositiveControl": true,
+  "exports": [
+    {
+      "id": "351e20dc-9a90-4ca7-9eaf-c8bb1a25e973",
+      "state": "succeeded"
+    },
+    {
+      "id": "27e08bdd-099e-4591-a054-8ea3d2c1020a",
+      "state": "failed"
+    },
+    {
+      "id": "1c9bc861-4c08-4459-852d-d0dc89750a3a",
+      "state": "failed"
+    }
+  ],
+  "speech": [
+    {
+      "id": "86b356a7-57d4-4130-bd39-fc3305860f41",
+      "state": "succeeded"
+    },
+    {
+      "id": "944bdbbe-7961-4dcf-8b36-615dcff2d656",
+      "state": "succeeded"
+    },
+    {
+      "id": "f19f5bf6-f3f5-45db-987e-9253c57b34d1",
+      "state": "failed"
+    },
+    {
+      "id": "2e0fae67-4a1a-4c8f-a1f4-cd323aca46f7",
+      "state": "unknown"
+    }
+  ],
+  "files": [
+    "2026-10-05T15-31-17-829Z-351e20dc-9a90-4ca7-9eaf-c8bb1a25e973.mp4"
+  ]
+}

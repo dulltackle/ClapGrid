@@ -1,0 +1,67 @@
+{
+  "at": "2026-10-05T15:49:28.846Z",
+  "platform": "linux",
+  "node": "v22.23.3",
+  "provider": "受控供应商响应；不是本轮真实供应商或浏览器验收",
+  "baselineFfmpegExecs": 17,
+  "windows": [
+    {
+      "outcome": "成功",
+      "phase": "accepted",
+      "start": 1791215336558,
+      "end": 1791215336625,
+      "taskId": "53700ac6-373c-469c-b27d-d17e646652a8",
+      "execCalls": []
+    },
+    {
+      "outcome": "成功",
+      "phase": "running",
+      "start": 1791215336630,
+      "end": 1791215336664,
+      "taskId": "53700ac6-373c-469c-b27d-d17e646652a8",
+      "execCalls": []
+    },
+    {
+      "outcome": "明确失败",
+      "phase": "accepted",
+      "start": 1791215347770,
+      "end": 1791215347818,
+      "taskId": "0edcae29-d203-4858-bd62-756b7b05f124",
+      "execCalls": []
+    },
+    {
+      "outcome": "明确失败",
+      "phase": "running",
+      "start": 1791215347821,
+      "end": 1791215347860,
+      "taskId": "0edcae29-d203-4858-bd62-756b7b05f124",
+      "execCalls": []
+    },
+    {
+      "outcome": "中断",
+      "phase": "accepted",
+      "start": 1791215359060,
+      "end": 1791215359106,
+      "taskId": "f33c08c5-df43-446f-8149-7a0c9ec64bfe",
+      "execCalls": []
+    },
+    {
+      "outcome": "中断",
+      "phase": "running",
+      "start": 1791215359109,
+      "end": 1791215359139,
+      "taskId": "f33c08c5-df43-446f-8149-7a0c9ec64bfe",
+      "execCalls": []
+    },
+    {
+      "outcome": "批量等待",
+      "start": 1791215368711,
+      "end": 1791215368745,
+      "taskIds": [
+        "a7ba8c14-16b8-4641-9ea2-6ffdefb7f75a",
+        "c510eca7-3534-4b1e-a332-42519709495c"
+      ],
+      "execCalls": []
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+TAP version 13
+# (node:18) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:102) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:18) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# Subtest: 可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，成功后恢复校验
+ok 1 - 可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，成功后恢复校验
+  ---
+  duration_ms: 11437.506912
+  type: 'test'
+  ...
+# LOCK_WINDOW {"outcome":"成功","phase":"accepted","start":1791215336558,"end":1791215336625,"taskId":"53700ac6-373c-469c-b27d-d17e646652a8"}
+# LOCK_WINDOW {"outcome":"成功","phase":"running","start":1791215336630,"end":1791215336664,"taskId":"53700ac6-373c-469c-b27d-d17e646652a8"}
+# (node:1376) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，明确失败后恢复校验
+ok 2 - 可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，明确失败后恢复校验
+  ---
+  duration_ms: 11190.604602
+  type: 'test'
+  ...
+# LOCK_WINDOW {"outcome":"明确失败","phase":"accepted","start":1791215347770,"end":1791215347818,"taskId":"0edcae29-d203-4858-bd62-756b7b05f124"}
+# LOCK_WINDOW {"outcome":"明确失败","phase":"running","start":1791215347821,"end":1791215347860,"taskId":"0edcae29-d203-4858-bd62-756b7b05f124"}
+# (node:2646) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:3619) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，中断后恢复校验
+ok 3 - 可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，中断后恢复校验
+  ---
+  duration_ms: 11479.80136
+  type: 'test'
+  ...
+# LOCK_WINDOW {"outcome":"中断","phase":"accepted","start":1791215359060,"end":1791215359106,"taskId":"f33c08c5-df43-446f-8149-7a0c9ec64bfe"}
+# LOCK_WINDOW {"outcome":"中断","phase":"running","start":1791215359109,"end":1791215359139,"taskId":"f33c08c5-df43-446f-8149-7a0c9ec64bfe"}
+# (node:3923) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 批量配音中尚未发送的 accepted 任务在表格重连后仍保留身份与导出锁
+ok 4 - 批量配音中尚未发送的 accepted 任务在表格重连后仍保留身份与导出锁
+  ---
+  duration_ms: 7924.20658
+  type: 'test'
+  ...
+# LOCK_WINDOW {"outcome":"批量等待","start":1791215368711,"end":1791215368745,"taskIds":["a7ba8c14-16b8-4641-9ea2-6ffdefb7f75a","c510eca7-3534-4b1e-a332-42519709495c"]}
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 42755.142453
