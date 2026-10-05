@@ -91,3 +91,14 @@ test('HTTP 完成编辑才返回已提交快照，数据库占用时保存失败
   assert.equal(reopened.getSnapshot().segments[0]!.text, '已保存文案');
   assert.equal((await post('/api/segments/edit', { id, text: '恢复保存' })).status, 200);
 });
+
+test('旧服务实例的绑定地址不能在其他服务读取或修改项目', async t => {
+  const root = mkdtempSync(join(tmpdir(), 'clapgrid-binding-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const panelDirectory = join(root, 'panel');
+  mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'ClapGrid');
+  const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
+  t.after(() => service.close());
+  const response = await fetch(`${service.url}/binding/invalid/api/status`);
+  assert.equal(response.status, 409);
+});

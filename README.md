@@ -89,7 +89,7 @@ npm run mcp
 npm run plugin:build
 ```
 
-`clapgrid_status` 返回相同的服务实例、修改权状态和项目快照；离线或协议不匹配返回 `isError`，不自动启动或重复业务请求。默认连接 `http://127.0.0.1:48762`。修改端口时给 MCP 配置 `CLAPGRID_SERVICE_URL`，只接受 IPv4 本机 HTTP 地址。
+`clapgrid_status` 返回相同的服务实例、修改权状态和项目快照；离线或协议不匹配返回 `isError`，不自动启动或重复业务请求。正式插件通过宿主聊天身份查询当前本地工作空间，自动发现其 `clapgrid/` 项目服务；不使用默认端口或 `CLAPGRID_SERVICE_URL`。宿主身份缺失、目录变化或服务实例不符时拒绝调用，要求关闭重开。
 
 `clapgrid_modify` 接收 `{ changes: [...] }`，支持 `{ kind: "add", text }`、`{ kind: "edit", expected, text }` 、`{ kind: "delete", expected }`、`{ kind: "paste", text }` 和 `{ kind: "reorder", expectedIds, ids }`。重排要求 `expectedIds` 与最新项目身份顺序一致，`ids` 是全部片段身份的无重复排列；单次重排或粘贴在一个事务内提交。表格通过携带用户修改权的 `POST /api/segments/modify` 调用同一业务批处理。`expected` 必须是查询时取得的完整片段 `{ id, order, text, video }`。服务收到请求即尝试取得修改权；占用时返回冲突，不排队。取得修改权后逐项重读，变化返回 `changed` 和最新片段，已删除返回 `deleted`，成功返回 `applied`，存储异常返回 `failed`，并附分类汇总。各项独立提交，失败不撤销其他已完成项。网络中断可能已有部分提交，须先查询，不能盲目重发。
 
@@ -102,6 +102,14 @@ npm run plugin:build
 插件源为 `plugins/clapgrid/`，含清单、stdio MCP 配置、`open-clapgrid` 技能。`plugin:build` 生成 **`dist/plugin/clapgrid/`**，打包服务、MCP 的依赖及面板，运行需要满足要求的 Node.js，视频功能另需上述 FFmpeg 组件。注册或安装时使用这个完整目录，源码模板本身不可直接安装。Linux 上构建的包会将 MCP 接到同一组件选择器；其他系统仍使用 Node 入口。插件 MCP 的 `cwd: "."` 由宿主相对于插件根目录解析。
 
 将构建目录接入个人插件市场并安装后，在新会话使用 `open-clapgrid`，由 Codex 检查组件、查询／启动服务、打开右侧面板并查询 MCP。本仓库不自动写入个人市场、不更改用户 Codex 安全策略。安装后的技能发现和 MCP 加载需另行实测；从构建包执行协议测试不等同于宿主安装验收。Linux 的组件方案、正式安装步骤、实测版本及尚未通过的桌面验收见 [Linux 正式插件交付](docs/validation/issue-29/README.md)。
+
+## 工作空间固定项目
+
+正式打开入口为 `runtime open --workspace <宿主当前目录> --thread <宿主聊天ID>`，随后独立执行相同参数的 `workspace-status`。入口交叉核对公开 `codex app-server` 的 `thread/read`，自动创建或恢复固定 `clapgrid/` 目录，不提供日常项目和端口选择。无本地工作空间时先选择或创建工作空间，不能使用插件安装目录代替。
+
+服务通过系统分配端口，发布项目内的 `service.json` 供发现；数据库、媒体、配音及成片仍由同一个项目服务管理。表格保留完整 `/binding/…` URL，每个业务请求核对项目服务实例和聊天当前目录。工作空间改变后关闭旧面板并重新打开；旧项目任务继续，失效连接不自动重发制作请求。
+
+此能力依赖宿主提供聊天请求元数据以及可运行的本地 `codex app-server`。绑定版已通过实际插件与业务 MCP 的打开、双向编辑和重开验证，具体边界见 [#42 记录](docs/validation/issue-42/README.md)。当前按宿主实际本地工作目录绑定；「移出桌面项目但保留 cwd」的禁用语义由 #48 后续处理。本文此前的 `--project` 与 `--port` 命令仅用于开发/历史服务维护，不是正式插件日常入口。
 
 ## 验证范围
 

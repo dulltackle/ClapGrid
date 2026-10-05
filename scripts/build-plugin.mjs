@@ -9,7 +9,7 @@ await cp('plugins/clapgrid', destination, { recursive: true });
 if (process.platform === 'linux') {
   await writeFile(`${destination}/.mcp.json`, JSON.stringify({ mcpServers: { clapgrid: {
     command: 'bash', args: ['scripts/runtime-linux.sh', 'mcp'], cwd: '.',
-    env_vars: ['CLAPGRID_SERVICE_URL', 'CLAPGRID_RUNTIME_HOME', 'XDG_DATA_HOME'],
+    env_vars: ['CLAPGRID_CODEX_BIN', 'CLAPGRID_RUNTIME_HOME', 'XDG_DATA_HOME'],
   } } }, null, 2));
 }
 await writeFile(`${destination}/package.json`, JSON.stringify({ name: 'clapgrid', version: '0.1.0', private: true, type: 'module' }));

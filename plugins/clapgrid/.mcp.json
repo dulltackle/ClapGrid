@@ -4,7 +4,7 @@
       "command": "node",
       "args": ["dist/mcp/main.js"],
       "cwd": ".",
-      "env_vars": ["CLAPGRID_SERVICE_URL"]
+      "env_vars": ["CLAPGRID_CODEX_BIN"]
     }
   }
 }

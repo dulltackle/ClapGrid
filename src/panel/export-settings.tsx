@@ -1,3 +1,4 @@
+import { panelServiceUrl } from './service-url.js';
 import { Dialog } from './dialog.js';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { queryExportSettings, saveExportSettings } from '../shared/client.js';
@@ -17,7 +18,7 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose, restor
   const settingsKey = JSON.stringify(status.snapshot.exportSettings);
   useEffect(() => {
     let active = true;
-    void queryExportSettings(window.location.origin).then(result => {
+    void queryExportSettings(panelServiceUrl()).then(result => {
       if (!active) return;
       setDetails(result);
       setMessage(current => current === '正在检查媒体组件与字体…' ? '设置按项目自动保存' : current);
@@ -40,7 +41,7 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose, restor
     if (JSON.stringify(settings) === JSON.stringify(draft)) { setSize(draft.fontSize?.toString() ?? ''); return; }
     return editing.save('settings', { retain: true }, async (token, action) => {
       setMessage('保存中…'); onSaveState('saving');
-      const result = await saveExportSettings(window.location.origin, { expected: draft, settings }, token);
+      const result = await saveExportSettings(panelServiceUrl(), { expected: draft, settings }, token);
       action.apply(() => { adopt(result.settings); onStatus(result.status); setMessage('已保存'); onSaveState('saved'); });
     }, error => {
       setSize(saved.current.fontSize?.toString() ?? ''); setMessage(`保存失败：${error.message}`); onSaveState('failed', `保存失败：${error.message}`);

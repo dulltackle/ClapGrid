@@ -103,11 +103,11 @@ case "$action" in
     ffmpeg -version
     ffprobe -version
     ;;
-  start)
+  start|open)
     node_ready && media_ready || missing
-    exec "$node_bin" "$plugin_dir/dist/runtime.js" start "$@"
+    exec "$node_bin" "$plugin_dir/dist/runtime.js" "$action" "$@"
     ;;
-  status|stop)
+  status|stop|workspace-status|workspace-stop)
     node_ready || missing
     exec "$node_bin" "$plugin_dir/dist/runtime.js" "$action" "$@"
     ;;

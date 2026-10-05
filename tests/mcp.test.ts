@@ -26,7 +26,7 @@ test('MCP 修改和查询与面板 HTTP 读取同一服务，服务离线时明�
   await mcp.connect(serverTransport);
   await client.connect(clientTransport);
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map(tool => tool.name), ['clapgrid_status', 'clapgrid_modify', 'clapgrid_query_segments', 'clapgrid_process_segments', 'clapgrid_import_video', 'clapgrid_submit_speech', 'clapgrid_submit_speech_batch', 'clapgrid_speech_status', 'clapgrid_set_voice', 'clapgrid_export_settings', 'clapgrid_set_export_settings', 'clapgrid_submit_export', 'clapgrid_export_status', 'clapgrid_cancel_export']);
+  assert.deepEqual(tools.map(tool => tool.name), ['clapgrid_host_context', 'clapgrid_status', 'clapgrid_modify', 'clapgrid_query_segments', 'clapgrid_process_segments', 'clapgrid_import_video', 'clapgrid_submit_speech', 'clapgrid_submit_speech_batch', 'clapgrid_speech_status', 'clapgrid_set_voice', 'clapgrid_export_settings', 'clapgrid_set_export_settings', 'clapgrid_submit_export', 'clapgrid_export_status', 'clapgrid_cancel_export']);
   const saved = await client.callTool({ name: 'clapgrid_modify', arguments: {
     changes: [{ kind: 'add', text: 'MCP 读取已保存文案' }],
   } });
@@ -87,4 +87,50 @@ test('MCP 修改和查询与面板 HTTP 读取同一服务，服务离线时明�
   const offline = await client.callTool({ name: 'clapgrid_status', arguments: {} });
   assert.equal(offline.isError, true);
   assert.match(JSON.stringify(offline.content), /服务不可用/);
+});
+
+test('宿主诊断在未声明 roots 时明确未知，不把 MCP 工作目录当作工作空间', async t => {
+  const mcp = createBusinessMcp('http://127.0.0.1:1');
+  const client = new Client({ name: 'host-without-roots', version: '1.0.0', description: '不得回显', websiteUrl: 'https://example.com/?secret=不得回显' });
+  t.after(() => client.close()); t.after(() => mcp.close());
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await mcp.connect(serverTransport); await client.connect(clientTransport);
+  const result = await client.callTool({ name: 'clapgrid_host_context', arguments: {}, _meta: { secret: '不得回显' } });
+  assert.notEqual(result.isError, true);
+  const context = result.structuredContent as Record<string, any>;
+  assert.equal(context.roots.state, 'unsupported');
+  assert.equal(context.workspace, null);
+  assert.deepEqual(context.client, { name: 'host-without-roots', version: '1.0.0' });
+  assert.deepEqual(context.requestMetaKeys, ['secret']);
+  assert.equal(JSON.stringify(result).includes('不得回显'), false);
+  assert.equal(context.bindingReady, false);
+});
+
+test('宿主诊断查询 roots 并观测变更，但不把根列表推断为当前对话绑定', async t => {
+  const { ListRootsRequestSchema } = await import('@modelcontextprotocol/sdk/types.js');
+  const mcp = createBusinessMcp('http://127.0.0.1:1');
+  const client = new Client({ name: 'host-with-roots', version: '1.0.0' }, { capabilities: { roots: { listChanged: true } } });
+  t.after(() => client.close()); t.after(() => mcp.close());
+  let roots = [{ uri: 'file:///workspace/first', name: '第一个工作空间', _meta: { secret: '不得回显' } }];
+  client.setRequestHandler(ListRootsRequestSchema, async () => ({ roots }));
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await mcp.connect(serverTransport); await client.connect(clientTransport);
+  const first = (await client.callTool({ name: 'clapgrid_host_context', arguments: {} })).structuredContent as Record<string, any>;
+  assert.deepEqual(first.roots, {
+    state: 'available', listChanged: true, changeNotifications: 0,
+    entries: [{ uri: 'file:///workspace/first', name: '第一个工作空间' }],
+  });
+  assert.equal(first.workspace, null);
+  roots = [];
+  await client.sendRootsListChanged();
+  const second = (await client.callTool({ name: 'clapgrid_host_context', arguments: {} })).structuredContent as Record<string, any>;
+  assert.deepEqual(second.roots.entries, []);
+  assert.equal(second.roots.changeNotifications, 1);
+  assert.equal(second.bindingReady, false);
+  client.setRequestHandler(ListRootsRequestSchema, async () => { throw new Error('secret'); });
+  const failed = await client.callTool({ name: 'clapgrid_host_context', arguments: {} });
+  const failedContext = failed.structuredContent as Record<string, any>;
+  assert.equal(failedContext.roots.state, 'unavailable');
+  assert.equal(failedContext.workspace, null);
+  assert.equal(JSON.stringify(failed).includes('secret'), false);
 });

@@ -1,3 +1,4 @@
+import { panelServiceUrl } from './service-url.js';
 import { useEffect, useState } from 'react';
 import { cancelExport, queryExports, queryStatus, submitExport } from '../shared/client.js';
 import type { ExportTasksStatus, ServiceStatus } from '../shared/contracts.js';
@@ -10,7 +11,7 @@ export function useExportTasks(onStatus: (status: ServiceStatus) => void) {
   useEffect(() => {
     let active = true;
     const refresh = async () => {
-      try { const result = await queryExports(window.location.origin); if (active) { setExports(result); setConnectionError(''); } }
+      try { const result = await queryExports(panelServiceUrl()); if (active) { setExports(result); setConnectionError(''); } }
       catch (error) { if (active) setConnectionError((error as Error).message); }
     };
     void refresh(); const timer = window.setInterval(() => { void refresh(); }, 1000);
@@ -19,11 +20,11 @@ export function useExportTasks(onStatus: (status: ServiceStatus) => void) {
   const run = async (taskId?: string) => {
     setBusy(true); setOperationError('');
     try {
-      if (taskId) await cancelExport(window.location.origin, taskId);
-      else await submitExport(window.location.origin);
-      setExports(await queryExports(window.location.origin));
+      if (taskId) await cancelExport(panelServiceUrl(), taskId);
+      else await submitExport(panelServiceUrl());
+      setExports(await queryExports(panelServiceUrl()));
       setConnectionError('');
-      onStatus(await queryStatus(window.location.origin));
+      onStatus(await queryStatus(panelServiceUrl()));
     } catch (error) { setOperationError(`${(error as Error).message}；请查询任务确认是否已受理，不会自动重发。`); }
     finally { setBusy(false); }
   };

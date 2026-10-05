@@ -1,3 +1,4 @@
+import { panelServiceUrl } from './service-url.js';
 import { Dialog } from './dialog.js';
 import { dialogReturnFocus } from './dialog-focus.js';
 import { ExportTaskDetails, exportStateLabel, useExportTasks } from './export-tasks.js';
@@ -47,11 +48,11 @@ const cellControlKeyboard: NonNullable<ColDef<Segment>['suppressKeyboardEvent']>
 function EmptyProject({ message }: { message: string }) { return <span>{message}</span>; }
 
 export function App() {
-  const [editing] = useState(() => projectEditing(() => beginEdit(window.location.origin)));
+  const [editing] = useState(() => projectEditing(() => beginEdit(panelServiceUrl())));
   const editState = useSyncExternalStore(editing.subscribe, editing.getState);
   const [detail, setDetail] = useState<'more' | 'voice' | 'paste' | 'tasks' | 'diagnostics' | null>(null);
   const moreButton = useRef<HTMLButtonElement>(null);
-  const exports = useExportTasks(() => { void editing.refresh(() => queryStatus(window.location.origin), setStatus, () => {}); });
+  const exports = useExportTasks(() => { void editing.refresh(() => queryStatus(panelServiceUrl()), setStatus, () => {}); });
   const [exportSettingsOpen, setExportSettingsOpen] = useState(false);
   const [status, setStatus] = useState<ServiceStatus>();
   const [speech, setSpeech] = useState<SpeechStatus>();
@@ -93,7 +94,7 @@ export function App() {
   }, disconnected, cause => {
     if (cause.message === 'Codex 正在修改' || cause.message === '用户正在编辑') {
       setSaveState('saved');
-      queueMicrotask(() => { void editing.refresh(() => queryStatus(window.location.origin), setStatus, () => {}); });
+      queueMicrotask(() => { void editing.refresh(() => queryStatus(panelServiceUrl()), setStatus, () => {}); });
     } else failed(cause);
   });
   const columns: ColDef<Segment>[] = [
@@ -111,7 +112,7 @@ export function App() {
       const asset = status?.snapshot.assets.find(asset => asset.id === segment.video?.assetId);
       return <div className="video-cell">
         {asset && <button className="thumbnail" aria-label={`播放 ${asset.name}`} onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(segment.video); }}>
-          <img src={`/api/media/${asset.id}/thumbnail`} alt="" />
+          <img src={`${panelServiceUrl()}/api/media/${asset.id}/thumbnail`} alt="" />
         </button>}
         <span>{asset ? asset.name : '未关联视频'}</span>
         <button aria-label={`查看片段 ${segment.order} 的画面素材详情`} onClick={event => { rememberOrigin(event.currentTarget, 'material'); setVideoDetails(segment.id); }}>详情</button>
@@ -143,25 +144,25 @@ export function App() {
     const storageKey = `clapgrid-speech:${status.snapshot.project.id}:${segmentId}`;
     const requestId = localStorage.getItem(storageKey) ?? crypto.randomUUID();
     localStorage.setItem(storageKey, requestId);
-    await submitSpeech(window.location.origin, { requestId, segmentId });
+    await submitSpeech(panelServiceUrl(), { requestId, segmentId });
     localStorage.removeItem(storageKey);
-    const next = await querySpeech(window.location.origin);
+    const next = await querySpeech(panelServiceUrl());
     action.apply(() => { setSaveError(''); setSaveState('saved'); setSpeech(next); });
   }, failed);
   const changeVoice = (voice: Voice) => editing.run(async action => {
     setSaveError('');
-    await setVoice(window.location.origin, voice);
-    const next = await querySpeech(window.location.origin);
+    await setVoice(panelServiceUrl(), voice);
+    const next = await querySpeech(panelServiceUrl());
     action.apply(() => { setSpeech(next); setSaveState('saved'); });
   }, failed);
   const save = (change: { id?: string; text: string }) => editing.save('segments', { acquire: !change.id }, async (token, action) => {
     setSaveState('saving'); setSaveError('');
-    const next = await saveSegment(window.location.origin, change, token);
+    const next = await saveSegment(panelServiceUrl(), change, token);
     action.apply(() => { setStatus(next); setError(''); setSaveState('saved'); });
   }, cause => failed(new Error(`保存失败：${cause.message}`)));
   const organize = (batch: Batch) => editing.save('segments', { acquire: true }, async (token, action) => {
     setSaveState('saving'); setSaveError('');
-    const result = await modifyUserBatch(window.location.origin, batch, token);
+    const result = await modifyUserBatch(panelServiceUrl(), batch, token);
     action.apply(() => { setStatus(result.status); setError(''); });
     const unsuccessful = result.results.filter(item => item.outcome !== 'applied');
     if (unsuccessful.length) throw new Error(unsuccessful.map(item => item.message).join('；'));
@@ -186,11 +187,11 @@ export function App() {
     setSaveState('saving'); setSaveError('');
     try {
       if (importing) {
-        const result = await importVideo(window.location.origin, sourcePath, token, action.signal);
+        const result = await importVideo(panelServiceUrl(), sourcePath, token, action.signal);
         action.apply(() => setStatus(result.status));
       } else if (videoEditor) {
         if (!videoEditor.start.trim()) throw new Error('请填写视频起点');
-        const result = await modifyUserBatch(window.location.origin, { changes: [{ kind: 'video', expected: videoEditor.segment,
+        const result = await modifyUserBatch(panelServiceUrl(), { changes: [{ kind: 'video', expected: videoEditor.segment,
           assetId: videoEditor.assetId || null, start: Number(videoEditor.start) }] }, token, action.signal);
         action.apply(() => setStatus(result.status));
         if (result.summary.applied !== 1) throw new Error(result.results[0]?.message ?? '关联未保存');
@@ -226,7 +227,7 @@ export function App() {
     let active = true;
     let connection: TableSession | undefined;
     setSelectionState('正在连接勾选…');
-    void connectTable(window.location.origin).then(next => {
+    void connectTable(panelServiceUrl()).then(next => {
       if (!active) { void next.close(); return; }
       connection = next; table.current = next;
       grid.current?.deselectAll(); setSelectedIds([]); setSelectionState('勾选已同步');
@@ -243,7 +244,7 @@ export function App() {
   useEffect(() => {
     editing.activate();
     const refresh = () => editing.refresh(
-      () => Promise.all([queryStatus(window.location.origin), querySpeech(window.location.origin)]),
+      () => Promise.all([queryStatus(panelServiceUrl()), querySpeech(panelServiceUrl())]),
       ([next, nextSpeech]) => { setStatus(next); setSpeech(nextSpeech); setError(''); },
       () => { setStatus(undefined); setError('服务连接失败，请通过 Codex 检查本地服务。'); },
     );
@@ -401,7 +402,7 @@ export function App() {
         <button onClick={() => { void cancelVideo(); }}>取消</button></div>
     </Dialog>}
     {preview && <Dialog label="视频预览" onClose={() => setPreview(null)} restoreFocus={returnFocus.current.preview}>
-      <h2>视频预览</h2><video key={preview.assetId} controls muted autoPlay src={`/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
+      <h2>视频预览</h2><video key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
       <p>从 {preview.start} 秒开始，预览默认静音。</p><button onClick={() => setPreview(null)}>关闭预览</button>
     </Dialog>}
     <div className="grid"><AgGridProvider modules={[AllCommunityModule]}><AgGridReact

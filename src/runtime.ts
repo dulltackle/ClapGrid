@@ -1,3 +1,4 @@
+import { workspaceRuntime } from './workspace-runtime.js';
 import { spawn } from 'node:child_process';
 import { realpathSync, existsSync, openSync, closeSync } from 'node:fs';
 import { join } from 'node:path';
@@ -9,6 +10,9 @@ import { queryStatus } from './shared/client.js';
 
 try {
   const action = process.argv[2];
+  if (action === 'open' || action === 'workspace-status' || action === 'workspace-stop') {
+    console.log(JSON.stringify(await workspaceRuntime(action, process.argv.slice(3)), null, 2));
+  } else {
   if (action !== 'start' && action !== 'status' && action !== 'stop') throw new Error('用法：runtime start|status|stop --project <目录> [--port <端口>] [--interrupt]');
   const interrupt = process.argv.slice(3).includes('--interrupt');
   if (interrupt && action !== 'stop') throw new Error('--interrupt 仅用于明确中断任务并退出服务');
@@ -68,6 +72,7 @@ try {
       }
       if (!ready) throw new Error('启动未确认，请查看 service.log 并独立查询 status；本次不自动重启。');
     }
+  }
   }
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);

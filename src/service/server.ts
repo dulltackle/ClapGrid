@@ -1,10 +1,12 @@
+import { readHostWorkspace } from '../host-workspace.js';
+import { workspaceProject } from '../workspace-service.js';
 import { mediaScope, startMediaGuardian } from '../business/media-guardian.js';
 import { z } from 'zod';
 import { localSpeechRuntime } from './speech-config.js';
 import type { SpeechRuntime } from '../business/speech.js';
-import { randomUUID } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual, randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
-import { readFileSync, readdirSync, openSync, fstatSync, createReadStream, constants, closeSync } from 'node:fs';
+import { readFileSync, readdirSync, openSync, fstatSync, createReadStream, constants, closeSync, writeFileSync, renameSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { claimProjectService } from '../business/service-ownership.js';
 import { openBusiness } from '../business/index.js';
@@ -12,6 +14,7 @@ import { submitExportSchema, exportTaskRequestSchema, importVideoSchema, addSegm
 
 export interface ServiceOptions {
   projectDirectory: string;
+  workspaceDirectory?: string;
   panelDirectory: string;
   port: number;
   dev?: boolean;
@@ -32,8 +35,16 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
   try { business = openBusiness(options.projectDirectory, options.speechRuntime ?? localSpeechRuntime(), verifyRuntime); }
   catch (error) { await releaseOwnership(); throw error; }
   const instanceId = randomUUID();
+  const bindingKey = randomBytes(32);
+  const signature = (value: string) => createHmac('sha256', bindingKey).update(value).digest('base64url');
+  let workspace: string | undefined;
+  try {
+    workspace = options.workspaceDirectory ? workspaceProject(options.workspaceDirectory).workspace : undefined;
+    if (workspace && workspaceProject(workspace).project !== business.getSnapshot().project.directory) throw new Error('项目不属于指定工作空间。');
+  } catch (error) { await business.close(); await releaseOwnership(); throw error; }
   const startedAt = new Date().toISOString();
   let vite: import('vite').ViteDevServer | undefined;
+  let listeningServer: import('node:http').Server | undefined;
   try {
     const files = new Map<string, Buffer>();
     if (options.dev) {
@@ -85,10 +96,11 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       setImmediate(() => { void close().catch(error => console.error('服务清理失败，不能确认已退出：', error)); });
       return { outcome: 'stopping', message: '正在停止服务，等待任务结束和清理。' };
     };
-    const server = createServer(async (request, response) => {
+    const server = listeningServer = createServer(async (request, response) => {
       const host = `127.0.0.1:${(server.address() as import('node:net').AddressInfo).port}`;
       response.setHeader('X-Content-Type-Options', 'nosniff');
       response.setHeader('Cache-Control', 'no-store');
+      response.setHeader('Referrer-Policy', 'no-referrer');
       const reject = (status: number, message: string) => {
         response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
         response.end(JSON.stringify({ error: message }));
@@ -102,9 +114,58 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       } catch {
         reject(400, '请求路径无效。'); return;
       }
+      let bindingPrefix = '';
+      let verifyBinding = async () => {};
+      const match = /^\/binding\/([^/]+)(\/.*)?$/.exec(path);
+      if (match) {
+        const token = match[1]!;
+        const [threadId, signed, extra] = token.split('.');
+        const expected = threadId ? signature(threadId) : '';
+        if (!workspace || extra || !signed || !/^[A-Za-z0-9_-]{43}$/.test(signed) || signed.length !== expected.length || !timingSafeEqual(Buffer.from(signed), Buffer.from(expected))) {
+          reject(409, '工作空间或服务身份已改变，请关闭重开 ClapGrid。'); return;
+        }
+        verifyBinding = async () => {
+          if (await readHostWorkspace(threadId!) !== workspace) throw new Error('当前工作空间已改变，请关闭重开。');
+        };
+        try { await verifyBinding(); } catch { reject(409, '当前工作空间已改变或无法核对，请关闭重开 ClapGrid。'); return; }
+        // 宿主核对期间可能已经断线，不能在错过 close 事件后再取得会话或修改权。
+        if (response.destroyed) return;
+        bindingPrefix = `/binding/${token}`;
+        path = match[2] ?? '/';
+      }
+      if (workspace && !bindingPrefix && path !== '/api/identity' && path !== '/api/binding' && !path.startsWith('/assets/')) {
+        reject(409, '缺少工作空间绑定，请通过插件入口重新打开。'); return;
+      }
       const json = (body: unknown) => {
         response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        response.end(JSON.stringify(body));
+        response.end(JSON.stringify(body, (key, value) => bindingPrefix && (key === 'url' || key === 'previewUrl') && typeof value === 'string' && /^\/(api|media)\//.test(value) ? `${bindingPrefix}${value}` : value));
+      };
+      if (path === '/api/identity' && request.method === 'GET') {
+        json({ application: 'clapgrid', workspace, projectDirectory: business.getSnapshot().project.directory,
+          projectId: business.getSnapshot().project.id, instanceId }); return;
+      }
+      if (path === '/api/binding') {
+        if (!workspace || request.method !== 'POST') { reject(409, '此服务不支持工作空间绑定。'); return; }
+        const timeout = setTimeout(() => request.destroy(), 5000);
+        try {
+          let body = ''; for await (const chunk of request) { body += chunk; if (body.length > 4096) throw new Error('请求过大'); }
+          const input = z.object({ threadId: z.uuid(), workspace: z.string(), projectId: z.string(), instanceId: z.string() }).strict().parse(JSON.parse(body));
+          if (input.workspace !== workspace || input.projectId !== business.getSnapshot().project.id || input.instanceId !== instanceId || await readHostWorkspace(input.threadId) !== workspace) {
+            throw new Error('工作空间或服务身份不一致。');
+          }
+          json({ binding: `${input.threadId}.${signature(input.threadId)}` });
+        } catch { reject(409, '无法核对工作空间绑定，请关闭重开。'); }
+        finally { clearTimeout(timeout); }
+        return;
+      }
+      const heartbeat = (finish: () => void) => {
+        let checking = false;
+        return setInterval(() => {
+          if (response.destroyed) { finish(); return; }
+          if (checking) return;
+          checking = true;
+          void verifyBinding().then(() => { if (!response.destroyed) response.write('\n'); }, finish).finally(() => { checking = false; });
+        }, 1000);
       };
       if (stopping && request.method !== 'GET') { reject(503, '服务正在退出，不能受理新操作'); return; }
       if (path === '/api/service/stop') {
@@ -119,6 +180,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
             chunks.push(Buffer.from(chunk));
           }
           const input = z.object({ instanceId: z.uuid(), interrupt: z.boolean().default(false) }).strict().parse(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+          await verifyBinding();
           if (input.instanceId !== instanceId) { reject(409, '服务实例已改变，请重新查询再决定退出'); return; }
           json(requestStop(input.interrupt));
         } catch { if (!response.destroyed) reject(400, '退出请求无效'); }
@@ -137,6 +199,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
             chunks.push(Buffer.from(chunk));
           }
           const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          await verifyBinding();
           if (path.endsWith('/submit')) { submitExportSchema.parse(input); json(business.submitExport()); }
           else { json(business.cancelExport(exportTaskRequestSchema.parse(input).taskId)); }
         } catch (error) { if (!response.destroyed) reject(400, error instanceof Error ? error.message : '导出请求未受理'); }
@@ -155,6 +218,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
             chunks.push(Buffer.from(chunk));
           }
           const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          await verifyBinding();
           json(path.endsWith('/batch') ? business.submitSpeechBatch(input) : path.endsWith('/submit') ? business.submitSpeech(input) : business.setVoice(input));
         } catch (error) { if (!response.destroyed) reject(409, error instanceof Error ? error.message : '配音请求未受理'); }
         finally { clearTimeout(timeout); }
@@ -165,8 +229,8 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
         const tableId = business.connectTable();
         response.writeHead(200, { 'Content-Type': 'application/x-ndjson; charset=utf-8' });
         response.write(JSON.stringify({ tableId }) + '\n');
-        const heartbeat = setInterval(() => { response.write('\n'); }, 1000);
-        tableSessions.set(tableId, () => { clearInterval(heartbeat); response.end(); });
+        const timer = heartbeat(() => finishTable(tableId));
+        tableSessions.set(tableId, () => { clearInterval(timer); response.end(); });
         response.on('close', () => finishTable(tableId));
         return;
       }
@@ -182,6 +246,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
             chunks.push(Buffer.from(chunk));
           }
           const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          await verifyBinding();
           if (path === '/api/segments/query') {
             json(business.querySegments(segmentQuerySchema.parse(input).scope));
           } else if (path === '/api/table-selection') {
@@ -205,8 +270,8 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
           response.writeHead(200, { 'Content-Type': 'application/x-ndjson; charset=utf-8' });
           response.write(JSON.stringify(initial) + '\n');
           // 长连接属于一次编辑；心跳让失联连接可被发现，关闭时只释放该 token。
-          const heartbeat = setInterval(() => { response.write('\n'); }, 1000);
-          const cleanup = () => { clearInterval(heartbeat); response.end(); };
+          const timer = heartbeat(() => finishSession(token));
+          const cleanup = () => { clearInterval(timer); response.end(); };
           sessions.set(token, cleanup);
           response.on('close', () => finishSession(token));
         } catch { finishSession(token); reject(500, '读取项目失败，修改权已释放。'); }
@@ -254,6 +319,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
           let input: unknown;
           try { input = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
           catch { reject(400, '编辑请求格式无效。'); return; }
+          await verifyBinding();
           if (!business.owns(token, codex ? 'codex' : 'user')) {
             reject(409, '修改权已失效，请重新读取项目后编辑。'); return;
           }
@@ -359,9 +425,21 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       });
     });
     const port = (server.address() as import('node:net').AddressInfo).port;
-    return { url: `http://127.0.0.1:${port}`, close, requestStop };
+    const url = `http://127.0.0.1:${port}`;
+    if (workspace) {
+      const project = business.getSnapshot().project;
+      const record = JSON.stringify({ workspace, projectDirectory: project.directory, projectId: project.id, instanceId, url });
+      const temporary = join(project.directory, `service-${instanceId}.json`);
+      writeFileSync(temporary, record, { flag: 'wx', mode: 0o600 });
+      renameSync(temporary, join(project.directory, 'service.json'));
+    }
+    return { url, close, requestStop };
 
   } catch (error) {
+    if (listeningServer?.listening) {
+      listeningServer.closeAllConnections();
+      await new Promise<void>(resolve => listeningServer!.close(() => resolve()));
+    }
     await vite?.close();
     await business.close();
     await releaseOwnership();
