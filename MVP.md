@@ -1,6 +1,6 @@
 # ClapGrid 口播视频制作 MVP 规格
 
-本规格用于进入开发，不表示产品已实现或验收通过。术语见 [CONTEXT.md](CONTEXT.md)。规划地图为[规划口播视频制作 MVP 的可开发规格](https://github.com/dulltackle/ClapGrid/issues/1)，本轮核对记录见[核对可开发规格与端到端验收覆盖](https://github.com/dulltackle/ClapGrid/issues/8)。
+本规格用于进入开发，不表示产品已实现或验收通过。术语见 [GLOSSARY.md](GLOSSARY.md)。规划地图为[规划口播视频制作 MVP 的可开发规格](https://github.com/dulltackle/ClapGrid/issues/1)，本轮核对记录见[核对可开发规格与端到端验收覆盖](https://github.com/dulltackle/ClapGrid/issues/8)。
 
 > 2026-09-27 表头讨论修订：每个口播片段可使用多张图片、多个视频，允许混排并按列表顺序依次展示；新增可选的画面说明。已确认的列名、顺序及展示边界见[表格信息组织](docs/panel-style.md#表格信息组织)。这些结论替代下文“每片段一个视频”及旧表头设计；下文基于单视频的时长匹配与导出验收规则尚待扩展，不能直接视为多素材规则已经确定。
 

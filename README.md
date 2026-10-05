@@ -1,6 +1,6 @@
 # ClapGrid
 
-通过 Codex 右侧表格组织口播视频。产品契约见 [MVP.md](MVP.md)，术语见 [CONTEXT.md](CONTEXT.md)。
+通过 Codex 右侧表格组织口播视频。产品契约见 [MVP.md](MVP.md)，术语见 [GLOSSARY.md](GLOSSARY.md)。
 
 当前已支持本地项目创建／重开、口播片段新增、文案编辑、删除、重排、多行粘贴、明确范围操作、自动保存、表格与 Codex 交替修改、本地视频导入／复用／预览和业务 MCP。现已支持 TokenDance 配音、试听、带字幕全片导出和独立后台任务。Linux 正式插件提供组件准备入口；三平台完整交付仍需各自验收。
 
