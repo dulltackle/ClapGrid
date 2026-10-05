@@ -1,0 +1,22 @@
+{
+  "version": "0.1.0+codex.issue41.20261005.2",
+  "codeHead": "2aec0bb4a418a404a7b8c756175b4676cc81e671",
+  "fileCount": 14,
+  "buildSourceCacheAllEqual": true,
+  "sha256": {
+    "package.json": "f419c1fb57e6e89037df84d8e5a4c0037ce4e303d8716c8033bf22a136e12f05",
+    ".mcp.json": "e197a673ee86bbbdc72acc3ea7473a573279cd73c3170ad0980c1ecc786fe93f",
+    ".codex-plugin/plugin.json": "01ea5bdd9a031067ef532d40c2bb54dbf2aee4ae124a5c9b7f2b4691fb3388ed",
+    "scripts/runtime-linux.sh": "96a85a3a069afe9ac0709d0f89c7e2001cc2dbca68a33db29ba9b455a5aa19e1",
+    "dist/runtime.js": "390189bf945d5b1529ec3e7f0444196a66e178d6b2d85964c243abeed6de0ed4",
+    "dist/mcp/main.js": "8ff5f45f5fb84934e3620cb2bc32867cc881a869eaaa44c9e0206e6e774121e9",
+    "dist/service/main.js": "4ded376b23c8171ae35381824cf89b35efb090fa3eb3356ec0ac5e28a6a03379",
+    "dist/business/media-worker.js": "bcb6c22380edb58b594a176c5d8f6144857674914cffb2013adf6f7dbe355220",
+    "dist/panel/index.html": "59007db2081f5d4713194378d0d3aae3b8c781a5d3c356e11a1a5ded88fa734a",
+    "dist/panel/assets/index-CyVOEvGF.css": "d12a64c385d6393091191267374cc295cc4ea76e6afa5f35617b8af6bddc62af",
+    "dist/panel/assets/index-C8wQs-um.js": "6aebc6c0adbaf43cb0810b662097a9ef2740b0f3da2c401b893cf046575b3d8a",
+    "skills/open-clapgrid/SKILL.md": "09219131dea94827c6184cf9205562dbe5fda52b2929cb450f4b9bc20cc45a59",
+    "skills/open-clapgrid/references/linux.md": "cf1fa61921b4f0f440a259cd6cbc86859238b1dbb5fe8758e9b47a44a2e5e668",
+    "skills/open-clapgrid/references/import.md": "2425e432d0fe38fb14c8c6a4028916f6bebceba5798979856267f7b53c3f4bbc"
+  }
+}

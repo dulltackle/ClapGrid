@@ -1,0 +1,413 @@
+{
+  "schemaVersion": 1,
+  "recordedDate": "2026-10-05",
+  "timeZone": "UTC",
+  "provenance": "真实宿主工具、DOM与独立进程观察的白名单摘录；非重新执行或模拟验收。",
+  "projects": {
+    "main": "cd43eb48-a982-4004-8bc1-989c6fba9b3a",
+    "independent": "75527a04-6e33-4efa-8ffd-7c1af5627e8f"
+  },
+  "parallelExport": {
+    "nonterminalOverlapSamples": 22,
+    "first": {
+      "at": "2026-10-05T13:05:26.452706+00:00",
+      "projects": {
+        "main": [
+          {
+            "id": "c796767d-5ada-4537-87f8-14052965897b",
+            "requestId": null,
+            "createdAt": "2026-10-05T13:05:22.130Z",
+            "succeededAt": null,
+            "state": "rendering",
+            "completed": 1,
+            "total": 3
+          }
+        ],
+        "independent": [
+          {
+            "id": "f5d3b261-7135-4fdb-b73c-cfa93f1573da",
+            "requestId": null,
+            "createdAt": "2026-10-05T13:05:26.147Z",
+            "succeededAt": null,
+            "state": "validating",
+            "completed": 0,
+            "total": 1
+          }
+        ]
+      }
+    },
+    "last": {
+      "at": "2026-10-05T13:05:36.995933+00:00",
+      "projects": {
+        "main": [
+          {
+            "id": "c796767d-5ada-4537-87f8-14052965897b",
+            "requestId": null,
+            "createdAt": "2026-10-05T13:05:22.130Z",
+            "succeededAt": null,
+            "state": "rendering",
+            "completed": 3,
+            "total": 3
+          }
+        ],
+        "independent": [
+          {
+            "id": "f5d3b261-7135-4fdb-b73c-cfa93f1573da",
+            "requestId": null,
+            "createdAt": "2026-10-05T13:05:26.147Z",
+            "succeededAt": null,
+            "state": "rendering",
+            "completed": 1,
+            "total": 1
+          }
+        ]
+      }
+    },
+    "bothFinalStates": "succeeded"
+  },
+  "longSpeech": {
+    "batchRequestId": "4f97283e-5bad-49eb-9b11-e94ced10484f",
+    "taskId": "e3a9140f-1496-431f-ba8c-76982f80b111",
+    "transitions": [
+      {
+        "at": "2026-10-05T13:14:05.638061+00:00",
+        "appAlive": true,
+        "task": null
+      },
+      {
+        "at": "2026-10-05T13:14:48.305914+00:00",
+        "appAlive": true,
+        "task": {
+          "id": "e3a9140f-1496-431f-ba8c-76982f80b111",
+          "requestId": "0351d6f9-bbf3-4102-986f-4a2862435c5f",
+          "createdAt": "2026-10-05T13:14:47.840Z",
+          "succeededAt": null,
+          "state": "running",
+          "completed": null,
+          "total": null
+        }
+      },
+      {
+        "at": "2026-10-05T13:15:37.946756+00:00",
+        "appAlive": false,
+        "task": {
+          "id": "e3a9140f-1496-431f-ba8c-76982f80b111",
+          "requestId": "0351d6f9-bbf3-4102-986f-4a2862435c5f",
+          "createdAt": "2026-10-05T13:14:47.840Z",
+          "succeededAt": null,
+          "state": "running",
+          "completed": null,
+          "total": null
+        }
+      },
+      {
+        "at": "2026-10-05T13:15:54.489985+00:00",
+        "appAlive": false,
+        "task": {
+          "id": "e3a9140f-1496-431f-ba8c-76982f80b111",
+          "requestId": "0351d6f9-bbf3-4102-986f-4a2862435c5f",
+          "createdAt": "2026-10-05T13:14:47.840Z",
+          "succeededAt": "2026-10-05T13:15:54.346Z",
+          "state": "succeeded",
+          "completed": null,
+          "total": null
+        }
+      }
+    ],
+    "reopened": {
+      "instanceId": "2d4ce21a-2dbb-447a-8905-b587a64a6244",
+      "pid": 1731184,
+      "taskLocked": false,
+      "speechLocked": false,
+      "task": [
+        {
+          "id": "e3a9140f-1496-431f-ba8c-76982f80b111",
+          "requestId": "0351d6f9-bbf3-4102-986f-4a2862435c5f",
+          "createdAt": "2026-10-05T13:14:47.840Z",
+          "succeededAt": "2026-10-05T13:15:54.346Z",
+          "state": "succeeded"
+        }
+      ]
+    }
+  },
+  "lockedPlayback": {
+    "playback": {
+      "time": "2026-10-05T13:15:29.731Z",
+      "paused": false,
+      "currentTime": 0.061483,
+      "duration": 6.456,
+      "audioTaskId": "f179198b-e95b-4e22-9be0-9d002e81723e",
+      "segmentId": "249c241c-ea53-4639-a796-72f3e1636227"
+    },
+    "conclusion": {
+      "listenedWhileRunning": true,
+      "sameProject": true,
+      "sameInstance": true,
+      "sameTaskSucceeded": true,
+      "unlocked": true
+    },
+    "limitation": "未在DOM采样同一毫秒额外调用status；运行锁由此前真实speech_status及同次面板截图共同证实。应用退出时刻来自协调者独立记录，本证据不冒充本聊天直接观察。"
+  },
+  "fullExitExport": [
+    {
+      "at": "2026-10-05T12:37:02.182833+00:00",
+      "appPid": 4852,
+      "appAlive": true,
+      "servicePid": 423868,
+      "serviceAlive": true,
+      "tasks": [
+        {
+          "id": "359ab47a-1268-4869-9443-1c8a4c1c65dc",
+          "createdAt": "2026-10-05T12:31:10.920Z",
+          "state": "succeeded",
+          "completed": 3,
+          "total": 3,
+          "message": "导出成功"
+        },
+        {
+          "id": "11f60ec1-1681-475b-8c4a-6e2c5a1a99c9",
+          "createdAt": "2026-10-05T12:37:01.307Z",
+          "state": "validating",
+          "completed": 0,
+          "total": 3,
+          "message": "正在汇总导出问题"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-05T12:37:04.185165+00:00",
+      "appPid": 4852,
+      "appAlive": true,
+      "servicePid": 423868,
+      "serviceAlive": true,
+      "tasks": [
+        {
+          "id": "359ab47a-1268-4869-9443-1c8a4c1c65dc",
+          "createdAt": "2026-10-05T12:31:10.920Z",
+          "state": "succeeded",
+          "completed": 3,
+          "total": 3,
+          "message": "导出成功"
+        },
+        {
+          "id": "11f60ec1-1681-475b-8c4a-6e2c5a1a99c9",
+          "createdAt": "2026-10-05T12:37:01.307Z",
+          "state": "rendering",
+          "completed": 0,
+          "total": 3,
+          "message": "正在渲染片段 1（1/3）"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-05T12:37:07.191886+00:00",
+      "appPid": 4852,
+      "appAlive": true,
+      "servicePid": 423868,
+      "serviceAlive": true,
+      "tasks": [
+        {
+          "id": "359ab47a-1268-4869-9443-1c8a4c1c65dc",
+          "createdAt": "2026-10-05T12:31:10.920Z",
+          "state": "succeeded",
+          "completed": 3,
+          "total": 3,
+          "message": "导出成功"
+        },
+        {
+          "id": "11f60ec1-1681-475b-8c4a-6e2c5a1a99c9",
+          "createdAt": "2026-10-05T12:37:01.307Z",
+          "state": "rendering",
+          "completed": 1,
+          "total": 3,
+          "message": "正在渲染片段 2（2/3）"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-05T12:37:10.195939+00:00",
+      "appPid": 4852,
+      "appAlive": true,
+      "servicePid": 423868,
+      "serviceAlive": true,
+      "tasks": [
+        {
+          "id": "359ab47a-1268-4869-9443-1c8a4c1c65dc",
+          "createdAt": "2026-10-05T12:31:10.920Z",
+          "state": "succeeded",
+          "completed": 3,
+          "total": 3,
+          "message": "导出成功"
+        },
+        {
+          "id": "11f60ec1-1681-475b-8c4a-6e2c5a1a99c9",
+          "createdAt": "2026-10-05T12:37:01.307Z",
+          "state": "rendering",
+          "completed": 2,
+          "total": 3,
+          "message": "正在渲染片段 3（3/3）"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-05T12:37:13.198696+00:00",
+      "appPid": 4852,
+      "appAlive": true,
+      "servicePid": 423868,
+      "serviceAlive": true,
+      "tasks": [
+        {
+          "id": "359ab47a-1268-4869-9443-1c8a4c1c65dc",
+          "createdAt": "2026-10-05T12:31:10.920Z",
+          "state": "succeeded",
+          "completed": 3,
+          "total": 3,
+          "message": "导出成功"
+        },
+        {
+          "id": "11f60ec1-1681-475b-8c4a-6e2c5a1a99c9",
+          "createdAt": "2026-10-05T12:37:01.307Z",
+          "state": "rendering",
+          "completed": 3,
+          "total": 3,
+          "message": "正在拼接并验证成片"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-05T12:37:15.202038+00:00",
+      "appPid": 4852,
+      "appAlive": false,
+      "servicePid": 423868,
+      "serviceAlive": true,
+      "tasks": [
+        {
+          "id": "359ab47a-1268-4869-9443-1c8a4c1c65dc",
+          "createdAt": "2026-10-05T12:31:10.920Z",
+          "state": "succeeded",
+          "completed": 3,
+          "total": 3,
+          "message": "导出成功"
+        },
+        {
+          "id": "11f60ec1-1681-475b-8c4a-6e2c5a1a99c9",
+          "createdAt": "2026-10-05T12:37:01.307Z",
+          "state": "rendering",
+          "completed": 3,
+          "total": 3,
+          "message": "正在拼接并验证成片"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-05T12:37:22.210184+00:00",
+      "appPid": 4852,
+      "appAlive": false,
+      "servicePid": 423868,
+      "serviceAlive": true,
+      "tasks": [
+        {
+          "id": "359ab47a-1268-4869-9443-1c8a4c1c65dc",
+          "createdAt": "2026-10-05T12:31:10.920Z",
+          "state": "succeeded",
+          "completed": 3,
+          "total": 3,
+          "message": "导出成功"
+        },
+        {
+          "id": "11f60ec1-1681-475b-8c4a-6e2c5a1a99c9",
+          "createdAt": "2026-10-05T12:37:01.307Z",
+          "state": "succeeded",
+          "completed": 3,
+          "total": 3,
+          "message": "导出成功"
+        }
+      ]
+    }
+  ],
+  "migration": {
+    "sourceProjectId": "1231db6b-aa90-42db-9e29-a1ea800b4b3a",
+    "targetProjectId": "75527a04-6e33-4efa-8ffd-7c1af5627e8f",
+    "segmentId": "c5fb3921-5234-4a9e-8124-7e61d6f66d29",
+    "assetId": "6ff71378-1dcd-41a5-9402-92f97ccbc29f",
+    "speechTaskId": "db2a5dba-6d47-46c1-b99c-bfb1d57277f5",
+    "exportTaskId": "815d859a-27a0-4859-b4c3-1f828e4db7c6",
+    "fixtureSpeechProvider": "确定性可播放音频替身，仅用于迁入夹具",
+    "originalFileManifest": {
+      "clapgrid.sqlite": {
+        "sha256": "f5537a4172bebafd832b771d5a806e96bc24a6836b1ed8bddc7caeac0dad2c2d",
+        "bytes": 77824
+      },
+      "exports/2026-10-05T09-02-40-121Z-815d859a-27a0-4859-b4c3-1f828e4db7c6.mp4": {
+        "sha256": "c65214cf73a63412035244397cd6fb117bcc40c5f2681464e7ce79bbf81dfa0c",
+        "bytes": 1175880
+      },
+      "media/6ff71378-1dcd-41a5-9402-92f97ccbc29f.png": {
+        "sha256": "4bb09f61d3ef0bb6d72368733777f2c835624f080f03f6175aff7b5eeeaa12c0",
+        "bytes": 8271
+      },
+      "media/6ff71378-1dcd-41a5-9402-92f97ccbc29f.source": {
+        "sha256": "859022fdbfef3b87ae99935664c6344b6c291e7f161a8cc896648d84b9a2d36f",
+        "bytes": 120316
+      },
+      "media/6ff71378-1dcd-41a5-9402-92f97ccbc29f.webm": {
+        "sha256": "9e4fdcad0b14d2964023dba9c985776f2dec5e28ed7ce50fc6c9bc2aa26bb308",
+        "bytes": 126179
+      },
+      "media/815d859a-27a0-4859-b4c3-1f828e4db7c6.export.webm": {
+        "sha256": "1b0599e105525d85afa27f4a152a65d5e1b772d96fa6d8204065d2e3e052cbf8",
+        "bytes": 543285
+      },
+      "media/db2a5dba-6d47-46c1-b99c-bfb1d57277f5.mp3": {
+        "sha256": "00cc24159fa9656bd3c69ac4db5e4a6629c7b5c8b5153e25d9d2fc6db9089901",
+        "bytes": 12428
+      },
+      "media-owner.sqlite": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "service-owner.sqlite": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    },
+    "sourceAfterImport": {
+      "files": {
+        "clapgrid.sqlite": true,
+        "exports/2026-10-05T09-02-40-121Z-815d859a-27a0-4859-b4c3-1f828e4db7c6.mp4": true,
+        "media/6ff71378-1dcd-41a5-9402-92f97ccbc29f.png": true,
+        "media/6ff71378-1dcd-41a5-9402-92f97ccbc29f.source": true,
+        "media/6ff71378-1dcd-41a5-9402-92f97ccbc29f.webm": true,
+        "media/815d859a-27a0-4859-b4c3-1f828e4db7c6.export.webm": true,
+        "media/db2a5dba-6d47-46c1-b99c-bfb1d57277f5.mp3": true,
+        "media-owner.sqlite": true,
+        "service-owner.sqlite": true
+      },
+      "allUnchanged": true,
+      "additionalFiles": [
+        "clapgrid.sqlite-shm",
+        "clapgrid.sqlite-wal"
+      ]
+    },
+    "realPlayback": {
+      "audioDurationSeconds": 3,
+      "videoDurationSeconds": 3.011,
+      "audioEnded": true,
+      "videoEnded": true,
+      "mediaHttpStatus": 200
+    }
+  },
+  "automation": {
+    "tests": 149,
+    "pass": 148,
+    "skip": 1,
+    "fail": 0,
+    "cancelled": 0,
+    "typecheck": "passed",
+    "pluginBuild": "passed"
+  },
+  "deferred": {
+    "sameThreadIdCwdHostValidation": 49,
+    "projectAffiliationRemovedCwdUnchanged": 48
+  }
+}
