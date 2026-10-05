@@ -12,6 +12,9 @@ import { claimProjectService } from '../business/service-ownership.js';
 import { openBusiness } from '../business/index.js';
 import { submitExportSchema, exportTaskRequestSchema, importVideoSchema, addSegmentSchema, editSegmentSchema, batchSchema, segmentQuerySchema, selectionSchema, scopedOperationSchema, type ServiceStatus } from '../shared/contracts.js';
 
+/** 心跳复用宿主工作空间核对结果的最长时间。 */
+const HEARTBEAT_HOST_CHECK_MS = 5000;
+
 export interface ServiceOptions {
   projectDirectory: string;
   workspaceDirectory?: string;
@@ -39,6 +42,17 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
   // 每个对话只保留当前代次；重复 MCP 绑定复用它，核对失败删除并使旧 URL 永久失效。
   const bindingGenerations = new Map<string, string>();
   const signature = (value: string) => createHmac('sha256', bindingKey).update(value).digest('base64url');
+  // 每次宿主核对都要启动一个 codex app-server；心跳只负责发现失联与工作空间变化，
+  // 因此同一对话的所有长连接共享核对结果，并限制频率。受理操作仍逐次重新核对。
+  const heartbeatChecks = new Map<string, { at: number; check: Promise<string> }>();
+  const readHeartbeatWorkspace = (threadId: string) => {
+    const cached = heartbeatChecks.get(threadId);
+    if (cached && Date.now() - cached.at < HEARTBEAT_HOST_CHECK_MS) return cached.check;
+    const check = readHostWorkspace(threadId);
+    heartbeatChecks.set(threadId, { at: Date.now(), check });
+    check.catch(() => { if (heartbeatChecks.get(threadId)?.check === check) heartbeatChecks.delete(threadId); });
+    return check;
+  };
   let workspace: string | undefined;
   try {
     workspace = options.workspaceDirectory ? workspaceProject(options.workspaceDirectory).workspace : undefined;
@@ -119,7 +133,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       }
       let bindingPrefix = '';
       let tableOwner: string | undefined;
-      let verifyBinding = async () => {};
+      let verifyBinding = async (_read = readHostWorkspace) => {};
       const match = /^\/binding\/([^/]+)(\/.*)?$/.exec(path);
       if (match) {
         const token = match[1]!;
@@ -128,9 +142,9 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
         if (!workspace || extra || !threadId || !generation || bindingGenerations.get(threadId) !== generation || !signed || !/^[A-Za-z0-9_-]{43}$/.test(signed) || signed.length !== expected.length || !timingSafeEqual(Buffer.from(signed), Buffer.from(expected))) {
           reject(409, '工作空间或服务身份已改变，请关闭重开 ClapGrid。'); return;
         }
-        verifyBinding = async () => {
+        verifyBinding = async (read = readHostWorkspace) => {
           try {
-            if (await readHostWorkspace(threadId) !== workspace || bindingGenerations.get(threadId) !== generation) throw new Error('当前工作空间已改变，请关闭重开。');
+            if (await read(threadId) !== workspace || bindingGenerations.get(threadId) !== generation) throw new Error('当前工作空间已改变，请关闭重开。');
           } catch (error) {
             if (bindingGenerations.get(threadId) === generation) bindingGenerations.delete(threadId);
             // 清理该代次的面板，避免重新绑定后在下一次心跳前读取旧勾选或持有旧修改权。
@@ -182,7 +196,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
           if (response.destroyed) { finish(); return; }
           if (checking) return;
           checking = true;
-          void verifyBinding().then(() => { if (!response.destroyed) response.write('\n'); }, finish).finally(() => { checking = false; });
+          void verifyBinding(readHeartbeatWorkspace).then(() => { if (!response.destroyed) response.write('\n'); }, finish).finally(() => { checking = false; });
         }, 1000);
       };
       if (stopping && request.method !== 'GET') { reject(503, '服务正在退出，不能受理新操作'); return; }
