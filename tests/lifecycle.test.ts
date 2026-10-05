@@ -1,3 +1,6 @@
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { build } from 'esbuild';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
@@ -66,8 +69,15 @@ test('退出服务默认保持配音与锁，明确中断后重开保留同一�
 test('批量部分完成后中断保留成功音频，运行项提示结果未知，未发送项说明中断且不重新提交', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-batch-stop-'));
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
+  const workspace = join(root, 'workspace'); mkdirSync(workspace);
+  const thread = randomUUID(); const host = join(root, 'host.cjs');
+  writeFileSync(host, `#!/usr/bin/env node\nrequire('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:{id:r.params.threadId,cwd:${JSON.stringify(workspace)}}}}));});`, { mode: 0o700 });
+  const previousHost = process.env.CLAPGRID_CODEX_BIN; process.env.CLAPGRID_CODEX_BIN = host;
+  const entry = join(root, 'runtime.mjs');
+  await build({ entryPoints: ['src/runtime.ts'], outfile: entry, bundle: true, platform: 'node', format: 'esm', external: ['vite'], banner: { js: "import { createRequire } from 'node:module'; const require=createRequire(import.meta.url);" } });
+  const open = async () => JSON.parse((await promisify(execFile)(process.execPath, [entry, 'open', '--workspace', workspace, '--thread', thread], { env: process.env })).stdout);
   let calls = 0;
-  const options = { projectDirectory: join(root, 'project'), panelDirectory, port: 0, speechRuntime: {
+  const options = { projectDirectory: join(workspace, 'clapgrid'), workspaceDirectory: workspace, panelDirectory, port: 0, speechRuntime: {
     key: () => 'test', configPath: 'test', fetch: (async (_url: unknown, init: RequestInit) => {
       calls++;
       if (calls === 1) return new Response('data: {"code":0,"data":"SUQzYWJj"}\n\ndata: {"code":20000000}\n\n');
@@ -75,27 +85,32 @@ test('批量部分完成后中断保留成功音频，运行项提示结果未�
     }) as typeof fetch,
   } };
   const service = await startService(options);
-  t.after(async () => { await service.close(); rmSync(root, { recursive: true, force: true }); });
-  await modifyBatch(service.url, { changes: ['已完成', '结果未知', '未发送'].map(text => ({ kind: 'add' as const, text })) });
-  const status = await queryStatus(service.url);
+  t.after(async () => { await service.close(); if (previousHost === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = previousHost; rmSync(root, { recursive: true, force: true }); });
+  const opened = await open(); const url = opened.url;
+  await modifyBatch(url, { changes: ['已完成', '结果未知', '未发送'].map(text => ({ kind: 'add' as const, text })) });
+  const status = await queryStatus(url);
   const request = { requestId: randomUUID(), mode: 'generate' as const, scope: { kind: 'ids' as const, ids: status.snapshot.segments.map(segment => segment.id) } };
-  const batch = await submitSpeechBatch(service.url, request);
+  const batch = await submitSpeechBatch(url, request);
   for (let attempt = 0; attempt < 100 && calls < 2; attempt++) await new Promise(resolve => setTimeout(resolve, 10));
   assert.equal(calls, 2);
-  const before = await querySpeech(service.url);
-  const bytes = Buffer.from(await (await fetch(service.url + before.audio[0]!.url)).arrayBuffer());
-  await fetch(`${service.url}/api/service/stop`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instanceId: status.instanceId, interrupt: true }) });
+  const before = await querySpeech(url);
+  const bytes = Buffer.from(await (await fetch(new URL(before.audio[0]!.url, url))).arrayBuffer());
+  await fetch(`${url}/api/service/stop`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instanceId: status.instanceId, interrupt: true }) });
   await service.close();
   const reopened = await startService(options);
   try {
-    const result = await submitSpeechBatch(reopened.url, request);
+    const reopenedEntry = await open(); const reopenedUrl = reopenedEntry.url;
+    assert.equal(reopenedEntry.snapshot.project.id, opened.snapshot.project.id);
+    assert.notEqual(reopenedEntry.instanceId, opened.instanceId);
+    assert.equal((await querySpeech(reopenedUrl)).tasks.length, 3, '重开不会追加配音任务');
+    const result = await submitSpeechBatch(reopenedUrl, request);
     assert.equal(result.id, batch.id);
     assert.deepEqual([result.summary.succeeded, result.summary.interrupted, result.summary.pending], [1, 2, 0]);
     assert.match(result.results[1]!.message, /可能已计费/);
     assert.match(result.results[2]!.message, /尚未发送/);
-    const speech = await querySpeech(reopened.url);
-    assert.deepEqual(Buffer.from(await (await fetch(reopened.url + speech.audio[0]!.url)).arrayBuffer()), bytes);
-    assert.equal((await queryStatus(reopened.url)).taskLocked, false);
+    const speech = await querySpeech(reopenedUrl);
+    assert.deepEqual(Buffer.from(await (await fetch(new URL(speech.audio[0]!.url, reopenedUrl))).arrayBuffer()), bytes);
+    assert.equal((await queryStatus(reopenedUrl)).taskLocked, false);
     assert.equal(calls, 2);
   } finally { await reopened.close(); }
 });
