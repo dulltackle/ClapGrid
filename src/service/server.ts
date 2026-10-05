@@ -43,13 +43,13 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
   const bindingGenerations = new Map<string, string>();
   const signature = (value: string) => createHmac('sha256', bindingKey).update(value).digest('base64url');
   // 每次宿主核对都要启动一个 codex app-server；心跳只负责发现失联与工作空间变化，
-  // 因此同一对话的所有长连接共享核对结果，并限制频率。受理操作仍逐次重新核对。
-  const heartbeatChecks = new Map<string, { at: number; check: Promise<string> }>();
-  const readHeartbeatWorkspace = (threadId: string) => {
+  // 因此同一对话同一绑定代次的所有长连接共享核对结果，并限制频率。受理操作仍逐次重新核对。
+  const heartbeatChecks = new Map<string, { binding: string; at: number; check: Promise<string> }>();
+  const readHeartbeatWorkspace = (threadId: string, binding: string) => {
     const cached = heartbeatChecks.get(threadId);
-    if (cached && Date.now() - cached.at < HEARTBEAT_HOST_CHECK_MS) return cached.check;
+    if (cached?.binding === binding && Date.now() - cached.at < HEARTBEAT_HOST_CHECK_MS) return cached.check;
     const check = readHostWorkspace(threadId);
-    heartbeatChecks.set(threadId, { at: Date.now(), check });
+    heartbeatChecks.set(threadId, { binding, at: Date.now(), check });
     check.catch(() => { if (heartbeatChecks.get(threadId)?.check === check) heartbeatChecks.delete(threadId); });
     return check;
   };
@@ -149,6 +149,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
             if (bindingGenerations.get(threadId) === generation) bindingGenerations.delete(threadId);
             // 清理该代次的面板，避免重新绑定后在下一次心跳前读取旧勾选或持有旧修改权。
             const revoked = `/binding/${token}`;
+            if (heartbeatChecks.get(threadId)?.binding === revoked) heartbeatChecks.delete(threadId);
             for (const [id, session] of tableSessions) if (session.binding === revoked) finishTable(id);
             for (const [id, session] of sessions) if (session.binding === revoked) finishSession(id);
             for (const operation of pendingEdits.values()) if (operation.binding === revoked) operation.cancel();
@@ -196,7 +197,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
           if (response.destroyed) { finish(); return; }
           if (checking) return;
           checking = true;
-          void verifyBinding(readHeartbeatWorkspace).then(() => { if (!response.destroyed) response.write('\n'); }, finish).finally(() => { checking = false; });
+          void verifyBinding(threadId => readHeartbeatWorkspace(threadId, bindingPrefix)).then(() => { if (!response.destroyed) response.write('\n'); }, finish).finally(() => { checking = false; });
         }, 1000);
       };
       if (stopping && request.method !== 'GET') { reject(503, '服务正在退出，不能受理新操作'); return; }
