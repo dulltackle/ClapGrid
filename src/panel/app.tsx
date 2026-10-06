@@ -33,6 +33,10 @@ const theme = themeQuartz.withParams({
   rowHeight: 80,
 });
 
+// 行内控件拥有鼠标事件；普通状态文字仍采用表格原生整行选择。
+const cellControlMouse = ({ event }: { event: Event }) =>
+  event.target instanceof Element && !!event.target.closest('button, input, textarea, select, a, [contenteditable="true"]');
+
 // AG Grid 默认处理 Tab/Enter；单元格内的原生按钮需要自己的键盘路径。
 const cellControlKeyboard: NonNullable<ColDef<Segment>['suppressKeyboardEvent']> = ({ event }) => {
   const target = event.target as HTMLElement;
@@ -159,7 +163,7 @@ export function App() {
         if (params.editing && params.event.key === 'Tab') { params.api.stopEditing(); return true; }
         return !params.editing && (['Enter', 'F2', 'Backspace', 'Delete'].includes(params.event.key) || params.event.key.length === 1);
       } },
-    { headerName: '画面素材', initialWidth: 230, minWidth: 180, suppressKeyboardEvent: cellControlKeyboard, cellRenderer: (params: { data?: Segment }) => {
+    { headerName: '画面素材', initialWidth: 230, minWidth: 180, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: (params: { data?: Segment }) => {
       const segment = params.data;
       if (!segment) return null;
       const asset = status?.snapshot.assets.find(asset => asset.id === segment.video?.assetId);
@@ -171,7 +175,7 @@ export function App() {
         <button aria-label={`查看片段 ${segment.order} 的画面素材详情`} onClick={event => { rememberOrigin(event.currentTarget, 'material'); setVideoDetails(segment.id); }}>详情</button>
       </div>;
     } },
-    { headerName: '配音', initialWidth: 290, minWidth: 290, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: () => true }, cellRenderer: (params: { data?: Segment }) => {
+    { headerName: '配音', initialWidth: 290, minWidth: 290, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: (params: { data?: Segment }) => {
       const segment = params.data; if (!segment) return null;
       const tasks = speech?.tasks.filter(task => task.segmentId === segment.id) ?? [];
       const latest = tasks.at(-1);
@@ -474,10 +478,16 @@ export function App() {
       <h2>视频预览</h2><video key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
       <p>从 {preview.start} 秒开始，预览默认静音。</p><button onClick={() => setPreview(null)}>关闭预览</button>
     </Dialog>}
-    <div className="grid" ref={gridElement}><AgGridProvider modules={[AllCommunityModule]}><AgGridReact
+    <div className="grid" ref={gridElement} onKeyDown={event => {
+      if (event.key !== 'Escape' || event.nativeEvent.isComposing || event.defaultPrevented) return;
+      const target = event.target as HTMLElement;
+      if (target.closest('input:not([type="checkbox"]), textarea, select, [contenteditable="true"], dialog, .ag-popup-editor') || editing.getState().editing) return;
+      event.preventDefault();
+      grid.current?.deselectAll();
+    }}><AgGridProvider modules={[AllCommunityModule]}><AgGridReact
       animateRows={!searchOpen}
       readOnlyEdit stopEditingWhenCellsLoseFocus suppressClickEdit popupParent={document.body}
-      rowSelection={{ mode: 'multiRow', selectAll: 'all', enableClickSelection: false }}
+      rowSelection={{ mode: 'multiRow', selectAll: 'all', enableClickSelection: true }}
       onSelectionChanged={event => synchronizeSelection(event.api.getSelectedRows().map(segment => segment.id))}
       onGridReady={event => { grid.current = event.api; }}
       onModelUpdated={event => {

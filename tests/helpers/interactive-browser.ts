@@ -53,12 +53,20 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
       if (message.error) request?.reject(new Error(JSON.stringify(message.error))); else request?.resolve(message.result);
     } else if (message.method === 'Runtime.bindingCalled') {
       void (async () => {
-        const { id: requestId, key, shift, screenshot } = JSON.parse(message.params.payload);
+        const { id: requestId, key, shift, ctrl, meta, click, screenshot } = JSON.parse(message.params.payload);
         if (screenshot) {
           if (process.env.PANEL_EVIDENCE_DIR) {
             const { data } = await send('Page.captureScreenshot');
             mkdirSync(process.env.PANEL_EVIDENCE_DIR, { recursive: true });
             writeFileSync(join(process.env.PANEL_EVIDENCE_DIR, `${width}-${screenshot}.png`), Buffer.from(data, 'base64'));
+          }
+        } else if (click) {
+          const position = await send('Runtime.evaluate', { expression: `(() => { const node = document.querySelector(${JSON.stringify(click)}); if (!node) throw Error('找不到鼠标目标'); node.scrollIntoView({ block: 'nearest', inline: 'nearest' }); const rect = node.getBoundingClientRect(); return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }; })()`, returnByValue: true });
+          if (position.exceptionDetails) throw Error(JSON.stringify(position.exceptionDetails));
+          const modifiers = (shift ? 8 : 0) | (ctrl ? 2 : 0) | (meta ? 4 : 0);
+          for (let count = 1; count <= (key === 'double' ? 2 : 1); count++) {
+            await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...position.result.value, button: 'left', clickCount: count, modifiers });
+            await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...position.result.value, button: 'left', clickCount: count, modifiers });
           }
         } else {
           const code = { Tab: 9, Escape: 27, Enter: 13, ' ': 32, F2: 113, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, Home: 36, End: 35 }[key as string];
