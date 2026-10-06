@@ -96,16 +96,48 @@ test('真实 MCP 和 HTTP 报告加载身份，覆盖磁盘更新、缺失身份
   const snapshot = projectSnapshot();
   const http = async () => (await (await fetch(`${url}/api/identity`, { headers: { authorization: 'Bearer secret-token', 'x-provider-key': 'secret-key' } })).json());
   const running = await http();
+  // 汇总读取真实公开接口的证据；该受控进程不冒充用户宿主。
+  const evidencePath = join(root, 'host-evidence.json');
+  const installed = join(root, 'installed');
+  cpSync(plugin, installed, { recursive: true });
+  async function summary() {
+    writeFileSync(evidencePath, JSON.stringify({ source: 'controlled-test', observedAt: new Date().toISOString(),
+      status: 'reachable', response: await diagnose() }));
+    return JSON.parse(execFileSync(process.execPath, [join(repository, 'scripts/diagnose-identity.mjs'),
+      '--build', plugin, '--installed', installed, '--mcp-evidence', evidencePath,
+      '--workspace', root, '--service-url', url], { encoding: 'utf8' }));
+  }
+  const matching = await summary();
+  assert.deepEqual([matching.build.status, matching.installed.status, matching.mcp.status, matching.service.status],
+    ['match', 'match', 'match', 'match']);
+  assert.equal(matching.mcp.source, 'controlled-test');
+  assert.equal(matching.mcp.live, false);
+  assert.deepEqual(projectSnapshot(), snapshot);
+
   assert.deepEqual(running.buildIdentity, first);
   assert.equal(JSON.stringify(running).includes('secret-'), false);
   writeFileSync(join(root, 'dist/panel/index.html'), '<html>磁盘更新</html>');
   const second = build(root);
   assert.notEqual(first.contentFingerprint, second.contentFingerprint);
+  assert.equal(first.version, second.version);
+  const oldInstall = await summary();
+  assert.equal(oldInstall.installed.status, 'mismatch');
+  cpSync(plugin, installed, { recursive: true });
+  const outdated = await summary();
+  assert.deepEqual([outdated.installed.status, outdated.mcp.status, outdated.service.status], ['match', 'mismatch', 'mismatch']);
+  assert.equal(outdated.mcp.identity.contentFingerprint, first.contentFingerprint);
+  assert.equal(outdated.mcp.referenceFingerprint, second.contentFingerprint);
+  assert.ok(outdated.nextSteps.some((step: string) => step.includes('重载')));
+  assert.equal(service.exitCode, null);
+
   assert.deepEqual((await diagnose()).buildIdentity, first);
   assert.deepEqual((await http()).buildIdentity, first);
   const next = await mcp();
   assert.deepEqual((await diagnose(next)).buildIdentity, second);
   rmSync(join(plugin, 'build-identity.json'));
+  const missing = await summary();
+  assert.deepEqual([missing.build.status, missing.installed.status, missing.mcp.status, missing.service.status],
+    ['unknown', 'unknown', 'unknown', 'unknown']);
   assert.deepEqual((await diagnose()).buildIdentity, first);
   assert.deepEqual((await http()).buildIdentity, first);
   const entry = join(plugin, 'dist/mcp/main.js');
