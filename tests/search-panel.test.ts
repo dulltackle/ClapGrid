@@ -1,0 +1,124 @@
+import { test } from 'node:test';
+import { chrome } from './helpers/browser.js';
+import { fixture } from './helpers/editing-fixture.js';
+import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
+for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮连续文案（${width}px）`, {
+  skip: chrome ? false : '未执行：需要 Chrome/Chromium', timeout: 40000,
+}, t => checkInteractiveBrowser(t, String.raw`
+  import { act } from 'react';
+  import { createRoot } from 'react-dom/client';
+  import { App } from './src/panel/app.tsx';
+  import { state } from 'editing-fixture';
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const intervals = new Map(); let timer = 0;
+  window.setInterval = callback => { intervals.set(++timer, callback); return timer; };
+  window.clearInterval = id => intervals.delete(id);
+  const check = (value, message) => { if (!value) throw Error(message); };
+  const settle = () => new Promise(resolve => setTimeout(resolve, 100));
+  const action = async callback => { await act(async () => { await callback(); await settle(); }); await settle(); };
+  const button = text => [...document.querySelectorAll('button')].find(node => node.textContent === text);
+  const click = text => action(() => { const node = button(text); check(node && !node.disabled, '入口可用：' + text); node.click(); });
+  const input = () => document.querySelector('[aria-label="查找文案"]');
+  const query = value => action(() => { const node = input(); node.focus(); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(node, value); node.dispatchEvent(new Event('input', { bubbles: true })); });
+  const count = () => document.querySelector('[aria-label="查找口播片段"]').textContent;
+  (async () => {
+    try {
+      state.status.snapshot.segments = [
+        { id: 'a', order: 1, text: 'Hello world / HELLO WORLD', video: null },
+        { id: 'b', order: 2, text: 'hello other world', video: null },
+        { id: 'c', order: 3, text: 'hello world', video: null },
+      ];
+      let root = createRoot(document.getElementById('root'));
+      await action(() => root.render(<App />));
+      check(!document.querySelector('[aria-label="筛选文案"]'), '移除常驻筛选');
+      await click('查找'); await query('hello world');
+      check(count().includes('第 1 / 2 个匹配片段'), '连续匹配且按片段计数');
+      check(document.querySelectorAll('mark').length === 3, '忽略英文大小写并高亮全部命中');
+      check(document.querySelector('[row-id="b"]'), '不匹配片段仍可见');
+      await query('2'); check(count().includes('无匹配片段'), '序号不匹配');
+      await query('hello world');
+      await action(() => document.querySelector('[row-id="b"] input[type="checkbox"]').click());
+      check(input() && JSON.stringify(state.selectionRequests.at(-1)) === '["b"]', '外部可勾选且浮窗保持打开');
+      await click('下一个'); check(count().includes('第 2 / 2'), '跳至下一片段');
+      await click('下一个'); check(count().includes('第 1 / 2'), '循环定位');
+      await click('上一个'); check(count().includes('第 2 / 2'), '反向循环');
+      check(JSON.stringify(state.selectionRequests.at(-1)) === '["b"]', '定位不改变勾选');
+      await click('关闭查找'); check(!input() && !document.querySelector('mark'), '关闭清除高亮');
+      await click('查找'); check(input().value === 'hello world', '重开保留关键词');
+      await action(() => { input().focus(); return window.browserInput({ key: 'Escape' }); });
+      check(!input() && !document.querySelector('mark') && document.activeElement === button('查找'), 'Esc 关闭并恢复查找入口');
+      const poll = () => action(() => [...intervals.values()].forEach(callback => callback()));
+      state.status.snapshot.segments[0].text = '开头\n' + '长文案内容\n'.repeat(70) + 'hello world 末尾';
+      await poll(); await click('查找');
+      const current = () => document.querySelector('.text-search-current');
+      check(current().closest('[row-id]').getAttribute('row-id') === 'a', '重新打开定位第一处');
+      const mark = current().querySelector('mark').getBoundingClientRect();
+      const bounds = current().getBoundingClientRect();
+      check(current().scrollTop > 0 && mark.top >= bounds.top && mark.bottom <= bounds.bottom, '展开长文案并滚动到末尾命中');
+      const popover = document.querySelector('.search-popover').getBoundingClientRect();
+      check(popover.left >= 0 && popover.right <= innerWidth, '窄视口浮窗完整可见');
+      check(mark.top >= popover.bottom, '当前命中不能被查找浮窗遮挡');
+      const cellBounds = current().closest('[role="gridcell"]').getBoundingClientRect();
+      check(mark.top >= cellBounds.top && mark.bottom <= cellBounds.bottom, '命中不能被单元格裁剪：' + JSON.stringify({mark: mark.toJSON(), cell: cellBounds.toJSON(), bounds: bounds.toJSON(), scroll: current().scrollTop}));
+      check(document.elementFromPoint(mark.left + 2, mark.top + 2)?.closest('mark'), '实际绘制的命中可见且不被其他行遮挡：' + JSON.stringify({ mark: mark.toJSON(), cell: cellBounds.toJSON(), bounds: bounds.toJSON(), covering: document.elementFromPoint(mark.left + 2, mark.top + 2)?.outerHTML.slice(0,300) }));
+      await window.browserInput({ screenshot: 'search-long-text' });
+      state.exportFailure = true; await poll();
+      const compactMark = current().querySelector('mark').getBoundingClientRect();
+      const compactGrid = document.querySelector('.grid').getBoundingClientRect();
+      check(compactMark.top >= compactGrid.top + 40 && compactMark.bottom <= compactGrid.bottom - 16 && document.elementFromPoint(compactMark.left + 2, compactMark.top + 2)?.closest('mark'), '底部异常压缩表格后命中仍完整可见');
+      await window.browserInput({ screenshot: 'search-with-error' });
+      state.exportFailure = false; await poll();
+      await click('下一个');
+      check(!document.querySelector('[row-id="a"] .text-search-current'), '离开长文案恢复摘要');
+      await action(() => document.querySelector('[col-id="order"] .ag-header-cell-label').click());
+      await action(() => document.querySelector('[col-id="order"] .ag-header-cell-label').click());
+      check(count().includes('第 1 / 2'), '排序实时更新匹配顺序');
+      await click('下一个'); check(current().closest('[row-id]').getAttribute('row-id') === 'a', '按倒序跳转');
+      await click('下一个'); check(current().closest('[row-id]').getAttribute('row-id') === 'c', '按倒序循环');
+      await action(() => document.querySelector('[row-id="c"] [col-id="text"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true })));
+      const editor = document.querySelector('[aria-label="文案全文"]');
+      check(editor && document.activeElement === editor, '查找打开期间可编辑');
+      const scroll = document.querySelector('.ag-body-vertical-scroll-viewport').scrollTop;
+      await poll(); check(document.activeElement === editor && document.querySelector('.ag-body-vertical-scroll-viewport').scrollTop === scroll, '编辑期间不抢焦点不跳走');
+      await action(() => window.browserInput({ key: 'Escape' }));
+      state.status.snapshot.segments[2].text = '不再匹配'; await poll();
+      check(!current() && count().includes('点击下一个定位'), '当前片段不再匹配时等待用户定位');
+      await click('下一个'); check(current().closest('[row-id]').getAttribute('row-id') === 'a', '失效后显式跳转');
+      await action(() => document.querySelector('[row-id="a"] [col-id="text"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true })));
+      const savingEditor = document.querySelector('[aria-label="文案全文"]');
+      await action(() => { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(savingEditor, '新的文案'); savingEditor.dispatchEvent(new Event('input', { bubbles: true })); });
+      check(document.activeElement === savingEditor, '输入期间保留编辑焦点');
+      await action(() => window.browserInput({ key: 'Enter' }));
+      check(state.segmentRequests.at(-1).change.text === '新的文案' && count().includes('无匹配片段') && !current(), '实际保存文案后匹配实时失效');
+      state.status.snapshot.segments[0].text = 'hello world'; await poll();
+      check(!current(), '更新恢复匹配仍等待定位'); await click('下一个');
+      state.status.snapshot.segments = state.status.snapshot.segments.filter(segment => segment.id !== 'a'); await poll();
+      check(!current() && count().includes('无匹配片段'), '删除后即时刷新无匹配状态');
+      state.status.snapshot.segments[1].text = 'hello world'; await poll();
+      check(!current(), '新增匹配不自动跳走');
+      await click('下一个'); check(current().closest('[row-id]').getAttribute('row-id') === 'c', '结果恢复后用户定位');
+      await click('关闭查找'); check(!current() && !document.querySelector('mark'), '关闭恢复所有摘要');
+      state.status.snapshot.segments = Array.from({ length: 80 }, (_, index) => ({ id: 'far-' + index, order: index + 1, text: index === 79 ? '长文案\n'.repeat(80) + 'far needle' : '普通文案', video: null }));
+      await poll(); await click('查找');
+      await action(() => document.querySelector('[col-id="order"] .ag-header-cell-label').click());
+      await action(() => { document.querySelector('.ag-body-vertical-scroll-viewport').scrollTop = 0; });
+      check(!document.querySelector('[row-id="far-79"]'), '查找前第80个片段在虚拟滚动视口之外：' + document.querySelector('[row-id="far-79"]')?.getAttribute('row-index'));
+      await query('far needle');
+      check(document.querySelector('.text-search-current mark'), '屏幕外命中已渲染：' + count() + ' / ' + document.querySelector('.grid').textContent.slice(0, 100));
+      const farMark = document.querySelector('.text-search-current mark').getBoundingClientRect();
+      const gridBounds = document.querySelector('.grid').getBoundingClientRect();
+      check(farMark.top >= gridBounds.top + 40 && farMark.bottom <= gridBounds.bottom && document.elementFromPoint(farMark.left + 2, farMark.top + 2)?.closest('mark'), '虚拟滚动定位屏幕外长文案的命中：' + JSON.stringify({mark: farMark.toJSON(), grid: gridBounds.toJSON(), covering: document.elementFromPoint(farMark.left + 2, farMark.top + 2)?.outerHTML.slice(0,200)}));
+      await query('hello world');
+      const secondPanel = document.createElement('div'); document.body.append(secondPanel);
+      const secondRoot = createRoot(secondPanel); await action(() => secondRoot.render(<App />));
+      await action(() => [...secondPanel.querySelectorAll('button')].find(node => node.textContent === '查找').click());
+      check(secondPanel.querySelector('[aria-label="查找文案"]').value === '' && input().value === 'hello world', '不同面板查找关键词独立');
+      await action(() => secondRoot.unmount()); secondPanel.remove();
+      await action(() => root.unmount());
+      root = createRoot(document.getElementById('root')); await action(() => root.render(<App />));
+      await click('查找'); check(input().value === '' && !document.querySelector('mark'), '刷新重建后清空关键词与高亮');
+      document.getElementById('result').dataset.state = 'passed';
+    } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; }
+  })();
+`, fixture, width, width === 420 ? 720 : 1000));

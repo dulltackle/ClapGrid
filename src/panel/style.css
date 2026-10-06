@@ -105,3 +105,15 @@ header { flex-wrap: wrap; }
 .lock-status { min-height: 18px; }
 
 .speech-state .speech-warning { color: var(--color-error); }
+
+.organization { position: relative; }
+.search-trigger { margin-left: auto; }
+.search-popover { position: absolute; z-index: 5; top: calc(100% + 8px); right: 0; width: min(340px, 100%); padding: 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-panel); box-shadow: 0 4px 16px #0002; display: grid; gap: 8px; }
+.search-popover label { display: grid; gap: 4px; }
+.search-popover input { min-width: 0; width: 100%; }
+.search-popover [role="status"] { font-size: 12px; color: var(--color-ink-secondary); }
+.text-summary mark { background: #fff0a6; color: inherit; }
+.text-search-current { display: block; max-height: 220px; overflow-y: auto; width: 100%; position: relative; -webkit-line-clamp: unset; }
+.text-search-current mark { background: #ffd35c; }
+/* 为浮窗留出阅读空间，避免窄面板里遮住当前命中。 */
+.organization:has(.search-popover) { margin-bottom: 164px; }

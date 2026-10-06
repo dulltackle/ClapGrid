@@ -27,9 +27,10 @@ for (const width of [1600, 420]) test(`主视图全片导出与取消错误跨�
       state.status.snapshot.segments.push({ id: 'second', order: 2, text: '隐藏片段', video: null });
       await act(async () => { createRoot(document.getElementById('root')).render(<App />); await settle(); }); await settle();
       await act(async () => { document.querySelector('[row-id="segment"] input[type="checkbox"]').click(); });
-      const filter = document.querySelector('[aria-label="筛选文案"]');
+      await click('查找');
+      const filter = document.querySelector('[aria-label="查找文案"]');
       await act(async () => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(filter, '原文'); filter.dispatchEvent(new Event('input', { bubbles: true })); });
-      check(document.getElementById('export-scope').textContent.includes('筛选与勾选不改变范围'), '全项目导出范围明确');
+      check(document.getElementById('export-scope').textContent.includes('查找与勾选不改变范围'), '全项目导出范围明确');
       state.submitFailure = true; await click('导出全片');
       check(alerts().includes('Codex 正在修改'), '提交失败在状态栏可见');
       filter.focus(); await poll(); check(document.activeElement === filter && !document.querySelector('dialog'), '错误及任务更新不自动弹层或抢焦点');
@@ -41,7 +42,7 @@ for (const width of [1600, 420]) test(`主视图全片导出与取消错误跨�
       check(alerts().includes('Codex 正在修改'), '关闭与重开任务详情不清除操作错误');
       state.submitFailure = false; await click('导出全片');
       check(!alerts(), '再次成功操作清除旧错误');
-      check(state.exportRequests.length === 2 && state.exportRequests.every(args => args.length === 1), '提交始终只传项目服务地址，不传勾选或筛选范围');
+      check(state.exportRequests.length === 2 && state.exportRequests.every(args => args.length === 1), '提交始终只传项目服务地址，不传勾选或查找范围');
       state.exports = { locked: true, tasks: [{ id: 'export-1', state: 'rendering', completed: 1, total: 2, createdAt: '2026-10-03T00:00:00Z', message: '正在导出全片', issues: [], warnings: [] }] };
       state.status.taskLocked = true; await poll();
       check(button('导出全片').disabled && button('新增口播片段').disabled && document.querySelector('footer').textContent.includes('项目已锁定'), '项目锁定与重复请求保护保持');
@@ -63,7 +64,7 @@ for (const width of [1600, 420]) test(`主视图全片导出与取消错误跨�
       state.speech = { locked: true, configured: true, configPath: '/tmp/config', voice: { speaker: 'zh_female_vv_uranus_bigtts', speechRate: 0 }, audio: [], tasks: [{ id: 'speech-1', requestId: 'request-1', segmentId: 'second', state: 'unknown', message: '结果未知，可能已计费' }], operations: [{ id: 'batch-1', request: { requestId: 'batch-request' }, summary: { completed: 1, succeeded: 0, failed: 0, interrupted: 1, pending: 1, skipped: 0, rejected: 0 }, results: [] }] };
       state.exports.tasks[0] = { ...state.exports.tasks[0], state: 'failed', message: '导出失败', output: null };
       filter.focus(); await poll();
-      check(alerts().includes('结果未知，可能已计费') && alerts().includes('导出失败') && document.activeElement === filter, '筛选隐藏片段的异常依然可见且不抢焦点');
+      check(alerts().includes('结果未知，可能已计费') && alerts().includes('导出失败') && document.activeElement === filter, '未匹配片段的异常依然可见且不抢焦点');
       check(document.querySelector('footer').textContent.includes('待完成 1'), '批量配音进度常驻摘要');
       await shot('persistent-error');
       await click('更多'); check(button('导入本地视频').disabled && button('粘贴多行文案').disabled, '迁移入口沿用禁用条件'); await click('任务记录');

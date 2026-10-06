@@ -10,6 +10,7 @@ import { AgGridProvider, AgGridReact } from 'ag-grid-react';
 import { queryStatus, querySpeech, submitSpeech, setVoice, importVideo, saveSegment, beginEdit, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
 import type { Segment, ServiceStatus, SpeechStatus, Voice, Batch } from '../shared/contracts.js';
 import { projectEditing } from './project-editing.js';
+import { SearchText, textMatches } from './text-search.js';
 import { TextEditor } from './text-editor.js';
 import './style.css';
 
@@ -45,6 +46,10 @@ const cellControlKeyboard: NonNullable<ColDef<Segment>['suppressKeyboardEvent']>
   event.preventDefault(); buttons[next]!.focus(); return true;
 };
 
+function SearchCell({ value, data, query, activeId, visit, rowHeight }: { value?: string; data?: Segment; query: string; activeId: string | null; visit: number; rowHeight: number }) {
+  return <SearchText text={value ?? ''} query={query} current={data?.id === activeId} visit={visit} rowHeight={rowHeight} />;
+}
+
 function EmptyProject({ message }: { message: string }) { return <span>{message}</span>; }
 
 export function App() {
@@ -64,7 +69,13 @@ export function App() {
   const [importing, setImporting] = useState(false);
   const [sourcePath, setSourcePath] = useState('');
   const [preview, setPreview] = useState<{ assetId: string; start: number } | null>(null);
-  const [filter, setFilter] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [currentMatch, setCurrentMatch] = useState<string | null>(null);
+  const [visit, setVisit] = useState(0);
+  const [displayOrder, setDisplayOrder] = useState<string[]>([]);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchAnchor = useRef(0);
   const [paste, setPaste] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectionState, setSelectionState] = useState('正在连接勾选…');
@@ -74,7 +85,48 @@ export function App() {
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'failed'>('saved');
   const [saveError, setSaveError] = useState('');
   const grid = useRef<GridApi<Segment> | null>(null);
-  const tableFallback = useRef<HTMLInputElement>(null);
+  const tableFallback = useRef<HTMLButtonElement>(null);
+  const gridElement = useRef<HTMLDivElement>(null);
+  const [searchRowHeight, setSearchRowHeight] = useState(240);
+  const matchingIds = new Set(status?.snapshot.segments.filter(segment => textMatches(segment.text, query).length > 0).map(segment => segment.id));
+  const matchedIds = displayOrder.filter(id => matchingIds.has(id));
+  const activeMatch = searchOpen && currentMatch && matchedIds.includes(currentMatch) ? currentMatch : null;
+  const searchLayout = useRef({ activeMatch, rowHeight: searchRowHeight });
+  searchLayout.current = { activeMatch, rowHeight: searchRowHeight };
+  const closeSearch = () => { setSearchOpen(false); setCurrentMatch(null); tableFallback.current?.focus(); };
+  const locate = (needle: string, direction: -1 | 1, restart = false) => {
+    const api = grid.current;
+    if (!api || api.getEditingCells().length) return;
+    const rows: { id: string; index: number }[] = [];
+    api.forEachNodeAfterFilterAndSort(node => {
+      if (node.data && node.rowIndex != null && textMatches(node.data.text, needle).length) rows.push({ id: node.data.id, index: node.rowIndex });
+    });
+    const current = rows.findIndex(row => row.id === currentMatch);
+    const anchor = currentMatch ? api.getRowNode(currentMatch)?.rowIndex ?? searchAnchor.current : searchAnchor.current;
+    const target = restart ? rows[0] : current >= 0 ? rows[(current + direction + rows.length) % rows.length]
+      : direction === 1 ? rows.find(row => row.index >= anchor) ?? rows[0] : [...rows].reverse().find(row => row.index < anchor) ?? rows.at(-1);
+    setCurrentMatch(target?.id ?? null); setVisit(value => value + 1);
+    if (target) {
+      searchAnchor.current = target.index;
+      requestAnimationFrame(() => {
+        if (api.isDestroyed() || api.getEditingCells().length) return;
+        const node = api.getRowNode(target.id);
+        if (node?.rowIndex != null) { api.ensureColumnVisible('text'); api.ensureIndexVisible(node.rowIndex, 'middle'); }
+      });
+    }
+  };
+  useEffect(() => { if (searchOpen) searchInput.current?.focus(); }, [searchOpen]);
+  useEffect(() => {
+    // 失效命中只清除当前标记；定位只由用户输入或跳转触发。
+    if (currentMatch && !matchedIds.includes(currentMatch)) setCurrentMatch(null);
+  }, [currentMatch, matchedIds.join('\0')]);
+  useEffect(() => {
+    const element = gridElement.current;
+    if (!element) return;
+    const observer = new ResizeObserver(() => setSearchRowHeight(Math.max(44, Math.min(240, element.clientHeight - 56))));
+    observer.observe(element); return () => observer.disconnect();
+  }, []);
+  useEffect(() => { grid.current?.resetRowHeights(); }, [activeMatch, searchRowHeight]);
   const returnFocus = useRef({ settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, material: () => {}, detail: () => {} });
   const rememberOrigin = (trigger: HTMLElement, detail: keyof typeof returnFocus.current) => {
     returnFocus.current[detail] = dialogReturnFocus(trigger, () => grid.current, () => tableFallback.current);
@@ -100,7 +152,8 @@ export function App() {
   const columns: ColDef<Segment>[] = [
     { headerName: '序号', field: 'order', width: 80, sortable: true },
     { headerName: '文案', field: 'text', sortable: true, flex: 1, minWidth: 200, editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
-      cellClass: 'text-cell', cellRenderer: (params: { value?: string }) => <span className="text-summary">{params.value}</span>,
+      cellClass: 'text-cell', cellRenderer: SearchCell,
+      cellRendererParams: { query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: searchRowHeight },
       cellEditor: TextEditor, cellEditorPopup: true,
       suppressKeyboardEvent: params => {
         if (params.editing && params.event.key === 'Tab') { params.api.stopEditing(); return true; }
@@ -273,7 +326,7 @@ export function App() {
         <button ref={moreButton} aria-haspopup="dialog" onClick={event => openDetail('more', event.currentTarget)}>更多</button>
       </div>
     </header>
-    <p id="export-scope" className="export-scope">全片导出：筛选与勾选不改变范围</p>
+    <p id="export-scope" className="export-scope">全片导出：查找与勾选不改变范围</p>
     {detail === 'more' && <Dialog label="更多操作" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
       <h2>更多操作</h2>
       <div className="more-actions">
@@ -357,9 +410,9 @@ export function App() {
     </Dialog>}
     <section className="organization" aria-label="组织口播片段">
       <div className="toolbar">
-        <label>筛选文案 <input ref={tableFallback} aria-label="筛选文案" value={filter} onChange={event => setFilter(event.target.value)} /></label>
+
         {selectedIds.length > 0 && <>
-          <span>已勾选 {selectedIds.length} 个片段（含筛选隐藏项）</span>
+          <span>已勾选 {selectedIds.length} 个片段</span>
           <button disabled={disabled || !selectedIds.length} onClick={() => {
             const targets = status!.snapshot.segments.filter(segment => selectedIds.includes(segment.id));
             void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) });
@@ -367,7 +420,19 @@ export function App() {
           <button disabled={disabled || selectedIds.length !== 1 || selectedPosition <= 0} onClick={() => move(-1)}>项目顺序上移</button>
           <button disabled={disabled || selectedIds.length !== 1 || selectedPosition < 0 || selectedPosition >= (status?.snapshot.segments.length ?? 0) - 1} onClick={() => move(1)}>项目顺序下移</button>
         </>}
+        <button className="search-trigger" ref={tableFallback} aria-expanded={searchOpen} aria-controls="segment-search" onClick={() => { setSearchOpen(true); locate(query, 1, true); }}>查找</button>
       </div>
+      {searchOpen && <section id="segment-search" className="search-popover" role="dialog" aria-modal="false" aria-label="查找口播片段">
+        <label>查找文案 <input ref={searchInput} aria-label="查找文案" value={query}
+          onChange={event => { setQuery(event.target.value); locate(event.target.value, 1, true); }}
+          onKeyDown={event => { if (event.nativeEvent.isComposing) return; if (event.key === 'Escape') { event.preventDefault(); closeSearch(); } else if (event.key === 'Enter') { event.preventDefault(); locate(query, event.shiftKey ? -1 : 1); } }} /></label>
+        <span role="status">{!query ? '输入文案查找' : !matchedIds.length ? '无匹配片段' : activeMatch ? `第 ${matchedIds.indexOf(activeMatch) + 1} / ${matchedIds.length} 个匹配片段` : `${matchedIds.length} 个匹配片段，点击下一个定位`}</span>
+        <div className="toolbar">
+          <button disabled={!matchedIds.length} onClick={() => locate(query, -1)}>上一个</button>
+          <button disabled={!matchedIds.length} onClick={() => locate(query, 1)}>下一个</button>
+          <button onClick={closeSearch}>关闭查找</button>
+        </div>
+      </section>}
     </section>
     {videoDetails && <Dialog label="画面素材详情" onClose={() => setVideoDetails(null)} restoreFocus={returnFocus.current.material}>
       <h2>画面素材详情</h2>
@@ -405,12 +470,18 @@ export function App() {
       <h2>视频预览</h2><video key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
       <p>从 {preview.start} 秒开始，预览默认静音。</p><button onClick={() => setPreview(null)}>关闭预览</button>
     </Dialog>}
-    <div className="grid"><AgGridProvider modules={[AllCommunityModule]}><AgGridReact
+    <div className="grid" ref={gridElement}><AgGridProvider modules={[AllCommunityModule]}><AgGridReact
+      animateRows={!searchOpen}
       readOnlyEdit stopEditingWhenCellsLoseFocus suppressClickEdit popupParent={document.body}
-      rowSelection={{ mode: 'multiRow', selectAll: 'filtered', enableClickSelection: false }}
-      quickFilterText={filter}
+      rowSelection={{ mode: 'multiRow', selectAll: 'all', enableClickSelection: false }}
       onSelectionChanged={event => synchronizeSelection(event.api.getSelectedRows().map(segment => segment.id))}
       onGridReady={event => { grid.current = event.api; }}
+      onModelUpdated={event => {
+        const ids: string[] = []; event.api.forEachNodeAfterFilterAndSort(node => { if (node.data) ids.push(node.data.id); });
+        setDisplayOrder(previous => previous.join('\0') === ids.join('\0') ? previous : ids);
+        if (currentMatch) { const index = event.api.getRowNode(currentMatch)?.rowIndex; if (index != null) searchAnchor.current = index; }
+      }}
+      getRowHeight={params => params.data?.id === searchLayout.current.activeMatch ? searchLayout.current.rowHeight : 80}
       onCellDoubleClicked={event => { if (event.colDef.field === 'text' && event.data) void startEdit(event.data.id); }}
       onCellKeyDown={event => {
         const key = (event.event as KeyboardEvent).key;

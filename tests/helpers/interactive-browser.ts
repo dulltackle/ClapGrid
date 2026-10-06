@@ -10,7 +10,7 @@ import { build } from 'esbuild';
 import { chrome } from './browser.js';
 
 /** 真实浏览器按键用于原生焦点导航；业务替身仍只位于 HTTP 客户端边界。 */
-export async function checkInteractiveBrowser(t: TestContext, script: string, fixture: string, width = 1600) {
+export async function checkInteractiveBrowser(t: TestContext, script: string, fixture: string, width = 1600, height = 1000) {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-dialog-'));
   await build({
     stdin: { resolveDir: fileURLToPath(new URL('../..', import.meta.url)), loader: 'tsx', contents: script },
@@ -70,7 +70,7 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
     }
   });
   await send('Runtime.enable'); await send('Page.enable');
-  await send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false });
+  await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
   await send('Runtime.addBinding', { name: '__browserInput' });
   await send('Page.addScriptToEvaluateOnNewDocument', { source: `
     const pendingInput = new Map(); let nextInput = 0;
