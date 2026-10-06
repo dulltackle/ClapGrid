@@ -70,7 +70,7 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
           }
         } else {
           const code = { Tab: 9, Escape: 27, Enter: 13, ' ': 32, F2: 113, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, Home: 36, End: 35 }[key as string];
-          await send('Input.dispatchKeyEvent', { type: 'keyDown', key, text: key === 'Enter' ? '\r' : key === ' ' ? ' ' : undefined, code: key === ' ' ? 'Space' : key, windowsVirtualKeyCode: code, modifiers: shift ? 8 : 0 });
+          await send('Input.dispatchKeyEvent', { type: 'keyDown', key, text: key === 'Enter' ? '\r' : key?.length === 1 ? key : undefined, code: key === ' ' ? 'Space' : key, windowsVirtualKeyCode: code, modifiers: shift ? 8 : 0 });
           await send('Input.dispatchKeyEvent', { type: 'keyUp', key, code: key === ' ' ? 'Space' : key, windowsVirtualKeyCode: code, modifiers: shift ? 8 : 0 });
         }
         await send('Runtime.evaluate', { expression: `window.__inputDone(${requestId})` });

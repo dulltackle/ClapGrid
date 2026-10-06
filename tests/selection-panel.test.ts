@@ -16,10 +16,10 @@ const script = String.raw`
   const settle = () => new Promise(resolve => setTimeout(resolve, 80));
   const action = async callback => { await act(async () => { await callback(); await settle(); }); await new Promise(resolve => setTimeout(resolve, 200)); };
   const button = text => [...document.querySelectorAll('button')].find(node => (node.getAttribute('aria-label') ?? node.textContent) === text);
-  const click = text => action(() => { const node = button(text); check(node && !node.disabled, '入口可用：' + text); node.click(); });
-  const select = id => action(() => { const node = document.querySelector('[row-id="' + id + '"] input[type="checkbox"]'); check(node, '可见片段：' + id); node.click(); });
+  const click = async text => { if (['项目顺序上移', '项目顺序下移'].includes(text) && !button(text)) await action(() => window.browserInput({ click: '[aria-haspopup="menu"]' })); return action(() => { const node = button(text); check(node && !node.disabled, '入口可用：' + text); if (node.getAttribute('role') === 'menuitem') return window.browserInput({ click: '[role="menuitem"][aria-label="' + text + '"]' }); node.click(); }); };
+  const select = async id => { await action(() => { const node = document.querySelector('[row-id="' + id + '"] input[type="checkbox"]'); check(node, '可见片段：' + id); node.click(); }); const trigger = document.querySelector('[aria-haspopup="menu"]'); if (trigger && trigger.getAttribute('aria-expanded') === 'false') await action(() => window.browserInput({ click: '[aria-haspopup="menu"]' })); };
   const filter = value => action(() => { const node = document.querySelector('[aria-label="查找文案"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(node, value); node.dispatchEvent(new Event('input', { bubbles: true })); });
-  const scope = () => (document.querySelector('[aria-label="组织口播片段"]')?.textContent ?? '');
+  const scope = () => (document.querySelector('[aria-label="组织口播片段"]')?.textContent ?? '').replace(/已选 (\d+) 项/, '已勾选 $1 个片段');
   const hidden = () => check(!button('删除勾选') && !button('项目顺序上移') && !button('项目顺序下移') && !scope().includes('已勾选'), '无勾选时收起数量及批量操作');
   (async () => {
     try {
@@ -67,7 +67,8 @@ const script = String.raw`
       check(JSON.stringify(geometry()) === initialGeometry, '取消恢复工具栏且表格不跳动');
       await click('查找'); check(document.querySelector('[aria-label="查找文案"]'), '查找入口可用');
       await window.browserInput({ screenshot: 'unselected' });
-      await select('a'); check(scope().includes('已勾选 1 个片段'), '勾选后显示数量');
+      await select('a'); check(button('已选 1 项'), '查找同一行提供选择菜单入口');
+      check(JSON.stringify(geometry()) === initialGeometry, '查找单选不改变表格几何尺寸');
       await select('a'); hidden();
       await select('a'); await select('b');
       check(!button('项目顺序上移') && !button('项目顺序下移'), '多选不允许移动');
@@ -90,10 +91,11 @@ const script = String.raw`
       ];
       const poll = () => action(() => [...intervals.values()].forEach(callback => callback()));
       await poll();
+      await click('关闭查找');
       await select('b');
       await action(() => document.querySelector('[row-id="b"] [col-id="text"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true })));
       check(document.querySelector('[aria-label="文案全文"]') && button('删除勾选').disabled && button('项目顺序上移').disabled && button('项目顺序下移').disabled, '真实文案编辑期间禁止批量操作');
-      await action(() => window.browserInput({ key: 'Escape' })); await poll(); await select('b');
+      await action(() => window.browserInput({ key: 'Escape' })); await poll(); await select('b'); await click('查找');
       await select('a'); check(button('项目顺序上移').disabled && !button('项目顺序下移').disabled, '首段不能上移'); await select('a');
       await select('c'); check(!button('项目顺序上移').disabled && button('项目顺序下移').disabled, '末段不能下移'); await select('c');
       await action(() => document.querySelector('[col-id="order"] .ag-header-cell-label').click());
@@ -102,6 +104,7 @@ const script = String.raw`
       await select('b'); await filter('第二段');
       check(document.querySelector('[row-id="b"] [col-id="order"]').textContent.trim() === '2', '查找及排序不重编号');
       await click('项目顺序上移'); await poll();
+      await action(() => window.browserInput({ click: '[aria-haspopup="menu"]' }));
       check(JSON.stringify(state.batchRequests.at(-1).changes[0]) === JSON.stringify({ kind: 'reorder', expectedIds: ['a','b','c'], ids: ['b','a','c'] }), '上移按实际项目顺序请求');
       check(button('项目顺序上移').disabled && !button('项目顺序下移').disabled, '移动到项目首段后更新边界');
       await click('项目顺序下移'); await poll();
@@ -109,6 +112,7 @@ const script = String.raw`
       await filter('第一段'); check(scope().includes('已勾选 1 个片段'), '查找其他片段仍保留勾选');
       await click('项目顺序下移'); await poll();
       check(JSON.stringify(state.batchRequests.at(-1).changes[0].ids) === '["a","c","b"]', '查找后的单选仍按实际项目顺序移动');
+      await action(() => window.browserInput({ click: '[aria-haspopup="menu"]' }));
       for (const lock of ['taskLocked', 'modification']) {
         state.status[lock] = lock === 'taskLocked' ? true : { owner: 'codex' }; await poll();
         check(button('删除勾选').disabled && button('项目顺序上移').disabled && button('项目顺序下移').disabled, '锁定保留禁用：' + lock);

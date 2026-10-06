@@ -82,6 +82,11 @@ export function App() {
   const searchAnchor = useRef(0);
   const [paste, setPaste] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectionMenuOpen, setSelectionMenuOpen] = useState(false);
+  const selectionTrigger = useRef<HTMLButtonElement>(null);
+  const selectionMenu = useRef<HTMLDivElement>(null);
+  const selectionOwnsFocus = useRef(false);
+  const selectionFocusedItem = useRef<HTMLElement | null>(null);
   const [selectionState, setSelectionState] = useState('正在连接勾选…');
   const [connectionVersion, setConnectionVersion] = useState(0);
   const table = useRef<TableSession | null>(null);
@@ -97,7 +102,7 @@ export function App() {
   const activeMatch = searchOpen && currentMatch && matchedIds.includes(currentMatch) ? currentMatch : null;
   const searchLayout = useRef({ activeMatch, rowHeight: searchRowHeight });
   searchLayout.current = { activeMatch, rowHeight: searchRowHeight };
-  const closeSearch = () => { setSearchOpen(false); setCurrentMatch(null); requestAnimationFrame(() => (selectedIds.length ? moreButton.current : tableFallback.current)?.focus()); };
+  const closeSearch = () => { setSearchOpen(false); setSelectionMenuOpen(false); setCurrentMatch(null); requestAnimationFrame(() => (selectedIds.length ? moreButton.current : tableFallback.current)?.focus()); };
   const locate = (needle: string, direction: -1 | 1, restart = false) => {
     const api = grid.current;
     if (!api || api.getEditingCells().length) return;
@@ -131,9 +136,20 @@ export function App() {
     observer.observe(element); return () => observer.disconnect();
   }, []);
   useEffect(() => { grid.current?.resetRowHeights(); }, [activeMatch, searchRowHeight]);
+  const restoreSelectionFocus = () => requestAnimationFrame(() => (selectionTrigger.current ?? searchInput.current ?? moreButton.current)?.focus());
+  const closeSelectionMenu = () => { setSelectionMenuOpen(false); restoreSelectionFocus(); };
+  useEffect(() => {
+    if (!selectedIds.length) {
+      setSelectionMenuOpen(false);
+      if (selectionOwnsFocus.current) { selectionOwnsFocus.current = false; restoreSelectionFocus(); }
+    }
+  }, [selectedIds.length]);
+  useEffect(() => {
+    if (selectionMenuOpen) selectionMenu.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+  }, [selectionMenuOpen]);
   const returnFocus = useRef({ settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, material: () => {}, detail: () => {} });
   const rememberOrigin = (trigger: HTMLElement, detail: keyof typeof returnFocus.current) => {
-    returnFocus.current[detail] = dialogReturnFocus(trigger, () => grid.current, () => searchInput.current ?? tableFallback.current);
+    returnFocus.current[detail] = dialogReturnFocus(trigger, () => grid.current, () => searchInput.current ?? (tableFallback.current?.hidden ? moreButton.current : tableFallback.current));
   };
   const openDetail = (next: typeof detail, trigger: HTMLElement) => { rememberOrigin(trigger, 'detail'); setDetail(next); };
   const failed = (cause: Error) => { setSaveState('failed'); setSaveError(cause.message); };
@@ -315,6 +331,12 @@ export function App() {
   }, [editing]);
   const disabled = !status || !speech || speech.locked || status.taskLocked || editState.busy || editState.editing || !!status.modification;
   const selectedPosition = status?.snapshot.segments.findIndex(segment => segment.id === selectedIds[0]) ?? -1;
+  useEffect(() => {
+    const previous = selectionFocusedItem.current;
+    if (selectionMenuOpen && selectionOwnsFocus.current && previous && (!previous.isConnected || previous.matches(':disabled'))) {
+      selectionMenu.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+    }
+  }, [selectionMenuOpen, disabled, selectedPosition, selectedIds.length]);
   const currentListening = speech?.audio.find(audio => audio.taskId === listening?.taskId && audio.segmentId === listening?.segmentId);
   const speechTask = speech?.tasks.at(-1);
   const speechProblems = speech?.tasks.filter(task => task.state === 'failed' || task.state === 'unknown') ?? [];
@@ -322,35 +344,56 @@ export function App() {
   const exportTask = exports.exports?.tasks.at(-1);
   const exportProblems = exports.exports?.tasks.filter(task => task.state === 'failed' || task.state === 'interrupted') ?? [];
   const lock = speech?.locked ? '配音进行中，项目已锁定；可查询和试听' : status?.taskLocked || exports.exports?.locked ? '导出进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : '';
-  const selectionActions = selectedIds.length > 0 && <section className="organization" aria-label="组织口播片段">
-      <div className="toolbar">
-          <button onClick={() => { grid.current?.deselectAll(); requestAnimationFrame(() => moreButton.current?.focus()); }}>取消选择</button>
-          <span>已勾选 {selectedIds.length} 个片段</span>
-          <button disabled={disabled || !selectedIds.length} onClick={() => {
-            const targets = status!.snapshot.segments.filter(segment => selectedIds.includes(segment.id));
-            void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) });
-          }}>删除勾选</button>
-          {selectedIds.length === 1 && <>
-          <button disabled={disabled || selectedPosition <= 0} onClick={() => move(-1)} aria-label="项目顺序上移" title="项目顺序上移">↑</button>
-          <button disabled={disabled || selectedIds.length !== 1 || selectedPosition < 0 || selectedPosition >= (status?.snapshot.segments.length ?? 0) - 1} onClick={() => move(1)} aria-label="项目顺序下移" title="项目顺序下移">↓</button>
-          </>}
-      </div>
-    </section>;
+  const searchStatus = !query ? '输入文案查找' : !matchedIds.length ? '无匹配片段' : activeMatch ? `第 ${matchedIds.indexOf(activeMatch) + 1} / ${matchedIds.length} 个匹配片段` : `${matchedIds.length} 个匹配片段，点击下一个定位`;
+  const compactSearchStatus = !query ? '查找' : !matchedIds.length ? '无匹配' : activeMatch ? `${matchedIds.indexOf(activeMatch) + 1}/${matchedIds.length}` : `${matchedIds.length}项`;
+  const selectionButtons = <>
+    <button role={searchOpen ? 'menuitem' : undefined} tabIndex={searchOpen ? -1 : undefined} aria-label="取消选择" onClick={() => { grid.current?.deselectAll(); restoreSelectionFocus(); }}>{searchOpen ? '取消' : '取消选择'}</button>
+    {!searchOpen && <span>已勾选 {selectedIds.length} 个片段</span>}
+    <button role={searchOpen ? 'menuitem' : undefined} tabIndex={searchOpen ? -1 : undefined} aria-label="删除勾选" disabled={disabled || !selectedIds.length} onClick={() => {
+      const targets = status!.snapshot.segments.filter(segment => selectedIds.includes(segment.id));
+      void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) });
+    }}>{searchOpen ? '删除' : '删除勾选'}</button>
+    {selectedIds.length === 1 && <>
+      <button role={searchOpen ? 'menuitem' : undefined} tabIndex={searchOpen ? -1 : undefined} disabled={disabled || selectedPosition <= 0} onClick={() => { if (searchOpen) closeSelectionMenu(); move(-1); }} aria-label="项目顺序上移" title="项目顺序上移">↑</button>
+      <button role={searchOpen ? 'menuitem' : undefined} tabIndex={searchOpen ? -1 : undefined} disabled={disabled || selectedPosition < 0 || selectedPosition >= (status?.snapshot.segments.length ?? 0) - 1} onClick={() => { if (searchOpen) closeSelectionMenu(); move(1); }} aria-label="项目顺序下移" title="项目顺序下移">↓</button>
+    </>}
+  </>;
+  const selectionActions = selectedIds.length > 0 && <section className="organization" aria-label="组织口播片段"
+    onFocusCapture={event => { selectionOwnsFocus.current = true; selectionFocusedItem.current = event.target as HTMLElement; }}
+    onBlurCapture={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) { selectionOwnsFocus.current = false; setSelectionMenuOpen(false); } }}>
+    {searchOpen ? <div className="toolbar selection-menu-row">
+      <button ref={selectionTrigger} aria-haspopup="menu" aria-expanded={selectionMenuOpen} aria-controls="selection-menu"
+        onKeyDown={event => { if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setSelectionMenuOpen(true); } else if (event.key === 'Escape' && selectionMenuOpen) { event.preventDefault(); event.stopPropagation(); closeSelectionMenu(); } }}
+        onClick={() => { if (selectionMenuOpen) closeSelectionMenu(); else setSelectionMenuOpen(true); }}>已选 {selectedIds.length} 项</button>
+      {selectionMenuOpen && <div id="selection-menu" className="toolbar" role="menu" aria-label="选择操作" ref={selectionMenu}
+        onKeyDown={event => {
+          if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeSelectionMenu(); return; }
+          if (event.key === 'Tab') { event.preventDefault(); setSelectionMenuOpen(false); (event.shiftKey ? searchInput.current : moreButton.current)?.focus(); return; }
+          const keys = ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
+          if (!keys.includes(event.key)) return;
+          event.preventDefault();
+          const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
+          const index = items.indexOf(document.activeElement as HTMLButtonElement);
+          const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 1) + items.length) % items.length;
+          items[next]?.focus();
+        }}>{selectionButtons}</div>}
+    </div> : <div className="toolbar">{selectionButtons}</div>}
+  </section>;
   return <main>
-    <header className={searchOpen ? 'searching' : ''}>
+    <header className={searchOpen ? `searching${selectionMenuOpen ? ' selection-menu-open' : ''}${selectedIds.length ? ' has-selection' : ''}` : ''}>
       <h1 hidden={searchOpen || selectedIds.length > 0}>口播片段</h1>
       {searchOpen && <section id="segment-search" className="search-popover" role="dialog" aria-modal="false" aria-label="查找口播片段">
         <label><input ref={searchInput} aria-label="查找文案" placeholder="查找文案" value={query}
           onChange={event => { setQuery(event.target.value); locate(event.target.value, 1, true); }}
           onKeyDown={event => { if (event.nativeEvent.isComposing) return; if (event.key === 'Escape') { event.preventDefault(); closeSearch(); } else if (event.key === 'Enter') { event.preventDefault(); locate(query, event.shiftKey ? -1 : 1); } }} /></label>
-        <span role="status">{!query ? '输入文案查找' : !matchedIds.length ? '无匹配片段' : activeMatch ? `第 ${matchedIds.indexOf(activeMatch) + 1} / ${matchedIds.length} 个匹配片段` : `${matchedIds.length} 个匹配片段，点击下一个定位`}</span>
-        <div className="toolbar">
+        <span role="status" hidden={selectionMenuOpen} aria-label={searchStatus} title={searchStatus}>{selectedIds.length ? compactSearchStatus : searchStatus}</span>
+        <div className="toolbar" hidden={selectionMenuOpen}>
           <button disabled={!matchedIds.length} onClick={() => locate(query, -1)}>上一个</button>
           <button disabled={!matchedIds.length} onClick={() => locate(query, 1)}>下一个</button>
           <button onClick={closeSearch}>关闭查找</button>
         </div>
       </section>}
-      {!searchOpen && selectionActions}
+      {selectionActions}
       <div className="toolbar primary-actions">
         <button hidden={searchOpen || selectedIds.length > 0} disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
         <button hidden={searchOpen || selectedIds.length > 0} className="search-trigger" ref={tableFallback} aria-expanded={searchOpen} aria-controls="segment-search" onClick={() => { setSearchOpen(true); locate(query, 1, true); }}>查找</button>
@@ -447,7 +490,6 @@ export function App() {
       <h2>配音试听</h2><p>{!currentListening ? '配音状态无法确认：此音频已不在当前保留音频列表中。' : currentListening.valid ? '有效配音' : '配音待更新：此音频与当前文案或声音设置不一致。'}</p><audio controls autoPlay src={listening.url} onError={() => { setSaveState('failed'); setSaveError('音频不可读取，请检查项目文件'); }} />
       <button onClick={() => setListening(null)}>关闭试听</button>
     </Dialog>}
-    {searchOpen && selectionActions}
     {videoDetails && <Dialog label="画面素材详情" onClose={() => setVideoDetails(null)} restoreFocus={returnFocus.current.material}>
       <h2>画面素材详情</h2>
       {(() => {

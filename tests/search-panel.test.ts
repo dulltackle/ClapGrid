@@ -17,12 +17,12 @@ for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮�
   const check = (value, message) => { if (!value) throw Error(message); };
   const settle = () => new Promise(resolve => setTimeout(resolve, 100));
   const action = async callback => { await act(async () => { await callback(); await settle(); }); await settle(); };
-  const button = text => [...document.querySelectorAll('button')].find(node => node.textContent === text && node.getClientRects().length > 0);
+  const button = text => [...document.querySelectorAll('button')].find(node => (node.getAttribute('aria-label') ?? node.textContent) === text && node.getClientRects().length > 0);
   const click = text => action(() => { const node = button(text); check(node && !node.disabled, '入口可用：' + text); node.click(); });
   const openSearch = async () => { if (!button('查找')) await click('更多'); await click('查找'); };
   const input = () => document.querySelector('[aria-label="查找文案"]');
   const query = value => action(() => { const node = input(); node.focus(); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(node, value); node.dispatchEvent(new Event('input', { bubbles: true })); });
-  const count = () => document.querySelector('[aria-label="查找口播片段"]').textContent;
+  const count = () => document.querySelector('[aria-label="查找口播片段"] [role="status"]').getAttribute('aria-label');
   (async () => {
     try {
       state.status.snapshot.segments = [
@@ -49,9 +49,11 @@ for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮�
       await query('hello world');
       await action(() => document.querySelector('[row-id="b"] input[type="checkbox"]').click());
       check(input() && JSON.stringify(state.selectionRequests.at(-1)) === '["b"]', '外部可勾选且浮窗保持打开');
+      await action(() => window.browserInput({ click: '[aria-haspopup="menu"]' }));
       const deleteButton = button('删除勾选').getBoundingClientRect();
       check(document.elementFromPoint(deleteButton.left + 4, deleteButton.top + 4)?.closest('button') === button('删除勾选'), '查找不遮挡勾选操作');
-      check(document.querySelector('.search-popover').getBoundingClientRect().bottom <= deleteButton.top, '查找与勾选操作分行');
+      check(deleteButton.bottom <= document.querySelector('.grid').getBoundingClientRect().top && document.querySelector('.search-popover').getBoundingClientRect().top <= deleteButton.top, '查找与选择菜单留在同一页头且不遮表格');
+      await action(() => window.browserInput({ key: 'Escape' }));
       check(document.documentElement.scrollWidth <= innerWidth, '查找与勾选共存不溢出页面');
       await click('下一个'); check(count().includes('第 2 / 2'), '跳至下一片段');
       await click('下一个'); check(count().includes('第 1 / 2'), '循环定位');
