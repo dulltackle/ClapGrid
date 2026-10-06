@@ -1,3 +1,4 @@
+import { buildIdentity } from '../build-identity.js';
 import { readHostWorkspace } from '../host-workspace.js';
 import { workspaceProject } from '../workspace-service.js';
 import { mediaScope, startMediaGuardian } from '../business/media-guardian.js';
@@ -172,7 +173,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       };
       if (path === '/api/identity' && request.method === 'GET') {
         json({ application: 'clapgrid', workspace, projectDirectory: business.getSnapshot().project.directory,
-          projectId: business.getSnapshot().project.id, instanceId }); return;
+          projectId: business.getSnapshot().project.id, instanceId, buildIdentity }); return;
       }
       if (path === '/api/binding') {
         if (!workspace || request.method !== 'POST') { reject(409, '此服务不支持工作空间绑定。'); return; }

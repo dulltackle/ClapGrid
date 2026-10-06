@@ -101,7 +101,8 @@ test('宿主诊断在未声明 roots 时明确未知，不把 MCP 工作目录�
   assert.equal(context.roots.state, 'unsupported');
   assert.equal(context.workspace, null);
   assert.deepEqual(context.client, { name: 'host-without-roots', version: '1.0.0' });
-  assert.deepEqual(context.requestMetaKeys, ['secret']);
+  assert.equal(context.requestMetaKeys, undefined);
+  assert.deepEqual(context.buildIdentity, { schemaVersion: 1, state: 'unknown' });
   assert.equal(JSON.stringify(result).includes('不得回显'), false);
   assert.equal(context.bindingReady, false);
 });

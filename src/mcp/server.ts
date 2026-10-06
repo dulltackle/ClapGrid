@@ -1,3 +1,4 @@
+import { buildIdentity } from '../build-identity.js';
 import { readHostWorkspace, hostThreadId } from '../host-workspace.js';
 import { bindWorkspace } from '../workspace-service.js';
 import { exportTaskRequestSchema, submitExportSchema, speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
@@ -42,7 +43,7 @@ export function createBusinessMcp(url?: string) {
     const context = {
       client: client ? { name: client.name, version: client.version } : null,
       processDirectory: process.cwd(),
-      requestMetaKeys: Object.keys(extra._meta ?? {}).sort(),
+      buildIdentity,
       roots,
       workspace,
       bindingReady: false,
