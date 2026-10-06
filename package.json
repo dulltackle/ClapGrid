@@ -10,11 +10,12 @@
     "dev": "tsx src/service/main.ts --dev",
     "build": "tsc -p tsconfig.build.json && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --test --test-concurrency=1 tests/*.test.ts",
     "start": "node dist/service/main.js",
     "runtime": "node dist/runtime.js",
     "mcp": "node dist/mcp/main.js",
-    "plugin:build": "npm run build && node scripts/build-plugin.mjs"
+    "plugin:build": "npm run build && node scripts/build-plugin.mjs",
+    "check": "node scripts/check.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.1",

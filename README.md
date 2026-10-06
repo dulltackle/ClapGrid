@@ -169,3 +169,36 @@ npm run plugin:build
 服务通过独立媒体守护进程运行 FFmpeg/ffprobe；服务崩溃导致 IPC 断开，守护进程终止媒体子进程并等待 `close`，然后释放 `media-owner.sqlite`。新服务取得项目锁和媒体锁后才恢复业务状态。`media-active.json` 记录正在运行的媒体守护进程；守护进程本身异常且无法确认子进程停止时保留文件并拒绝恢复，不仅凭 PID 或锁文件推断已安全结束。Linux 使用本次开机标识区分关机遗留；其他平台遇到守护进程异常遗留时采取保守拒绝恢复，关机恢复仍需后续平台交付完善和实测。
 
 跨退出验收记录见 [#26 验证记录](docs/validation/issue-26.md)。自动化中的模拟供应商响应不算真实配音验收，关闭启动命令也不等于完全退出 Codex。
+
+## 自动检查与本地复现
+
+使用 `.node-version` 中固定的 Node 版本，执行 `npm ci` 后运行 `npm run check`。
+这一入口与推送、PR 和手动触发的「自动检查」工作流一致，依次执行现有的
+`npm run typecheck`、`npm test`、`npm run build`；任一项失败最终退出码非零，
+其余检查仍会执行，避免一个错误掩盖其他检查结果。测试文件串行执行，避免多个浏览器与媒体任务争抢资源。安装失败时 CI 直接失败，后续检查未执行。
+
+CI 使用 Ubuntu 24.04、Node 22.23.3、Chrome for Testing 131.0.6778.204，
+通过 `npm ci` 按 `package-lock.json` 安装依赖。媒体依赖使用 Ubuntu 24.04 的
+APT 仓库安装 `ffmpeg`、`fontconfig`、`fonts-noto-cjk`（包含 libass 依赖）；
+APT 安全补丁版本可能更新，每次运行记录实际包版本。浏览器路径由 `CHROME_BIN` 指定。
+本地同样需要 FFmpeg/ffprobe、Fontconfig、Noto Sans CJK SC 字体及 Chrome/Chromium；
+未安装浏览器的本地测试会明确跳过浏览器用例，不能视作这些用例通过。
+
+每次运行保存 `logs/check/<时间>-<进程号>/` 下的原始命令日志与 `summary.json`。
+测试原始日志保留测试计数、失败堆栈、跳过项和原因，摘要同时记录退出码与尚未执行的步骤。
+CI 另外保留安装与环境日志，成功或失败均上传 14 天有效的日志 artifact，
+名称包含 workflow run ID 和重跑次数，可与 Actions 运行页面和提交 SHA 对照。
+取消作业或准备环境失败时，应结合 Actions 的 skipped/cancelled 状态判断未执行项，不能只看已有成功日志。
+
+检查使用测试夹具和本地服务，不传入真实供应商凭据，也不发起收费供应商调用。
+CI 证明可自动复现的代码行为；实际 Codex 宿主的安装、加载、重载与界面交互仍须另行保存真实宿主证据。
+首期不配置提交钩子，也不修改远端分支保护。
+
+验证失败传播时，在临时副本或隔离分支分别进行下列操作，每次仅保留一种故障并运行同一入口：
+
+- 类型错误：新增 `src/ci-negative.ts`，内容为 `const failure: string = 1; export {};`。
+- 测试失败：新增 `tests/ci-negative.test.ts`，用 `node:test` 和 `node:assert/strict` 断言 `1` 等于 `2`。
+- 无效构建：在根目录 `index.html` 添加指向不存在的 `/src/ci-missing.ts` 的 module script。
+
+分别核对对应步骤非零、入口非零和完整日志，保留真实 CI run 链接后撤销故障。
+本地负向检查不能替代真实 CI 结果；验证分支不合并到交付分支。

@@ -1,0 +1,50 @@
+name: 自动检查
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: 准备媒体工具与中文字体
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          { sudo apt-get update && sudo apt-get install -y ffmpeg fontconfig fonts-noto-cjk; } 2>&1 | tee logs/system-dependencies.log
+      - uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2
+        id: chrome
+        with:
+          chrome-version: '131.0.6778.204'
+          install-dependencies: true
+      - name: 记录环境
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          set -o pipefail
+          { node --version; npm --version; "$CHROME_BIN" --version; ffmpeg -version; ffprobe -version; fc-list :lang=zh family; dpkg-query -W ffmpeg fontconfig fonts-noto-cjk libass9; } 2>&1 | tee logs/environment.log
+      - name: 安装锁定的 npm 依赖
+        run: |
+          set -o pipefail
+          npm ci 2>&1 | tee logs/npm-ci.log
+      - name: 类型检查、全套测试及构建
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
+        run: npm run check
+      - name: 保留完整检查日志（包括失败）
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: checks-${{ github.run_id }}-${{ github.run_attempt }}
+          path: logs/
+          if-no-files-found: warn
+          retention-days: 14
