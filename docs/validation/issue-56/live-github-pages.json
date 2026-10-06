@@ -1,0 +1,76 @@
+{
+  "source": "repos/dulltackle/ClapGrid/issues?state=all&per_page=2",
+  "fields": [
+    "number",
+    "title",
+    "state"
+  ],
+  "pages": 7,
+  "count": 12,
+  "complete": false,
+  "redacted": true,
+  "items": [
+    {
+      "number": 58,
+      "title": "让项目审查规范进入真实审查入口",
+      "state": "open"
+    },
+    {
+      "number": 57,
+      "title": "明确配置修改与临时工作树清理的协作边界",
+      "state": "open"
+    },
+    {
+      "number": 56,
+      "title": "让常用工具定位与精简查询保留完整证据",
+      "state": "open"
+    },
+    {
+      "number": 55,
+      "title": "在实现与交接流程中加入验收前提检查和授权续接",
+      "state": "open"
+    },
+    {
+      "number": 54,
+      "title": "提供构建、安装、实际 MCP 与服务身份的统一核对入口",
+      "state": "open"
+    },
+    {
+      "number": 53,
+      "title": "让构建包与运行进程报告可信的构建身份",
+      "state": "open"
+    },
+    {
+      "number": 52,
+      "title": "将 Linux 导出拒绝进程追踪接入独立 CI 任务",
+      "state": "open"
+    },
+    {
+      "number": 51,
+      "title": "统一本地检查入口并接入推送与 PR 自动检查",
+      "state": "open"
+    },
+    {
+      "number": 50,
+      "title": "完善代理自动检查、运行版本诊断与验收协作流程",
+      "state": "open"
+    },
+    {
+      "number": 49,
+      "title": "验证同一真实聊天更换工作目录后的绑定撤销与任务持续",
+      "state": "open"
+    },
+    {
+      "number": 48,
+      "title": "聊天移出宿主项目后禁止 ClapGrid 访问",
+      "state": "open"
+    },
+    {
+      "number": 47,
+      "title": "关闭或退出后恢复同一制作任务及正确锁状态",
+      "state": "closed"
+    }
+  ],
+  "reportedComplete": true,
+  "validity": "历史结果无法解释缺项，撤销其完整性认定；使用 live-github-pages-recheck.json"
+}
