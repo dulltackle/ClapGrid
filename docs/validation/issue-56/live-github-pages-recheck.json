@@ -1,0 +1,305 @@
+{
+  "source": "repos/dulltackle/ClapGrid/issues?state=all&per_page=2",
+  "fields": [
+    "number",
+    "title",
+    "state"
+  ],
+  "pages": 29,
+  "count": 58,
+  "complete": true,
+  "redacted": true,
+  "items": [
+    {
+      "number": 58,
+      "title": "让项目审查规范进入真实审查入口",
+      "state": "open"
+    },
+    {
+      "number": 57,
+      "title": "明确配置修改与临时工作树清理的协作边界",
+      "state": "open"
+    },
+    {
+      "number": 56,
+      "title": "让常用工具定位与精简查询保留完整证据",
+      "state": "open"
+    },
+    {
+      "number": 55,
+      "title": "在实现与交接流程中加入验收前提检查和授权续接",
+      "state": "open"
+    },
+    {
+      "number": 54,
+      "title": "提供构建、安装、实际 MCP 与服务身份的统一核对入口",
+      "state": "open"
+    },
+    {
+      "number": 53,
+      "title": "让构建包与运行进程报告可信的构建身份",
+      "state": "open"
+    },
+    {
+      "number": 52,
+      "title": "将 Linux 导出拒绝进程追踪接入独立 CI 任务",
+      "state": "open"
+    },
+    {
+      "number": 51,
+      "title": "统一本地检查入口并接入推送与 PR 自动检查",
+      "state": "open"
+    },
+    {
+      "number": 50,
+      "title": "完善代理自动检查、运行版本诊断与验收协作流程",
+      "state": "open"
+    },
+    {
+      "number": 49,
+      "title": "验证同一真实聊天更换工作目录后的绑定撤销与任务持续",
+      "state": "open"
+    },
+    {
+      "number": 48,
+      "title": "聊天移出宿主项目后禁止 ClapGrid 访问",
+      "state": "open"
+    },
+    {
+      "number": 47,
+      "title": "关闭或退出后恢复同一制作任务及正确锁状态",
+      "state": "closed"
+    },
+    {
+      "number": 46,
+      "title": "将明确指定的旧项目安全复制迁入工作空间",
+      "state": "closed"
+    },
+    {
+      "number": 45,
+      "title": "工作空间变化后使旧绑定失效，并保留后台任务",
+      "state": "closed"
+    },
+    {
+      "number": 44,
+      "title": "按当前对话面板的勾选处理口播片段",
+      "state": "closed"
+    },
+    {
+      "number": 43,
+      "title": "多对话共享项目任务，不同工作空间并行制作",
+      "state": "closed"
+    },
+    {
+      "number": 42,
+      "title": "打开 ClapGrid 时自动绑定当前工作空间",
+      "state": "closed"
+    },
+    {
+      "number": 41,
+      "title": "按工作空间固定绑定 ClapGrid 项目并隔离对话操作",
+      "state": "closed"
+    },
+    {
+      "number": 40,
+      "title": "待环境就绪后验证正式插件的干净 Linux 桌面首装",
+      "state": "open"
+    },
+    {
+      "number": 39,
+      "title": "精简素材和配音单元格，优先保障文案宽度",
+      "state": "closed"
+    },
+    {
+      "number": 38,
+      "title": "按勾选状态显示批量操作",
+      "state": "closed"
+    },
+    {
+      "number": 37,
+      "title": "支持长文案摘要与全文编辑",
+      "state": "closed"
+    },
+    {
+      "number": 36,
+      "title": "收拢顶部与低频入口，让表格填满主要空间",
+      "state": "closed"
+    },
+    {
+      "number": 35,
+      "title": "统一详情浮层的键盘操作与焦点恢复",
+      "state": "closed"
+    },
+    {
+      "number": 34,
+      "title": "优化口播片段面板，让表格成为主要视觉与编辑区域",
+      "state": "closed"
+    },
+    {
+      "number": 33,
+      "title": "验证配音任务期间禁止导出",
+      "state": "closed"
+    },
+    {
+      "number": 32,
+      "title": "调整表格为五列表头与布局",
+      "state": "closed"
+    },
+    {
+      "number": 31,
+      "title": "对齐 Codex 桌面亮色视觉并建立通用样式规范",
+      "state": "closed"
+    },
+    {
+      "number": 30,
+      "title": "完成三平台 MVP 端到端交付验收",
+      "state": "open"
+    },
+    {
+      "number": 29,
+      "title": "交付 Linux 插件安装与日常启动流程",
+      "state": "closed"
+    },
+    {
+      "number": 28,
+      "title": "交付 macOS 插件安装与日常启动流程",
+      "state": "open"
+    },
+    {
+      "number": 27,
+      "title": "交付 Windows 插件安装与日常启动流程",
+      "state": "open"
+    },
+    {
+      "number": 26,
+      "title": "真实制作任务跨退出继续及中断恢复",
+      "state": "closed"
+    },
+    {
+      "number": 25,
+      "title": "导出带字幕的完整粗剪并支持取消",
+      "state": "closed"
+    },
+    {
+      "number": 24,
+      "title": "配置并保存全片导出设置",
+      "state": "closed"
+    },
+    {
+      "number": 23,
+      "title": "通过 Codex 批量配音及按范围重试",
+      "state": "closed"
+    },
+    {
+      "number": 22,
+      "title": "正确呈现配音有效性并保留最近音频",
+      "state": "closed"
+    },
+    {
+      "number": 21,
+      "title": "使用统一声音生成并试听单片段配音",
+      "state": "closed"
+    },
+    {
+      "number": 20,
+      "title": "导入、复用和预览本地视频",
+      "state": "closed"
+    },
+    {
+      "number": 19,
+      "title": "组织口播片段并按明确范围操作",
+      "state": "closed"
+    },
+    {
+      "number": 18,
+      "title": "表格与 Codex 安全交替修改项目",
+      "state": "closed"
+    },
+    {
+      "number": 17,
+      "title": "创建、保存和重开本地项目",
+      "state": "closed"
+    },
+    {
+      "number": 16,
+      "title": "项目初始化骨架",
+      "state": "closed"
+    },
+    {
+      "number": 15,
+      "title": "待环境就绪后验证干净 Linux 桌面的首次组件安装",
+      "state": "open"
+    },
+    {
+      "number": 14,
+      "title": "人工验证 Ubuntu 右侧 VP8 预览的音频听感",
+      "state": "closed"
+    },
+    {
+      "number": 13,
+      "title": "验证 Linux 首次运行组件安装与宿主审批启动流程",
+      "state": "closed"
+    },
+    {
+      "number": 12,
+      "title": "验证 macOS 安装插件后的右侧表格与后台任务生命周期",
+      "state": "open"
+    },
+    {
+      "number": 11,
+      "title": "验证 Windows 安装插件后的右侧表格与后台任务生命周期",
+      "state": "open"
+    },
+    {
+      "number": 10,
+      "title": "验证 Linux Codex 右侧表格与后台任务生命周期",
+      "state": "closed"
+    },
+    {
+      "number": 9,
+      "title": "试听并确定首版配音供应商与统一声音设置",
+      "state": "closed"
+    },
+    {
+      "number": 8,
+      "title": "核对可开发规格与端到端验收覆盖",
+      "state": "closed"
+    },
+    {
+      "number": 7,
+      "title": "确定首发运行边界与本地项目生命周期",
+      "state": "closed"
+    },
+    {
+      "number": 6,
+      "title": "确定表格反馈与业务 MCP 的最小操作契约",
+      "state": "closed"
+    },
+    {
+      "number": 5,
+      "title": "确定粗剪导出的最小契约与验收边界",
+      "state": "closed"
+    },
+    {
+      "number": 4,
+      "title": "确定口播片段与配音任务的一致性规则",
+      "state": "closed"
+    },
+    {
+      "number": 3,
+      "title": "调查首版在线中文配音服务的接入选择",
+      "state": "closed"
+    },
+    {
+      "number": 2,
+      "title": "验证 Codex 插件的本地表格运行与项目访问边界",
+      "state": "closed"
+    },
+    {
+      "number": 1,
+      "title": "规划口播视频制作 MVP 的可开发规格",
+      "state": "closed"
+    }
+  ],
+  "verification": "与独立审查同查询的29页58项、以及per_page=100单页58项交叉核对；包含#1"
+}

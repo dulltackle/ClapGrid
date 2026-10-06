@@ -1,0 +1,48 @@
+name: Linux 导出拒绝进程追踪
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  process-trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - name: 准备媒体、字体及进程追踪依赖
+        run: |
+          mkdir -p .cache/process-trace
+          set -o pipefail
+          { sudo apt-get update && sudo apt-get install -y ffmpeg fonts-noto-cjk fontconfig strace; } 2>&1 | tee .cache/process-trace/setup.log
+      - name: 安装锁定依赖
+        run: |
+          set -o pipefail
+          npm ci 2>&1 | tee .cache/process-trace/npm-ci.log
+      - name: 验证拒绝窗口及真实 FFmpeg 正向对照
+        run: node scripts/verify-speech-export-processes.mjs .cache/process-trace
+      - name: 发布结果摘要
+        if: always()
+        run: |
+          mkdir -p .cache/process-trace
+          if [ ! -f .cache/process-trace/summary.md ]; then
+            printf '%s\n' '# Linux 导出拒绝进程追踪' '' '未执行：前置安装或工作流步骤失败；请检查作业日志和 setup.log/npm-ci.log。' '' '受控供应商测试，不作为真实供应商或宿主验收。' > .cache/process-trace/summary.md
+          fi
+          cat .cache/process-trace/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: 留存原始追踪、测试日志和结果摘要
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-process-trace-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .cache/process-trace/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14

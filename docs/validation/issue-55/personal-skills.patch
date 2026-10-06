@@ -1,0 +1,105 @@
+--- /dev/null
++++ b/acceptance-preflight.md
+@@ -0,0 +1,27 @@
++# 验收前提与授权续接
++
++实现开始时建立记录；开始真实验收或请求用户配合前更新记录。使用现有运行记录，单工单若没有记录则在仓库外创建，汇报路径。
++
++## 核实入口
++
++逐项记录验收标准原文、前提、具体入口、只读探测结果、预期可观察结果和证据位置，分类为可自动验证、需要用户操作、当前宿主不可达。先用现有工具核实入口存在及权限、运行身份等必要前提，再安排实际动作。工具名称或磁盘安装文件存在，不等于当前宿主可调用。
++
++入口缺失、不可达或前提不成立时，报告具体阻塞和可行恢复途径，保留该项未验证，继续独立可做工作。恢复后重新探测入口，再请求用户操作；不能让用户执行没有可达入口的步骤。
++
++可执行验收必须由实际执行获得证据；代码阅读、用户认可、受控替身不能替代要求的真实宿主结果。验收范围要改变时，记录用户明确决定、原标准、新范围及剩余未验证项，再按确认后的标准继续；用户沉默或时间经过不构成确认。
++
++## 请求用户配合
++
++请求只需说明当前情况、用户能执行的具体动作和完成信号。例如：当前宿主仍加载旧插件；请在已核实可用的插件管理页重载；完成后告知重载完成，代理再调用诊断核对运行身份。测试并发、进程调度和证据整理由代理处理。
++
++需要用户确认阅读判断时，把待确认的准确内容及依据集中列出；不可执行的检查单独列为阻塞，不能混入阅读确认而获得通过。
++
++## 续接授权与证据
++
++记录用户确认的原话或可追溯消息位置、确认内容、适用对象与范围、费用额度或调用次数（如涉及）、对应版本或提交、证据路径、已完成动作和剩余动作。续接时先核对实际状态，避免重复已经完成的写入或调用。
++
++内容、对象和范围未变化且授权仍有效时，沿用已有授权继续剩余工作，不重复提问。授权可复用不代表旧测试可代替要求的最终状态重验；改动使相关证据失效时重新验证。
++
++新增收费调用、实质范围变化或缺失授权，单独说明新增部分并取得明确授权后执行；旧的某次收费调用授权不能被扩展成另一次调用。继续已授权且独立的工作。若用户明确授权了仍有余额的批次，核对剩余次数与范围后按原授权执行。
++
++记录实际宿主权限拒绝及未完成动作；会话授权不能绕过宿主审批。保留既有独立审查、证据、验收写回与关闭规则。
+--- a/implement/SKILL.md
++++ b/implement/SKILL.md
+@@ -6,6 +6,8 @@
+
+ Implement the work described by the user in the spec or tickets.
+
++开始实现、续接会话以及请求用户验收前，读取并执行 [验收前提与授权续接](../acceptance-preflight.md)，记录前提、入口和已有授权。
++
+ Use /tdd where possible, at pre-agreed seams.
+
+ Run typechecking regularly, single test files regularly, and the full test suite once at the end.
+--- a/implement-spec/SKILL.md
++++ b/implement-spec/SKILL.md
+@@ -17,6 +17,8 @@
+ Read `docs/agents/issue-tracker.md` and the configuration it points to. If none has been provided, tell the user to run `/setup-matt-pocock-skills` before continuing.
+
+ ## Steps
++
++开始或续接本流程时，读取 [验收前提与授权续接](../acceptance-preflight.md)，将入口探测、授权范围和已有证据纳入下述运行记录；请求用户配合前再次核对。
+
+ ### 1. Read the task graph
+
+--- a/implement-spec/acceptance.md
++++ b/implement-spec/acceptance.md
+@@ -3,6 +3,8 @@
+ Run after integration review and its fixes. The coordinator owns tracker writes and closure; subagents supply evidence.
+
+ An `[x]` is a claim backed by execution or explicit user confirmation. Every ticket must have a nonempty acceptance region with every criterion earned before the spec can be handed off.
++
++真实验收前，执行 [验收前提与授权续接](../acceptance-preflight.md) 的逐项预检；先核实入口，再请求用户动作。不可达项保持未验证。
+
+ ## 1. Reverify the final state
+
+@@ -16,7 +18,7 @@
+ - **`read`**: assessed only by reading. Earned by the user's explicit confirmation.
+ - **Failed or unverified**: remains unchecked. An executable check that cannot run stays unverified; human confirmation is not a substitute for its execution.
+
+-Ask about all `read` criteria in one batch, grouped by ticket. Keep declined or unanswered items unchecked. Retain earlier explicit confirmation only when the relevant content is unchanged.
++Ask about all `read` criteria in one batch, grouped by ticket. Keep declined or unanswered items unchecked. Retain earlier explicit confirmation only when the relevant content and scope are unchanged, using the recorded confirmation and evidence.
+
+ A failing check loses its existing tick: report the regression and its reason. Reopen a previously closed ticket that has lost acceptance, using the tracker's rules. It can close again only after acceptance is earned again.
+
+--- a/to-commit/SKILL.md
++++ b/to-commit/SKILL.md
+@@ -43,15 +43,18 @@
+
+ ### 3. Sort the acceptance criteria
+
+-Walk the ticket's criteria one by one. Each is one of two kinds:
++先读取并执行 [验收前提与授权续接](../acceptance-preflight.md)。续接时先核对记录和实际状态，复用内容及范围未变的有效授权；新增费用或范围单独处理。
++
++Walk the ticket's criteria one by one. Each is one of these kinds:
+
+ - **`ran`** — you executed something and watched the outcome: a test, the actual behaviour.
+   Earned, so you tick them yourself in step 4.
+ - **`read`** — you only read the code and it looks right. Earned by the user's word alone, so
+   they go to step 5 and stay `[ ]` until it arrives.
+
+-Every tick carries a one-line piece of evidence: which test, what you did. Evidence lives in the
+-**session output only** — the ticket and the commit message carry none of it.
++- **未验证或失败** — 可执行但入口缺失、宿主不可达、前提不成立、尚未执行或执行失败。保持 `[ ]`，报告阻塞；用户阅读确认不能替代执行。只对纯阅读判断使用 `read`。
++
++Every tick carries a one-line piece of evidence: which test, what you did. 完整证据和确认保存在会话输出与仓库外续接记录中；工单和提交沿用下方摘要格式。
+
+ **Re-runs.** You will meet criteria already marked `[x]`. Re-run **all** of the `ran`
+ verification, those included. One that now fails loses its tick, loudly:
+@@ -130,7 +133,7 @@
+
+ ### 5. Ask the user
+
+-**Only when `read` criteria exist.** All green means there is nothing to ask: report, then step 7.
++**Only when unconfirmed `read` criteria exist.** Apply the preflight reference when requesting cooperation: current situation, executable action, completion signal. Reuse unchanged confirmations. Unverified executable checks remain blocked; all green means there is nothing to ask: report, then step 7.
+
+ ```
+ #42 已提交 abc1234（分支 feat/items，未推送）

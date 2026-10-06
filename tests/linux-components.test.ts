@@ -12,7 +12,7 @@ function ready(root: string) {
     env: { ...process.env, CLAPGRID_RUNTIME_HOME: root }, encoding: 'utf8',
   }).status === 0;
 }
-test('组件缺失时检查返回可重试的明确错误，不尝试启动服务', { skip: process.platform !== 'linux' }, t => {
+test('组件缺失时检查返回可重试的明确错误，不尝试启动服务', { skip: process.platform === 'linux' ? false : '此验证需要 Linux 运行环境' }, t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-components-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const result = spawnSync('/bin/bash', [script, 'check'], {
@@ -23,7 +23,7 @@ test('组件缺失时检查返回可重试的明确错误，不尝试启动服�
   assert.match(result.stderr, /install/);
 });
 
-test('安装基础工具缺失时说明原因与重试方式，恢复组件后重试成功', { skip: !ubuntu }, t => {
+test('安装基础工具缺失时说明原因与重试方式，恢复组件后重试成功', { skip: ubuntu ? false : '安装组件验证需要 Ubuntu 24.04 运行环境' }, t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-components-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   symlinkSync('/usr/bin/uname', join(root, 'uname'));
@@ -40,7 +40,7 @@ test('安装基础工具缺失时说明原因与重试方式，恢复组件后�
   assert.equal(retry.status, 0, retry.stderr);
 });
 
-test('已有可用组件时重复安装直接复用，无需管理员权限或网络', { skip: process.platform !== 'linux' }, t => {
+test('已有可用组件时重复安装直接复用，无需管理员权限或网络', { skip: process.platform === 'linux' ? false : '此验证需要 Linux 运行环境' }, t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-components-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   if (!ready(root)) { t.skip('复用验证需要已有组件；不在测试中安装宿主组件'); return; }
@@ -53,7 +53,7 @@ test('已有可用组件时重复安装直接复用，无需管理员权限或�
   }
 });
 
-test('有媒体编码器但缺少字体工具时不能宣称组件就绪', { skip: process.platform !== 'linux' }, t => {
+test('有媒体编码器但缺少字体工具时不能宣称组件就绪', { skip: process.platform === 'linux' ? false : '此验证需要 Linux 运行环境' }, t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-components-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   if (!ready(root)) { t.skip('需要真实媒体组件'); return; }

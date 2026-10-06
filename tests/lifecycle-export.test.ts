@@ -21,7 +21,7 @@ async function until<T>(read: () => Promise<T>, accept: (value: T) => boolean, t
   throw new Error('等待生命周期状态超时');
 }
 
-test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体再清理，保留成片并从最新输入重新导出', { timeout: 120000, skip: process.platform !== 'linux' }, async t => {
+test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体再清理，保留成片并从最新输入重新导出', { timeout: 120000, skip: process.platform === 'linux' ? false : '此验证需要 Linux 运行环境' }, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-crash-'));
   const workspace = join(root, 'workspace'); const otherWorkspace = join(root, 'other'); mkdirSync(otherWorkspace);
   const directory = join(workspace, 'clapgrid'); const video = join(root, 'video.mp4'); const audio = join(root, 'voice.mp3');

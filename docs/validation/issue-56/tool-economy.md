@@ -1,0 +1,11 @@
+# 工具定位与证据留存
+
+在 ClapGrid 的 implement、implement-spec、to-commit 流程中，需要选择解释器、定位技能、查询 GitHub 或处理长输出时，使用以下小入口。入口位于当前 ClapGrid checkout 的 `scripts/agent-tools.mjs`，在其他仓库按下列原则使用已有工具，不假定该脚本存在。
+
+1. 先用 `command -v node` 核对 Node，再执行 `node scripts/agent-tools.mjs interpreter python3 node`；只使用返回的 `selected`。候选全部缺失时停止依赖步骤，记录一次失败；本轮复用已核对结果，环境变化后重查。版本探测只对可信解释器执行。
+2. 已知技能路径直接交给 `node scripts/agent-tools.mjs skill <SKILL.md路径>`，返回真实路径并验证文件存在，支持软链接。失败后只核对已知技能根及链接目标，保留失败，不扫描整个主目录。
+3. GitHub REST 列表用 `node scripts/agent-tools.mjs github 'repos/dulltackle/ClapGrid/issues?state=all&per_page=100' number,title,state <新证据文件>`。按当前任务增加必要顶层字段。入口调用真实 `gh api --method GET --paginate --slurp`，成功收齐列表页后投影并保存所有项；摘要显示页数、总数、完整性和显示截断。字段缺失、接口失败或响应超过缓冲区均失败，不能标记完整。只支持数组型 REST 列表，不支持 Search/GraphQL 对象和它们的额外结果上限。单事项用 `gh issue view --repo dulltackle/ClapGrid <编号> --json <必要字段>`。评论等嵌套连接需要单独使用对应 REST 列表端点验证分页。
+4. 长输出直接通过标准输入交给 `node scripts/agent-tools.mjs capture <新证据文件> complete`，先脱敏再落盘；仅已确认上游没有截断时填 `complete`，否则用 `truncated` 或默认 `unknown`。shell 流水线启用 `set -o pipefail`，只有生产命令与留存命令都成功才能记录完成。输入完整性是来源声明，留存命令不能证明上游完整。证据使用新文件、0600 权限且拒绝覆盖；脱敏保留完整结构与非敏感内容，不保存原始秘密。
+5. 后续使用 `node scripts/agent-tools.mjs read <证据文件> <起始行> <行数> <行内偏移> <输出字节预算>` 按需读取。行数最多 200，偏移默认 0；整条 stdout（含 JSON 与换行）默认最多 8192 字节，预算可设 1024–16384。输出 `text` 是本次正文；`next` 非空时，用其中 `line`、`offset` 作为下一次起点，直到 null。偏移以同一脱敏、JSON 格式化文本的 UTF-16 代码单元计，续读保持完整 Unicode 码点；按顺序连接 text 可无损还原该文本。`truncated` 表示本次只显示部分文件。保留原证据不变并登记路径、命令和来源完整性。
+
+输入从源头排除凭据：查询只选必要字段，不能将环境、认证配置或供应商请求原文送入入口。辅助脱敏覆盖敏感字段名、常用令牌格式、完整 Authorization 值（含 Basic/Bearer）、credential 及其复合字段、当前环境中的非空已知敏感值；自由文本中未知格式的秘密无法可靠自动识别，需在生产端剔除。错误仅报告操作失败，不回显原始 stderr。共享证据前再次核对内容。
