@@ -93,7 +93,7 @@ export function App() {
   const activeMatch = searchOpen && currentMatch && matchedIds.includes(currentMatch) ? currentMatch : null;
   const searchLayout = useRef({ activeMatch, rowHeight: searchRowHeight });
   searchLayout.current = { activeMatch, rowHeight: searchRowHeight };
-  const closeSearch = () => { setSearchOpen(false); setCurrentMatch(null); tableFallback.current?.focus(); };
+  const closeSearch = () => { setSearchOpen(false); setCurrentMatch(null); requestAnimationFrame(() => tableFallback.current?.focus()); };
   const locate = (needle: string, direction: -1 | 1, restart = false) => {
     const api = grid.current;
     if (!api || api.getEditingCells().length) return;
@@ -129,7 +129,7 @@ export function App() {
   useEffect(() => { grid.current?.resetRowHeights(); }, [activeMatch, searchRowHeight]);
   const returnFocus = useRef({ settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, material: () => {}, detail: () => {} });
   const rememberOrigin = (trigger: HTMLElement, detail: keyof typeof returnFocus.current) => {
-    returnFocus.current[detail] = dialogReturnFocus(trigger, () => grid.current, () => tableFallback.current);
+    returnFocus.current[detail] = dialogReturnFocus(trigger, () => grid.current, () => searchInput.current ?? tableFallback.current);
   };
   const openDetail = (next: typeof detail, trigger: HTMLElement) => { rememberOrigin(trigger, 'detail'); setDetail(next); };
   const failed = (cause: Error) => { setSaveState('failed'); setSaveError(cause.message); };
@@ -319,17 +319,35 @@ export function App() {
   const exportProblems = exports.exports?.tasks.filter(task => task.state === 'failed' || task.state === 'interrupted') ?? [];
   const lock = speech?.locked ? '配音进行中，项目已锁定；可查询和试听' : status?.taskLocked || exports.exports?.locked ? '导出进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : '';
   return <main>
-    <header><h1>口播片段</h1>
-      <div className="toolbar">
-        <button disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
-        <button disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { void exports.run(); }}>导出全片</button>
+    <header className={searchOpen ? 'searching' : ''}>
+      <h1 hidden={searchOpen}>口播片段</h1>
+      {searchOpen && <section id="segment-search" className="search-popover" role="dialog" aria-modal="false" aria-label="查找口播片段">
+        <label><input ref={searchInput} aria-label="查找文案" placeholder="查找文案" value={query}
+          onChange={event => { setQuery(event.target.value); locate(event.target.value, 1, true); }}
+          onKeyDown={event => { if (event.nativeEvent.isComposing) return; if (event.key === 'Escape') { event.preventDefault(); closeSearch(); } else if (event.key === 'Enter') { event.preventDefault(); locate(query, event.shiftKey ? -1 : 1); } }} /></label>
+        <span role="status">{!query ? '输入文案查找' : !matchedIds.length ? '无匹配片段' : activeMatch ? `第 ${matchedIds.indexOf(activeMatch) + 1} / ${matchedIds.length} 个匹配片段` : `${matchedIds.length} 个匹配片段，点击下一个定位`}</span>
+        <div className="toolbar">
+          <button disabled={!matchedIds.length} onClick={() => locate(query, -1)}>上一个</button>
+          <button disabled={!matchedIds.length} onClick={() => locate(query, 1)}>下一个</button>
+          <button onClick={closeSearch}>关闭查找</button>
+        </div>
+      </section>}
+      <div className="toolbar primary-actions">
+        <button hidden={searchOpen} disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
+        <button hidden={searchOpen} className="search-trigger" ref={tableFallback} aria-expanded={searchOpen} aria-controls="segment-search" onClick={() => { setSearchOpen(true); locate(query, 1, true); }}>查找</button>
+        <button hidden={searchOpen} disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" title="全片导出：查找与勾选不改变范围" onClick={() => { void exports.run(); }}>导出全片</button>
         <button ref={moreButton} aria-haspopup="dialog" onClick={event => openDetail('more', event.currentTarget)}>更多</button>
       </div>
     </header>
-    <p id="export-scope" className="export-scope">全片导出：查找与勾选不改变范围</p>
+    <p id="export-scope" className="visually-hidden">全片导出：查找与勾选不改变范围</p>
     {detail === 'more' && <Dialog label="更多操作" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
       <h2>更多操作</h2>
       <div className="more-actions">
+        {searchOpen && <>
+          <button disabled={disabled} onClick={() => { setDetail(null); void save({ text: '' }); }}>新增口播片段</button>
+          <button disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { setDetail(null); void exports.run(); }}>导出全片</button>
+        </>}
+        <p className="export-scope">全片导出：查找与勾选不改变范围</p>
         <button disabled={disabled} onClick={() => { rememberOrigin(moreButton.current!, 'video'); setDetail(null); void openVideoEditor(); }}>导入本地视频</button>
         <button disabled={disabled} onClick={() => setDetail('paste')}>粘贴多行文案</button>
         <button disabled={!speech} onClick={() => setDetail('voice')}>声音设置</button>
@@ -359,6 +377,7 @@ export function App() {
     </Dialog>}
     {detail === 'tasks' && <Dialog label="任务记录" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
       <h2>任务记录</h2>
+      <button onClick={() => setDetail('diagnostics')}>连接诊断</button>
       {speech && <section aria-label="配音任务">
       {speech.operations.length > 0 && <section aria-label="批量配音进度" aria-live="polite">
         {speech.operations.slice().reverse().map(operation => <details key={operation.id} open={operation.summary.pending > 0}>
@@ -408,10 +427,8 @@ export function App() {
       <h2>配音试听</h2><p>{!currentListening ? '配音状态无法确认：此音频已不在当前保留音频列表中。' : currentListening.valid ? '有效配音' : '配音待更新：此音频与当前文案或声音设置不一致。'}</p><audio controls autoPlay src={listening.url} onError={() => { setSaveState('failed'); setSaveError('音频不可读取，请检查项目文件'); }} />
       <button onClick={() => setListening(null)}>关闭试听</button>
     </Dialog>}
-    <section className="organization" aria-label="组织口播片段">
+    {selectedIds.length > 0 && <section className="organization" aria-label="组织口播片段">
       <div className="toolbar">
-
-        {selectedIds.length > 0 && <>
           <span>已勾选 {selectedIds.length} 个片段</span>
           <button disabled={disabled || !selectedIds.length} onClick={() => {
             const targets = status!.snapshot.segments.filter(segment => selectedIds.includes(segment.id));
@@ -419,21 +436,8 @@ export function App() {
           }}>删除勾选</button>
           <button disabled={disabled || selectedIds.length !== 1 || selectedPosition <= 0} onClick={() => move(-1)}>项目顺序上移</button>
           <button disabled={disabled || selectedIds.length !== 1 || selectedPosition < 0 || selectedPosition >= (status?.snapshot.segments.length ?? 0) - 1} onClick={() => move(1)}>项目顺序下移</button>
-        </>}
-        <button className="search-trigger" ref={tableFallback} aria-expanded={searchOpen} aria-controls="segment-search" onClick={() => { setSearchOpen(true); locate(query, 1, true); }}>查找</button>
       </div>
-      {searchOpen && <section id="segment-search" className="search-popover" role="dialog" aria-modal="false" aria-label="查找口播片段">
-        <label>查找文案 <input ref={searchInput} aria-label="查找文案" value={query}
-          onChange={event => { setQuery(event.target.value); locate(event.target.value, 1, true); }}
-          onKeyDown={event => { if (event.nativeEvent.isComposing) return; if (event.key === 'Escape') { event.preventDefault(); closeSearch(); } else if (event.key === 'Enter') { event.preventDefault(); locate(query, event.shiftKey ? -1 : 1); } }} /></label>
-        <span role="status">{!query ? '输入文案查找' : !matchedIds.length ? '无匹配片段' : activeMatch ? `第 ${matchedIds.indexOf(activeMatch) + 1} / ${matchedIds.length} 个匹配片段` : `${matchedIds.length} 个匹配片段，点击下一个定位`}</span>
-        <div className="toolbar">
-          <button disabled={!matchedIds.length} onClick={() => locate(query, -1)}>上一个</button>
-          <button disabled={!matchedIds.length} onClick={() => locate(query, 1)}>下一个</button>
-          <button onClick={closeSearch}>关闭查找</button>
-        </div>
-      </section>}
-    </section>
+    </section>}
     {videoDetails && <Dialog label="画面素材详情" onClose={() => setVideoDetails(null)} restoreFocus={returnFocus.current.material}>
       <h2>画面素材详情</h2>
       {(() => {
@@ -499,15 +503,10 @@ export function App() {
       <div className="status-line" role="status">
         <span>{error ? '服务连接失败' : status ? '本地服务已连接' : '正在连接本地服务…'}</span>
         <span className={`save-status${saveState === 'failed' ? ' save-error' : ''}`}>{saveState === 'saving' ? '保存中…' : saveState === 'failed' ? '保存失败' : status ? '已保存' : '等待读取项目'}</span>
-        <button onClick={event => openDetail('diagnostics', event.currentTarget)}>连接诊断</button>
+        <span className="task-summary">{batchTask && batchTask.summary.pending > 0 ? `配音 ${batchTask.summary.completed}/${batchTask.summary.completed + batchTask.summary.pending}` : speechTask && (speechTask.state === 'running' || speechTask.state === 'accepted') ? '配音生成中' : exportTask && exports.exports?.locked ? `${exportStateLabel[exportTask.state]} ${exportTask.completed}/${exportTask.total}` : ''}</span>
         <button onClick={event => openDetail('tasks', event.currentTarget)}>任务详情</button>
       </div>
-      <p className="lock-status" role="status">{lock}</p>
-      <p className="task-summary" role="status">
-        {exportTask ? `${exportStateLabel[exportTask.state]} ${exportTask.completed}/${exportTask.total}` : '暂无导出任务'}
-        {speechTask && ` · 配音：${({ accepted: '已受理', running: '生成中', succeeded: '生成成功', failed: '生成失败', unknown: '结果未知，可能已计费' })[speechTask.state]}`}
-        {batchTask && ` · 批量配音：完成 ${batchTask.summary.completed}，待完成 ${batchTask.summary.pending}，失败 ${batchTask.summary.failed}，中断 ${batchTask.summary.interrupted}`}
-      </p>
+      {lock && <p className="lock-status" role="status">{lock}</p>}
       {(error || saveError || exports.connectionError || exports.operationError || speechProblems.length > 0 || exportProblems.length > 0 || selectionState.includes('断开')) && <div className="status-errors" aria-label="操作异常">
         {error && <p role="alert">{error}</p>}
         {saveError && <p role={saveState === 'failed' ? 'alert' : 'status'}>{saveError}</p>}

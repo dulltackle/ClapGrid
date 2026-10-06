@@ -183,7 +183,7 @@ const script = String.raw`
       check(document.activeElement.closest('[row-id]')?.getAttribute('row-id') === 'segment-21', '原片段消失后返回邻近可用片段');
       await click(field('展开片段 22 的保留音频'));
       state.status.snapshot.segments = []; await poll(); await key('Escape');
-      check(document.activeElement === button('查找'), '表格变空时回到可用的查找入口');
+      check(document.activeElement === field('查找文案'), '表格变空且查找打开时回到可见的查找输入框');
       result.dataset.state = 'passed'; result.textContent = '浮层键盘验证通过';
     } catch (error) { result.dataset.state = 'failed'; result.textContent = error.stack; }
   })();

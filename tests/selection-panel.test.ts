@@ -19,7 +19,7 @@ const script = String.raw`
   const click = text => action(() => { const node = button(text); check(node && !node.disabled, '入口可用：' + text); node.click(); });
   const select = id => action(() => { const node = document.querySelector('[row-id="' + id + '"] input[type="checkbox"]'); check(node, '可见片段：' + id); node.click(); });
   const filter = value => action(() => { const node = document.querySelector('[aria-label="查找文案"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(node, value); node.dispatchEvent(new Event('input', { bubbles: true })); });
-  const scope = () => document.querySelector('[aria-label="组织口播片段"]').textContent;
+  const scope = () => (document.querySelector('[aria-label="组织口播片段"]')?.textContent ?? '');
   const hidden = () => check(!button('删除勾选') && !button('项目顺序上移') && !button('项目顺序下移') && !scope().includes('已勾选'), '无勾选时收起数量及批量操作');
   (async () => {
     try {

@@ -65,7 +65,7 @@ for (const width of [1600, 420]) test(`主视图全片导出与取消错误跨�
       state.exports.tasks[0] = { ...state.exports.tasks[0], state: 'failed', message: '导出失败', output: null };
       filter.focus(); await poll();
       check(alerts().includes('结果未知，可能已计费') && alerts().includes('导出失败') && document.activeElement === filter, '未匹配片段的异常依然可见且不抢焦点');
-      check(document.querySelector('footer').textContent.includes('待完成 1'), '批量配音进度常驻摘要');
+      check(document.querySelector('footer').textContent.includes('配音 1/2'), '进行中的批量配音以紧凑进度常驻');
       await shot('persistent-error');
       await click('更多'); check(button('导入本地视频').disabled && button('粘贴多行文案').disabled, '迁移入口沿用禁用条件'); await click('任务记录');
       check(document.querySelector('dialog').textContent.includes('request-1') && document.querySelector('dialog').textContent.includes('batch-request'), '配音请求与批量进度详情可访问');
