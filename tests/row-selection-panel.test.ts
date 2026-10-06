@@ -73,8 +73,11 @@ const script = String.raw`
       state.status.snapshot.segments = state.status.snapshot.segments.filter(segment => segment.id !== 'c');
       await action(() => [...intervals.values()].forEach(callback => callback()));
       await new Promise(r => setTimeout(r, 500)); selected(['b']);
-      await input({ click: 'header h1' }); selected(['b']);
-      await input({ click: '.search-trigger' });
+      await input({ click: 'header' }); selected(['b']);
+      await input({ click: 'header [aria-haspopup="dialog"]' });
+      for (let index = 0; index < 3; index++) await input({ key: 'Tab' });
+      check(document.activeElement.textContent === '查找', '选择期间从更多访问查找');
+      await input({ key: 'Enter' });
       await input({ click: '[aria-label="查找文案"]' });
       await input({ key: 'Escape' }); selected(['b']);
       await input({ click: row('b') });

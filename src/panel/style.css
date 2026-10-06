@@ -127,3 +127,9 @@ header button { white-space: nowrap; }
 .text-summary mark { background: #fff0a6; color: inherit; }
 .text-search-current { display: block; max-height: 220px; overflow-y: auto; width: 100%; position: relative; -webkit-line-clamp: unset; }
 .text-search-current mark { background: #ffd35c; }
+
+/* 选择操作复用页头空间；紧凑箭头保留完整可访问名称。 */
+header .organization { min-width: 0; }
+header .organization .toolbar { flex-wrap: nowrap; white-space: nowrap; }
+header .organization button { padding: 2px 6px; }
+header .organization [aria-label^="项目顺序"] { width: 24px; padding: 2px; }

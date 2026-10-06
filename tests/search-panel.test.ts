@@ -19,6 +19,7 @@ for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮�
   const action = async callback => { await act(async () => { await callback(); await settle(); }); await settle(); };
   const button = text => [...document.querySelectorAll('button')].find(node => node.textContent === text && node.getClientRects().length > 0);
   const click = text => action(() => { const node = button(text); check(node && !node.disabled, '入口可用：' + text); node.click(); });
+  const openSearch = async () => { if (!button('查找')) await click('更多'); await click('查找'); };
   const input = () => document.querySelector('[aria-label="查找文案"]');
   const query = value => action(() => { const node = input(); node.focus(); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(node, value); node.dispatchEvent(new Event('input', { bubbles: true })); });
   const count = () => document.querySelector('[aria-label="查找口播片段"]').textContent;
@@ -33,7 +34,7 @@ for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮�
       await action(() => root.render(<App />));
       check(!document.querySelector('[aria-label="筛选文案"]'), '移除常驻筛选');
       const gridBeforeSearch = document.querySelector('.grid').getBoundingClientRect();
-      await click('查找');
+      await openSearch();
       const gridWithSearch = document.querySelector('.grid').getBoundingClientRect();
       check(gridBeforeSearch.top === gridWithSearch.top && gridBeforeSearch.height === gridWithSearch.height, '查找浮窗不挤压或移动表格');
       check(!button('新增口播片段') && !button('导出全片'), '查找时次要操作收纳');
@@ -57,12 +58,12 @@ for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮�
       await click('上一个'); check(count().includes('第 2 / 2'), '反向循环');
       check(JSON.stringify(state.selectionRequests.at(-1)) === '["b"]', '定位不改变勾选');
       await click('关闭查找'); check(!input() && !document.querySelector('mark'), '关闭清除高亮');
-      await click('查找'); check(input().value === 'hello world', '重开保留关键词');
+      await openSearch(); check(input().value === 'hello world', '重开保留关键词');
       await action(() => { input().focus(); return window.browserInput({ key: 'Escape' }); });
-      check(!input() && !document.querySelector('mark') && document.activeElement === button('查找'), 'Esc 关闭并恢复查找入口');
+      check(!input() && !document.querySelector('mark') && document.activeElement === button('更多'), 'Esc 关闭并恢复可见更多入口');
       const poll = () => action(() => [...intervals.values()].forEach(callback => callback()));
       state.status.snapshot.segments[0].text = '开头\n' + '长文案内容\n'.repeat(70) + 'hello world 末尾';
-      await poll(); await click('查找');
+      await poll(); await openSearch();
       const current = () => document.querySelector('.text-search-current');
       check(current().closest('[row-id]').getAttribute('row-id') === 'a', '重新打开定位第一处');
       const mark = current().querySelector('mark').getBoundingClientRect();
@@ -112,7 +113,7 @@ for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮�
       await click('下一个'); check(current().closest('[row-id]').getAttribute('row-id') === 'c', '结果恢复后用户定位');
       await click('关闭查找'); check(!current() && !document.querySelector('mark'), '关闭恢复所有摘要');
       state.status.snapshot.segments = Array.from({ length: 80 }, (_, index) => ({ id: 'far-' + index, order: index + 1, text: index === 79 ? '长文案\n'.repeat(80) + 'far needle' : '普通文案', video: null }));
-      await poll(); await click('查找');
+      await poll(); await openSearch();
       await action(() => document.querySelector('[col-id="order"] .ag-header-cell-label').click());
       await action(() => { document.querySelector('.ag-body-vertical-scroll-viewport').scrollTop = 0; });
       check(!document.querySelector('[row-id="far-79"]'), '查找前第80个片段在虚拟滚动视口之外：' + document.querySelector('[row-id="far-79"]')?.getAttribute('row-index'));
@@ -129,7 +130,7 @@ for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮�
       await action(() => secondRoot.unmount()); secondPanel.remove();
       await action(() => root.unmount());
       root = createRoot(document.getElementById('root')); await action(() => root.render(<App />));
-      await click('查找'); check(input().value === '' && !document.querySelector('mark'), '刷新重建后清空关键词与高亮');
+      await openSearch(); check(input().value === '' && !document.querySelector('mark'), '刷新重建后清空关键词与高亮');
       document.getElementById('result').dataset.state = 'passed';
     } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; }
   })();

@@ -89,7 +89,7 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
   ` });
   await send('Page.navigate', { url: pathToFileURL(join(directory, 'index.html')).href });
   let result;
-  for (let attempt = 0; attempt < 400; attempt++) {
+  for (let attempt = 0; attempt < 600; attempt++) {
     const response = await send('Runtime.evaluate', { expression: 'document.getElementById("result")?.outerHTML', returnByValue: true });
     result = response.result.value;
     if (result && !result.includes('data-state="pending"')) break;

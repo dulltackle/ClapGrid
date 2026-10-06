@@ -97,7 +97,7 @@ export function App() {
   const activeMatch = searchOpen && currentMatch && matchedIds.includes(currentMatch) ? currentMatch : null;
   const searchLayout = useRef({ activeMatch, rowHeight: searchRowHeight });
   searchLayout.current = { activeMatch, rowHeight: searchRowHeight };
-  const closeSearch = () => { setSearchOpen(false); setCurrentMatch(null); requestAnimationFrame(() => tableFallback.current?.focus()); };
+  const closeSearch = () => { setSearchOpen(false); setCurrentMatch(null); requestAnimationFrame(() => (selectedIds.length ? moreButton.current : tableFallback.current)?.focus()); };
   const locate = (needle: string, direction: -1 | 1, restart = false) => {
     const api = grid.current;
     if (!api || api.getEditingCells().length) return;
@@ -322,9 +322,23 @@ export function App() {
   const exportTask = exports.exports?.tasks.at(-1);
   const exportProblems = exports.exports?.tasks.filter(task => task.state === 'failed' || task.state === 'interrupted') ?? [];
   const lock = speech?.locked ? '配音进行中，项目已锁定；可查询和试听' : status?.taskLocked || exports.exports?.locked ? '导出进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : '';
+  const selectionActions = selectedIds.length > 0 && <section className="organization" aria-label="组织口播片段">
+      <div className="toolbar">
+          <button onClick={() => { grid.current?.deselectAll(); requestAnimationFrame(() => moreButton.current?.focus()); }}>取消选择</button>
+          <span>已勾选 {selectedIds.length} 个片段</span>
+          <button disabled={disabled || !selectedIds.length} onClick={() => {
+            const targets = status!.snapshot.segments.filter(segment => selectedIds.includes(segment.id));
+            void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) });
+          }}>删除勾选</button>
+          {selectedIds.length === 1 && <>
+          <button disabled={disabled || selectedPosition <= 0} onClick={() => move(-1)} aria-label="项目顺序上移" title="项目顺序上移">↑</button>
+          <button disabled={disabled || selectedIds.length !== 1 || selectedPosition < 0 || selectedPosition >= (status?.snapshot.segments.length ?? 0) - 1} onClick={() => move(1)} aria-label="项目顺序下移" title="项目顺序下移">↓</button>
+          </>}
+      </div>
+    </section>;
   return <main>
     <header className={searchOpen ? 'searching' : ''}>
-      <h1 hidden={searchOpen}>口播片段</h1>
+      <h1 hidden={searchOpen || selectedIds.length > 0}>口播片段</h1>
       {searchOpen && <section id="segment-search" className="search-popover" role="dialog" aria-modal="false" aria-label="查找口播片段">
         <label><input ref={searchInput} aria-label="查找文案" placeholder="查找文案" value={query}
           onChange={event => { setQuery(event.target.value); locate(event.target.value, 1, true); }}
@@ -336,21 +350,23 @@ export function App() {
           <button onClick={closeSearch}>关闭查找</button>
         </div>
       </section>}
+      {!searchOpen && selectionActions}
       <div className="toolbar primary-actions">
-        <button hidden={searchOpen} disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
-        <button hidden={searchOpen} className="search-trigger" ref={tableFallback} aria-expanded={searchOpen} aria-controls="segment-search" onClick={() => { setSearchOpen(true); locate(query, 1, true); }}>查找</button>
-        <button hidden={searchOpen} disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" title="全片导出：查找与勾选不改变范围" onClick={() => { void exports.run(); }}>导出全片</button>
-        <button ref={moreButton} aria-haspopup="dialog" onClick={event => openDetail('more', event.currentTarget)}>更多</button>
+        <button hidden={searchOpen || selectedIds.length > 0} disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
+        <button hidden={searchOpen || selectedIds.length > 0} className="search-trigger" ref={tableFallback} aria-expanded={searchOpen} aria-controls="segment-search" onClick={() => { setSearchOpen(true); locate(query, 1, true); }}>查找</button>
+        <button hidden={searchOpen || selectedIds.length > 0} disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" title="全片导出：查找与勾选不改变范围" onClick={() => { void exports.run(); }}>导出全片</button>
+        <button ref={moreButton} aria-haspopup="dialog" aria-expanded={detail === 'more'} onClick={event => openDetail('more', event.currentTarget)}>更多</button>
       </div>
     </header>
     <p id="export-scope" className="visually-hidden">全片导出：查找与勾选不改变范围</p>
-    {detail === 'more' && <Dialog label="更多操作" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
+    {detail === 'more' && <Dialog label="更多操作" onClose={() => setDetail(null)} restoreFocus={() => returnFocus.current.detail()}>
       <h2>更多操作</h2>
       <div className="more-actions">
-        {searchOpen && <>
+        {(searchOpen || selectedIds.length > 0) && <>
           <button disabled={disabled} onClick={() => { setDetail(null); void save({ text: '' }); }}>新增口播片段</button>
           <button disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { setDetail(null); void exports.run(); }}>导出全片</button>
         </>}
+        {!searchOpen && selectedIds.length > 0 && <button onClick={() => { returnFocus.current.detail = () => searchInput.current?.focus(); setDetail(null); setSearchOpen(true); locate(query, 1, true); }}>查找</button>}
         <p className="export-scope">全片导出：查找与勾选不改变范围</p>
         <button disabled={disabled} onClick={() => { rememberOrigin(moreButton.current!, 'video'); setDetail(null); void openVideoEditor(); }}>导入本地视频</button>
         <button disabled={disabled} onClick={() => setDetail('paste')}>粘贴多行文案</button>
@@ -431,17 +447,7 @@ export function App() {
       <h2>配音试听</h2><p>{!currentListening ? '配音状态无法确认：此音频已不在当前保留音频列表中。' : currentListening.valid ? '有效配音' : '配音待更新：此音频与当前文案或声音设置不一致。'}</p><audio controls autoPlay src={listening.url} onError={() => { setSaveState('failed'); setSaveError('音频不可读取，请检查项目文件'); }} />
       <button onClick={() => setListening(null)}>关闭试听</button>
     </Dialog>}
-    {selectedIds.length > 0 && <section className="organization" aria-label="组织口播片段">
-      <div className="toolbar">
-          <span>已勾选 {selectedIds.length} 个片段</span>
-          <button disabled={disabled || !selectedIds.length} onClick={() => {
-            const targets = status!.snapshot.segments.filter(segment => selectedIds.includes(segment.id));
-            void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) });
-          }}>删除勾选</button>
-          <button disabled={disabled || selectedIds.length !== 1 || selectedPosition <= 0} onClick={() => move(-1)}>项目顺序上移</button>
-          <button disabled={disabled || selectedIds.length !== 1 || selectedPosition < 0 || selectedPosition >= (status?.snapshot.segments.length ?? 0) - 1} onClick={() => move(1)}>项目顺序下移</button>
-      </div>
-    </section>}
+    {searchOpen && selectionActions}
     {videoDetails && <Dialog label="画面素材详情" onClose={() => setVideoDetails(null)} restoreFocus={returnFocus.current.material}>
       <h2>画面素材详情</h2>
       {(() => {
