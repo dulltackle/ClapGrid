@@ -16,6 +16,7 @@
     "mcp": "node dist/mcp/main.js",
     "plugin:build": "npm run build && node scripts/build-plugin.mjs",
     "check": "node scripts/check.mjs",
+    "review:check": "node scripts/check-review-links.mjs",
     "diagnose:identity": "node scripts/diagnose-identity.mjs"
   },
   "dependencies": {
