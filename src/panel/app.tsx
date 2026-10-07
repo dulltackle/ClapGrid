@@ -1,3 +1,4 @@
+import { buildIdentity } from '../build-identity.js';
 import { panelServiceUrl } from './service-url.js';
 import { RowMenu } from './row-menu.js';
 import { Dialog } from './dialog.js';
@@ -425,6 +426,11 @@ export function App() {
     {detail === 'diagnostics' && <Dialog label="连接诊断" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
       <h2>连接诊断</h2><p>{error || (status ? '本地服务已连接' : '正在连接本地服务…')}</p>
       {status && <dl className="diagnostics">
+        <dt>面板版本</dt><dd>{buildIdentity.state === 'known' ? `${buildIdentity.version} (${buildIdentity.contentFingerprint})` : '未知（开发构建或旧版本）'}</dd>
+        <dt>服务版本</dt><dd>{status.buildIdentity?.state === 'known' ? `${status.buildIdentity.version} (${status.buildIdentity.contentFingerprint})` : '未知（开发构建或旧版本）'}</dd>
+        <dt>版本核对</dt><dd>{buildIdentity.state === 'known' && status.buildIdentity?.state === 'known'
+          ? buildIdentity.contentFingerprint === status.buildIdentity.contentFingerprint ? '面板与服务一致' : '版本不一致，请更新插件并重新打开'
+          : '尚未验证版本一致性'}</dd>
         <dt>项目路径</dt><dd>{status.snapshot.project.directory}</dd>
         <dt>服务实例</dt><dd>{status.instanceId}</dd>
         <dt>PID</dt><dd>{status.pid}</dd>

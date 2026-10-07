@@ -82,6 +82,12 @@ npm run runtime -- status --project /绝对路径/验证项目
 
 `clapgrid_import_video({ sourcePath })` 仅用于用户明确授权的具体来源，返回独立的 `asset` 及项目状态；调用方不得猜测或扫描未授权路径。`clapgrid_modify` 新增 `{ kind: "video", expected, assetId, start }`：关联／替换素材、保留同一身份设置起点，或 `assetId: null` 解除关联。`start` 单位为秒，解除时传 `0`。表格通过 `/api/video/import` 和 `/api/segments/modify` 使用相同规则。
 
+## 本机插件更新
+
+Git 合并只更新源码；已安装插件和后台服务由独立的交付流程更新。执行 `npm run plugin:update -- --revision <目标提交> --marketplace-root <本地市场根目录> --cache-root <插件缓存根目录> --workspace <工作空间> --thread <宿主聊天ID>`，从干净提交构建、备份和安装，再重启空闲服务。已有任务或编辑时停止更新并保留任务；失败返回备份位置与恢复结果。
+
+安装完成仍需重载宿主并核对实际 MCP、服务和面板。`npm run plugin:verify -- ...` 在证据缺失、超过 5 分钟或版本不一致时退出 2。完整步骤及证据格式见 [本机插件交付](docs/agents/plugin-delivery.md)。面板“连接诊断”显示实际加载版本；版本不一致时先更新再重新打开。
+
 ## 业务 MCP 与插件
 
 ```bash

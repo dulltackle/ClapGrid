@@ -41,3 +41,13 @@ test('宿主证据明确记录不可达、过期和来源，不泄露额外字�
   assert.equal(run({ ...current, source: 'new-process' }).mcp.status, 'unknown');
   assert.equal(run({ ...current, status: 'reachable', response: { version: '0.1.0', directory: root } }).mcp.status, 'unknown');
 });
+
+test('交付验收入口缺实际宿主和面板证据时返回非成功退出码', () => {
+  assert.throws(() => execFileSync(process.execPath, [command, '--require-current', '--build', '/不存在的插件构建'], { encoding: 'utf8' }), (error: any) => {
+    assert.equal(error.status, 2);
+    const report = JSON.parse(error.stdout);
+    assert.equal(report.complete, false);
+    assert.equal(report.panel.status, 'unknown');
+    return true;
+  });
+});

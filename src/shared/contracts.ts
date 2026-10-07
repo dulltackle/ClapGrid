@@ -1,3 +1,4 @@
+import { buildIdentitySchema } from '../build-identity.js';
 import { z } from 'zod';
 
 export const segmentSchema = z.object({
@@ -48,6 +49,8 @@ export const snapshotSchema = z.object({
   exportSettings: exportSettingsSchema,
 });
 export const statusSchema = z.object({
+  buildIdentity: buildIdentitySchema.optional(),
+  idleStopSupported: z.boolean().optional(),
   application: z.literal('clapgrid'),
   apiVersion: z.literal(1),
   instanceId: z.uuid(),
