@@ -30,8 +30,8 @@ export async function discoverWorkspace(directory: string) {
     if (!response.ok) throw new Error('offline');
     status = discoverySchema.omit({ url: true }).extend({ application: z.literal('clapgrid') }).parse(await response.json()) as Omit<z.infer<typeof discoverySchema>, 'url'>;
     if (status.instanceId !== record.instanceId || status.projectId !== record.projectId || status.projectDirectory !== project || status.workspace !== workspace) throw new Error('mismatch');
-  } catch {
-    throw new Error('服务身份已改变或不可达，请关闭重开 ClapGrid；本次不执行业务操作。');
+  } catch (error) {
+    throw new Error('服务身份已改变或不可达，请关闭重开 ClapGrid；本次不执行业务操作。', { cause: error });
   }
   return { ...record, url, status };
 }

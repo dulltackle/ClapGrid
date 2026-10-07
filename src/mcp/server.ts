@@ -1,3 +1,4 @@
+import { verifyLoadedPlugin } from '../plugin-release.js';
 import { buildIdentity } from '../build-identity.js';
 import { readHostWorkspace, hostThreadId } from '../host-workspace.js';
 import { bindWorkspace } from '../workspace-service.js';
@@ -10,8 +11,14 @@ export function createBusinessMcp(url?: string) {
   const baseUrl = url === undefined ? undefined : localServiceUrl(url);
   const connection = async (meta: Record<string, unknown> | undefined) => {
     if (baseUrl) return baseUrl;
+    await verifyLoadedPlugin();
     const threadId = hostThreadId(meta);
-    return bindWorkspace(await readHostWorkspace(threadId), threadId);
+    const bound = await bindWorkspace(await readHostWorkspace(threadId), threadId);
+    if (buildIdentity.state === 'known') {
+      const current = (await queryStatus(bound)).buildIdentity;
+      if (current?.state !== 'known' || current.contentFingerprint !== buildIdentity.contentFingerprint) throw new Error('服务版本与插件不一致，请执行插件更新流程后重试。');
+    }
+    return bound;
   };
   const server = new McpServer({ name: 'clapgrid', version: '0.1.0' });
   let rootChanges = 0;
@@ -58,7 +65,8 @@ export function createBusinessMcp(url?: string) {
     try {
       const status = await queryStatus(await connection(extra._meta));
       return { content: [{ type: 'text', text: JSON.stringify(status) }], structuredContent: status };
-    } catch {
+    } catch (error) {
+      if (error instanceof Error && /^(插件|服务版本)/.test(error.message)) return { isError: true, content: [{ type: 'text', text: error.message }] };
       return { isError: true, content: [{ type: 'text', text: `ClapGrid 服务不可用或身份不匹配（${baseUrl ?? '当前工作空间'}）。请通过插件入口经宿主允许启动服务后重试。` }] };
     }
   });

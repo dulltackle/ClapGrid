@@ -23,11 +23,11 @@ function compare(value, reference) {
     comparedFields: ['contentFingerprint'], referenceFingerprint: base.contentFingerprint,
     reason: match ? '内容指纹一致' : '内容指纹不同' };
 }
-async function mcpEvidence(path, reference) {
+async function mcpEvidence(path, reference, expectedSource = 'actual-host') {
   if (!path) return unknown('未提供宿主实际调用证据；不会启动替代 MCP');
   try {
     const evidence = JSON.parse(await readFile(path, 'utf8'));
-    if (!['actual-host', 'controlled-test'].includes(evidence.source)) return unknown('证据来源无效');
+    if (![expectedSource, 'controlled-test'].includes(evidence.source)) return unknown('证据来源无效');
     const timestamp = Date.parse(evidence.observedAt);
     if (!Number.isFinite(timestamp)) return unknown('证据采集时间无效');
     const ageSeconds = Math.floor((Date.now() - timestamp) / 1000);
@@ -36,7 +36,10 @@ async function mcpEvidence(path, reference) {
     if (ageSeconds < 0 || ageSeconds > 300) return { ...unknown('证据过期或来自未来，请重新调用宿主诊断'), ...provenance };
     if (evidence.status === 'unreachable') return { ...unreachable('留存证据记录宿主入口不可达'), ...provenance };
     if (evidence.status !== 'reachable') return { ...unknown('证据调用状态无效'), ...provenance };
-    return { ...compare(evidence.response?.buildIdentity, reference), ...provenance };
+    return { ...compare(evidence.response?.buildIdentity, reference), ...provenance,
+      instanceId: expectedSource === 'actual-browser' ? evidence.response?.instanceId : evidence.serviceStatus?.instanceId,
+      workspace: evidence.response?.workspace,
+      serviceVerified: expectedSource === 'actual-browser' || compare(evidence.serviceStatus?.buildIdentity, reference).status === 'match' };
   } catch { return unknown('证据文件不可读取或格式无效'); }
 }
 async function serviceIdentity(address, workspace, reference) {
@@ -55,11 +58,12 @@ async function serviceIdentity(address, workspace, reference) {
     if (!response.ok) return unreachable('现存服务身份接口未成功响应');
     const value = await response.json();
     if (value.application !== 'clapgrid' || value.workspace !== expected) return unknown('服务应用或工作空间归属不符；不会切换工作空间');
-    return { ...compare(value.buildIdentity, reference), source: 'existing-service', observedAt: new Date().toISOString() };
+    return { ...compare(value.buildIdentity, reference), instanceId: value.instanceId, workspace: expected, source: 'existing-service', observedAt: new Date().toISOString() };
   } catch { return unreachable('现存服务身份接口不可达或响应无效'); }
 }
 try {
   const { values } = parseArgs({ options: {
+    'require-current': { type: 'boolean', default: false }, 'panel-evidence': { type: 'string' },
     build: { type: 'string', default: 'dist/plugin/clapgrid' }, installed: { type: 'string' },
     'mcp-evidence': { type: 'string' }, 'service-url': { type: 'string' }, workspace: { type: 'string' },
   } });
@@ -67,15 +71,22 @@ try {
   const installed = values.installed ? compare(await readPluginIdentity(values.installed), build) : unknown('未指定安装包目录');
   const mcp = await mcpEvidence(values['mcp-evidence'], build);
   const service = await serviceIdentity(values['service-url'], values.workspace, build);
+  const panel = await mcpEvidence(values['panel-evidence'], build, 'actual-browser');
+  const complete = [installed, mcp, service, panel].every(item => item.status === 'match')
+    && mcp.source === 'actual-host' && panel.source === 'actual-browser' && mcp.serviceVerified
+    && mcp.instanceId === service.instanceId && panel.instanceId === service.instanceId
+    && mcp.workspace === service.workspace && panel.workspace === service.workspace;
   const nextSteps = [];
   if (installed.status === 'mismatch') nextSteps.push('确认目标构建后手动更新安装包，再重新核对。');
   if (mcp.status === 'mismatch') nextSteps.push('先核对安装包，再由用户重载插件，重新调用宿主 clapgrid_host_context 并留存证据。');
   if (mcp.status === 'unknown' || mcp.status === 'unreachable') nextSteps.push('从当前聊天实际宿主调用 clapgrid_host_context，保存调用时间和结构化结果；入口不可达时保留未验证。');
   if (service.status === 'mismatch') nextSteps.push('确认当前工作空间无运行任务后，由用户决定是否重启现存服务，再核对身份。');
+  if (panel.status !== 'match') nextSteps.push('打开实际面板的连接诊断，核对加载版本并保存本次浏览器证据。');
   if (service.status === 'unreachable') nextSteps.push('核实现存服务地址；本命令不会启动服务。');
   console.log(JSON.stringify({ schemaVersion: 1, observedAt: new Date().toISOString(),
-    build: { ...compare(build, build), role: 'reference' }, installed, mcp, service, nextSteps }, null, 2));
+    build: { ...compare(build, build), role: 'reference' }, installed, mcp, service, panel, complete, nextSteps }, null, 2));
+  if (values['require-current'] && !complete) process.exitCode = 2;
 } catch {
-  console.error('诊断参数无效。可用参数：--build --installed --mcp-evidence --workspace --service-url。');
+  console.error('诊断参数无效。可用参数：--build --installed --mcp-evidence --workspace --service-url --panel-evidence --require-current。');
   process.exitCode = 1;
 }

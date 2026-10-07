@@ -79,7 +79,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       if (!files.has('/index.html')) throw new Error('面板构建缺失，请先运行 npm run build。');
     }
     const status = (): ServiceStatus => ({
-      application: 'clapgrid', apiVersion: 1, instanceId, pid: process.pid,
+      application: 'clapgrid', apiVersion: 1, instanceId, pid: process.pid, buildIdentity, idleStopSupported: true,
       startedAt, snapshot: business.getSnapshot(), ...business.getActivity(),
     });
     const tableSessions = new Map<string, { binding: string; close: () => void }>();
@@ -108,8 +108,8 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       await business.close();
       await releaseOwnership();
     })();
-    const requestStop = (interrupt = false) => {
-      if (!interrupt && business.getActivity().taskLocked) return { outcome: 'kept', message: '有任务正在执行，默认保持服务。仅明确选择“中断任务并退出”才停止。' };
+    const requestStop = (interrupt = false, idleOnly = false) => {
+      if (!interrupt && (business.getActivity().taskLocked || (idleOnly && business.getActivity().modification))) return { outcome: 'kept', message: '有任务正在执行或项目正在编辑，默认保持服务。仅明确选择“中断任务并退出”才停止。' };
       stopping = true;
       setImmediate(() => { void close().catch(error => console.error('服务清理失败，不能确认已退出：', error)); });
       return { outcome: 'stopping', message: '正在停止服务，等待任务结束和清理。' };
@@ -213,10 +213,10 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
             if (size > 4096) { reject(413, '请求内容过大'); return; }
             chunks.push(Buffer.from(chunk));
           }
-          const input = z.object({ instanceId: z.uuid(), interrupt: z.boolean().default(false) }).strict().parse(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+          const input = z.object({ instanceId: z.uuid(), interrupt: z.boolean().default(false), idleOnly: z.boolean().default(false) }).strict().parse(JSON.parse(Buffer.concat(chunks).toString('utf8')));
           await verifyBinding();
           if (input.instanceId !== instanceId) { reject(409, '服务实例已改变，请重新查询再决定退出'); return; }
-          json(requestStop(input.interrupt));
+          json(requestStop(input.interrupt, input.idleOnly));
         } catch { if (!response.destroyed) reject(400, '退出请求无效'); }
         finally { clearTimeout(timer); }
         return;

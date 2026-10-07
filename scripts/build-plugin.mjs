@@ -3,7 +3,7 @@ import { cp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import { execFileSync } from 'node:child_process';
-import { identityEntries, identityBanner, pluginFingerprint } from './plugin-identity.mjs';
+import { identityEntries, identityBanner, panelIdentityBanner, pluginFingerprint } from './plugin-identity.mjs';
 
 let source = { commit: null, state: 'unknown' };
 try {
@@ -30,10 +30,22 @@ await build({
   format: 'esm', target: 'node22', external: ['vite'],
   banner: { js: "import { createRequire as clapgridCreateRequire } from 'node:module'; const require = clapgridCreateRequire(import.meta.url);" },
 });
-const identity = { schemaVersion: 1, state: 'known', version, source, contentFingerprint: await pluginFingerprint(destination) };
+const manifestPath = `${destination}/.codex-plugin/plugin.json`;
+const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+manifest.version = version;
+await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+const contentVersion = `${version.split('+')[0]}+git.${source.commit?.slice(0, 12) ?? 'unknown'}.${(await pluginFingerprint(destination)).slice(7, 19)}`;
+manifest.version = contentVersion;
+await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+await writeFile(`${destination}/package.json`, JSON.stringify({ name: 'clapgrid', version: contentVersion, private: true, type: 'module' }));
+const identity = { schemaVersion: 1, state: 'known', version: contentVersion, source, contentFingerprint: await pluginFingerprint(destination) };
 for (const entry of identityEntries) {
   const file = `${destination}/${entry}`;
   await writeFile(file, identityBanner(identity) + await readFile(file, 'utf8'));
 }
+const panelFile = `${destination}/dist/panel/index.html`;
+const panel = await readFile(panelFile, 'utf8');
+const doctype = panel.match(/^<!doctype[^>]*>/i)?.[0] ?? '';
+await writeFile(panelFile, doctype + panelIdentityBanner(identity) + panel.slice(doctype.length));
 await writeFile(`${destination}/build-identity.json`, JSON.stringify(identity, null, 2) + '\n');
 console.log(`插件构建完成：${destination}`);

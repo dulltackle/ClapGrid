@@ -16,7 +16,7 @@ function fixture(t: { after(fn: () => void): void }) {
   }
   symlinkSync(join(repository, 'node_modules'), join(root, 'node_modules'));
   mkdirSync(join(root, 'dist/panel'), { recursive: true });
-  writeFileSync(join(root, 'dist/panel/index.html'), '<html>原始面板</html>');
+  writeFileSync(join(root, 'dist/panel/index.html'), '<!doctype html><html>原始面板</html>');
   return root;
 }
 function build(root: string) {
@@ -24,7 +24,7 @@ function build(root: string) {
   return JSON.parse(readFileSync(join(root, 'dist/plugin/clapgrid/build-identity.json'), 'utf8'));
 }
 
-test('插件构建携带源码状态，版本相同但内容改变产生不同指纹', async t => {
+test('插件构建携带源码状态，清单版本与身份一致，内容改变产生新版本和指纹', async t => {
   const root = fixture(t);
   writeFileSync(join(root, '.gitignore'), 'dist/\nnode_modules\n');
   execFileSync('git', ['init', '-q'], { cwd: root });
@@ -38,12 +38,15 @@ test('插件构建携带源码状态，版本相同但内容改变产生不同�
   const plugin = join(root, 'dist/plugin/clapgrid');
   const { readPluginIdentity } = await import(resolve('scripts/plugin-identity.mjs'));
   assert.deepEqual(await readPluginIdentity(plugin), first);
+  assert.equal(JSON.parse(readFileSync(join(plugin, '.codex-plugin/plugin.json'), 'utf8')).version, first.version);
+  assert.ok(readFileSync(join(plugin, 'dist/panel/index.html'), 'utf8').startsWith('<!doctype html>'), '保留标准模式');
+  assert.ok(readFileSync(join(plugin, 'dist/panel/index.html'), 'utf8').includes(first.contentFingerprint), '面板携带自身构建指纹');
   writeFileSync(join(root, 'src/build-identity.ts'), readFileSync(join(root, 'src/build-identity.ts'), 'utf8') + '\n// 未提交源码修改\n');
   writeFileSync(join(root, 'dist/panel/index.html'), '<html>新面板</html>');
   const second = build(root);
   assert.equal(second.source.state, 'dirty');
   assert.equal(second.source.commit, first.source.commit);
-  assert.equal(second.version, first.version);
+  assert.notEqual(second.version, first.version);
   assert.notEqual(second.contentFingerprint, first.contentFingerprint);
   assert.deepEqual(await readPluginIdentity(plugin), second);
   const entry = join(plugin, 'dist/mcp/main.js');
@@ -112,6 +115,24 @@ test('真实 MCP 和 HTTP 报告加载身份，覆盖磁盘更新、缺失身份
     ['match', 'match', 'match', 'match']);
   assert.equal(matching.mcp.source, 'controlled-test');
   assert.equal(matching.mcp.live, false);
+  // 以下只验证证据格式的接受/拒绝契约；标签为测试输入，不宣称宿主实测。
+  const panelEvidence = join(root, 'panel-evidence.json');
+  const gate = () => {
+    try { return { code: 0, report: JSON.parse(execFileSync(process.execPath, [join(repository, 'scripts/diagnose-identity.mjs'), '--require-current',
+      '--build', plugin, '--installed', installed, '--mcp-evidence', evidencePath, '--panel-evidence', panelEvidence,
+      '--workspace', root, '--service-url', url], { encoding: 'utf8' })) }; }
+    catch (error: any) { return { code: error.status, report: JSON.parse(error.stdout) }; }
+  };
+  const observedAt = new Date().toISOString();
+  const panelInput = { source: 'actual-browser', observedAt, status: 'reachable', response: { buildIdentity: first, instanceId: running.instanceId, workspace: root } };
+  writeFileSync(panelEvidence, JSON.stringify(panelInput));
+  assert.equal(gate().code, 2, 'controlled-test 宿主证据不能通过交付门槛');
+  writeFileSync(evidencePath, JSON.stringify({ source: 'actual-host', observedAt, status: 'reachable',
+    response: { buildIdentity: first, workspace: root }, serviceStatus: { buildIdentity: first, instanceId: running.instanceId } }));
+  assert.equal(gate().code, 0, '完整且同实例的证据可以通过格式核对');
+  writeFileSync(panelEvidence, JSON.stringify({ ...panelInput, response: { ...panelInput.response, instanceId: '其他实例' } }));
+  assert.equal(gate().code, 2, '不同服务实例拒绝通过');
+
   assert.deepEqual(projectSnapshot(), snapshot);
 
   assert.deepEqual(running.buildIdentity, first);
@@ -119,7 +140,7 @@ test('真实 MCP 和 HTTP 报告加载身份，覆盖磁盘更新、缺失身份
   writeFileSync(join(root, 'dist/panel/index.html'), '<html>磁盘更新</html>');
   const second = build(root);
   assert.notEqual(first.contentFingerprint, second.contentFingerprint);
-  assert.equal(first.version, second.version);
+  assert.notEqual(first.version, second.version);
   const oldInstall = await summary();
   assert.equal(oldInstall.installed.status, 'mismatch');
   cpSync(plugin, installed, { recursive: true });

@@ -17,6 +17,8 @@
     "plugin:build": "npm run build && node scripts/build-plugin.mjs",
     "check": "node scripts/check.mjs",
     "review:check": "node scripts/check-review-links.mjs",
+    "plugin:update": "node scripts/update-plugin.mjs",
+    "plugin:verify": "node scripts/diagnose-identity.mjs --require-current",
     "diagnose:identity": "node scripts/diagnose-identity.mjs"
   },
   "dependencies": {
