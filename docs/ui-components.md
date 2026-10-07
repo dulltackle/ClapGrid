@@ -1,5 +1,13 @@
 # 试点组件维护
 
+## 自动样式门槛
+
+`npm run styles:check` 复用生产同源 Vite/Tailwind 编译，解析生成的 utilities 层与项目内既有 CSS 类名，发现同名冲突即失败。例外集中于 `scripts/style-collision-exceptions.json`，每项必须写完整 className 和经审查的 reason；重复、空理由或已不存在的冲突都会失败。优先消除冲突，例外不是忽略整类检查的开关。
+
+`tests/helpers/theme-contract.ts` 集中维护 Button、行菜单和删除确认框的可见主题契约，包括背景、文字、边框、禁用透明度与键盘焦点轮廓；既有宽窄视口行菜单测试负责实际调用，保留表格布局、未迁移控件和行为回归。修改主题时同时审查矩阵预期，不能为了通过测试降低可见性要求。完整 `check` 和 CI 包含这些检查。
+
+## 维护边界
+
 遵循 ADR 0002，将删除确认中的按钮与口播片段行菜单接入项目内 `src/panel/components/ui/index.ts` 入口。业务继续拥有删除目标快照和修改权规则。
 
 ## 来源与版本

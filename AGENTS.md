@@ -1,5 +1,7 @@
 ## Agent skills
 
+检查工具、CI 或正式验收变更前，读取 `docs/agents/verification.md`；样式或 UI 组件变更前，读取 `docs/ui-components.md`。
+
 ### Issue tracker
 
 使用 dulltackle/ClapGrid 的 GitHub Issues；操作事项或规格前，读取 `docs/agents/issue-tracker.md`。

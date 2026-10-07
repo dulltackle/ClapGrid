@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import assert from 'node:assert/strict';
 import { chrome } from './helpers/browser.js';
 import { fixture } from './helpers/editing-fixture.js';
 import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
@@ -7,6 +8,7 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './src/panel/app.tsx';
 import { state } from 'editing-fixture';
+import { assertTheme, assertKeyboardFocus } from './tests/helpers/theme-contract.ts';
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const timers = new Map(); let timer = 0;
 window.setInterval = cb => { timers.set(++timer, cb); return timer; }; window.clearInterval = id => timers.delete(id);
@@ -22,17 +24,17 @@ state.status.snapshot.segments = ['a','b','c'].map((id,i)=>({id,order:i+1,text:i
 await action(()=>createRoot(document.getElementById('root')).render(<App/>));
 await input({click:'[row-id="a"] input[type="checkbox"]'});
 await input({click:'[row-id="b"] input[type="checkbox"]'});
-await right('a'); check(menu(), '右键打开行菜单'); bounds(menu()); check(getComputedStyle(menu()).borderTopColor === 'rgb(227, 228, 231)', '菜单边框沿用主题浅灰'); check(getComputedStyle(menu()).backgroundColor === 'rgb(255, 255, 255)', '菜单采用主题不透明背景'); check(document.activeElement === menu(), '鼠标打开聚焦菜单容器，方向键进入选项'); await window.browserInput({screenshot:'row-menu'});
+await right('a'); check(menu(), '右键打开行菜单'); bounds(menu()); assertTheme('menu', menu()); check(document.activeElement === menu(), '鼠标打开聚焦菜单容器，方向键进入选项'); await window.browserInput({screenshot:'row-menu'});
 check(state.selectionRequests.at(-1).join() === 'a,b', '右键已选行保留集合');
-await input({key:'ArrowDown'}); await input({key:'Enter'}); check(dialog()?.textContent.includes('确定删除已勾选的 2 个口播片段？'), '多选范围明确'); bounds(dialog()); await window.browserInput({screenshot:'delete-confirm'});
+await input({key:'ArrowDown'}); assertKeyboardFocus(document.activeElement); await input({key:'Enter'}); check(dialog()?.textContent.includes('确定删除已勾选的 2 个口播片段？'), '多选范围明确'); bounds(dialog()); await window.browserInput({screenshot:'delete-confirm'});
 check(document.getElementById(dialog().getAttribute('aria-labelledby')).textContent === '删除口播片段', '确认有可访问名称');
-check(getComputedStyle(dialog()).borderTopColor === 'rgb(227, 228, 231)', '确认边框沿用主题浅灰');
+assertTheme('dialog', dialog());
 const controls = [...dialog().querySelectorAll('button')];
 const cancel = controls.find(node => node.textContent === '取消'), confirm = controls.find(node => node.textContent === '删除');
 check(cancel && confirm && !cancel.disabled && !confirm.disabled, '取消与删除保留清晰名称及原生按钮语义');
-check(getComputedStyle(confirm).backgroundColor === 'rgb(164, 38, 44)' && getComputedStyle(confirm).color === 'rgb(255, 255, 255)', '危险操作使用现有错误色和清晰白字');
+assertTheme('destructive', confirm);
 for (const control of [cancel, confirm]) { bounds(control); check(control.getBoundingClientRect().height >= 32, '按钮具有可用点击高度'); }
-check(getComputedStyle(cancel).backgroundColor === 'rgb(255, 255, 255)' && getComputedStyle(cancel).borderTopWidth === '1px', '取消保持亮色边框样式');
+assertTheme('cancel', cancel);
 const legacy = [...document.querySelectorAll('header button')].find(node => node.textContent === '更多');
 check(getComputedStyle(legacy).borderTopWidth === '1px' && getComputedStyle(legacy).paddingLeft === (innerWidth <= 600 ? '8px' : '12px'), '非试点按钮原有样式保留');
 const textCell = document.querySelector('[row-id="a"] [col-id="text"]');
@@ -42,8 +44,8 @@ check(getComputedStyle(document.querySelector('.grid')).display === 'block', '�
 check(document.querySelector('[row-id="a"] [col-id="text"]').getBoundingClientRect().height > 20, '真实表格行布局保持可用');
 check(!state.batchRequests, '尚未提交');
 check(document.activeElement === cancel, '默认聚焦安全的取消按钮');
-await input({key:'Tab'}); check(document.activeElement === confirm, 'Tab 到确认');
-await input({key:'Tab'}); check(document.activeElement === cancel, 'Tab 环绕');
+await input({key:'Tab'}); check(document.activeElement === confirm, 'Tab 到确认'); assertKeyboardFocus(confirm);
+await input({key:'Tab'}); check(document.activeElement === cancel, 'Tab 环绕'); assertKeyboardFocus(cancel);
 await input({key:'Tab',shift:true}); check(document.activeElement === confirm, 'Shift Tab 环绕');
 await input({key:'Tab'});
 await input({key:'Enter'}); check(!dialog() && state.selectionRequests.at(-1).join() === 'a,b', '取消保留勾选');
@@ -60,7 +62,10 @@ await input({click:'.grid',button:'right'}); check(!menu(), '空白无隐含行�
 document.getElementById('result').dataset.state='passed';
 } catch(e) { document.getElementById('result').dataset.state='failed'; document.getElementById('result').textContent=e.stack; }})();
 `;
-for (const width of [1600, 420]) test(`行右键删除确认的真实输入与视口（${width}px）`, {skip: chrome ? false : '需要 Chrome',timeout:40000}, t=>checkInteractiveBrowser(t,script,fixture,width));
+for (const width of [1600, 420]) test(`行右键删除确认的真实输入与视口（${width}px）`, {timeout:40000}, t => {
+  assert.ok(chrome, '主题矩阵需要真实 Chrome，环境缺失不能记为通过');
+  return checkInteractiveBrowser(t,script,fixture,width);
+});
 
 const raceScript = script.slice(0, script.indexOf('\n(async () =>')) + String.raw`
 (async () => { try {
@@ -90,6 +95,7 @@ state.speech = {locked:lock === 'speech', voice:{speaker:'zh_female_vv_uranus_bi
 state.status.modification = ['codex','user'].includes(lock) ? {owner:lock} : null;
 await action(()=>[...timers.values()].forEach(cb=>cb()));
 check(document.querySelector('[data-delete-confirm]').disabled, '弹窗期间共享锁阻止确认：'+lock);
+assertTheme('disabled', document.querySelector('[data-delete-confirm]'));
 await input({click:'[role="alertdialog"] [data-delete-confirm]'}); check(state.batchRequests.length === 1, '锁定不提交');
 }
 await input({key:'Escape'}); check(!dialog(), '锁定仍可取消');

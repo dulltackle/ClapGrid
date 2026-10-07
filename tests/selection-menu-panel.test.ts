@@ -4,6 +4,7 @@ import { fixture } from './helpers/editing-fixture.js';
 import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
 
 const script=String.raw`
+import { assertTheme } from './tests/helpers/theme-contract.ts';
 import {act} from 'react';import {createRoot} from 'react-dom/client';import {App} from './src/panel/app.tsx';import {state} from 'editing-fixture';
 globalThis.IS_REACT_ACT_ENVIRONMENT=true;
 const intervals=new Map();let timer=0;window.setInterval=fn=>{intervals.set(++timer,fn);return timer;};window.clearInterval=id=>intervals.delete(id);
@@ -43,6 +44,7 @@ const selected=ids=>check(JSON.stringify([...(state.selectionRequests.at(-1)??[]
   if(lock==='taskLocked')state.status.taskLocked=true;else if(lock==='speech')state.speech={locked:true,voice:{},tasks:[],operations:[],audio:[]};else state.status.modification={owner:lock};await poll();
   check(document.querySelectorAll('[role="menu"] [role="menuitem"]').length===3,'全部三项仍显示');
   check([...document.querySelectorAll('[role="menu"] [role="menuitem"]')].every(node=>node.getAttribute('aria-disabled')==='true')&&document.querySelector('[row-id="a"] .segment-drag-handle').disabled,'动态锁禁用修改入口 '+lock);
+  for (const item of document.querySelectorAll('[role="menu"] [role="menuitem"]')) assertTheme('disabled', item);
   check(document.activeElement.matches('[role="menu"]'),'动态禁用后保留菜单有效焦点 '+document.activeElement.outerHTML);
   await input({key:'Escape'});selected(['a']);check(document.activeElement.isConnected&&!document.querySelector('[role="menu"]'),'锁定菜单关闭后焦点有效');
   state.status.taskLocked=false;state.status.modification=null;if(state.speech)state.speech.locked=false;await poll();
