@@ -53,7 +53,7 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
       if (message.error) request?.reject(new Error(JSON.stringify(message.error))); else request?.resolve(message.result);
     } else if (message.method === 'Runtime.bindingCalled') {
       void (async () => {
-        const { id: requestId, key, shift, ctrl, meta, click, screenshot } = JSON.parse(message.params.payload);
+        const { id: requestId, key, shift, ctrl, meta, click, screenshot, button = 'left' } = JSON.parse(message.params.payload);
         if (screenshot) {
           if (process.env.PANEL_EVIDENCE_DIR) {
             const { data } = await send('Page.captureScreenshot');
@@ -65,8 +65,8 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
           if (position.exceptionDetails) throw Error(JSON.stringify(position.exceptionDetails));
           const modifiers = (shift ? 8 : 0) | (ctrl ? 2 : 0) | (meta ? 4 : 0);
           for (let count = 1; count <= (key === 'double' ? 2 : 1); count++) {
-            await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...position.result.value, button: 'left', clickCount: count, modifiers });
-            await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...position.result.value, button: 'left', clickCount: count, modifiers });
+            await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...position.result.value, button, clickCount: count, modifiers });
+            await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...position.result.value, button, clickCount: count, modifiers });
           }
         } else {
           const code = { Tab: 9, Escape: 27, Enter: 13, ' ': 32, F2: 113, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, Home: 36, End: 35 }[key as string];

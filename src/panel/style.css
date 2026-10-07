@@ -140,3 +140,5 @@ header.searching { gap: 4px; }
 header.searching .search-popover label { min-width: 72px; }
 header.searching.has-selection .search-popover [role="status"] { flex: 0 0 36px; }
 header.searching .organization button { padding: 2px 4px; font-size: 11px; }
+
+.row-menu { position: fixed; z-index: 10; max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); overflow: auto; display: flex; flex-direction: column; gap: 4px; padding: 6px; border: 1px solid var(--color-border); border-radius: var(--radius-control); background: var(--color-surface); box-shadow: 0 4px 16px #0002; }

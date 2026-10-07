@@ -1,4 +1,5 @@
 import { panelServiceUrl } from './service-url.js';
+import { RowMenu } from './row-menu.js';
 import { Dialog } from './dialog.js';
 import { dialogReturnFocus } from './dialog-focus.js';
 import { ExportTaskDetails, exportStateLabel, useExportTasks } from './export-tasks.js';
@@ -82,6 +83,9 @@ export function App() {
   const searchAnchor = useRef(0);
   const [paste, setPaste] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [rowMenu, setRowMenu] = useState<{ x: number; y: number } | null>(null);
+  const [deleteTargets, setDeleteTargets] = useState<Segment[] | null>(null);
+  const rowOrigin = useRef(() => {});
   const [selectionMenuOpen, setSelectionMenuOpen] = useState(false);
   const selectionTrigger = useRef<HTMLButtonElement>(null);
   const selectionMenu = useRef<HTMLDivElement>(null);
@@ -337,6 +341,13 @@ export function App() {
       selectionMenu.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
     }
   }, [selectionMenuOpen, disabled, selectedPosition, selectedIds.length]);
+  const closeRowMenu = (restore = true) => { setRowMenu(null); if (restore) requestAnimationFrame(() => rowOrigin.current()); };
+  const requestDelete = () => {
+    const ids = grid.current?.getSelectedRows().map(segment => segment.id) ?? [];
+    const targets = status?.snapshot.segments.filter(segment => ids.includes(segment.id)) ?? [];
+    if (!targets.length || disabled) return;
+    setDeleteTargets(structuredClone(targets)); setRowMenu(null);
+  };
   const currentListening = speech?.audio.find(audio => audio.taskId === listening?.taskId && audio.segmentId === listening?.segmentId);
   const speechTask = speech?.tasks.at(-1);
   const speechProblems = speech?.tasks.filter(task => task.state === 'failed' || task.state === 'unknown') ?? [];
@@ -526,7 +537,32 @@ export function App() {
       <h2>视频预览</h2><video key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
       <p>从 {preview.start} 秒开始，预览默认静音。</p><button onClick={() => setPreview(null)}>关闭预览</button>
     </Dialog>}
-    <div className="grid" ref={gridElement} onKeyDown={event => {
+    {rowMenu && <RowMenu {...rowMenu} onClose={closeRowMenu}>
+      <button role="menuitem" disabled={disabled || !selectedIds.length} onClick={requestDelete}>删除口播片段</button>
+    </RowMenu>}
+    {deleteTargets && <Dialog label="删除口播片段" onClose={() => setDeleteTargets(null)} restoreFocus={() => rowOrigin.current()}>
+      <h2>删除口播片段</h2>
+      <p>{deleteTargets.length === 1 ? '确定删除这个口播片段？' : `确定删除已勾选的 ${deleteTargets.length} 个口播片段？`}</p>
+      <div className="toolbar">
+        <button onClick={() => setDeleteTargets(null)}>取消</button>
+        <button data-delete-confirm disabled={disabled} onClick={() => {
+          if (disabled || editing.getState().busy || editing.getState().editing) return;
+          const targets = deleteTargets; setDeleteTargets(null);
+          void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) });
+        }}>删除</button>
+      </div>
+      {lock && <p role="status">{lock}</p>}
+    </Dialog>}
+    <div className="grid" ref={gridElement} onContextMenu={event => {
+      const target = event.target as HTMLElement;
+      const row = target.closest<HTMLElement>('[row-id]');
+      const node = row?.getAttribute('row-id') ? grid.current?.getRowNode(row.getAttribute('row-id')!) : null;
+      if (!node?.data || editing.getState().editing || target.closest('input:not([type="checkbox"]), textarea, .ag-popup-editor')) { setRowMenu(null); return; }
+      event.preventDefault();
+      if (!node.isSelected()) node.setSelected(true, true);
+      rowOrigin.current = dialogReturnFocus(target, () => grid.current, () => moreButton.current);
+      setSelectionMenuOpen(false); setRowMenu({ x: event.clientX, y: event.clientY });
+    }} onKeyDown={event => {
       if (event.key !== 'Escape' || event.nativeEvent.isComposing || event.defaultPrevented) return;
       const target = event.target as HTMLElement;
       if (target.closest('input:not([type="checkbox"]), textarea, select, [contenteditable="true"], dialog, .ag-popup-editor') || editing.getState().editing) return;
