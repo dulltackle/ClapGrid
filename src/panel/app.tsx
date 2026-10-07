@@ -67,6 +67,7 @@ export function App() {
   const exports = useExportTasks(() => { void editing.refresh(() => queryStatus(panelServiceUrl()), setStatus, () => {}); });
   const [exportSettingsOpen, setExportSettingsOpen] = useState(false);
   const [status, setStatus] = useState<ServiceStatus>();
+  const [reorderPreview, setReorderPreview] = useState<Segment[] | null>(null);
   const [speech, setSpeech] = useState<SpeechStatus>();
   const [listening, setListening] = useState<SpeechStatus['audio'][number] | null>(null);
   const [videoDetails, setVideoDetails] = useState<string | null>(null);
@@ -312,7 +313,14 @@ export function App() {
   }, [editing]);
   const disabled = !status || !speech || speech.locked || status.taskLocked || editState.busy || editState.editing || !!status.modification;
   const drag = useSegmentDrag({ segments: status?.snapshot.segments ?? [], disabled, grid, element: gridElement,
-    submit: (expectedIds, ids) => { void organize({ changes: [{ kind: 'reorder', expectedIds, ids }] }); },
+    submit: (expectedIds, ids) => {
+      if (!status || editing.getState().busy || editing.getState().editing) return;
+      // 松手立即反馈位置；预览不覆盖服务快照，失败或取消后恢复已确认顺序。
+      const segments = new Map(status.snapshot.segments.map(segment => [segment.id, segment]));
+      setReorderPreview(ids.map((id, index) => ({ ...segments.get(id)!, order: index + 1 })));
+      setSaveState('saving'); setSaveError('');
+      void organize({ changes: [{ kind: 'reorder', expectedIds, ids }] }).finally(() => setReorderPreview(null));
+    },
     reject: message => failed(new Error(message)),
   });
   const closeRowMenu = (restore = true) => { setRowMenu(null); if (restore) requestAnimationFrame(() => rowOrigin.current()); };
@@ -552,7 +560,7 @@ export function App() {
       getRowId={params => params.data.id}
       onCellEditingStopped={() => editing.finishCell()}
       onCellEditRequest={event => { void save({ id: event.data.id, text: String(event.newValue ?? '') }); }}
-      theme={theme} loading={!status && !error} columnDefs={columns} rowData={status?.snapshot.segments ?? []}
+      theme={theme} loading={!status && !error} columnDefs={columns} rowData={reorderPreview ?? status?.snapshot.segments ?? []}
       defaultColDef={{ editable: false, sortable: false, resizable: true }}
       overlayLoadingTemplate="<span>正在连接本地服务…</span>"
       noRowsOverlayComponent={EmptyProject}
