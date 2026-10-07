@@ -54,7 +54,6 @@ button:disabled { opacity: .5; cursor: default; }
 .save-status { margin: 0 0 var(--space-2); color: var(--color-ink-secondary); }
 .save-error { color: var(--color-error); }
 
-.organization { flex: none; }
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .toolbar span { font-size: 12px; color: var(--color-ink-secondary); }
 input, textarea { font: inherit; border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-1) var(--space-2); }
@@ -112,12 +111,10 @@ header button { white-space: nowrap; }
 .status-line > span:not(.task-summary) { flex: none; }
 .status-line .task-summary { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .status-line button { flex: none; padding: 2px 6px; }
-.organization button { padding: 2px 6px; font-size: 12px; }
-.organization .toolbar { gap: 4px; }
 
 .speech-state .speech-warning { color: var(--color-error); }
 
-/* 查找与选择操作共享固定高度的页头。 */
+/* 查找复用固定高度的页头。 */
 .search-popover { flex: 1; min-width: 0; height: 32px; display: flex; align-items: center; gap: 4px; }
 .search-popover label { flex: 1; min-width: 0; }
 .search-popover input { min-width: 0; width: 100%; height: 24px; padding: 2px 6px; font-size: 12px; }
@@ -128,18 +125,10 @@ header button { white-space: nowrap; }
 .text-search-current { display: block; max-height: 220px; overflow-y: auto; width: 100%; position: relative; -webkit-line-clamp: unset; }
 .text-search-current mark { background: #ffd35c; }
 
-/* 选择操作复用页头空间；紧凑箭头保留完整可访问名称。 */
-header .organization { min-width: 0; }
-header .organization .toolbar { flex-wrap: nowrap; white-space: nowrap; }
-header .organization button { padding: 2px 6px; }
-header .organization [aria-label^="项目顺序"] { width: 24px; padding: 2px; }
 
 header { height: 32px; }
-.selection-menu-row, #selection-menu { flex-wrap: nowrap; }
 header.searching { gap: 4px; }
 header.searching .search-popover label { min-width: 72px; }
-header.searching.has-selection .search-popover [role="status"] { flex: 0 0 36px; }
-header.searching .organization button { padding: 2px 4px; font-size: 11px; }
 
 .segment-order { display: flex; align-items: center; gap: 8px; height: 100%; }
 .segment-drag-handle { opacity: 0; padding: 3px; line-height: 20px; flex-shrink: 0; cursor: grab; touch-action: none; }

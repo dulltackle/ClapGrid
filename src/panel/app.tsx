@@ -87,11 +87,6 @@ export function App() {
   const [rowMenu, setRowMenu] = useState<{ x: number; y: number; anchor: Segment; expectedIds: string[] } | null>(null);
   const [deleteTargets, setDeleteTargets] = useState<Segment[] | null>(null);
   const rowOrigin = useRef(() => {});
-  const [selectionMenuOpen, setSelectionMenuOpen] = useState(false);
-  const selectionTrigger = useRef<HTMLButtonElement>(null);
-  const selectionMenu = useRef<HTMLDivElement>(null);
-  const selectionOwnsFocus = useRef(false);
-  const selectionFocusedItem = useRef<HTMLElement | null>(null);
   const [selectionState, setSelectionState] = useState('正在连接勾选…');
   const [connectionVersion, setConnectionVersion] = useState(0);
   const table = useRef<TableSession | null>(null);
@@ -107,7 +102,7 @@ export function App() {
   const activeMatch = searchOpen && currentMatch && matchedIds.includes(currentMatch) ? currentMatch : null;
   const searchLayout = useRef({ activeMatch, rowHeight: searchRowHeight });
   searchLayout.current = { activeMatch, rowHeight: searchRowHeight };
-  const closeSearch = () => { setSearchOpen(false); setSelectionMenuOpen(false); setCurrentMatch(null); requestAnimationFrame(() => (selectedIds.length ? moreButton.current : tableFallback.current)?.focus()); };
+  const closeSearch = () => { setSearchOpen(false); setCurrentMatch(null); requestAnimationFrame(() => tableFallback.current?.focus()); };
   const locate = (needle: string, direction: -1 | 1, restart = false) => {
     const api = grid.current;
     if (!api || api.getEditingCells().length) return;
@@ -141,17 +136,6 @@ export function App() {
     observer.observe(element); return () => observer.disconnect();
   }, []);
   useEffect(() => { grid.current?.resetRowHeights(); }, [activeMatch, searchRowHeight]);
-  const restoreSelectionFocus = () => requestAnimationFrame(() => (selectionTrigger.current ?? searchInput.current ?? moreButton.current)?.focus());
-  const closeSelectionMenu = () => { setSelectionMenuOpen(false); restoreSelectionFocus(); };
-  useEffect(() => {
-    if (!selectedIds.length) {
-      setSelectionMenuOpen(false);
-      if (selectionOwnsFocus.current) { selectionOwnsFocus.current = false; restoreSelectionFocus(); }
-    }
-  }, [selectedIds.length]);
-  useEffect(() => {
-    if (selectionMenuOpen) selectionMenu.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
-  }, [selectionMenuOpen]);
   const returnFocus = useRef({ settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, material: () => {}, detail: () => {} });
   const rememberOrigin = (trigger: HTMLElement, detail: keyof typeof returnFocus.current) => {
     returnFocus.current[detail] = dialogReturnFocus(trigger, () => grid.current, () => searchInput.current ?? (tableFallback.current?.hidden ? moreButton.current : tableFallback.current));
@@ -277,15 +261,6 @@ export function App() {
       action.apply(() => setSaveState('saved'));
     } finally { action.apply(() => { setVideoEditor(null); setImporting(false); }); }
   }, failed);
-  const move = (direction: -1 | 1) => {
-    const ids = status?.snapshot.segments.map(segment => segment.id) ?? [];
-    const position = ids.indexOf(selectedIds[0]!);
-    const destination = position + direction;
-    if (selectedIds.length !== 1 || position < 0 || destination < 0 || destination >= ids.length) return;
-    const next = [...ids];
-    [next[position], next[destination]] = [next[destination]!, next[position]!];
-    void organize({ changes: [{ kind: 'reorder', expectedIds: ids, ids: next }] });
-  };
   const synchronizeSelection = (ids: string[]) => {
     setSelectedIds(ids);
     const connection = table.current;
@@ -339,13 +314,6 @@ export function App() {
     submit: (expectedIds, ids) => { void organize({ changes: [{ kind: 'reorder', expectedIds, ids }] }); },
     reject: message => failed(new Error(message)),
   });
-  const selectedPosition = status?.snapshot.segments.findIndex(segment => segment.id === selectedIds[0]) ?? -1;
-  useEffect(() => {
-    const previous = selectionFocusedItem.current;
-    if (selectionMenuOpen && selectionOwnsFocus.current && previous && (!previous.isConnected || previous.matches(':disabled'))) {
-      selectionMenu.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
-    }
-  }, [selectionMenuOpen, disabled, selectedPosition, selectedIds.length]);
   const closeRowMenu = (restore = true) => { setRowMenu(null); if (restore) requestAnimationFrame(() => rowOrigin.current()); };
   const requestDelete = () => {
     const ids = grid.current?.getSelectedRows().map(segment => segment.id) ?? [];
@@ -380,59 +348,24 @@ export function App() {
   const exportProblems = exports.exports?.tasks.filter(task => task.state === 'failed' || task.state === 'interrupted') ?? [];
   const lock = speech?.locked ? '配音进行中，项目已锁定；可查询和试听' : status?.taskLocked || exports.exports?.locked ? '导出进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : '';
   const searchStatus = !query ? '输入文案查找' : !matchedIds.length ? '无匹配片段' : activeMatch ? `第 ${matchedIds.indexOf(activeMatch) + 1} / ${matchedIds.length} 个匹配片段` : `${matchedIds.length} 个匹配片段，点击下一个定位`;
-  const compactSearchStatus = !query ? '查找' : !matchedIds.length ? '无匹配' : activeMatch ? `${matchedIds.indexOf(activeMatch) + 1}/${matchedIds.length}` : `${matchedIds.length}项`;
-  const selectionButtons = <>
-    <button role={searchOpen ? 'menuitem' : undefined} tabIndex={searchOpen ? -1 : undefined} aria-label="取消选择" onClick={() => { grid.current?.deselectAll(); restoreSelectionFocus(); }}>{searchOpen ? '取消' : '取消选择'}</button>
-    {!searchOpen && <span>已勾选 {selectedIds.length} 个片段</span>}
-    <button role={searchOpen ? 'menuitem' : undefined} tabIndex={searchOpen ? -1 : undefined} aria-label="删除勾选" disabled={disabled || !selectedIds.length} onClick={() => {
-      const targets = status!.snapshot.segments.filter(segment => selectedIds.includes(segment.id));
-      void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) });
-    }}>{searchOpen ? '删除' : '删除勾选'}</button>
-    {selectedIds.length === 1 && <>
-      <button role={searchOpen ? 'menuitem' : undefined} tabIndex={searchOpen ? -1 : undefined} disabled={disabled || selectedPosition <= 0} onClick={() => { if (searchOpen) closeSelectionMenu(); move(-1); }} aria-label="项目顺序上移" title="项目顺序上移">↑</button>
-      <button role={searchOpen ? 'menuitem' : undefined} tabIndex={searchOpen ? -1 : undefined} disabled={disabled || selectedPosition < 0 || selectedPosition >= (status?.snapshot.segments.length ?? 0) - 1} onClick={() => { if (searchOpen) closeSelectionMenu(); move(1); }} aria-label="项目顺序下移" title="项目顺序下移">↓</button>
-    </>}
-  </>;
-  const selectionActions = selectedIds.length > 0 && <section className="organization" aria-label="组织口播片段"
-    onFocusCapture={event => { selectionOwnsFocus.current = true; selectionFocusedItem.current = event.target as HTMLElement; }}
-    onBlurCapture={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) { selectionOwnsFocus.current = false; setSelectionMenuOpen(false); } }}>
-    {searchOpen ? <div className="toolbar selection-menu-row">
-      <button ref={selectionTrigger} aria-haspopup="menu" aria-expanded={selectionMenuOpen} aria-controls="selection-menu"
-        onKeyDown={event => { if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setSelectionMenuOpen(true); } else if (event.key === 'Escape' && selectionMenuOpen) { event.preventDefault(); event.stopPropagation(); closeSelectionMenu(); } }}
-        onClick={() => { if (selectionMenuOpen) closeSelectionMenu(); else setSelectionMenuOpen(true); }}>已选 {selectedIds.length} 项</button>
-      {selectionMenuOpen && <div id="selection-menu" className="toolbar" role="menu" aria-label="选择操作" ref={selectionMenu}
-        onKeyDown={event => {
-          if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeSelectionMenu(); return; }
-          if (event.key === 'Tab') { event.preventDefault(); setSelectionMenuOpen(false); (event.shiftKey ? searchInput.current : moreButton.current)?.focus(); return; }
-          const keys = ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
-          if (!keys.includes(event.key)) return;
-          event.preventDefault();
-          const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
-          const index = items.indexOf(document.activeElement as HTMLButtonElement);
-          const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 1) + items.length) % items.length;
-          items[next]?.focus();
-        }}>{selectionButtons}</div>}
-    </div> : <div className="toolbar">{selectionButtons}</div>}
-  </section>;
   return <main>
-    <header className={searchOpen ? `searching${selectionMenuOpen ? ' selection-menu-open' : ''}${selectedIds.length ? ' has-selection' : ''}` : ''}>
-      <h1 hidden={searchOpen || selectedIds.length > 0}>口播片段</h1>
+    <header className={searchOpen ? 'searching' : ''}>
+      <h1 hidden={searchOpen}>口播片段</h1>
       {searchOpen && <section id="segment-search" className="search-popover" role="dialog" aria-modal="false" aria-label="查找口播片段">
         <label><input ref={searchInput} aria-label="查找文案" placeholder="查找文案" value={query}
           onChange={event => { setQuery(event.target.value); locate(event.target.value, 1, true); }}
           onKeyDown={event => { if (event.nativeEvent.isComposing) return; if (event.key === 'Escape') { event.preventDefault(); closeSearch(); } else if (event.key === 'Enter') { event.preventDefault(); locate(query, event.shiftKey ? -1 : 1); } }} /></label>
-        <span role="status" hidden={selectionMenuOpen} aria-label={searchStatus} title={searchStatus}>{selectedIds.length ? compactSearchStatus : searchStatus}</span>
-        <div className="toolbar" hidden={selectionMenuOpen}>
+        <span role="status" aria-label={searchStatus} title={searchStatus}>{searchStatus}</span>
+        <div className="toolbar">
           <button disabled={!matchedIds.length} onClick={() => locate(query, -1)}>上一个</button>
           <button disabled={!matchedIds.length} onClick={() => locate(query, 1)}>下一个</button>
           <button onClick={closeSearch}>关闭查找</button>
         </div>
       </section>}
-      {selectionActions}
       <div className="toolbar primary-actions">
-        <button hidden={searchOpen || selectedIds.length > 0} disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
-        <button hidden={searchOpen || selectedIds.length > 0} className="search-trigger" ref={tableFallback} aria-expanded={searchOpen} aria-controls="segment-search" onClick={() => { setSearchOpen(true); locate(query, 1, true); }}>查找</button>
-        <button hidden={searchOpen || selectedIds.length > 0} disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" title="全片导出：查找与勾选不改变范围" onClick={() => { void exports.run(); }}>导出全片</button>
+        <button hidden={searchOpen} disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
+        <button hidden={searchOpen} className="search-trigger" ref={tableFallback} aria-expanded={searchOpen} aria-controls="segment-search" onClick={() => { setSearchOpen(true); locate(query, 1, true); }}>查找</button>
+        <button hidden={searchOpen} disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" title="全片导出：查找与勾选不改变范围" onClick={() => { void exports.run(); }}>导出全片</button>
         <button ref={moreButton} aria-haspopup="dialog" aria-expanded={detail === 'more'} onClick={event => openDetail('more', event.currentTarget)}>更多</button>
       </div>
     </header>
@@ -440,11 +373,10 @@ export function App() {
     {detail === 'more' && <Dialog label="更多操作" onClose={() => setDetail(null)} restoreFocus={() => returnFocus.current.detail()}>
       <h2>更多操作</h2>
       <div className="more-actions">
-        {(searchOpen || selectedIds.length > 0) && <>
+        {searchOpen && <>
           <button disabled={disabled} onClick={() => { setDetail(null); void save({ text: '' }); }}>新增口播片段</button>
           <button disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { setDetail(null); void exports.run(); }}>导出全片</button>
         </>}
-        {!searchOpen && selectedIds.length > 0 && <button onClick={() => { returnFocus.current.detail = () => searchInput.current?.focus(); setDetail(null); setSearchOpen(true); locate(query, 1, true); }}>查找</button>}
         <p className="export-scope">全片导出：查找与勾选不改变范围</p>
         <button disabled={disabled} onClick={() => { rememberOrigin(moreButton.current!, 'video'); setDetail(null); void openVideoEditor(); }}>导入本地视频</button>
         <button disabled={disabled} onClick={() => setDetail('paste')}>粘贴多行文案</button>
@@ -587,7 +519,7 @@ export function App() {
       event.preventDefault();
       if (!node.isSelected()) node.setSelected(true, true);
       rowOrigin.current = dialogReturnFocus(target, () => grid.current, () => moreButton.current);
-      setSelectionMenuOpen(false); setRowMenu({ x: event.clientX, y: event.clientY, anchor: structuredClone(node.data), expectedIds: status?.snapshot.segments.map(segment => segment.id) ?? [] });
+      setRowMenu({ x: event.clientX, y: event.clientY, anchor: structuredClone(node.data), expectedIds: status?.snapshot.segments.map(segment => segment.id) ?? [] });
     }} onKeyDown={event => {
       if (event.key !== 'Escape' || event.nativeEvent.isComposing || event.defaultPrevented) return;
       const target = event.target as HTMLElement;

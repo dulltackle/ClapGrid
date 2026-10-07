@@ -49,11 +49,7 @@ for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮�
       await query('hello world');
       await action(() => document.querySelector('[row-id="b"] input[type="checkbox"]').click());
       check(input() && JSON.stringify(state.selectionRequests.at(-1)) === '["b"]', '外部可勾选且浮窗保持打开');
-      await action(() => window.browserInput({ click: '[aria-haspopup="menu"]' }));
-      const deleteButton = button('删除勾选').getBoundingClientRect();
-      check(document.elementFromPoint(deleteButton.left + 4, deleteButton.top + 4)?.closest('button') === button('删除勾选'), '查找不遮挡勾选操作');
-      check(deleteButton.bottom <= document.querySelector('.grid').getBoundingClientRect().top && document.querySelector('.search-popover').getBoundingClientRect().top <= deleteButton.top, '查找与选择菜单留在同一页头且不遮表格');
-      await action(() => window.browserInput({ key: 'Escape' }));
+      check(!document.querySelector('header [aria-haspopup="menu"]'), '查找勾选不出现旧操作菜单');
       check(document.documentElement.scrollWidth <= innerWidth, '查找与勾选共存不溢出页面');
       await click('下一个'); check(count().includes('第 2 / 2'), '跳至下一片段');
       await click('下一个'); check(count().includes('第 1 / 2'), '循环定位');
@@ -62,7 +58,7 @@ for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮�
       await click('关闭查找'); check(!input() && !document.querySelector('mark'), '关闭清除高亮');
       await openSearch(); check(input().value === 'hello world', '重开保留关键词');
       await action(() => { input().focus(); return window.browserInput({ key: 'Escape' }); });
-      check(!input() && !document.querySelector('mark') && document.activeElement === button('更多'), 'Esc 关闭并恢复可见更多入口');
+      check(!input() && !document.querySelector('mark') && document.activeElement === button('查找'), 'Esc 关闭并恢复可见查找入口');
       const poll = () => action(() => [...intervals.values()].forEach(callback => callback()));
       state.status.snapshot.segments[0].text = '开头\n' + '长文案内容\n'.repeat(70) + 'hello world 末尾';
       await poll(); await openSearch();
