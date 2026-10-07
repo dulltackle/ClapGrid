@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/index.js';
 import { buildIdentity } from '../build-identity.js';
 import { panelServiceUrl } from './service-url.js';
 import { RowMenu } from './row-menu.js';
@@ -516,12 +517,12 @@ export function App() {
       <h2>删除口播片段</h2>
       <p>{deleteTargets.length === 1 ? '确定删除这个口播片段？' : `确定删除已勾选的 ${deleteTargets.length} 个口播片段？`}</p>
       <div className="toolbar">
-        <button onClick={() => setDeleteTargets(null)}>取消</button>
-        <button data-delete-confirm disabled={disabled} onClick={() => {
+        <Button variant="outline" onClick={() => setDeleteTargets(null)}>取消</Button>
+        <Button variant="destructive" data-delete-confirm disabled={disabled} onClick={() => {
           if (disabled || editing.getState().busy || editing.getState().editing) return;
           const targets = deleteTargets; setDeleteTargets(null);
           void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) });
-        }}>删除</button>
+        }}>删除</Button>
       </div>
       {lock && <p role="status">{lock}</p>}
     </Dialog>}

@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import type { TestContext } from 'node:test';
 import { build } from 'esbuild';
+import { buildPanelStyles } from './panel-styles.js';
 
 export const chrome = process.env.CHROME_BIN ?? ['google-chrome', 'chromium', 'chromium-browser'].find(command => spawnSync(command, ['--version']).status === 0);
 
@@ -22,6 +23,7 @@ export async function checkBrowser(t: TestContext, script: string, fixture: stri
       builder.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: fixture, loader: 'js' }));
     } }],
   });
+  await buildPanelStyles(directory);
   writeFileSync(join(directory, 'index.html'), '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><link rel="stylesheet" href="test.css"><div id="root"></div><pre id="result" data-state="pending"></pre><script src="test.js"></script></html>');
   const { stdout } = await promisify(execFile)(chrome!, ['--headless', '--no-sandbox', '--disable-dev-shm-usage', `--user-data-dir=${join(directory, 'profile')}`, '--window-size=1600,1200', '--virtual-time-budget=10000', '--dump-dom', pathToFileURL(join(directory, 'index.html')).href], { timeout: 25000, maxBuffer: 4 * 1024 * 1024 });
   const result = stdout.match(/<pre id="result"[\s\S]*?<\/pre>/)?.[0] ?? stdout;
