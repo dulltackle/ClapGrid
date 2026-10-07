@@ -100,9 +100,9 @@ const script = String.raw`
       await select('c'); check(!button('项目顺序上移').disabled && button('项目顺序下移').disabled, '末段不能下移'); await select('c');
       await action(() => document.querySelector('[col-id="order"] .ag-header-cell-label').click());
       await action(() => document.querySelector('[col-id="order"] .ag-header-cell-label').click());
-      check(document.querySelector('[row-id="c"]').getAttribute('row-index') === '0', '显示按项目序号倒序');
+      check(document.querySelector('[row-id="a"]').getAttribute('row-index') === '0', '列标题保持项目顺序');
       await select('b'); await filter('第二段');
-      check(document.querySelector('[row-id="b"] [col-id="order"]').textContent.trim() === '2', '查找及排序不重编号');
+      check(document.querySelector('[row-id="b"] [col-id="order"] .segment-order > span').textContent.trim() === '2', '查找及点击列标题不重编号');
       await click('项目顺序上移'); await poll();
       await action(() => window.browserInput({ click: '[aria-haspopup="menu"]' }));
       check(JSON.stringify(state.batchRequests.at(-1).changes[0]) === JSON.stringify({ kind: 'reorder', expectedIds: ['a','b','c'], ids: ['b','a','c'] }), '上移按实际项目顺序请求');

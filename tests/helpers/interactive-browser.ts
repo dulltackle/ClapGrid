@@ -53,13 +53,22 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
       if (message.error) request?.reject(new Error(JSON.stringify(message.error))); else request?.resolve(message.result);
     } else if (message.method === 'Runtime.bindingCalled') {
       void (async () => {
-        const { id: requestId, key, shift, ctrl, meta, click, screenshot, button = 'left' } = JSON.parse(message.params.payload);
+        const { id: requestId, key, shift, ctrl, meta, click, screenshot, pointer, button = 'left' } = JSON.parse(message.params.payload);
         if (screenshot) {
           if (process.env.PANEL_EVIDENCE_DIR) {
             const { data } = await send('Page.captureScreenshot');
             mkdirSync(process.env.PANEL_EVIDENCE_DIR, { recursive: true });
             writeFileSync(join(process.env.PANEL_EVIDENCE_DIR, `${width}-${screenshot}.png`), Buffer.from(data, 'base64'));
           }
+        } else if (pointer) {
+          let position = { x: pointer.x, y: pointer.y };
+          if (pointer.selector) {
+            const response = await send('Runtime.evaluate', { expression: `(() => { const node = document.querySelector(${JSON.stringify(pointer.selector)}); if (!node) throw Error('找不到拖拽目标'); const rect = node.getBoundingClientRect(); return { x: rect.x + rect.width / 2, y: rect.y + rect.height * ${pointer.fraction ?? 0.5} }; })()`, returnByValue: true });
+            if (response.exceptionDetails) throw Error(JSON.stringify(response.exceptionDetails));
+            position = response.result.value;
+          }
+          if (pointer.type === 'mousePressed') await send('Input.dispatchMouseEvent', { ...position, type: 'mouseMoved', button: 'none', buttons: 0 });
+          await send('Input.dispatchMouseEvent', { ...position, type: pointer.type, button: pointer.type === 'mouseMoved' ? 'none' : 'left', buttons: pointer.buttons ?? (pointer.type === 'mouseReleased' ? 0 : 1), clickCount: 1, ...(pointer.type === 'mouseWheel' ? { deltaX: 0, deltaY: pointer.deltaY ?? 600 } : {}) });
         } else if (click) {
           const position = await send('Runtime.evaluate', { expression: `(() => { const node = document.querySelector(${JSON.stringify(click)}); if (!node) throw Error('找不到鼠标目标'); node.scrollIntoView({ block: 'nearest', inline: 'nearest' }); const rect = node.getBoundingClientRect(); return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }; })()`, returnByValue: true });
           if (position.exceptionDetails) throw Error(JSON.stringify(position.exceptionDetails));

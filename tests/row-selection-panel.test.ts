@@ -67,7 +67,7 @@ const script = String.raw`
       await input({ click: '.ag-header input[type="checkbox"]' }); selected([]);
       await input({ click: '[col-id="order"] .ag-header-cell-label' });
       await input({ click: '[col-id="order"] .ag-header-cell-label' });
-      check(document.querySelector('[row-id="c"]').getAttribute('row-index') === '0', '按显示顺序倒排');
+      check(document.querySelector('[row-id="a"]').getAttribute('row-index') === '0', '列标题保持项目顺序');
       await input({ click: row('c') }); await input({ click: row('b'), shift: true }); selected(['b','c']);
       await action(() => [...intervals.values()].forEach(callback => callback())); selected(['b','c']);
       state.status.snapshot.segments = state.status.snapshot.segments.filter(segment => segment.id !== 'c');
@@ -81,7 +81,7 @@ const script = String.raw`
       await input({ click: '[aria-label="查找文案"]' });
       await input({ key: 'Escape' }); selected(['b']);
       await input({ click: row('b') });
-      await input({ key: 'ArrowDown' }); selected(['b']);
+      await input({ key: 'ArrowUp' }); selected(['b']);
       check(document.activeElement.closest('[row-id="a"]'), '普通方向键移动单元格焦点');
       await input({ key: 'F2' });
       check(document.querySelector('[aria-label="文案全文"]'), 'F2 进入全文编辑');

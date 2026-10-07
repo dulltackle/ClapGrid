@@ -14,6 +14,7 @@ import { projectEditing } from './project-editing.js';
 import { SearchText, textMatches } from './text-search.js';
 import { TextEditor } from './text-editor.js';
 import './style.css';
+import { useSegmentDrag } from './segment-drag.js';
 
 // 页面与表格共享语义变量；固定亮色，不跟随宿主主题。
 const theme = themeQuartz.withParams({
@@ -174,8 +175,8 @@ export function App() {
     } else failed(cause);
   });
   const columns: ColDef<Segment>[] = [
-    { headerName: '序号', field: 'order', width: 80, sortable: true },
-    { headerName: '文案', field: 'text', sortable: true, flex: 1, minWidth: 200, editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
+    { headerName: '序号', field: 'order', width: 100, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="segment-order"><button className="segment-drag-handle" aria-label={`拖动片段 ${data.order}`} disabled={disabled} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}>⠿</button><span>{data.order}</span></span> },
+    { headerName: '文案', field: 'text', flex: 1, minWidth: 200, editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
       cellClass: 'text-cell', cellRenderer: SearchCell,
       cellRendererParams: { query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: searchRowHeight },
       cellEditor: TextEditor, cellEditorPopup: true,
@@ -334,6 +335,10 @@ export function App() {
     return () => { clearInterval(timer); window.removeEventListener('pagehide', leave); window.removeEventListener('pageshow', resume); editing.deactivate(); };
   }, [editing]);
   const disabled = !status || !speech || speech.locked || status.taskLocked || editState.busy || editState.editing || !!status.modification;
+  const drag = useSegmentDrag({ segments: status?.snapshot.segments ?? [], disabled, grid, element: gridElement,
+    submit: (expectedIds, ids) => { void organize({ changes: [{ kind: 'reorder', expectedIds, ids }] }); },
+    reject: message => failed(new Error(message)),
+  });
   const selectedPosition = status?.snapshot.segments.findIndex(segment => segment.id === selectedIds[0]) ?? -1;
   useEffect(() => {
     const previous = selectionFocusedItem.current;
@@ -568,7 +573,7 @@ export function App() {
       if (target.closest('input:not([type="checkbox"]), textarea, select, [contenteditable="true"], dialog, .ag-popup-editor') || editing.getState().editing) return;
       event.preventDefault();
       grid.current?.deselectAll();
-    }}><AgGridProvider modules={[AllCommunityModule]}><AgGridReact
+    }}>{drag.indicator}<AgGridProvider modules={[AllCommunityModule]}><AgGridReact
       animateRows={!searchOpen}
       readOnlyEdit stopEditingWhenCellsLoseFocus suppressClickEdit popupParent={document.body}
       rowSelection={{ mode: 'multiRow', selectAll: 'all', enableClickSelection: true }}

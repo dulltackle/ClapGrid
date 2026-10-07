@@ -88,9 +88,9 @@ for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮�
       check(!document.querySelector('[row-id="a"] .text-search-current'), '离开长文案恢复摘要');
       await action(() => document.querySelector('[col-id="order"] .ag-header-cell-label').click());
       await action(() => document.querySelector('[col-id="order"] .ag-header-cell-label').click());
-      check(count().includes('第 1 / 2'), '排序实时更新匹配顺序');
-      await click('下一个'); check(current().closest('[row-id]').getAttribute('row-id') === 'a', '按倒序跳转');
-      await click('下一个'); check(current().closest('[row-id]').getAttribute('row-id') === 'c', '按倒序循环');
+      check(count().includes('第 2 / 2'), '列标题保持项目顺序与匹配位置');
+      await click('下一个'); check(current().closest('[row-id]').getAttribute('row-id') === 'a', '按项目顺序跳转');
+      await click('下一个'); check(current().closest('[row-id]').getAttribute('row-id') === 'c', '按项目顺序循环');
       await action(() => document.querySelector('[row-id="c"] [col-id="text"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true })));
       const editor = document.querySelector('[aria-label="文案全文"]');
       check(editor && document.activeElement === editor, '查找打开期间可编辑');
