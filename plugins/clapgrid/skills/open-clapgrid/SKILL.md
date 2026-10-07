@@ -7,6 +7,19 @@ description: 打开当前本地工作空间固定项目的 ClapGrid 口播片段
 
 插件根目录为本技能目录的 `../..`；先解析绝对路径。全程中文沟通。
 
+## 日常快速重开
+
+用户明确要求迁入旧项目时，先走下方完整流程的迁入步骤。其他打开请求首先调用实际宿主的 `clapgrid_prepare_panel`，无需先执行 shell 检查或读取 Linux 准备流程。
+
+- `state: ready`：工具已核对当前聊天、工作空间、项目、服务实例和已加载插件版本。直接用返回的完整 `url` 调用 `open_in_codex`（`placement: right`，`target.type: browser`），保留 `/binding/…` 路径。实际读到表格及“本地服务已连接”或用户确认后，简短报告已打开。日常重开到此结束，无需重复组件检查、`workspace-status`、`clapgrid_status` 或展开连接诊断。
+- `state: needs-start`：只有此结果表示明确离线；使用返回的 workspace/thread 进入下方完整流程。
+- 工具错误：按具体原因处理过期插件、版本不一致或身份异常，停止快速路径；不以异常为由自动启动或更换服务。
+- 工具未加载：重载插件；组件缺失导致 MCP 无法加载时读取 Linux 准备流程。不得用命令行模拟 MCP 成功。
+
+仅在插件更新交付、用户要求诊断或面板显示版本/连接异常时，执行完整版本核对。快速重开不替代仓库 `docs/agents/plugin-delivery.md` 的更新验收。
+
+## 首次打开或明确离线
+
 1. 从当前宿主上下文取得本地工作空间根目录和当前聊天 ID（本地执行环境的 `CODEX_THREAD_ID`）。没有本地工作空间时提示先选择或创建工作空间，停止打开；不使用插件目录、临时目录或上次项目。不可让用户另选 ClapGrid 项目目录或端口。
 2. 用户明确要求从旧项目迁入时，在首次 open 前读取并完成[显式迁入流程](references/import.md)，取得成功结果后继续日常打开；目标已存在时遵循拒绝结果。
 3. Linux 读取 [组件准备流程](references/linux.md)，完成 check。其他系统检查 Node.js 至少 22.13 及 FFmpeg/ffprobe。宿主必须能运行 `codex app-server --stdio` 并读取本聊天；不能核对时停止。Linux 下本文所有 `node <插件根目录>/dist/runtime.js <操作>` 均使用 `bash <插件根目录>/scripts/runtime-linux.sh <操作>`。

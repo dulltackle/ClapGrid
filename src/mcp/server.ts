@@ -1,4 +1,5 @@
 import { verifyLoadedPlugin } from '../plugin-release.js';
+import { preparePanel } from '../prepare-panel.js';
 import { buildIdentity } from '../build-identity.js';
 import { readHostWorkspace, hostThreadId } from '../host-workspace.js';
 import { bindWorkspace } from '../workspace-service.js';
@@ -56,6 +57,18 @@ export function createBusinessMcp(url?: string) {
       bindingReady: false,
     };
     return { content: [{ type: 'text', text: JSON.stringify(context) }], structuredContent: context };
+  });
+  server.registerTool('clapgrid_prepare_panel', {
+    description: '快速打开当前聊天工作空间的 ClapGrid：一次核对已加载插件、宿主目录、在线服务和版本，ready 返回完整面板 URL；needs-start 才进入组件准备和启动流程。异常停止，不启动服务、不修改片段或制作任务。',
+    inputSchema: {},
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async (_input, extra) => {
+    try {
+      const result = await preparePanel(extra._meta);
+      return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result };
+    } catch (error) {
+      return { isError: true, content: [{ type: 'text', text: error instanceof Error ? error.message : '快速打开未确认，请检查连接。' }] };
+    }
   });
   server.registerTool('clapgrid_status', {
     description: '查询 ClapGrid 独立本地服务及当前项目状态。仅查询，不启动服务或修改业务状态。',

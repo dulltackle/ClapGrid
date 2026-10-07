@@ -15,11 +15,12 @@ export function workspaceProject(directory: string) {
 export const discoverySchema = z.object({
   workspace: z.string(), projectDirectory: z.string(), projectId: z.string(), instanceId: z.string(), url: z.string(),
 });
+export class WorkspaceOfflineError extends Error {}
 export async function discoverWorkspace(directory: string) {
   const { workspace, project } = workspaceProject(directory);
   const file = join(project, 'service.json');
   const stat = lstatSync(file, { throwIfNoEntry: false });
-  if (!stat) throw new Error('当前工作空间的 ClapGrid 尚未打开。');
+  if (!stat) throw new WorkspaceOfflineError('当前工作空间的 ClapGrid 尚未打开。');
   if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1) throw new Error('服务发现记录不安全。');
   const record = discoverySchema.parse(JSON.parse(readFileSync(file, 'utf8')));
   if (record.workspace !== workspace || record.projectDirectory !== project) throw new Error('服务发现记录属于其他工作空间。');
@@ -31,6 +32,9 @@ export async function discoverWorkspace(directory: string) {
     status = discoverySchema.omit({ url: true }).extend({ application: z.literal('clapgrid') }).parse(await response.json()) as Omit<z.infer<typeof discoverySchema>, 'url'>;
     if (status.instanceId !== record.instanceId || status.projectId !== record.projectId || status.projectDirectory !== project || status.workspace !== workspace) throw new Error('mismatch');
   } catch (error) {
+    if (error instanceof TypeError && (error.cause as NodeJS.ErrnoException)?.code === 'ECONNREFUSED') {
+      throw new WorkspaceOfflineError('服务身份已改变或不可达，请关闭重开 ClapGrid；本次不执行业务操作。', { cause: error });
+    }
     throw new Error('服务身份已改变或不可达，请关闭重开 ClapGrid；本次不执行业务操作。', { cause: error });
   }
   return { ...record, url, status };

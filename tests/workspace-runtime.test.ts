@@ -30,9 +30,11 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   const host = join(root, 'host.cjs');
   const queryStarted = join(root, 'host-query-started');
   writeFileSync(host, `#!/usr/bin/env node\nconst fs=require('node:fs');const rl=require('node:readline').createInterface({input:process.stdin});rl.on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read'){const thread=JSON.parse(fs.readFileSync(${JSON.stringify(state)},'utf8'));if(thread.delay)fs.writeFileSync(${JSON.stringify(queryStarted)},'started');setTimeout(()=>console.log(JSON.stringify({id:r.id,result:{thread}})),thread.delay);}});\n`, { mode: 0o700 });
-  const env = { ...process.env, CLAPGRID_CODEX_BIN: host };
+  const identity = { schemaVersion: 1, state: 'known', version: 'test', source: { commit: null, state: 'clean' }, contentFingerprint: 'sha256:' + 'a'.repeat(64) };
+  const env = { ...process.env, CLAPGRID_CODEX_BIN: host, XDG_DATA_HOME: join(root, 'data') };
   await build({ entryPoints: ['src/runtime.ts', 'src/service/main.ts', 'src/business/media-worker.ts', 'src/mcp/main.ts'], outbase: 'src', outdir: dist,
     bundle: true, platform: 'node', format: 'esm', target: 'node22', external: ['vite'],
+    define: { __CLAPGRID_BUILD_IDENTITY__: JSON.stringify(identity) },
     banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" },
   });
   const cli = async (action: string, workspace?: string) => JSON.parse((await promisify(execFile)(process.execPath,
@@ -96,6 +98,29 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   await client.connect(new StdioClientTransport({ command: process.execPath, args: [join(dist, 'mcp/main.js')], env: Object.fromEntries(Object.entries(env).filter((e): e is [string,string] => typeof e[1] === 'string')) }));
   t.after(() => client.close());
   const tool = (name: string, args = {}) => client.callTool({ name, arguments: args, _meta: { threadId } });
+  const ready = await tool('clapgrid_prepare_panel');
+  assert.notEqual(ready.isError, true);
+  const prepared = ready.structuredContent as Record<string, any>;
+  assert.equal(prepared.state, 'ready');
+  assert.equal(prepared.instanceId, opened.instanceId);
+  assert.equal(prepared.project.id, opened.snapshot.project.id);
+  assert.equal(prepared.workspace, first);
+  assert.deepEqual(prepared.buildIdentity, identity);
+  assert.equal((await queryStatus(prepared.url)).instanceId, opened.instanceId);
+  assert.equal('snapshot' in prepared, false, '快捷入口不传输整份片段和素材');
+  assert.equal((await client.callTool({ name: 'clapgrid_prepare_panel', arguments: {} })).isError, true);
+  for (const fingerprint of ['sha256:' + 'b'.repeat(64), null]) {
+    const alternate = join(dist, 'alternate-mcp.js');
+    await build({ entryPoints: ['src/mcp/main.ts'], outfile: alternate, bundle: true, platform: 'node', format: 'esm', target: 'node22',
+      define: { __CLAPGRID_BUILD_IDENTITY__: JSON.stringify(fingerprint ? { ...identity, contentFingerprint: fingerprint } : { schemaVersion: 1, state: 'unknown' }) },
+      banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" } });
+    const alternateClient = new Client({ name: 'version-check', version: '1' });
+    try {
+      await alternateClient.connect(new StdioClientTransport({ command: process.execPath, args: [alternate], env: Object.fromEntries(Object.entries(env).filter((e): e is [string,string] => typeof e[1] === 'string')) }));
+      const rejected = await alternateClient.callTool({ name: 'clapgrid_prepare_panel', arguments: {}, _meta: { threadId } });
+      assert.equal(rejected.isError, true, '版本不一致或未知时不得返回快速打开地址');
+    } finally { await alternateClient.close(); }
+  }
   const saved = await tool('clapgrid_modify', { changes: [{ kind: 'add', text: '工作空间绑定回归' }] });
   assert.notEqual(saved.isError, true);
   const panel = await (await fetch(`${opened.url}/api/status`)).json();
@@ -103,6 +128,9 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   const noIdentity = await client.callTool({ name: 'clapgrid_modify', arguments: { changes: [{ kind: 'add', text: '不应写入' }] } });
   assert.equal(noIdentity.isError, true);
   const editing = await beginEdit(opened.url);
+  const duringEdit = await tool('clapgrid_prepare_panel');
+  assert.equal((duringEdit.structuredContent as any).state, 'ready');
+  assert.deepEqual((duringEdit.structuredContent as any).modification, { owner: 'user' });
   const table = await connectTable(opened.url);
   setWorkspace(second);
   await assert.rejects(queryStatus(opened.url), /关闭重开/);
@@ -117,6 +145,9 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   await assert.rejects(queryStatus(opened.url), /关闭重开/);
   await assert.rejects(querySpeech(opened.url), /关闭重开/);
   assert.equal((await tool('clapgrid_modify', { changes: [{ kind: 'add', text: '不应写入原项目' }] })).isError, true);
+  const needsStart = await tool('clapgrid_prepare_panel');
+  assert.deepEqual(needsStart.structuredContent, { state: 'needs-start', workspace: second, threadId });
+  assert.equal(existsSync(join(second, 'clapgrid')), false, '快捷打开离线工作空间不创建项目');
   const other = await cli('open', second);
   const otherOrigin = new URL(other.url).origin; running.set(otherOrigin, { id: other.instanceId, boundUrl: other.url, workspace: second });
   assert.notEqual(otherOrigin, origin);
@@ -131,9 +162,11 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   assert.equal(returnOpened.instanceId, opened.instanceId);
   assert.equal((await fetch(`${returnOpened.url}/api/status`)).status, 200);
   await stop(origin, opened.instanceId);
+  assert.equal(((await tool('clapgrid_prepare_panel')).structuredContent as any)?.state, 'needs-start');
   const replacement = createServer((_request, response) => { response.statusCode = 404; response.end('其他服务'); });
   await new Promise<void>(resolve => replacement.listen(Number(new URL(origin).port), '127.0.0.1', resolve));
   t.after(() => replacement.close());
+  assert.equal((await tool('clapgrid_prepare_panel')).isError, true, '地址被其他服务占用时不得回退启动');
   const reopened = await cli('open', first);
   const reopenedOrigin = new URL(reopened.url).origin; running.set(reopenedOrigin, { id: reopened.instanceId, boundUrl: reopened.url, workspace: first });
   assert.equal(reopened.snapshot.project.id, opened.snapshot.project.id);
@@ -145,4 +178,8 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   assert.equal((await tool('clapgrid_status')).isError, undefined);
   const record = JSON.parse(readFileSync(join(first, 'clapgrid', 'service.json'), 'utf8'));
   assert.equal(record.instanceId, reopened.instanceId);
+  const receiptDir = join(env.XDG_DATA_HOME, 'clapgrid'); mkdirSync(receiptDir, { recursive: true });
+  writeFileSync(join(receiptDir, 'plugin-update.json'), JSON.stringify({ identity: { ...identity, contentFingerprint: 'sha256:' + 'b'.repeat(64) } }));
+  assert.equal((await tool('clapgrid_prepare_panel')).isError, true, '旧宿主插件不能通过快速打开');
+  rmSync(join(receiptDir, 'plugin-update.json'));
 });
