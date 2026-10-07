@@ -20,7 +20,7 @@ Tailwind 使用[官方可分离的 theme/utilities 样式入口](https://tailwin
 
 ## 行菜单（#76）
 
-Context Menu 源码按需取自 [官方 new-york-v4 registry](https://ui.shadcn.com/r/styles/new-york-v4/context-menu.json)（2026-10-07，模板 SHA256 `e9680a7b71840b7203e1625acab8754d7c18122b66289baf281c3a6e31246ada`）。沿用 `radix-ui` 1.7.0，锁文件中的 `@radix-ui/react-context-menu` 为 2.3.8、`@radix-ui/react-menu` 为 2.1.25。仅保留 Root、Trigger、Content、Item，未引入不使用的图标与子菜单；适配 cn 入口、ui-accent、明确实线边框、最小点击高度、视口最大宽度，并映射 popover 主题。无新增依赖。
+Context Menu 源码按需取自 [官方 new-york-v4 registry](https://ui.shadcn.com/r/styles/new-york-v4/context-menu.json)（2026-10-07，模板 SHA256 `e9680a7b71840b7203e1625acab8754d7c18122b66289baf281c3a6e31246ada`）。沿用 `radix-ui` 1.7.0，锁文件中的 `@radix-ui/react-context-menu` 为 2.3.8、`@radix-ui/react-menu` 为 2.1.25。仅保留 Root、Trigger、Content、Item，未引入不使用的图标与子菜单；适配 cn 入口、ui-accent、明确实线及 `--color-border` 浅灰边框、最小点击高度、视口最大宽度，并映射 popover 主题。无新增依赖。
 
 非模态常驻 Root 和 asChild Trigger 复用原语的真实右键定位、导航、激活及 Escape；鼠标打开先聚焦菜单容器，方向键进入选项。业务校验真实行身份、勾选范围与锁，仅为当前项动态禁用增加焦点落到首个可用项或容器的适配。关闭时按原因恢复稳定片段焦点，非模态外部点击继续激活原目标并保留其焦点，删除和插入将焦点交给现有 Dialog 或文案编辑器。删除弹窗此阶段仍用原生 Dialog。触摸长按不会绕过真实 contextmenu 行身份校验打开旧目标。
 

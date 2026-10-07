@@ -22,7 +22,7 @@ state.status.snapshot.segments = ['a','b','c'].map((id,i)=>({id,order:i+1,text:i
 await action(()=>createRoot(document.getElementById('root')).render(<App/>));
 await input({click:'[row-id="a"] input[type="checkbox"]'});
 await input({click:'[row-id="b"] input[type="checkbox"]'});
-await right('a'); check(menu(), '右键打开行菜单'); bounds(menu()); check(getComputedStyle(menu()).backgroundColor === 'rgb(255, 255, 255)', '菜单采用主题不透明背景'); check(document.activeElement === menu(), '鼠标打开聚焦菜单容器，方向键进入选项'); await window.browserInput({screenshot:'row-menu'});
+await right('a'); check(menu(), '右键打开行菜单'); bounds(menu()); check(getComputedStyle(menu()).borderTopColor === 'rgb(227, 228, 231)', '菜单边框沿用主题浅灰'); check(getComputedStyle(menu()).backgroundColor === 'rgb(255, 255, 255)', '菜单采用主题不透明背景'); check(document.activeElement === menu(), '鼠标打开聚焦菜单容器，方向键进入选项'); await window.browserInput({screenshot:'row-menu'});
 check(state.selectionRequests.at(-1).join() === 'a,b', '右键已选行保留集合');
 await input({key:'ArrowDown'}); await input({key:'Enter'}); check(dialog()?.textContent.includes('确定删除已勾选的 2 个口播片段？'), '多选范围明确'); bounds(dialog()); await window.browserInput({screenshot:'delete-confirm'});
 check(document.getElementById(dialog().getAttribute('aria-labelledby')).textContent === '删除口播片段', '确认有可访问名称');
