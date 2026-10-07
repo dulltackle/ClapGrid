@@ -4,7 +4,7 @@
 
 ## 生产体积
 
-迁移前基线为 `952cc09bd922f9c97bfb93f58e75e29f6602026e`。迁移后为本文件所在最终集成主题修复提交的源码；构建输入包括已合入的 #75、#76、#77。两次均为 Linux x64、Node v22.23.3、npm 10.9.9，执行 `npm ci` 后 `npm run build`，使用锁文件中的 Vite 8.3.1 默认生产压缩。不使用开发 esbuild 浏览器测试产物作比较。
+迁移前基线为 `952cc09bd922f9c97bfb93f58e75e29f6602026e`。表中试点后数据测量于主题修复提交 `2c2a2819fad1640c3c27eb3a9456e4171dfaad05`，构建输入包括已合入的 #75、#76、#77。后续新增自动样式门槛与正式验收工具后，这些数值仅保留为历史测量；交付前须对新的固定目标提交正式验收，并按下述相同方法重新测量、对账，不能视为新目标已复核。两次均为 Linux x64、Node v22.23.3、npm 10.9.9，执行 `npm ci` 后 `npm run build`，使用锁文件中的 Vite 8.3.1 默认生产压缩。不使用开发 esbuild 浏览器测试产物作比较。
 
 统计 `dist/panel/assets` 下全部 `.js`、`.css` 文件的 Buffer 字节数，并使用 Node `zlib.gzipSync(buffer)` 默认选项逐文件压缩后求和。单位均为字节；不包含服务端 dist、source map、HTML 或插件封装。
 
@@ -29,7 +29,11 @@ for (const name of readdirSync('dist/panel/assets').filter(name => /\.(js|css)$/
 
 ## 依赖与维护成本
 
-迁移前运行依赖 6 项、开发依赖 7 项；试点新增运行依赖 `radix-ui` 1.7.0、`class-variance-authority` 0.7.1、`clsx` 2.1.1、`tailwind-merge` 3.7.0，新增开发依赖 `tailwindcss` 4.3.3、`@tailwindcss/vite` 4.3.3。React 19.3.0、AG Grid 36.2.0、Vite 8.3.1 等已有版本不变。shadcn 4.21.3 仅为明确版本的按需生成器，不是运行或常规构建依赖。#76、#77 复用 #75 锁定的依赖，没有再次新增包。
+按迁移前基线与当前 `package.json` 的直接声明逐项对照，运行依赖由 6 项增至 10 项（新增 4 项），开发依赖由 7 项增至 11 项（新增 4 项），合计由 13 项增至 21 项。已有直接依赖版本没有变化。
+
+UI 试点新增运行依赖 `radix-ui` 1.7.0、`class-variance-authority` 0.7.1、`clsx` 2.1.1、`tailwind-merge` 3.7.0；生产样式构建新增开发依赖 `tailwindcss` 4.3.3、`@tailwindcss/vite` 4.3.3。React 19.3.0、AG Grid 36.2.0、Vite 8.3.1 等已有版本不变。shadcn 4.21.3 仅为明确版本的按需生成器，不是运行或常规构建依赖。#76、#77 的组件实现复用 #75 锁定的包。
+
+后续自动样式门槛另新增直接开发依赖 `postcss` 8.5.28 与 `postcss-selector-parser` 7.1.6，来源为当前 `package.json`/锁文件中的精确声明，由 `scripts/style-collisions.mjs` 使用：前者解析 CSS 规则和层，后者解析选择器并提取完整类名，用于比较生成的 utilities 与既有业务类名。它们属于检查工具依赖，不是新增 UI 运行依赖；PostCSS 此前作为传递依赖存在，仍须计入本次新增直接声明。锁文件记录安装来源及完整传递版本。
 
 直接依赖增量不等于生产包包含全部 Radix 组件；构建会按使用裁剪代码，实际成本以上表为准。锁文件仍包含 Radix 及工具链传递依赖，升级需要审查锁文件与来源模板。
 
