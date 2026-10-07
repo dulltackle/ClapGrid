@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef, type ReactNode } from 'react';
 /** 行菜单使用固定视口坐标；业务入口共享关闭、焦点与键盘导航。 */
 export function RowMenu({ x, y, onClose, children }: { x: number; y: number; onClose: (restore?: boolean) => void; children: ReactNode }) {
   const element = useRef<HTMLDivElement>(null);
+  const focusedItem = useRef<HTMLElement | null>(null);
   const close = useRef(onClose); close.current = onClose;
   useLayoutEffect(() => {
     const node = element.current!;
@@ -20,11 +21,13 @@ export function RowMenu({ x, y, onClose, children }: { x: number; y: number; onC
   }, [x, y]);
   useLayoutEffect(() => {
     const node = element.current;
-    if (node && (document.activeElement === node || (node.contains(document.activeElement) && document.activeElement?.matches(':disabled')))) {
+    // 部分浏览器在禁用按钮时先将焦点移到 body，保留原焦点来源以恢复菜单。
+    if (node && (document.activeElement === node || (document.activeElement === document.body && focusedItem.current?.matches(':disabled')) || (node.contains(document.activeElement) && document.activeElement?.matches(':disabled')))) {
       (node.querySelector<HTMLElement>('button:not(:disabled)') ?? node).focus();
     }
   });
   return <div ref={element} role="menu" aria-label="口播片段操作" className="row-menu" tabIndex={-1}
+    onFocus={event => { focusedItem.current = event.target; }}
     onBlur={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget as Node)) onClose(false); }}
     onKeyDown={event => {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onClose(); return; }

@@ -21,7 +21,8 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
     } }],
   });
   writeFileSync(join(directory, 'index.html'), '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="test.css"><div id="root"></div><pre id="result" data-state="pending"></pre><script src="test.js"></script></html>');
-  const browser = spawn(chrome!, ['--headless', '--no-sandbox', '--disable-dev-shm-usage', '--remote-debugging-port=0', `--user-data-dir=${join(directory, 'profile')}`, 'about:blank'], { stdio: 'ignore' });
+  // 旧版 Chrome 的滚轮命中仍受实际窗口边界限制，需与模拟视口同时设置。
+  const browser = spawn(chrome!, ['--headless', `--window-size=${width},${height}`, '--no-sandbox', '--disable-dev-shm-usage', '--remote-debugging-port=0', `--user-data-dir=${join(directory, 'profile')}`, 'about:blank'], { stdio: 'ignore' });
   let socket: WebSocket | undefined;
   const exited = new Promise(resolve => browser.once('exit', resolve));
   t.after(async () => {

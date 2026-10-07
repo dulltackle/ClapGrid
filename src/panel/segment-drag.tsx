@@ -43,7 +43,9 @@ export function useSegmentDrag(options: Options) {
       const rect = row.getBoundingClientRect();
       target = { id: row.getAttribute('row-id')!, after: y >= rect.top + rect.height / 2,
         top: y >= rect.top + rect.height / 2 ? rect.bottom : rect.top, left: bounds.left, width: bounds.width };
-      setLine(target);
+      const next = target;
+      setLine(previous => previous?.id === next.id && previous.after === next.after
+        && previous.top === next.top && previous.left === next.left && previous.width === next.width ? previous : next);
     };
     const move = (pointer: globalThis.PointerEvent) => {
       x = pointer.clientX; y = pointer.clientY;
@@ -56,8 +58,10 @@ export function useSegmentDrag(options: Options) {
       const bounds = viewport?.getBoundingClientRect();
       if (active && viewport && bounds && x >= bounds.left && x <= bounds.right && y >= bounds.top && y <= bounds.bottom) {
         const amount = y < bounds.top + 32 ? -12 : y > bounds.bottom - 32 ? 12 : 0;
-        if (amount) { viewport.scrollTop += amount; update(); }
+        if (amount) viewport.scrollTop += amount;
       }
+      // 虚拟行可能在 scroll 事件之后才挂载，静止指针也需在后续帧重新命中。
+      if (active) update();
       frame = requestAnimationFrame(scroll);
     };
     const cleanup = () => {
