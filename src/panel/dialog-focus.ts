@@ -1,3 +1,4 @@
+import { flushSync } from 'react-dom';
 import type { GridApi } from 'ag-grid-community';
 import type { Segment } from '../shared/contracts.js';
 
@@ -12,7 +13,7 @@ export function dialogReturnFocus(trigger: HTMLElement, grid: () => GridApi<Segm
     element.focus({ preventScroll: true });
     return document.activeElement === element;
   };
-  return () => {
+  return function restore() {
     if (!segmentId && focus(trigger)) return;
     const api = grid();
     if (segmentId && colId && api && !api.isDestroyed()) {
@@ -25,9 +26,19 @@ export function dialogReturnFocus(trigger: HTMLElement, grid: () => GridApi<Segm
         const range = api.getVerticalPixelRange();
         const top = target.rowTop ?? 0;
         if (!document.querySelector(selector) || top < range.top || top + (target.rowHeight ?? 0) > range.bottom) {
-          api.ensureIndexVisible(index);
+          flushSync(() => api.ensureIndexVisible(index));
         }
-        if (!document.querySelector(selector)) api.ensureColumnVisible(colId);
+        if (!document.querySelector(selector)) {
+          api.ensureColumnVisible(colId);
+          // React 的虚拟行可能在 ensureIndexVisible 返回后才挂载；等待该帧后再取新 DOM。
+          requestAnimationFrame(() => {
+            if (api.isDestroyed()) return;
+            const cell = document.querySelector<HTMLElement>(selector);
+            if (focus(cell)) api.setFocusedCell(target.rowIndex!, colId);
+            else focus(fallback());
+          });
+          return;
+        }
         const cell = document.querySelector<HTMLElement>(selector);
         // 先无滚动聚焦，再同步表格焦点；反序会按重排动画中的位置滚动，动画结束后遮住目标。
         if (focus(cell)) {

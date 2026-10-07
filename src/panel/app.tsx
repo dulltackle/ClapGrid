@@ -1,7 +1,8 @@
-import { Button, ContextMenu, ContextMenuTrigger, ContextMenuItem } from '@/components/ui/index.js';
+import { ContextMenu, ContextMenuTrigger, ContextMenuItem } from '@/components/ui/index.js';
 import { buildIdentity } from '../build-identity.js';
 import { panelServiceUrl } from './service-url.js';
 import { RowMenu } from './row-menu.js';
+import { DeleteConfirm } from './delete-confirm.js';
 import { Dialog } from './dialog.js';
 import { dialogReturnFocus } from './dialog-focus.js';
 import { ExportTaskDetails, exportStateLabel, useExportTasks } from './export-tasks.js';
@@ -509,19 +510,16 @@ export function App() {
       <h2>视频预览</h2><video key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
       <p>从 {preview.start} 秒开始，预览默认静音。</p><button onClick={() => setPreview(null)}>关闭预览</button>
     </Dialog>}
-    {deleteTargets && <Dialog label="删除口播片段" onClose={() => setDeleteTargets(null)} restoreFocus={() => rowOrigin.current()}>
-      <h2>删除口播片段</h2>
-      <p>{deleteTargets.length === 1 ? '确定删除这个口播片段？' : `确定删除已勾选的 ${deleteTargets.length} 个口播片段？`}</p>
-      <div className="toolbar">
-        <Button variant="outline" onClick={() => setDeleteTargets(null)}>取消</Button>
-        <Button variant="destructive" data-delete-confirm disabled={disabled} onClick={() => {
-          if (disabled || editing.getState().busy || editing.getState().editing) return;
-          const targets = deleteTargets; setDeleteTargets(null);
-          void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) });
-        }}>删除</Button>
-      </div>
-      {lock && <p role="status">{lock}</p>}
-    </Dialog>}
+    {deleteTargets && <DeleteConfirm count={deleteTargets.length} disabled={disabled} lock={lock}
+      onClose={() => setDeleteTargets(null)} restoreFocus={() => rowOrigin.current()}
+      onConfirm={() => {
+        if (disabled || editing.getState().busy || editing.getState().editing) return;
+        const targets = deleteTargets;
+        // 结果先落到表格，再关闭并按稳定身份恢复；避免返回即将删除的旧 DOM。
+        void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) }).finally(() => {
+          setDeleteTargets(current => current === targets ? null : current);
+        });
+      }} />}
     <ContextMenu modal={false} open={rowMenuOpen} onOpenChange={setRowMenuOpen}>
     <ContextMenuTrigger asChild>
     <div className="grid" ref={gridElement} onContextMenuCapture={event => {
