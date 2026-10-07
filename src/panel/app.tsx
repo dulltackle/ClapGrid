@@ -1,4 +1,5 @@
 import { panelServiceUrl } from './service-url.js';
+import { RowMenu } from './row-menu.js';
 import { Dialog } from './dialog.js';
 import { dialogReturnFocus } from './dialog-focus.js';
 import { ExportTaskDetails, exportStateLabel, useExportTasks } from './export-tasks.js';
@@ -10,8 +11,10 @@ import { AgGridProvider, AgGridReact } from 'ag-grid-react';
 import { queryStatus, querySpeech, submitSpeech, setVoice, importVideo, saveSegment, beginEdit, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
 import type { Segment, ServiceStatus, SpeechStatus, Voice, Batch } from '../shared/contracts.js';
 import { projectEditing } from './project-editing.js';
+import { SearchText, textMatches } from './text-search.js';
 import { TextEditor } from './text-editor.js';
 import './style.css';
+import { useSegmentDrag } from './segment-drag.js';
 
 // 页面与表格共享语义变量；固定亮色，不跟随宿主主题。
 const theme = themeQuartz.withParams({
@@ -32,6 +35,10 @@ const theme = themeQuartz.withParams({
   rowHeight: 80,
 });
 
+// 行内控件拥有鼠标事件；普通状态文字仍采用表格原生整行选择。
+const cellControlMouse = ({ event }: { event: Event }) =>
+  event.target instanceof Element && !!event.target.closest('button, input, textarea, select, a, [contenteditable="true"]');
+
 // AG Grid 默认处理 Tab/Enter；单元格内的原生按钮需要自己的键盘路径。
 const cellControlKeyboard: NonNullable<ColDef<Segment>['suppressKeyboardEvent']> = ({ event }) => {
   const target = event.target as HTMLElement;
@@ -44,6 +51,10 @@ const cellControlKeyboard: NonNullable<ColDef<Segment>['suppressKeyboardEvent']>
   if (next < 0 || next >= buttons.length) return false;
   event.preventDefault(); buttons[next]!.focus(); return true;
 };
+
+function SearchCell({ value, data, query, activeId, visit, rowHeight }: { value?: string; data?: Segment; query: string; activeId: string | null; visit: number; rowHeight: number }) {
+  return <SearchText text={value ?? ''} query={query} current={data?.id === activeId} visit={visit} rowHeight={rowHeight} />;
+}
 
 function EmptyProject({ message }: { message: string }) { return <span>{message}</span>; }
 
@@ -64,9 +75,18 @@ export function App() {
   const [importing, setImporting] = useState(false);
   const [sourcePath, setSourcePath] = useState('');
   const [preview, setPreview] = useState<{ assetId: string; start: number } | null>(null);
-  const [filter, setFilter] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [currentMatch, setCurrentMatch] = useState<string | null>(null);
+  const [visit, setVisit] = useState(0);
+  const [displayOrder, setDisplayOrder] = useState<string[]>([]);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchAnchor = useRef(0);
   const [paste, setPaste] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [rowMenu, setRowMenu] = useState<{ x: number; y: number; anchor: Segment; expectedIds: string[] } | null>(null);
+  const [deleteTargets, setDeleteTargets] = useState<Segment[] | null>(null);
+  const rowOrigin = useRef(() => {});
   const [selectionState, setSelectionState] = useState('正在连接勾选…');
   const [connectionVersion, setConnectionVersion] = useState(0);
   const table = useRef<TableSession | null>(null);
@@ -74,10 +94,51 @@ export function App() {
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'failed'>('saved');
   const [saveError, setSaveError] = useState('');
   const grid = useRef<GridApi<Segment> | null>(null);
-  const tableFallback = useRef<HTMLInputElement>(null);
+  const tableFallback = useRef<HTMLButtonElement>(null);
+  const gridElement = useRef<HTMLDivElement>(null);
+  const [searchRowHeight, setSearchRowHeight] = useState(240);
+  const matchingIds = new Set(status?.snapshot.segments.filter(segment => textMatches(segment.text, query).length > 0).map(segment => segment.id));
+  const matchedIds = displayOrder.filter(id => matchingIds.has(id));
+  const activeMatch = searchOpen && currentMatch && matchedIds.includes(currentMatch) ? currentMatch : null;
+  const searchLayout = useRef({ activeMatch, rowHeight: searchRowHeight });
+  searchLayout.current = { activeMatch, rowHeight: searchRowHeight };
+  const closeSearch = () => { setSearchOpen(false); setCurrentMatch(null); requestAnimationFrame(() => tableFallback.current?.focus()); };
+  const locate = (needle: string, direction: -1 | 1, restart = false) => {
+    const api = grid.current;
+    if (!api || api.getEditingCells().length) return;
+    const rows: { id: string; index: number }[] = [];
+    api.forEachNodeAfterFilterAndSort(node => {
+      if (node.data && node.rowIndex != null && textMatches(node.data.text, needle).length) rows.push({ id: node.data.id, index: node.rowIndex });
+    });
+    const current = rows.findIndex(row => row.id === currentMatch);
+    const anchor = currentMatch ? api.getRowNode(currentMatch)?.rowIndex ?? searchAnchor.current : searchAnchor.current;
+    const target = restart ? rows[0] : current >= 0 ? rows[(current + direction + rows.length) % rows.length]
+      : direction === 1 ? rows.find(row => row.index >= anchor) ?? rows[0] : [...rows].reverse().find(row => row.index < anchor) ?? rows.at(-1);
+    setCurrentMatch(target?.id ?? null); setVisit(value => value + 1);
+    if (target) {
+      searchAnchor.current = target.index;
+      requestAnimationFrame(() => {
+        if (api.isDestroyed() || api.getEditingCells().length) return;
+        const node = api.getRowNode(target.id);
+        if (node?.rowIndex != null) { api.ensureColumnVisible('text'); api.ensureIndexVisible(node.rowIndex, 'middle'); }
+      });
+    }
+  };
+  useEffect(() => { if (searchOpen) searchInput.current?.focus(); }, [searchOpen]);
+  useEffect(() => {
+    // 失效命中只清除当前标记；定位只由用户输入或跳转触发。
+    if (currentMatch && !matchedIds.includes(currentMatch)) setCurrentMatch(null);
+  }, [currentMatch, matchedIds.join('\0')]);
+  useEffect(() => {
+    const element = gridElement.current;
+    if (!element) return;
+    const observer = new ResizeObserver(() => setSearchRowHeight(Math.max(44, Math.min(240, element.clientHeight - 56))));
+    observer.observe(element); return () => observer.disconnect();
+  }, []);
+  useEffect(() => { grid.current?.resetRowHeights(); }, [activeMatch, searchRowHeight]);
   const returnFocus = useRef({ settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, material: () => {}, detail: () => {} });
   const rememberOrigin = (trigger: HTMLElement, detail: keyof typeof returnFocus.current) => {
-    returnFocus.current[detail] = dialogReturnFocus(trigger, () => grid.current, () => tableFallback.current);
+    returnFocus.current[detail] = dialogReturnFocus(trigger, () => grid.current, () => searchInput.current ?? (tableFallback.current?.hidden ? moreButton.current : tableFallback.current));
   };
   const openDetail = (next: typeof detail, trigger: HTMLElement) => { rememberOrigin(trigger, 'detail'); setDetail(next); };
   const failed = (cause: Error) => { setSaveState('failed'); setSaveError(cause.message); };
@@ -98,15 +159,16 @@ export function App() {
     } else failed(cause);
   });
   const columns: ColDef<Segment>[] = [
-    { headerName: '序号', field: 'order', width: 80, sortable: true },
-    { headerName: '文案', field: 'text', sortable: true, flex: 1, minWidth: 200, editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
-      cellClass: 'text-cell', cellRenderer: (params: { value?: string }) => <span className="text-summary">{params.value}</span>,
+    { headerName: '序号', field: 'order', width: 100, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="segment-order"><button className="segment-drag-handle" aria-label={`拖动片段 ${data.order}`} disabled={disabled} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}>⠿</button><span>{data.order}</span></span> },
+    { headerName: '文案', field: 'text', flex: 1, minWidth: 200, editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
+      cellClass: 'text-cell', cellRenderer: SearchCell,
+      cellRendererParams: { query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: searchRowHeight },
       cellEditor: TextEditor, cellEditorPopup: true,
       suppressKeyboardEvent: params => {
         if (params.editing && params.event.key === 'Tab') { params.api.stopEditing(); return true; }
         return !params.editing && (['Enter', 'F2', 'Backspace', 'Delete'].includes(params.event.key) || params.event.key.length === 1);
       } },
-    { headerName: '画面素材', initialWidth: 230, minWidth: 180, suppressKeyboardEvent: cellControlKeyboard, cellRenderer: (params: { data?: Segment }) => {
+    { headerName: '画面素材', initialWidth: 230, minWidth: 180, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: (params: { data?: Segment }) => {
       const segment = params.data;
       if (!segment) return null;
       const asset = status?.snapshot.assets.find(asset => asset.id === segment.video?.assetId);
@@ -118,7 +180,7 @@ export function App() {
         <button aria-label={`查看片段 ${segment.order} 的画面素材详情`} onClick={event => { rememberOrigin(event.currentTarget, 'material'); setVideoDetails(segment.id); }}>详情</button>
       </div>;
     } },
-    { headerName: '配音', initialWidth: 290, minWidth: 290, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: () => true }, cellRenderer: (params: { data?: Segment }) => {
+    { headerName: '配音', initialWidth: 290, minWidth: 290, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: (params: { data?: Segment }) => {
       const segment = params.data; if (!segment) return null;
       const tasks = speech?.tasks.filter(task => task.segmentId === segment.id) ?? [];
       const latest = tasks.at(-1);
@@ -199,15 +261,6 @@ export function App() {
       action.apply(() => setSaveState('saved'));
     } finally { action.apply(() => { setVideoEditor(null); setImporting(false); }); }
   }, failed);
-  const move = (direction: -1 | 1) => {
-    const ids = status?.snapshot.segments.map(segment => segment.id) ?? [];
-    const position = ids.indexOf(selectedIds[0]!);
-    const destination = position + direction;
-    if (selectedIds.length !== 1 || position < 0 || destination < 0 || destination >= ids.length) return;
-    const next = [...ids];
-    [next[position], next[destination]] = [next[destination]!, next[position]!];
-    void organize({ changes: [{ kind: 'reorder', expectedIds: ids, ids: next }] });
-  };
   const synchronizeSelection = (ids: string[]) => {
     setSelectedIds(ids);
     const connection = table.current;
@@ -257,7 +310,36 @@ export function App() {
     return () => { clearInterval(timer); window.removeEventListener('pagehide', leave); window.removeEventListener('pageshow', resume); editing.deactivate(); };
   }, [editing]);
   const disabled = !status || !speech || speech.locked || status.taskLocked || editState.busy || editState.editing || !!status.modification;
-  const selectedPosition = status?.snapshot.segments.findIndex(segment => segment.id === selectedIds[0]) ?? -1;
+  const drag = useSegmentDrag({ segments: status?.snapshot.segments ?? [], disabled, grid, element: gridElement,
+    submit: (expectedIds, ids) => { void organize({ changes: [{ kind: 'reorder', expectedIds, ids }] }); },
+    reject: message => failed(new Error(message)),
+  });
+  const closeRowMenu = (restore = true) => { setRowMenu(null); if (restore) requestAnimationFrame(() => rowOrigin.current()); };
+  const requestDelete = () => {
+    const ids = grid.current?.getSelectedRows().map(segment => segment.id) ?? [];
+    const targets = status?.snapshot.segments.filter(segment => ids.includes(segment.id)) ?? [];
+    if (!targets.length || disabled) return;
+    setDeleteTargets(structuredClone(targets)); setRowMenu(null);
+  };
+  const insertRelative = async (placement: 'before' | 'after') => {
+    if (!rowMenu || selectedIds.length !== 1 || disabled || editing.getState().busy || editing.getState().editing) return;
+    const relative = { anchor: rowMenu.anchor, expectedIds: rowMenu.expectedIds, placement };
+    setRowMenu(null);
+    let inserted: string | undefined;
+    await editing.save('segments', { acquire: true }, async (token, action) => {
+      setSaveState('saving'); setSaveError('');
+      const result = await modifyUserBatch(panelServiceUrl(), { changes: [{ kind: 'add', text: '', relative }] }, token, action.signal);
+      action.apply(() => { flushSync(() => setStatus(result.status)); });
+      const item = result.results[0];
+      if (item?.outcome !== 'applied' || !item.id) throw new Error(item?.message ?? '未能确认新增口播片段');
+      action.apply(() => {
+        inserted = item.id; setSaveState('saved');
+        const node = grid.current?.getRowNode(item.id!);
+        if (node?.rowIndex != null) { node.setSelected(true, true); grid.current?.ensureColumnVisible('text'); grid.current?.ensureIndexVisible(node.rowIndex, 'middle'); }
+      });
+    }, cause => { failed(cause); requestAnimationFrame(() => rowOrigin.current()); });
+    if (inserted) await startEdit(inserted);
+  };
   const currentListening = speech?.audio.find(audio => audio.taskId === listening?.taskId && audio.segmentId === listening?.segmentId);
   const speechTask = speech?.tasks.at(-1);
   const speechProblems = speech?.tasks.filter(task => task.state === 'failed' || task.state === 'unknown') ?? [];
@@ -265,18 +347,37 @@ export function App() {
   const exportTask = exports.exports?.tasks.at(-1);
   const exportProblems = exports.exports?.tasks.filter(task => task.state === 'failed' || task.state === 'interrupted') ?? [];
   const lock = speech?.locked ? '配音进行中，项目已锁定；可查询和试听' : status?.taskLocked || exports.exports?.locked ? '导出进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : '';
+  const searchStatus = !query ? '输入文案查找' : !matchedIds.length ? '无匹配片段' : activeMatch ? `第 ${matchedIds.indexOf(activeMatch) + 1} / ${matchedIds.length} 个匹配片段` : `${matchedIds.length} 个匹配片段，点击下一个定位`;
   return <main>
-    <header><h1>口播片段</h1>
-      <div className="toolbar">
-        <button disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
-        <button disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { void exports.run(); }}>导出全片</button>
-        <button ref={moreButton} aria-haspopup="dialog" onClick={event => openDetail('more', event.currentTarget)}>更多</button>
+    <header className={searchOpen ? 'searching' : ''}>
+      <h1 hidden={searchOpen}>口播片段</h1>
+      {searchOpen && <section id="segment-search" className="search-popover" role="dialog" aria-modal="false" aria-label="查找口播片段">
+        <label><input ref={searchInput} aria-label="查找文案" placeholder="查找文案" value={query}
+          onChange={event => { setQuery(event.target.value); locate(event.target.value, 1, true); }}
+          onKeyDown={event => { if (event.nativeEvent.isComposing) return; if (event.key === 'Escape') { event.preventDefault(); closeSearch(); } else if (event.key === 'Enter') { event.preventDefault(); locate(query, event.shiftKey ? -1 : 1); } }} /></label>
+        <span role="status" aria-label={searchStatus} title={searchStatus}>{searchStatus}</span>
+        <div className="toolbar">
+          <button disabled={!matchedIds.length} onClick={() => locate(query, -1)}>上一个</button>
+          <button disabled={!matchedIds.length} onClick={() => locate(query, 1)}>下一个</button>
+          <button onClick={closeSearch}>关闭查找</button>
+        </div>
+      </section>}
+      <div className="toolbar primary-actions">
+        <button hidden={searchOpen} disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
+        <button hidden={searchOpen} className="search-trigger" ref={tableFallback} aria-expanded={searchOpen} aria-controls="segment-search" onClick={() => { setSearchOpen(true); locate(query, 1, true); }}>查找</button>
+        <button hidden={searchOpen} disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" title="全片导出：查找与勾选不改变范围" onClick={() => { void exports.run(); }}>导出全片</button>
+        <button ref={moreButton} aria-haspopup="dialog" aria-expanded={detail === 'more'} onClick={event => openDetail('more', event.currentTarget)}>更多</button>
       </div>
     </header>
-    <p id="export-scope" className="export-scope">全片导出：筛选与勾选不改变范围</p>
-    {detail === 'more' && <Dialog label="更多操作" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
+    <p id="export-scope" className="visually-hidden">全片导出：查找与勾选不改变范围</p>
+    {detail === 'more' && <Dialog label="更多操作" onClose={() => setDetail(null)} restoreFocus={() => returnFocus.current.detail()}>
       <h2>更多操作</h2>
       <div className="more-actions">
+        {searchOpen && <>
+          <button disabled={disabled} onClick={() => { setDetail(null); void save({ text: '' }); }}>新增口播片段</button>
+          <button disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { setDetail(null); void exports.run(); }}>导出全片</button>
+        </>}
+        <p className="export-scope">全片导出：查找与勾选不改变范围</p>
         <button disabled={disabled} onClick={() => { rememberOrigin(moreButton.current!, 'video'); setDetail(null); void openVideoEditor(); }}>导入本地视频</button>
         <button disabled={disabled} onClick={() => setDetail('paste')}>粘贴多行文案</button>
         <button disabled={!speech} onClick={() => setDetail('voice')}>声音设置</button>
@@ -306,6 +407,7 @@ export function App() {
     </Dialog>}
     {detail === 'tasks' && <Dialog label="任务记录" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
       <h2>任务记录</h2>
+      <button onClick={() => setDetail('diagnostics')}>连接诊断</button>
       {speech && <section aria-label="配音任务">
       {speech.operations.length > 0 && <section aria-label="批量配音进度" aria-live="polite">
         {speech.operations.slice().reverse().map(operation => <details key={operation.id} open={operation.summary.pending > 0}>
@@ -355,20 +457,6 @@ export function App() {
       <h2>配音试听</h2><p>{!currentListening ? '配音状态无法确认：此音频已不在当前保留音频列表中。' : currentListening.valid ? '有效配音' : '配音待更新：此音频与当前文案或声音设置不一致。'}</p><audio controls autoPlay src={listening.url} onError={() => { setSaveState('failed'); setSaveError('音频不可读取，请检查项目文件'); }} />
       <button onClick={() => setListening(null)}>关闭试听</button>
     </Dialog>}
-    <section className="organization" aria-label="组织口播片段">
-      <div className="toolbar">
-        <label>筛选文案 <input ref={tableFallback} aria-label="筛选文案" value={filter} onChange={event => setFilter(event.target.value)} /></label>
-        {selectedIds.length > 0 && <>
-          <span>已勾选 {selectedIds.length} 个片段（含筛选隐藏项）</span>
-          <button disabled={disabled || !selectedIds.length} onClick={() => {
-            const targets = status!.snapshot.segments.filter(segment => selectedIds.includes(segment.id));
-            void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) });
-          }}>删除勾选</button>
-          <button disabled={disabled || selectedIds.length !== 1 || selectedPosition <= 0} onClick={() => move(-1)}>项目顺序上移</button>
-          <button disabled={disabled || selectedIds.length !== 1 || selectedPosition < 0 || selectedPosition >= (status?.snapshot.segments.length ?? 0) - 1} onClick={() => move(1)}>项目顺序下移</button>
-        </>}
-      </div>
-    </section>
     {videoDetails && <Dialog label="画面素材详情" onClose={() => setVideoDetails(null)} restoreFocus={returnFocus.current.material}>
       <h2>画面素材详情</h2>
       {(() => {
@@ -405,12 +493,51 @@ export function App() {
       <h2>视频预览</h2><video key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
       <p>从 {preview.start} 秒开始，预览默认静音。</p><button onClick={() => setPreview(null)}>关闭预览</button>
     </Dialog>}
-    <div className="grid"><AgGridProvider modules={[AllCommunityModule]}><AgGridReact
+    {rowMenu && <RowMenu {...rowMenu} onClose={closeRowMenu}>
+      <button role="menuitem" disabled={disabled || !selectedIds.length} onClick={requestDelete}>删除口播片段</button>
+      <button role="menuitem" data-insert="before" disabled={disabled || selectedIds.length !== 1} onClick={() => { void insertRelative('before'); }}>上方添加</button>
+      <button role="menuitem" data-insert="after" disabled={disabled || selectedIds.length !== 1} onClick={() => { void insertRelative('after'); }}>下方添加</button>
+    </RowMenu>}
+    {deleteTargets && <Dialog label="删除口播片段" onClose={() => setDeleteTargets(null)} restoreFocus={() => rowOrigin.current()}>
+      <h2>删除口播片段</h2>
+      <p>{deleteTargets.length === 1 ? '确定删除这个口播片段？' : `确定删除已勾选的 ${deleteTargets.length} 个口播片段？`}</p>
+      <div className="toolbar">
+        <button onClick={() => setDeleteTargets(null)}>取消</button>
+        <button data-delete-confirm disabled={disabled} onClick={() => {
+          if (disabled || editing.getState().busy || editing.getState().editing) return;
+          const targets = deleteTargets; setDeleteTargets(null);
+          void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) });
+        }}>删除</button>
+      </div>
+      {lock && <p role="status">{lock}</p>}
+    </Dialog>}
+    <div className="grid" ref={gridElement} onContextMenu={event => {
+      const target = event.target as HTMLElement;
+      const row = target.closest<HTMLElement>('[row-id]');
+      const node = row?.getAttribute('row-id') ? grid.current?.getRowNode(row.getAttribute('row-id')!) : null;
+      if (!node?.data || editing.getState().editing || target.closest('input:not([type="checkbox"]), textarea, .ag-popup-editor')) { setRowMenu(null); return; }
+      event.preventDefault();
+      if (!node.isSelected()) node.setSelected(true, true);
+      rowOrigin.current = dialogReturnFocus(target, () => grid.current, () => moreButton.current);
+      setRowMenu({ x: event.clientX, y: event.clientY, anchor: structuredClone(node.data), expectedIds: status?.snapshot.segments.map(segment => segment.id) ?? [] });
+    }} onKeyDown={event => {
+      if (event.key !== 'Escape' || event.nativeEvent.isComposing || event.defaultPrevented) return;
+      const target = event.target as HTMLElement;
+      if (target.closest('input:not([type="checkbox"]), textarea, select, [contenteditable="true"], dialog, .ag-popup-editor') || editing.getState().editing) return;
+      event.preventDefault();
+      grid.current?.deselectAll();
+    }}>{drag.indicator}<AgGridProvider modules={[AllCommunityModule]}><AgGridReact
+      animateRows={!searchOpen}
       readOnlyEdit stopEditingWhenCellsLoseFocus suppressClickEdit popupParent={document.body}
-      rowSelection={{ mode: 'multiRow', selectAll: 'filtered', enableClickSelection: false }}
-      quickFilterText={filter}
+      rowSelection={{ mode: 'multiRow', selectAll: 'all', enableClickSelection: true }}
       onSelectionChanged={event => synchronizeSelection(event.api.getSelectedRows().map(segment => segment.id))}
       onGridReady={event => { grid.current = event.api; }}
+      onModelUpdated={event => {
+        const ids: string[] = []; event.api.forEachNodeAfterFilterAndSort(node => { if (node.data) ids.push(node.data.id); });
+        setDisplayOrder(previous => previous.join('\0') === ids.join('\0') ? previous : ids);
+        if (currentMatch) { const index = event.api.getRowNode(currentMatch)?.rowIndex; if (index != null) searchAnchor.current = index; }
+      }}
+      getRowHeight={params => params.data?.id === searchLayout.current.activeMatch ? searchLayout.current.rowHeight : 80}
       onCellDoubleClicked={event => { if (event.colDef.field === 'text' && event.data) void startEdit(event.data.id); }}
       onCellKeyDown={event => {
         const key = (event.event as KeyboardEvent).key;
@@ -428,15 +555,10 @@ export function App() {
       <div className="status-line" role="status">
         <span>{error ? '服务连接失败' : status ? '本地服务已连接' : '正在连接本地服务…'}</span>
         <span className={`save-status${saveState === 'failed' ? ' save-error' : ''}`}>{saveState === 'saving' ? '保存中…' : saveState === 'failed' ? '保存失败' : status ? '已保存' : '等待读取项目'}</span>
-        <button onClick={event => openDetail('diagnostics', event.currentTarget)}>连接诊断</button>
+        <span className="task-summary">{batchTask && batchTask.summary.pending > 0 ? `配音 ${batchTask.summary.completed}/${batchTask.summary.completed + batchTask.summary.pending}` : speechTask && (speechTask.state === 'running' || speechTask.state === 'accepted') ? '配音生成中' : exportTask && exports.exports?.locked ? `${exportStateLabel[exportTask.state]} ${exportTask.completed}/${exportTask.total}` : ''}</span>
         <button onClick={event => openDetail('tasks', event.currentTarget)}>任务详情</button>
       </div>
-      <p className="lock-status" role="status">{lock}</p>
-      <p className="task-summary" role="status">
-        {exportTask ? `${exportStateLabel[exportTask.state]} ${exportTask.completed}/${exportTask.total}` : '暂无导出任务'}
-        {speechTask && ` · 配音：${({ accepted: '已受理', running: '生成中', succeeded: '生成成功', failed: '生成失败', unknown: '结果未知，可能已计费' })[speechTask.state]}`}
-        {batchTask && ` · 批量配音：完成 ${batchTask.summary.completed}，待完成 ${batchTask.summary.pending}，失败 ${batchTask.summary.failed}，中断 ${batchTask.summary.interrupted}`}
-      </p>
+      {lock && <p className="lock-status" role="status">{lock}</p>}
       {(error || saveError || exports.connectionError || exports.operationError || speechProblems.length > 0 || exportProblems.length > 0 || selectionState.includes('断开')) && <div className="status-errors" aria-label="操作异常">
         {error && <p role="alert">{error}</p>}
         {saveError && <p role={saveState === 'failed' ? 'alert' : 'status'}>{saveError}</p>}

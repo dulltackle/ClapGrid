@@ -54,7 +54,6 @@ button:disabled { opacity: .5; cursor: default; }
 .save-status { margin: 0 0 var(--space-2); color: var(--color-ink-secondary); }
 .save-error { color: var(--color-error); }
 
-.organization { flex: none; }
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .toolbar span { font-size: 12px; color: var(--color-ink-secondary); }
 input, textarea { font: inherit; border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-1) var(--space-2); }
@@ -70,7 +69,12 @@ textarea { display: block; width: 100%; min-height: 100px; margin: var(--space-2
 .media-dialog label { display: block; margin: 12px 0; }
 .media-dialog input, .media-dialog select { display: block; width: 100%; font: inherit; padding: 8px; }
 .media-dialog video { display: block; width: 100%; max-height: 60vh; }
-header { flex-wrap: wrap; }
+header { flex-wrap: nowrap; min-height: 32px; }
+header h1, .primary-actions { flex: none; }
+.primary-actions { flex-wrap: nowrap; }
+header button { white-space: nowrap; }
+[hidden] { display: none !important; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .speech-cell { display: flex; flex-direction: column; justify-content: center; gap: 2px; height: 100%; white-space: normal; line-height: 18px; }
 .speech-actions { display: flex; gap: var(--space-1); }
 .speech-actions button { padding: 2px 6px; font-size: 12px; }
@@ -102,6 +106,33 @@ header { flex-wrap: wrap; }
   header button { padding-inline: var(--space-2); }
 }
 
-.lock-status { min-height: 18px; }
+.lock-status { padding-top: 4px; }
+.status-line { flex-wrap: nowrap; gap: 6px; min-width: 0; }
+.status-line > span:not(.task-summary) { flex: none; }
+.status-line .task-summary { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.status-line button { flex: none; padding: 2px 6px; }
 
 .speech-state .speech-warning { color: var(--color-error); }
+
+/* 查找复用固定高度的页头。 */
+.search-popover { flex: 1; min-width: 0; height: 32px; display: flex; align-items: center; gap: 4px; }
+.search-popover label { flex: 1; min-width: 0; }
+.search-popover input { min-width: 0; width: 100%; height: 24px; padding: 2px 6px; font-size: 12px; }
+.search-popover [role="status"] { flex: 0 1 116px; min-width: 0; font-size: 11px; color: var(--color-ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.search-popover .toolbar { flex: none; flex-wrap: nowrap; gap: 2px; }
+.search-popover button { padding: 2px 4px; font-size: 11px; white-space: nowrap; }
+.text-summary mark { background: #fff0a6; color: inherit; }
+.text-search-current { display: block; max-height: 220px; overflow-y: auto; width: 100%; position: relative; -webkit-line-clamp: unset; }
+.text-search-current mark { background: #ffd35c; }
+
+
+header { height: 32px; }
+header.searching { gap: 4px; }
+header.searching .search-popover label { min-width: 72px; }
+
+.segment-order { display: flex; align-items: center; gap: 8px; height: 100%; }
+.segment-drag-handle { opacity: 0; padding: 3px; line-height: 20px; flex-shrink: 0; cursor: grab; touch-action: none; }
+.ag-row-hover .segment-drag-handle, .segment-drag-handle:focus-visible { opacity: 1; }
+.segment-drag-handle:active { cursor: grabbing; }
+.segment-drop-line { position: fixed; z-index: 100; height: 3px; background: var(--color-accent); pointer-events: none; }
+.row-menu { position: fixed; z-index: 10; max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); overflow: auto; display: flex; flex-direction: column; gap: 4px; padding: 6px; border: 1px solid var(--color-border); border-radius: var(--radius-control); background: var(--color-surface); box-shadow: 0 4px 16px #0002; }

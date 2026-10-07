@@ -82,7 +82,7 @@ const script = String.raw`
       check(!editor() && state.segmentRequests.length === 2 && cell().textContent === complete + '第二次保存', '断线取消未提交输入并保留已保存文案');
       check(document.querySelector('footer').textContent.includes('未提交输入已取消'), '断线提示持续可见');
       await poll(); await open('Enter'); await input(complete + '失焦保存');
-      await act(async () => { document.querySelector('[aria-label="筛选文案"]').focus(); await settle(); });
+      await act(async () => { [...document.querySelectorAll('button')].find(node => node.textContent === '查找').focus(); await settle(); });
       check(!editor() && state.segmentRequests.length === 3 && state.segmentRequests[2].change.text === complete + '失焦保存', '失焦仍按既有规则保存全文：' + JSON.stringify({ editor: !!editor(), requests: state.segmentRequests.length, active: document.activeElement?.outerHTML?.slice(0, 150) }));
       await open('F2'); await input('保存失败草稿'); state.segmentFailure = true; await key('Enter'); await poll();
       check(document.querySelector('footer').textContent.includes('文案保存失败') && !state.current, '保存失败保留提示并释放修改权');

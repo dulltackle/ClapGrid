@@ -4,96 +4,62 @@ import { fixture } from './helpers/editing-fixture.js';
 import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
 
 const script = String.raw`
-  import { act } from 'react';
-  import { createRoot } from 'react-dom/client';
-  import { App } from './src/panel/app.tsx';
-  import { state } from 'editing-fixture';
-  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-  const intervals = new Map(); let timer = 0;
-  window.setInterval = callback => { intervals.set(++timer, callback); return timer; };
-  window.clearInterval = id => intervals.delete(id);
-  const check = (value, message) => { if (!value) throw Error(message); };
-  const settle = () => new Promise(resolve => setTimeout(resolve, 80));
-  const action = async callback => { await act(async () => { await callback(); await settle(); }); await new Promise(resolve => setTimeout(resolve, 350)); };
-  const button = text => [...document.querySelectorAll('button')].find(node => node.textContent === text);
-  const click = text => action(() => { const node = button(text); check(node && !node.disabled, '入口可用：' + text); node.click(); });
-  const select = id => action(() => { const node = document.querySelector('[row-id="' + id + '"] input[type="checkbox"]'); check(node, '可见片段：' + id); node.click(); });
-  const filter = value => action(() => { const node = document.querySelector('[aria-label="筛选文案"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(node, value); node.dispatchEvent(new Event('input', { bubbles: true })); });
-  const scope = () => document.querySelector('[aria-label="组织口播片段"]').textContent;
-  const hidden = () => check(!button('删除勾选') && !button('项目顺序上移') && !button('项目顺序下移') && !scope().includes('已勾选'), '无勾选时收起数量及批量操作');
-  (async () => {
-    try {
-      state.status.snapshot.segments = [
-        { id: 'a', order: 1, text: '丙 第一段', video: null },
-        { id: 'b', order: 2, text: '乙 第二段', video: null },
-        { id: 'c', order: 3, text: '甲 第三段', video: null },
-      ];
-      await action(() => createRoot(document.getElementById('root')).render(<App />));
-      hidden(); check(document.querySelector('[aria-label="筛选文案"]'), '筛选始终可用');
-      await window.browserInput({ screenshot: 'unselected' });
-      await select('a'); check(scope().includes('已勾选 1 个片段'), '勾选后显示数量');
-      await select('a'); hidden();
-      await select('a'); await select('b');
-      check(button('项目顺序上移').disabled && button('项目顺序下移').disabled, '多选不允许移动');
-      await filter('第二段');
-      check(!document.querySelector('[row-id="a"]') && scope().includes('已勾选 2 个片段') && scope().includes('含筛选隐藏项'), '隐藏勾选仍计数且说明操作范围');
-      check(JSON.stringify(state.selectionRequests.at(-1).sort()) === '["a","b"]', '筛选不改变同步勾选范围');
-      check(document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight, '勾选工具栏在宽窄视口内换行且无页面溢出');
-      await window.browserInput({ screenshot: 'selected-filtered' });
-      await action(() => document.querySelector('.ag-header input[type="checkbox"]').click());
-      check(scope().includes('已勾选 1 个片段'), '筛选表头取消只影响可见行，隐藏勾选仍保留');
-      await select('b');
-      await click('删除勾选');
-      check(JSON.stringify(state.batchRequests.at(-1).changes.map(item => item.expected.id)) === '["a","b"]', '删除请求包含全部勾选片段及隐藏项');
-      hidden(); await filter('');
-      check(document.querySelector('[row-id="c"]') && !document.querySelector('[row-id="a"]') && !document.querySelector('[row-id="b"]'), '删除后仅剩未勾选片段');
-      state.status.snapshot.segments = [
-        { id: 'a', order: 1, text: '丙 第一段', video: null },
-        { id: 'b', order: 2, text: '乙 第二段', video: null },
-        { id: 'c', order: 3, text: '甲 第三段', video: null },
-      ];
-      const poll = () => action(() => [...intervals.values()].forEach(callback => callback()));
-      await poll();
-      await select('b');
-      await action(() => document.querySelector('[row-id="b"] [col-id="text"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true })));
-      check(document.querySelector('[aria-label="文案全文"]') && button('删除勾选').disabled && button('项目顺序上移').disabled && button('项目顺序下移').disabled, '真实文案编辑期间禁止批量操作');
-      await action(() => window.browserInput({ key: 'Escape' })); await poll(); await select('b');
-      await select('a'); check(button('项目顺序上移').disabled && !button('项目顺序下移').disabled, '首段不能上移'); await select('a');
-      await select('c'); check(!button('项目顺序上移').disabled && button('项目顺序下移').disabled, '末段不能下移'); await select('c');
-      await action(() => document.querySelector('[col-id="order"] .ag-header-cell-label').click());
-      await action(() => document.querySelector('[col-id="order"] .ag-header-cell-label').click());
-      check(document.querySelector('[row-id="c"]').getAttribute('row-index') === '0', '显示按项目序号倒序');
-      await select('b'); await filter('第二段');
-      check(document.querySelector('[row-id="b"] [col-id="order"]').textContent.trim() === '2', '筛选及排序不重编号');
-      await click('项目顺序上移'); await poll();
-      check(JSON.stringify(state.batchRequests.at(-1).changes[0]) === JSON.stringify({ kind: 'reorder', expectedIds: ['a','b','c'], ids: ['b','a','c'] }), '上移按实际项目顺序请求');
-      check(button('项目顺序上移').disabled && !button('项目顺序下移').disabled, '移动到项目首段后更新边界');
-      await click('项目顺序下移'); await poll();
-      check(JSON.stringify(state.batchRequests.at(-1).changes[0].ids) === '["a","b","c"]', '下移按实际项目顺序请求');
-      await filter('第一段'); check(scope().includes('已勾选 1 个片段'), '单个勾选可被筛选隐藏');
-      await click('项目顺序下移'); await poll();
-      check(JSON.stringify(state.batchRequests.at(-1).changes[0].ids) === '["a","c","b"]', '隐藏单选仍按实际项目顺序移动');
-      for (const lock of ['taskLocked', 'modification']) {
-        state.status[lock] = lock === 'taskLocked' ? true : { owner: 'codex' }; await poll();
-        check(button('删除勾选').disabled && button('项目顺序上移').disabled && button('项目顺序下移').disabled, '锁定保留禁用：' + lock);
-        state.status[lock] = lock === 'taskLocked' ? false : null; await poll();
-      }
-      await filter(''); await select('b'); hidden();
-      await select('a');
-      await action(() => state.tableConnections.at(-1).resolve());
-      hidden(); check(button('重新连接勾选') && document.querySelector('footer').textContent.includes('勾选连接已断开'), '无勾选仍显示断线及恢复入口');
-      await click('重新连接勾选'); hidden();
-      await select('a'); check(scope().includes('已勾选 1 个片段'), '重连后可重新勾选');
-      state.selectionFailure = true; await select('c'); hidden();
-      check(button('重新连接勾选'), '同步失败清空勾选但保留恢复入口');
-      state.selectionFailure = false; await click('重新连接勾选');
-      await select('a'); await select('a'); hidden();
-      document.getElementById('result').dataset.state = 'passed';
-    } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; }
-  })();
+import { act } from 'react';
+import { createRoot } from 'react-dom/client';
+import { App } from './src/panel/app.tsx';
+import { state } from 'editing-fixture';
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+const intervals = new Map(); let timer=0;
+window.setInterval=callback=>{intervals.set(++timer,callback);return timer;}; window.clearInterval=id=>intervals.delete(id);
+const check=(ok,message)=>{if(!ok)throw Error(message);};
+const action=async fn=>{await act(async()=>{await fn();await new Promise(r=>setTimeout(r,80));});await new Promise(r=>setTimeout(r,180));};
+const input=options=>action(()=>window.browserInput(options));
+const select=id=>input({click:'[row-id="'+id+'"] input[type="checkbox"]'});
+const poll=()=>action(()=>[...intervals.values()].forEach(fn=>fn()));
+const selected=ids=>check(JSON.stringify([...(state.selectionRequests.at(-1)??[])].sort())===JSON.stringify(ids),'勾选同步范围 '+ids);
+(async()=>{try{
+ state.status.snapshot.segments=[{id:'a',order:1,text:'第一段',video:null},{id:'b',order:2,text:'第二段',video:null},{id:'c',order:3,text:'第三段',video:null}];
+ await action(()=>createRoot(document.getElementById('root')).render(<App/>));
+ const geometry=()=>{const r=document.querySelector('.grid').getBoundingClientRect();return JSON.stringify([r.top,r.height]);};
+ const baseline=geometry();
+ const stable=()=>{
+  check(!document.querySelector('header h1').hidden,'勾选后标题仍可见');
+  const buttons=[...document.querySelectorAll('header button')].filter(node=>node.getClientRects().length);
+  check(buttons.map(node=>node.textContent).join('|')==='新增口播片段|查找|导出全片|更多','主入口保持稳定且无旧勾选栏');
+  check(!document.querySelector('.organization')&&!document.querySelector('[aria-label="删除勾选"]')&&!document.querySelector('[aria-label^="项目顺序"]'),'旧操作栏及移动删除入口移除');
+  check(geometry()===baseline,'勾选不推移表格或改变高度');
+  check(document.documentElement.scrollWidth<=innerWidth,'页头无横向溢出');
+  for(const node of buttons){const r=node.getBoundingClientRect();check(r.left>=0&&r.right<=innerWidth&&node.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)),'主入口可真实命中');}
+ };
+ stable(); await input({click:'header .primary-actions button:first-child'});
+ check(JSON.stringify(state.segmentRequests.at(-1).change)==='{"text":""}','顶部新增继续发送无锚点的末尾追加请求');await poll();stable(); await select('a'); stable(); selected(['a']); await select('b'); stable(); selected(['a','b']);
+ await window.browserInput({screenshot:'stable-selected-header'});
+ await input({click:'header .primary-actions button:nth-child(3)'});
+ check(state.exportRequests.length===1&&state.exportRequests[0].length===1,'全片导出仅传服务地址，不附带勾选范围');selected(['a','b']);
+ await input({click:'header [aria-haspopup="dialog"]'});await input({key:'Escape'});
+ check(!document.querySelector('dialog[open]')&&document.activeElement.textContent==='更多','Escape 仅关闭更多并返回稳定入口');selected(['a','b']);
+ await input({click:'.search-trigger'});await input({key:'第'});
+ check(document.querySelectorAll('.ag-row[row-id]').length===3,'查找保持全部片段');selected(['a','b']);
+ await input({key:'Escape'});check(document.activeElement.classList.contains('search-trigger'),'关闭查找回到查找按钮');selected(['a','b']);stable();
+ await input({click:'[row-id="b"] [col-id="text"]',button:'right'});
+ await input({key:'Escape'});selected(['a','b']);check(!document.querySelector('[role="menu"]'),'Escape 关闭行菜单');
+ await input({key:'Escape'});selected([]);stable();
+ await input({click:'.ag-header input[type="checkbox"]'});selected(['a','b','c']);
+ await input({click:'.ag-header input[type="checkbox"]'});selected([]);
+ await select('a');await select('b');
+ await input({click:'[row-id="a"] [col-id="text"]',button:'right'});
+ await input({click:'[role="menu"] button'});
+ check(document.querySelector('dialog[open]').textContent.includes('2 个'),'新入口确认准确删除范围');
+ await input({click:'[data-delete-confirm]'});
+ check(state.batchRequests.at(-1).changes.map(change=>change.expected.id).join()==='a,b','确认后删除全部勾选');
+ await poll();check(state.status.snapshot.segments.map(s=>s.id).join()==='c','保留未勾选片段');stable();
+ await select('c');await action(()=>state.tableConnections.at(-1).resolve());
+ check(!document.querySelector('.ag-row[aria-selected="true"]')&&document.querySelector('footer').textContent.includes('勾选连接已断开'),'断线清空勾选并保留恢复入口');
+ await input({click:'footer [role="alert"] button'});await select('c');selected(['c']);
+ state.selectionFailure=true;await select('c');
+ check(!document.querySelector('.ag-row[aria-selected="true"]')&&document.querySelector('footer [role="alert"] button'),'同步失败清空选择且可以恢复');
+ state.selectionFailure=false;await input({click:'footer [role="alert"] button'});stable();
+ document.getElementById('result').dataset.state='passed';
+}catch(error){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=error.stack;}})();
 `;
-for (const width of [1600, 420]) {
-  test(`勾选操作显示、筛选范围与项目顺序（${width}px）`, {
-    skip: chrome ? false : '未执行：需要 Chrome/Chromium', timeout: 40000,
-  }, t => checkInteractiveBrowser(t, script, fixture, width));
-}
+for(const width of [1600,420]) test('勾选前后主入口稳定且复选框及全片范围保持 '+width,{skip:chrome?false:'未执行：需要 Chrome/Chromium',timeout:40000},t=>checkInteractiveBrowser(t,script,fixture,width));

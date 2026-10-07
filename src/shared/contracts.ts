@@ -62,7 +62,9 @@ export type ServiceStatus = z.infer<typeof statusSchema>;
 
 // 目标快照来自普通查询；服务取得修改权后逐项重读并比较。
 export const batchChangeSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('add'), text: z.string() }).strict(),
+  z.object({ kind: z.literal('add'), text: z.string(), relative: z.object({
+    anchor: segmentSchema.strict(), placement: z.enum(['before', 'after']), expectedIds: z.array(z.uuid()),
+  }).strict().optional() }).strict(),
   z.object({ kind: z.literal('paste'), text: z.string() }).strict(),
   z.object({ kind: z.literal('reorder'), expectedIds: z.array(z.uuid()), ids: z.array(z.uuid()) }).strict(),
   z.object({ kind: z.literal('edit'), expected: segmentSchema.strict(), text: z.string() }).strict(),

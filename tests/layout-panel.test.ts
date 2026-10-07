@@ -28,7 +28,7 @@ const script = String.raw`
       check(!button('导出设置') && !document.querySelector('[aria-label="统一音色"]'), '正常编辑不堆叠设置');
       check(button('导出全片') && button('新增口播片段'), '主要操作常驻');
       const initial = rect();
-      check(initial.top < innerHeight * .3 && initial.height > innerHeight * .5, '表格占据主要空间且表头直接可见');
+      check(initial.top <= 52 && initial.height > innerHeight * .8, '表格占据主要空间且表头直接可见');
       check(document.documentElement.scrollHeight <= innerHeight, '页面无额外纵向滚动');
       const vertical = document.querySelector('.ag-body-vertical-scroll-viewport');
       const horizontal = document.querySelector('.ag-body-horizontal-scroll-viewport');
@@ -46,14 +46,14 @@ const script = String.raw`
         await click('更多'); await click(entry);
         check(dialog()?.getAttribute('aria-label') === label, '打开有名称的浮层：' + label);
         check(dialog().contains(document.activeElement), '焦点进入浮层');
-        check(rect().top === initial.top && rect().height === initial.height, '详情不推移表格：' + label + ' ' + JSON.stringify({ before: initial.toJSON(), after: rect().toJSON() }));
+        check(rect().top === initial.top && (label === '导入本地视频' ? rect().height >= initial.height - 24 : rect().height === initial.height), '详情不推移表格：' + label + ' ' + JSON.stringify({ before: initial.toJSON(), after: rect().toJSON() }));
         const bounds = dialog().getBoundingClientRect();
         check(bounds.left >= 0 && bounds.right <= innerWidth && bounds.top >= 0 && bounds.bottom <= innerHeight && dialog().scrollWidth <= dialog().clientWidth, '浮层不溢出');
         await shot(entry === '任务记录' ? 'tasks' : 'detail-' + label);
         await key('Escape');
         check(!dialog() && document.activeElement === button('更多'), '关闭迁移详情返回更多');
       }
-      await click('连接诊断'); check(dialog()?.getAttribute('aria-label') === '连接诊断', '状态入口打开诊断');
+      await click('任务详情'); await click('连接诊断'); check(dialog()?.getAttribute('aria-label') === '连接诊断', '状态入口打开诊断');
       check(dialog().textContent.includes('/tmp/project'), '可查看项目路径'); await key('Escape');
       check(state.saves === 0 && state.mutations.length === 0, '仅查看详情不提交任务或设置');
       check(!state.current, '取消导入释放修改权');

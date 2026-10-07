@@ -59,7 +59,7 @@ const script = String.raw`
       await key('Escape');
       check(!dialog() && document.activeElement === settings, 'Esc 关闭后必须恢复原入口');
       check(state.saves === 0 && state.leases.length === 0, '查看设置不能申请修改权或保存');
-      await input(field('筛选文案'), '保留');
+      await click(button('查找')); await input(field('查找文案'), '保留');
       const body = document.querySelector('.ag-body-vertical-scroll-viewport');
       const horizontal = document.querySelector('.ag-body-horizontal-scroll-viewport');
       check(body && horizontal, '必须找到真实表格的横纵滚动容器');
@@ -84,7 +84,7 @@ const script = String.raw`
       await key('Escape');
       check(document.activeElement === cell(rowId, '1'), '轮询重建后回到同一片段的配音单元格');
       check(body.scrollTop === scrollTop && horizontal.scrollLeft === scrollLeft, '查看详情不改变表格滚动位置');
-      check(field('筛选文案').value === '保留' && document.querySelector('[row-id="' + rowId + '"]').getAttribute('aria-selected') === 'true', '保留筛选与勾选');
+      check(field('查找文案').value === '保留' && document.querySelector('[row-id="' + rowId + '"]').getAttribute('aria-selected') === 'true', '保留查找与勾选');
       check(JSON.stringify(state.status.snapshot.segments) === before && state.saves === 0 && state.mutations.length === 0, '只查看不能修改、提交、重试或计费');
       horizontal.scrollLeft = 250; await settle();
       const preview = cell(rowId, '0').querySelector('button');
@@ -183,7 +183,7 @@ const script = String.raw`
       check(document.activeElement.closest('[row-id]')?.getAttribute('row-id') === 'segment-21', '原片段消失后返回邻近可用片段');
       await click(field('展开片段 22 的保留音频'));
       state.status.snapshot.segments = []; await poll(); await key('Escape');
-      check(document.activeElement === field('筛选文案'), '表格变空时回到可用的筛选入口');
+      check(document.activeElement === field('查找文案'), '表格变空且查找打开时回到可见的查找输入框');
       result.dataset.state = 'passed'; result.textContent = '浮层键盘验证通过';
     } catch (error) { result.dataset.state = 'failed'; result.textContent = error.stack; }
   })();

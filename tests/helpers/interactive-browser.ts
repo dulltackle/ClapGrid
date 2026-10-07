@@ -10,7 +10,7 @@ import { build } from 'esbuild';
 import { chrome } from './browser.js';
 
 /** 真实浏览器按键用于原生焦点导航；业务替身仍只位于 HTTP 客户端边界。 */
-export async function checkInteractiveBrowser(t: TestContext, script: string, fixture: string, width = 1600) {
+export async function checkInteractiveBrowser(t: TestContext, script: string, fixture: string, width = 1600, height = 1000) {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-dialog-'));
   await build({
     stdin: { resolveDir: fileURLToPath(new URL('../..', import.meta.url)), loader: 'tsx', contents: script },
@@ -21,7 +21,8 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
     } }],
   });
   writeFileSync(join(directory, 'index.html'), '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="test.css"><div id="root"></div><pre id="result" data-state="pending"></pre><script src="test.js"></script></html>');
-  const browser = spawn(chrome!, ['--headless', '--no-sandbox', '--disable-dev-shm-usage', '--remote-debugging-port=0', `--user-data-dir=${join(directory, 'profile')}`, 'about:blank'], { stdio: 'ignore' });
+  // 旧版 Chrome 的滚轮命中仍受实际窗口边界限制，需与模拟视口同时设置。
+  const browser = spawn(chrome!, ['--headless', `--window-size=${width},${height}`, '--no-sandbox', '--disable-dev-shm-usage', '--remote-debugging-port=0', `--user-data-dir=${join(directory, 'profile')}`, 'about:blank'], { stdio: 'ignore' });
   let socket: WebSocket | undefined;
   const exited = new Promise(resolve => browser.once('exit', resolve));
   t.after(async () => {
@@ -53,16 +54,33 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
       if (message.error) request?.reject(new Error(JSON.stringify(message.error))); else request?.resolve(message.result);
     } else if (message.method === 'Runtime.bindingCalled') {
       void (async () => {
-        const { id: requestId, key, shift, screenshot } = JSON.parse(message.params.payload);
+        const { id: requestId, key, shift, ctrl, meta, click, screenshot, pointer, button = 'left' } = JSON.parse(message.params.payload);
         if (screenshot) {
           if (process.env.PANEL_EVIDENCE_DIR) {
             const { data } = await send('Page.captureScreenshot');
             mkdirSync(process.env.PANEL_EVIDENCE_DIR, { recursive: true });
             writeFileSync(join(process.env.PANEL_EVIDENCE_DIR, `${width}-${screenshot}.png`), Buffer.from(data, 'base64'));
           }
+        } else if (pointer) {
+          let position = { x: pointer.x, y: pointer.y };
+          if (pointer.selector) {
+            const response = await send('Runtime.evaluate', { expression: `(() => { const node = document.querySelector(${JSON.stringify(pointer.selector)}); if (!node) throw Error('找不到拖拽目标'); const rect = node.getBoundingClientRect(); return { x: rect.x + rect.width / 2, y: rect.y + rect.height * ${pointer.fraction ?? 0.5} }; })()`, returnByValue: true });
+            if (response.exceptionDetails) throw Error(JSON.stringify(response.exceptionDetails));
+            position = response.result.value;
+          }
+          if (pointer.type === 'mousePressed') await send('Input.dispatchMouseEvent', { ...position, type: 'mouseMoved', button: 'none', buttons: 0 });
+          await send('Input.dispatchMouseEvent', { ...position, type: pointer.type, button: pointer.type === 'mouseMoved' ? 'none' : 'left', buttons: pointer.buttons ?? (pointer.type === 'mouseReleased' ? 0 : 1), clickCount: 1, ...(pointer.type === 'mouseWheel' ? { deltaX: 0, deltaY: pointer.deltaY ?? 600 } : {}) });
+        } else if (click) {
+          const position = await send('Runtime.evaluate', { expression: `(() => { const node = document.querySelector(${JSON.stringify(click)}); if (!node) throw Error('找不到鼠标目标'); node.scrollIntoView({ block: 'nearest', inline: 'nearest' }); const rect = node.getBoundingClientRect(); return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }; })()`, returnByValue: true });
+          if (position.exceptionDetails) throw Error(JSON.stringify(position.exceptionDetails));
+          const modifiers = (shift ? 8 : 0) | (ctrl ? 2 : 0) | (meta ? 4 : 0);
+          for (let count = 1; count <= (key === 'double' ? 2 : 1); count++) {
+            await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...position.result.value, button, clickCount: count, modifiers });
+            await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...position.result.value, button, clickCount: count, modifiers });
+          }
         } else {
           const code = { Tab: 9, Escape: 27, Enter: 13, ' ': 32, F2: 113, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, Home: 36, End: 35 }[key as string];
-          await send('Input.dispatchKeyEvent', { type: 'keyDown', key, text: key === 'Enter' ? '\r' : key === ' ' ? ' ' : undefined, code: key === ' ' ? 'Space' : key, windowsVirtualKeyCode: code, modifiers: shift ? 8 : 0 });
+          await send('Input.dispatchKeyEvent', { type: 'keyDown', key, text: key === 'Enter' ? '\r' : key?.length === 1 ? key : undefined, code: key === ' ' ? 'Space' : key, windowsVirtualKeyCode: code, modifiers: shift ? 8 : 0 });
           await send('Input.dispatchKeyEvent', { type: 'keyUp', key, code: key === ' ' ? 'Space' : key, windowsVirtualKeyCode: code, modifiers: shift ? 8 : 0 });
         }
         await send('Runtime.evaluate', { expression: `window.__inputDone(${requestId})` });
@@ -70,7 +88,7 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
     }
   });
   await send('Runtime.enable'); await send('Page.enable');
-  await send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false });
+  await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
   await send('Runtime.addBinding', { name: '__browserInput' });
   await send('Page.addScriptToEvaluateOnNewDocument', { source: `
     const pendingInput = new Map(); let nextInput = 0;
@@ -81,7 +99,7 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
   ` });
   await send('Page.navigate', { url: pathToFileURL(join(directory, 'index.html')).href });
   let result;
-  for (let attempt = 0; attempt < 400; attempt++) {
+  for (let attempt = 0; attempt < 600; attempt++) {
     const response = await send('Runtime.evaluate', { expression: 'document.getElementById("result")?.outerHTML', returnByValue: true });
     result = response.result.value;
     if (result && !result.includes('data-state="pending"')) break;

@@ -281,6 +281,25 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
             }
             if (change.kind === 'add') {
               const newId = randomUUID();
+              if (change.relative) {
+                const { anchor, placement, expectedIds } = change.relative;
+                const current = getSnapshot().segments;
+                const currentAnchor = current.find(segment => segment.id === anchor.id);
+                if (!currentAnchor) { result = { index, outcome: 'deleted', message: '锚点口播片段已删除，请重新选择' }; return; }
+                if (JSON.stringify(currentAnchor) !== JSON.stringify(anchor) || JSON.stringify(current.map(segment => segment.id)) !== JSON.stringify(expectedIds)) {
+                  result = { index, outcome: 'changed', message: '锚点内容或项目顺序已变化，请重新选择后添加' }; return;
+                }
+                const ids = current.map(segment => segment.id);
+                ids.splice(ids.indexOf(anchor.id) + (placement === 'after' ? 1 : 0), 0, newId);
+                // 校验、移动位置与插入共享同一事务；失败不会遗留末尾片段。
+                const offset = Number(db.prepare('SELECT COALESCE(MAX(position), 0) AS maximum FROM segments').get()!.maximum) + ids.length;
+                for (const [position, segment] of current.entries()) db.prepare('UPDATE segments SET position = ? WHERE id = ?').run(offset + position + 1, segment.id);
+                for (const [position, id] of ids.entries()) {
+                  if (id === newId) db.prepare('INSERT INTO segments (id, position, text) VALUES (?, ?, ?)').run(id, position + 1, change.text);
+                  else db.prepare('UPDATE segments SET position = ? WHERE id = ?').run(position + 1, id);
+                }
+                result.id = newId; return;
+              }
               db.prepare('INSERT INTO segments (id, position, text) SELECT ?, COALESCE(MAX(position), 0) + 1, ? FROM segments')
                 .run(newId, change.text);
               result.id = newId;
