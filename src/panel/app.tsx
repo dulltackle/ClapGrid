@@ -84,7 +84,7 @@ export function App() {
   const searchAnchor = useRef(0);
   const [paste, setPaste] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [rowMenu, setRowMenu] = useState<{ x: number; y: number } | null>(null);
+  const [rowMenu, setRowMenu] = useState<{ x: number; y: number; anchor: Segment; expectedIds: string[] } | null>(null);
   const [deleteTargets, setDeleteTargets] = useState<Segment[] | null>(null);
   const rowOrigin = useRef(() => {});
   const [selectionMenuOpen, setSelectionMenuOpen] = useState(false);
@@ -353,6 +353,25 @@ export function App() {
     if (!targets.length || disabled) return;
     setDeleteTargets(structuredClone(targets)); setRowMenu(null);
   };
+  const insertRelative = async (placement: 'before' | 'after') => {
+    if (!rowMenu || selectedIds.length !== 1 || disabled || editing.getState().busy || editing.getState().editing) return;
+    const relative = { anchor: rowMenu.anchor, expectedIds: rowMenu.expectedIds, placement };
+    setRowMenu(null);
+    let inserted: string | undefined;
+    await editing.save('segments', { acquire: true }, async (token, action) => {
+      setSaveState('saving'); setSaveError('');
+      const result = await modifyUserBatch(panelServiceUrl(), { changes: [{ kind: 'add', text: '', relative }] }, token, action.signal);
+      action.apply(() => { flushSync(() => setStatus(result.status)); });
+      const item = result.results[0];
+      if (item?.outcome !== 'applied' || !item.id) throw new Error(item?.message ?? '未能确认新增口播片段');
+      action.apply(() => {
+        inserted = item.id; setSaveState('saved');
+        const node = grid.current?.getRowNode(item.id!);
+        if (node?.rowIndex != null) { node.setSelected(true, true); grid.current?.ensureColumnVisible('text'); grid.current?.ensureIndexVisible(node.rowIndex, 'middle'); }
+      });
+    }, cause => { failed(cause); requestAnimationFrame(() => rowOrigin.current()); });
+    if (inserted) await startEdit(inserted);
+  };
   const currentListening = speech?.audio.find(audio => audio.taskId === listening?.taskId && audio.segmentId === listening?.segmentId);
   const speechTask = speech?.tasks.at(-1);
   const speechProblems = speech?.tasks.filter(task => task.state === 'failed' || task.state === 'unknown') ?? [];
@@ -544,6 +563,8 @@ export function App() {
     </Dialog>}
     {rowMenu && <RowMenu {...rowMenu} onClose={closeRowMenu}>
       <button role="menuitem" disabled={disabled || !selectedIds.length} onClick={requestDelete}>删除口播片段</button>
+      <button role="menuitem" data-insert="before" disabled={disabled || selectedIds.length !== 1} onClick={() => { void insertRelative('before'); }}>上方添加</button>
+      <button role="menuitem" data-insert="after" disabled={disabled || selectedIds.length !== 1} onClick={() => { void insertRelative('after'); }}>下方添加</button>
     </RowMenu>}
     {deleteTargets && <Dialog label="删除口播片段" onClose={() => setDeleteTargets(null)} restoreFocus={() => rowOrigin.current()}>
       <h2>删除口播片段</h2>
@@ -566,7 +587,7 @@ export function App() {
       event.preventDefault();
       if (!node.isSelected()) node.setSelected(true, true);
       rowOrigin.current = dialogReturnFocus(target, () => grid.current, () => moreButton.current);
-      setSelectionMenuOpen(false); setRowMenu({ x: event.clientX, y: event.clientY });
+      setSelectionMenuOpen(false); setRowMenu({ x: event.clientX, y: event.clientY, anchor: structuredClone(node.data), expectedIds: status?.snapshot.segments.map(segment => segment.id) ?? [] });
     }} onKeyDown={event => {
       if (event.key !== 'Escape' || event.nativeEvent.isComposing || event.defaultPrevented) return;
       const target = event.target as HTMLElement;
