@@ -22,9 +22,9 @@ state.status.snapshot.segments = ['a','b','c'].map((id,i)=>({id,order:i+1,text:i
 await action(()=>createRoot(document.getElementById('root')).render(<App/>));
 await input({click:'[row-id="a"] input[type="checkbox"]'});
 await input({click:'[row-id="b"] input[type="checkbox"]'});
-await right('a'); check(menu(), '右键打开行菜单'); bounds(menu()); await window.browserInput({screenshot:'row-menu'});
+await right('a'); check(menu(), '右键打开行菜单'); bounds(menu()); check(getComputedStyle(menu()).backgroundColor === 'rgb(255, 255, 255)', '菜单采用主题不透明背景'); check(document.activeElement === menu(), '鼠标打开聚焦菜单容器，方向键进入选项'); await window.browserInput({screenshot:'row-menu'});
 check(state.selectionRequests.at(-1).join() === 'a,b', '右键已选行保留集合');
-await input({key:'Enter'}); check(dialog()?.textContent.includes('确定删除已勾选的 2 个口播片段？'), '多选范围明确'); bounds(dialog()); await window.browserInput({screenshot:'delete-confirm'});
+await input({key:'ArrowDown'}); await input({key:'Enter'}); check(dialog()?.textContent.includes('确定删除已勾选的 2 个口播片段？'), '多选范围明确'); bounds(dialog()); await window.browserInput({screenshot:'delete-confirm'});
 const controls = [...dialog().querySelectorAll('button')];
 const cancel = controls.find(node => node.textContent === '取消'), confirm = controls.find(node => node.textContent === '删除');
 check(cancel && confirm && !cancel.disabled && !confirm.disabled, '取消与删除保留清晰名称及原生按钮语义');
@@ -42,10 +42,10 @@ check(!state.batchRequests, '尚未提交');
 await input({key:'Tab'}); check(document.activeElement.textContent === '取消', '默认键盘路径先到取消');
 await input({key:'Enter'}); check(!dialog() && state.selectionRequests.at(-1).join() === 'a,b', '取消保留勾选');
 await right('c'); check(state.selectionRequests.at(-1).join() === 'c', '右键未选行替换集合');
-await input({key:'Enter'}); check(dialog().textContent.includes('确定删除这个口播片段？'), '单选提示');
+await input({key:'ArrowDown'}); await input({key:'Enter'}); check(dialog().textContent.includes('确定删除这个口播片段？'), '单选提示');
 await input({key:'Escape'}); check(!dialog() && state.selectionRequests.at(-1).join() === 'c', 'Escape仅关弹窗');
 await right('c'); await input({key:'Escape'}); check(!menu() && state.selectionRequests.at(-1).join() === 'c', 'Escape仅关菜单');
-await right('c'); await input({key:'Enter'});
+await right('c'); await input({key:'ArrowDown'}); await input({key:'Enter'});
 await input({click:'dialog [data-delete-confirm]'});
 check(state.batchRequests.at(-1).changes[0].expected.id === 'c', '明确确认提交固定目标');
 await action(() => new Promise(r => setTimeout(r, 400)));
@@ -62,7 +62,7 @@ state.status.snapshot.segments = ['a','b','c'].map((id,i)=>({id,order:i+1,text:i
 await action(()=>createRoot(document.getElementById('root')).render(<App/>));
 await input({click:'[row-id="a"] input[type="checkbox"]'});
 await input({click:'[row-id="b"] input[type="checkbox"]'});
-await right('a'); await input({key:'Enter'});
+await right('a'); await input({key:'ArrowDown'}); await input({key:'Enter'});
 const original = structuredClone(state.status.snapshot.segments.slice(0,2));
 // 通过后台连接断开清空勾选，弹窗目标仍固定。
 await action(()=>state.tableConnections.at(-1).resolve());
@@ -76,7 +76,7 @@ check(document.querySelector('footer').textContent.includes('口播片段内容�
 check(document.querySelector('[row-id="a"]').textContent.includes('其他访问端的新内容'), '新内容仍可见');
 check(state.batchRequests.length === 1, '无自动重试');
 await action(()=>[...timers.values()].forEach(cb=>cb()));
-await right('a'); check(menu() && !menu().querySelector('button').disabled, '再次菜单可用：'+document.querySelector('main').textContent); await input({key:'Enter'});
+await right('a'); check(menu() && menu().querySelector('[role="menuitem"]').getAttribute('aria-disabled') !== 'true', '再次菜单可用：'+document.querySelector('main').textContent); await input({key:'ArrowDown'}); await input({key:'Enter'});
 check(dialog(), '再次弹窗打开：'+document.activeElement?.outerHTML);
 for (const lock of ['task', 'speech', 'codex', 'user']) {
 state.status.taskLocked = lock === 'task';
@@ -89,7 +89,7 @@ await input({click:'dialog [data-delete-confirm]'}); check(state.batchRequests.l
 await input({key:'Escape'}); check(!dialog(), '锁定仍可取消');
 state.status.modification=null; state.speech.locked=false;
 await action(()=>[...timers.values()].forEach(cb=>cb()));
-await right('a'); await input({key:'Enter'});
+await right('a'); await input({key:'ArrowDown'}); await input({key:'Enter'});
 // 未轮询到的占用也必须重新申请修改权；服务拒绝显示反馈。
 state.current = {};
 await input({click:'dialog [data-delete-confirm]'});
@@ -102,3 +102,38 @@ const raceFixture = fixture.replace(
   "if (change.kind === 'delete') { const current = state.status.snapshot.segments.find(item => item.id === change.expected.id); if (JSON.stringify(current) === JSON.stringify(change.expected)) state.status.snapshot.segments = state.status.snapshot.segments.filter(item => item.id !== change.expected.id); }",
 ).replace("results: [] };", "results: batch.changes.map((change,index) => ({ index, outcome: index ? 'deleted' : 'changed', message: index ? '口播片段已删除，已跳过' : '口播片段内容已变化，已跳过' })) };");
 test('确认删除保持旧快照并反馈过时目标，动态任务锁及修改权阻止提交', {skip:chrome ? false:'需要 Chrome',timeout:40000}, t=>checkInteractiveBrowser(t,raceScript,raceFixture));
+
+const edgeScript = script.slice(0, script.indexOf('\n(async () =>')) + String.raw`
+(async () => { try {
+state.status.snapshot.segments = Array.from({length:30},(_,i)=>({id:'s'+i,order:i+1,text:'片段 '+i,video:null}));
+await action(()=>createRoot(document.getElementById('root')).render(<App/>));
+await input({pointer:{type:'mouseWheel',selector:'.ag-grid-viewport',deltaY:500}});
+const viewport = document.querySelector('.ag-body-vertical-scroll-viewport');
+const horizontal = document.querySelector('.ag-body-horizontal-scroll-viewport');
+const scroll = () => [viewport.scrollTop,horizontal.scrollLeft].join();
+const rect = document.querySelector('.ag-grid-viewport').getBoundingClientRect();
+const lastVisible = [...document.querySelectorAll('[row-id]')].filter(node => {const r=node.getBoundingClientRect();return r.top>=rect.top && r.bottom<=rect.bottom;}).at(-1);
+check(lastVisible, '窄高视口仍有完整可见行');
+const point = {x:Math.min(innerWidth-28,rect.right-28),y:lastVisible.getBoundingClientRect().bottom-8};
+const target = document.elementFromPoint(point.x,point.y).closest('[row-id]');
+check(target, '边缘真实命中口播片段');
+const id = target.getAttribute('row-id'), before = scroll();
+await input({pointer:{type:'mousePressed',...point},button:'right'});
+await input({pointer:{type:'mouseReleased',...point},button:'right'});
+check(menu(), '右下边缘打开菜单');bounds(menu());
+check(state.selectionRequests.at(-1).join()===id,'边缘范围采用实际行');
+for (const [key,label] of [['End','下方添加'],['ArrowUp','上方添加'],['Home','删除口播片段'],['ArrowDown','上方添加'],['Home','删除口播片段']]) {
+ await input({key}); check(document.activeElement.textContent===label,'原语键盘导航 '+key);
+}
+await input({key:' '});check(dialog() && dialog().contains(document.activeElement),'Space 打开确认，菜单关闭不抢走焦点');
+await input({key:'Escape'});check(!dialog() && !menu(),'Escape 关闭确认');
+check(document.activeElement.closest('[row-id]')?.getAttribute('row-id')===id,'关闭返回稳定口播片段');
+check(scroll()===before,'正常关闭保持表格滚动');
+await input({pointer:{type:'mousePressed',...point},button:'right'});
+await input({pointer:{type:'mouseReleased',...point},button:'right'});
+await input({key:'Escape'});check(!menu() && scroll()===before,'菜单 Escape 保持滚动');
+await window.browserInput({screenshot:'menu-edge-return'});
+document.getElementById('result').dataset.state='passed';
+} catch(e) { document.getElementById('result').dataset.state='failed'; document.getElementById('result').textContent=e.stack; }})();
+`;
+for (const width of [1600,420]) test(`行菜单边缘定位、全部导航键及 Space 焦点交接（${width}×360）`, {skip:chrome?false:'需要 Chrome',timeout:40000},t=>checkInteractiveBrowser(t,edgeScript,fixture,width,360));

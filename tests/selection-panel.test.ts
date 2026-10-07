@@ -48,7 +48,8 @@ const selected=ids=>check(JSON.stringify([...(state.selectionRequests.at(-1)??[]
  await input({click:'.ag-header input[type="checkbox"]'});selected([]);
  await select('a');await select('b');
  await input({click:'[row-id="a"] [col-id="text"]',button:'right'});
- await input({click:'[role="menu"] button'});
+ check(document.querySelector('[role="menu"] [role="menuitem"]').textContent==='删除口播片段','菜单删除项名称明确');
+ await input({click:'[role="menu"] [role="menuitem"]'});
  check(document.querySelector('dialog[open]').textContent.includes('2 个'),'新入口确认准确删除范围');
  await input({click:'[data-delete-confirm]'});
  check(state.batchRequests.at(-1).changes.map(change=>change.expected.id).join()==='a,b','确认后删除全部勾选');
