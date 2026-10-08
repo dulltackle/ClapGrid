@@ -1,3 +1,4 @@
+import { PastePanel } from './paste-panel.js';
 import { Button, Input, NativeSelect, ContextMenu, ContextMenuTrigger, ContextMenuItem } from '@/components/ui/index.js';
 import { buildIdentity } from '../build-identity.js';
 import { panelServiceUrl } from './service-url.js';
@@ -445,15 +446,10 @@ export function App() {
       <p className="m-0 text-[12px] text-muted-foreground">{selectionState}</p>
       <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail(null)}>关闭诊断</Button>
     </DetailPanel>}
-    {detail === 'paste' && <Dialog label="粘贴多行文案" onClose={() => { if (!editState.busy) setDetail(null); }} restoreFocus={returnFocus.current.detail}>
-      <h2>粘贴多行文案</h2>
-      {saveState === 'failed' && <p role="alert">{saveError}</p>}
-      <textarea aria-label="多行文案" value={paste} disabled={editState.busy} onChange={event => setPaste(event.target.value)} placeholder="每个非空行创建一个口播片段" />
-      <div className="toolbar">
-        <button disabled={disabled || !paste.trim()} onClick={() => { void organize({ changes: [{ kind: 'paste', text: paste }] }); }}>按非空行新增</button>
-        <button disabled={editState.busy} onClick={() => setDetail(null)}>关闭</button>
-      </div>
-    </Dialog>}
+    {detail === 'paste' && <PastePanel value={paste} busy={editState.busy} disabled={disabled}
+      error={saveState === 'failed' ? saveError : ''} onChange={setPaste}
+      onSubmit={() => { void organize({ changes: [{ kind: 'paste', text: paste }] }); }}
+      onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail} />}
     {exportSettingsOpen && status && <ExportSettingsPanel restoreFocus={returnFocus.current.settings} editing={editing} status={status} onStatus={setStatus} onSaveState={(state, message = '') => { setSaveState(state); setSaveError(message); }} onClose={() => setExportSettingsOpen(false)} />}
     {audioHistory && <AudioHistoryPanel segmentId={audioHistory} speech={speech} onClose={() => setAudioHistory(null)} restoreFocus={returnFocus.current.history} />}
     {listening && <AudioListeningPanel audio={listening} currentAudio={currentListening} onClose={() => setListening(null)} restoreFocus={returnFocus.current.audio}

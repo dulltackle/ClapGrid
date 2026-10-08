@@ -62,7 +62,7 @@ summary:active { background: var(--color-border); }
 :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .text-cell { display: flex; align-items: center; }
 .text-editor { width: min(560px, calc(100vw - 32px)); padding: var(--space-2); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); box-shadow: 0 4px 16px #0002; }
-.text-editor textarea { height: min(240px, 45dvh); min-height: 0; margin: 0; resize: none; line-height: 22px; color: var(--color-ink); background: var(--color-surface); }
+.text-editor textarea { display: block; width: 100%; height: min(240px, 45dvh); min-height: 0; margin: 0; resize: none; line-height: 22px; color: var(--color-ink); background: var(--color-surface); }
 .text-editor p { margin: var(--space-2) 0 0; font-size: 12px; line-height: 18px; color: var(--color-ink-secondary); white-space: normal; }
 
 @layer components {
@@ -76,7 +76,6 @@ button:disabled { opacity: .5; cursor: default; }
 @layer components {
 input, textarea { font: inherit; border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-1) var(--space-2); }
 }
-textarea { display: block; width: 100%; min-height: 100px; margin: var(--space-2) 0; resize: vertical; }
 
 .video-cell { line-height: 20px; display: flex; align-items: center; gap: 8px; height: 100%; }
 .video-cell span { min-width: 0; overflow: hidden; text-overflow: ellipsis; flex: 1; }

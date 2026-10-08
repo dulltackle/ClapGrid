@@ -1,0 +1,68 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { chrome } from './helpers/browser.js';
+import { fixture } from './helpers/editing-fixture.js';
+import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
+for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`粘贴文案的完整提交与键盘流程（${width}×${height}）`, { timeout: 40000 }, t => {
+  assert.ok(chrome, '验收必须实际运行 Chrome');
+  return checkInteractiveBrowser(t, String.raw`
+    import { act } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { App } from './src/panel/app.tsx';
+    import { assertTheme, assertKeyboardFocus } from './tests/helpers/theme-contract.ts';
+    import { state, deferred } from 'editing-fixture';
+    globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    const intervals = new Map(); let timer = 0;
+    window.setInterval = callback => { intervals.set(++timer, callback); return timer; };
+    window.clearInterval = id => intervals.delete(id);
+    const check = (value, message) => { if (!value) throw Error(message); };
+    const settle = () => new Promise(resolve => setTimeout(resolve, 70));
+    const button = text => [...document.querySelectorAll('button')].find(node => node.textContent === text);
+    const click = async text => { await act(async () => { const node = button(text); check(node && !node.disabled, '入口可用：' + text); node.focus(); node.click(); await settle(); }); await settle(); };
+    const key = async (key, shift = false) => { await act(async () => { await window.browserInput({ key, shift }); await settle(); }); await settle(); };
+    const poll = async () => { await act(async () => { [...intervals.values()].forEach(callback => callback()); await settle(); }); };
+    const dialog = () => document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]');
+    const field = () => document.querySelector('[aria-label="多行文案"]');
+    const bounds = () => { const d = dialog(), r = d.getBoundingClientRect(); check(r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight && d.scrollWidth <= d.clientWidth, '内容不撑破视口'); };
+    (async () => { try {
+      state.status.snapshot.segments = [];
+      await act(async () => { createRoot(document.getElementById('root')).render(<App />); await settle(); }); await settle();
+      await click('更多'); await click('粘贴多行文案');
+      check(dialog().contains(document.activeElement), '焦点交接进入粘贴面板');
+      assertTheme('dialog', dialog()); assertTheme('form', field());
+      check(button('按非空行新增').disabled && !state.current, '空输入不提交且查看不占修改权');
+      field().focus(); await key('A'); await key('Enter'); await key('Enter'); await key('B');
+      check(field().value === 'A\n\nB', '真实键盘输入保留多行与空行');
+      await key('Tab'); await new Promise(resolve => setTimeout(resolve, 200)); assertKeyboardFocus(button('按非空行新增'));
+      state.status.taskLocked = true; await poll();
+      check(button('按非空行新增').disabled && dialog().contains(document.activeElement) && !document.activeElement.matches(':disabled'), '任务锁禁用提交且焦点有可用后备');
+      state.status.taskLocked = false; state.status.modification = { owner: 'agent' }; await poll();
+      check(button('按非空行新增').disabled, '外部修改占用禁用提交');
+      state.status.modification = null; await poll();
+      state.current = {}; await click('按非空行新增');
+      check(dialog().querySelector('[role="alert"]')?.textContent.includes('用户正在编辑') && field().value === 'A\n\nB', '获取修改权失败保留草稿与错误');
+      state.current = null; state.batchFailure = true; await click('按非空行新增');
+      check(dialog().querySelector('[role="alert"]')?.textContent.includes('多行新增失败') && !state.current, '提交失败在面板可读并释放修改权');
+      check(field().value === 'A\n\nB', '提交失败保留全部草稿');
+      bounds(); await window.browserInput({ screenshot: 'paste-error-' + innerHeight });
+      state.batchFailure = false; state.acquireGate = deferred(); await click('按非空行新增');
+      check(field().disabled && button('关闭').disabled && state.current, '获取修改权期间输入与关闭禁用');
+      await key('Escape'); check(dialog(), '获取修改权期间 Escape 不关闭');
+      state.saveGate = deferred(); await act(async () => { state.acquireGate.resolve(); state.acquireGate = null; await settle(); });
+      await key('Escape'); check(dialog() && button('按非空行新增').disabled && button('关闭').disabled, '提交中全部重复操作与关闭禁用');
+      assertTheme('disabled', field());
+      await act(async () => { state.saveGate.resolve(); state.saveGate = null; await settle(); }); await settle();
+      check(field().value === '' && !state.current, '成功清空草稿并释放修改权');
+      for (let i = 0; i < 6; i++) { await key('Tab', i > 2); check(dialog().contains(document.activeElement), '正反向 Tab 限制于面板'); }
+      await act(async () => { await window.browserInput({ pointer: { type: 'mousePressed', x: 2, y: 2 } }); await window.browserInput({ pointer: { type: 'mouseReleased', x: 2, y: 2 } }); await settle(); });
+      check(dialog(), '遮罩不关闭'); bounds();
+      button('关闭').scrollIntoView({ block: 'nearest' }); check(button('关闭').getBoundingClientRect().bottom <= innerHeight, '窄矮视口关闭可滚动到达');
+      await window.browserInput({ screenshot: 'paste-success-' + innerHeight });
+      await key('Escape'); check(!dialog() && document.activeElement === button('更多'), '关闭焦点返回更多');
+      const rows = [...document.querySelectorAll('.ag-row[row-id]')];
+      check(rows.length === 2 && rows[0].querySelector('[col-id="text"]').textContent === 'A' && rows[1].querySelector('[col-id="text"]').textContent === 'B', '真实 AG Grid 按非空行展示两个正确口播片段');
+      document.getElementById('result').dataset.state = 'passed';
+    } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; } })();
+  `, fixture, width!, height!);
+});
