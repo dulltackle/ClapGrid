@@ -32,19 +32,20 @@ jobs:
         run: |
           set -o pipefail
           { node --version; npm --version; "$CHROME_BIN" --version; ffmpeg -version; ffprobe -version; fc-list :lang=zh family; dpkg-query -W ffmpeg fontconfig fonts-noto-cjk libass9; } 2>&1 | tee logs/environment.log
-      - name: 安装锁定的 npm 依赖
-        run: |
-          set -o pipefail
-          npm ci 2>&1 | tee logs/npm-ci.log
-      - name: 类型检查、全套测试及构建
+      - name: 在固定提交检出中安装依赖并执行完整检查
         env:
           CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
-        run: npm run check
+        run: npm run verify -- --revision HEAD
       - name: 保留完整检查日志（包括失败）
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: checks-${{ github.run_id }}-${{ github.run_attempt }}
-          path: logs/
+          path: |
+            logs/*.log
+            logs/check/**
+            logs/verify/*/*.log
+            logs/verify/*/summary.json
+            logs/verify/*/source/logs/check/**
           if-no-files-found: warn
           retention-days: 14

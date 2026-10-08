@@ -1,6 +1,8 @@
+import { ContextMenu, ContextMenuTrigger, ContextMenuItem } from '@/components/ui/index.js';
 import { buildIdentity } from '../build-identity.js';
 import { panelServiceUrl } from './service-url.js';
 import { RowMenu } from './row-menu.js';
+import { DeleteConfirm } from './delete-confirm.js';
 import { Dialog } from './dialog.js';
 import { dialogReturnFocus } from './dialog-focus.js';
 import { ExportTaskDetails, exportStateLabel, useExportTasks } from './export-tasks.js';
@@ -86,7 +88,9 @@ export function App() {
   const searchAnchor = useRef(0);
   const [paste, setPaste] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [rowMenu, setRowMenu] = useState<{ x: number; y: number; anchor: Segment; expectedIds: string[] } | null>(null);
+  const [rowMenu, setRowMenu] = useState<{ anchor: Segment; expectedIds: string[] } | null>(null);
+  const [rowMenuOpen, setRowMenuOpen] = useState(false);
+  const menuRestore = useRef(true);
   const [deleteTargets, setDeleteTargets] = useState<Segment[] | null>(null);
   const rowOrigin = useRef(() => {});
   const [selectionState, setSelectionState] = useState('正在连接勾选…');
@@ -323,17 +327,16 @@ export function App() {
     },
     reject: message => failed(new Error(message)),
   });
-  const closeRowMenu = (restore = true) => { setRowMenu(null); if (restore) requestAnimationFrame(() => rowOrigin.current()); };
   const requestDelete = () => {
     const ids = grid.current?.getSelectedRows().map(segment => segment.id) ?? [];
     const targets = status?.snapshot.segments.filter(segment => ids.includes(segment.id)) ?? [];
     if (!targets.length || disabled) return;
-    setDeleteTargets(structuredClone(targets)); setRowMenu(null);
+    menuRestore.current = false; setDeleteTargets(structuredClone(targets)); setRowMenuOpen(false);
   };
   const insertRelative = async (placement: 'before' | 'after') => {
     if (!rowMenu || selectedIds.length !== 1 || disabled || editing.getState().busy || editing.getState().editing) return;
     const relative = { anchor: rowMenu.anchor, expectedIds: rowMenu.expectedIds, placement };
-    setRowMenu(null);
+    menuRestore.current = false; setRowMenuOpen(false);
     let inserted: string | undefined;
     await editing.save('segments', { acquire: true }, async (token, action) => {
       setSaveState('saving'); setSaveError('');
@@ -507,33 +510,35 @@ export function App() {
       <h2>视频预览</h2><video key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
       <p>从 {preview.start} 秒开始，预览默认静音。</p><button onClick={() => setPreview(null)}>关闭预览</button>
     </Dialog>}
-    {rowMenu && <RowMenu {...rowMenu} onClose={closeRowMenu}>
-      <button role="menuitem" disabled={disabled || !selectedIds.length} onClick={requestDelete}>删除口播片段</button>
-      <button role="menuitem" data-insert="before" disabled={disabled || selectedIds.length !== 1} onClick={() => { void insertRelative('before'); }}>上方添加</button>
-      <button role="menuitem" data-insert="after" disabled={disabled || selectedIds.length !== 1} onClick={() => { void insertRelative('after'); }}>下方添加</button>
-    </RowMenu>}
-    {deleteTargets && <Dialog label="删除口播片段" onClose={() => setDeleteTargets(null)} restoreFocus={() => rowOrigin.current()}>
-      <h2>删除口播片段</h2>
-      <p>{deleteTargets.length === 1 ? '确定删除这个口播片段？' : `确定删除已勾选的 ${deleteTargets.length} 个口播片段？`}</p>
-      <div className="toolbar">
-        <button onClick={() => setDeleteTargets(null)}>取消</button>
-        <button data-delete-confirm disabled={disabled} onClick={() => {
-          if (disabled || editing.getState().busy || editing.getState().editing) return;
-          const targets = deleteTargets; setDeleteTargets(null);
-          void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) });
-        }}>删除</button>
-      </div>
-      {lock && <p role="status">{lock}</p>}
-    </Dialog>}
-    <div className="grid" ref={gridElement} onContextMenu={event => {
+    {deleteTargets && <DeleteConfirm count={deleteTargets.length} disabled={disabled} lock={lock}
+      onClose={() => setDeleteTargets(null)} restoreFocus={() => rowOrigin.current()}
+      onConfirm={() => {
+        if (disabled || editing.getState().busy || editing.getState().editing) return;
+        const targets = deleteTargets;
+        // 结果先落到表格，再关闭并按稳定身份恢复；避免返回即将删除的旧 DOM。
+        void organize({ changes: targets.map(expected => ({ kind: 'delete', expected })) }).finally(() => {
+          setDeleteTargets(current => current === targets ? null : current);
+        });
+      }} />}
+    <ContextMenu modal={false} open={rowMenuOpen} onOpenChange={setRowMenuOpen}>
+    <ContextMenuTrigger asChild>
+    <div className="grid" ref={gridElement} onContextMenuCapture={event => {
+      // 编辑器的复制粘贴属于系统菜单：只阻止 Trigger 收到事件，不取消浏览器默认行为。
+      if (editing.getState().editing || (event.target as HTMLElement).closest('input:not([type="checkbox"]), textarea, .ag-popup-editor')) {
+        event.stopPropagation(); setRowMenuOpen(false);
+      }
+    }} onPointerDown={event => {
+      // 长按不能绕过行身份检查；当前行菜单仅从真实 contextmenu 事件打开。
+      if (event.pointerType !== 'mouse') event.preventDefault();
+    }} onContextMenu={event => {
       const target = event.target as HTMLElement;
       const row = target.closest<HTMLElement>('[row-id]');
       const node = row?.getAttribute('row-id') ? grid.current?.getRowNode(row.getAttribute('row-id')!) : null;
-      if (!node?.data || editing.getState().editing || target.closest('input:not([type="checkbox"]), textarea, .ag-popup-editor')) { setRowMenu(null); return; }
-      event.preventDefault();
+      if (!node?.data || editing.getState().editing || target.closest('input:not([type="checkbox"]), textarea, .ag-popup-editor')) { event.preventDefault(); setRowMenuOpen(false); return; }
+      menuRestore.current = true;
       if (!node.isSelected()) node.setSelected(true, true);
       rowOrigin.current = dialogReturnFocus(target, () => grid.current, () => moreButton.current);
-      setRowMenu({ x: event.clientX, y: event.clientY, anchor: structuredClone(node.data), expectedIds: status?.snapshot.segments.map(segment => segment.id) ?? [] });
+      setRowMenu({ anchor: structuredClone(node.data), expectedIds: status?.snapshot.segments.map(segment => segment.id) ?? [] });
     }} onKeyDown={event => {
       if (event.key !== 'Escape' || event.nativeEvent.isComposing || event.defaultPrevented) return;
       const target = event.target as HTMLElement;
@@ -565,6 +570,16 @@ export function App() {
       overlayLoadingTemplate="<span>正在连接本地服务…</span>"
       noRowsOverlayComponent={EmptyProject}
       noRowsOverlayComponentParams={{ message: error ? '暂时无法读取口播片段' : '暂无口播片段' }} /></AgGridProvider></div>
+    </ContextMenuTrigger>
+    {rowMenu && <RowMenu onCloseAutoFocus={event => {
+      event.preventDefault();
+      if (menuRestore.current) rowOrigin.current();
+    }} onInteractOutside={() => { menuRestore.current = false; }}>
+      <ContextMenuItem disabled={disabled || !selectedIds.length} onSelect={requestDelete}>删除口播片段</ContextMenuItem>
+      <ContextMenuItem disabled={disabled || selectedIds.length !== 1} onSelect={() => { void insertRelative('before'); }}>上方添加</ContextMenuItem>
+      <ContextMenuItem disabled={disabled || selectedIds.length !== 1} onSelect={() => { void insertRelative('after'); }}>下方添加</ContextMenuItem>
+    </RowMenu>}
+    </ContextMenu>
     <footer className="status-bar" aria-label="项目状态">
       <div className="status-line" role="status">
         <span>{error ? '服务连接失败' : status ? '本地服务已连接' : '正在连接本地服务…'}</span>

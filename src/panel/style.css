@@ -1,3 +1,31 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source("./components/ui");
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 保留现有页面与 AG Grid 的基础样式；试点不启用全局 Preflight 重置。 */
+@theme inline {
+  --spacing: var(--space-1);
+  --text-sm: 1rem;
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-ink);
+  --color-background: var(--color-surface);
+  --color-foreground: var(--color-ink);
+  --color-primary: var(--color-focus);
+  --color-primary-foreground: var(--color-surface);
+  --color-secondary: var(--color-surface-subtle);
+  --color-secondary-foreground: var(--color-ink);
+  --color-muted: var(--color-surface-subtle);
+  --color-muted-foreground: var(--color-ink-secondary);
+  --color-ui-accent: var(--color-hover);
+  --color-accent-foreground: var(--color-ink);
+  --color-destructive: var(--color-error);
+  --color-input: var(--color-border);
+  --color-ring: var(--color-focus);
+  --radius-md: var(--radius-control);
+}
+
 :root {
   color-scheme: light;
   --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
@@ -48,9 +76,11 @@ summary:active { background: var(--color-border); }
 .text-editor p { margin: var(--space-2) 0 0; font-size: 12px; line-height: 18px; color: var(--color-ink-secondary); white-space: normal; }
 
 header { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+@layer components {
 button { font: inherit; color: var(--color-ink); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-1) var(--space-3); cursor: pointer; }
 button:hover:not(:disabled) { background: var(--color-hover); }
 button:disabled { opacity: .5; cursor: default; }
+}
 .save-status { margin: 0 0 var(--space-2); color: var(--color-ink-secondary); }
 .save-error { color: var(--color-error); }
 
@@ -135,4 +165,3 @@ header.searching .search-popover label { min-width: 72px; }
 .ag-row-hover .segment-drag-handle, .segment-drag-handle:focus-visible { opacity: 1; }
 .segment-drag-handle:active { cursor: grabbing; }
 .segment-drop-line { position: fixed; z-index: 100; height: 3px; background: var(--color-accent); pointer-events: none; }
-.row-menu { position: fixed; z-index: 10; max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); overflow: auto; display: flex; flex-direction: column; gap: 4px; padding: 6px; border: 1px solid var(--color-border); border-radius: var(--radius-control); background: var(--color-surface); box-shadow: 0 4px 16px #0002; }
