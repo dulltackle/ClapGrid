@@ -19,7 +19,7 @@ export function Dialog({ label, onClose, restoreFocus, children }: {
       // 等待 React 更新触发入口的禁用状态；StrictMode 重挂载不恢复背景焦点。
       requestAnimationFrame(() => {
         if (dialog.isConnected) return;
-        const remaining = [...document.querySelectorAll<HTMLDialogElement>('dialog:modal')];
+        const remaining = [...document.querySelectorAll<HTMLElement>('dialog:modal, [role="dialog"][aria-modal="true"], [role="alertdialog"][aria-modal="true"]')];
         if (remaining.length) {
           if (!remaining.some(layer => layer.contains(document.activeElement))) remaining.at(-1)!.focus({ preventScroll: true });
         } else restore.current();

@@ -8,6 +8,7 @@ const script = String.raw`
   import { createRoot } from 'react-dom/client';
   import { App } from './src/panel/app.tsx';
   import { state, deferred } from 'editing-fixture';
+  import { assertTheme, assertKeyboardFocus } from './tests/helpers/theme-contract.ts';
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   const intervals = new Map(); let nextTimer = 0;
   window.setInterval = callback => { const id = ++nextTimer; intervals.set(id, callback); return id; };
@@ -16,7 +17,7 @@ const script = String.raw`
   const check = (value, message) => { if (!value) throw Error(message); };
   const settle = () => new Promise(resolve => setTimeout(resolve, 40));
   const button = text => [...document.querySelectorAll('button')].find(node => node.textContent === text);
-  const dialog = () => document.activeElement.closest('dialog[open]') ?? document.querySelector('dialog[open]');
+  const dialog = () => document.activeElement.closest('dialog[open], [role="dialog"][aria-modal="true"]') ?? document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]');
   const field = label => document.querySelector('[aria-label="' + label + '"]');
   const click = async node => { await act(async () => { check(node && !node.disabled, '入口必须可用'); node.focus(); node.click(); await settle(); }); await settle(); };
   const visibleControl = async label => {
@@ -49,7 +50,26 @@ const script = String.raw`
       await settle();
       const settings = button('更多');
       await click(button('更多')); await click(button('导出设置'));
-      check(dialog()?.getAttribute('aria-label') === '全片导出设置', '设置必须有可访问名称');
+      check(document.getElementById(dialog()?.getAttribute('aria-labelledby'))?.textContent === '全片导出设置', '设置必须由可见标题提供可访问名称');
+      check(document.getElementById(dialog().getAttribute('aria-describedby'))?.textContent.includes('修改设置不会生成配音'), '设置必须提供关联说明');
+      check(!document.querySelector('dialog[open]'), '打开设置后旧更多浮层必须卸载');
+      check(document.activeElement === dialog(), '异步清理后初始焦点必须停留于容器');
+      await key('Tab'); check(document.activeElement === button('编辑设置'), '首次 Tab 进入首个可用控件');
+      // Button 的颜色过渡结束后核对最终主题，不采样中间颜色。
+      await new Promise(resolve => setTimeout(resolve, 200));
+      assertTheme('dialog', dialog()); assertKeyboardFocus(document.activeElement);
+      await act(async () => {
+        await window.browserInput({ pointer: { type: 'mousePressed', x: 2, y: 2 } });
+        await window.browserInput({ pointer: { type: 'mouseReleased', x: 2, y: 2 } });
+        await settle();
+      });
+      check(dialog() && dialog().contains(document.activeElement), '点击遮罩不关闭且背景不能获得焦点');
+      check(settings.closest('[aria-hidden="true"]'), '模态期间背景对辅助技术隔离');
+      check(dialog().querySelectorAll('button').length === 2, '仅保留编辑与关闭按钮，不新增右上角关闭入口');
+      button('编辑设置').focus(); state.status.taskLocked = true; await poll();
+      check(button('编辑设置').disabled && document.activeElement === dialog(), '动态任务锁禁用当前控件后焦点退回容器');
+      await key('Tab'); check(document.activeElement === button('关闭设置'), '任务锁下 Tab 进入仍可用的关闭按钮');
+      state.status.taskLocked = false; await poll();
       check(dialog().contains(document.activeElement), '打开设置后焦点必须进入浮层');
       await screenshot('settings');
       for (let index = 0; index < 6; index++) {
@@ -102,8 +122,9 @@ const script = String.raw`
       await click(button('更多')); await click(button('导出设置')); await click(button('编辑设置'));
       const lease = state.current;
       state.saveGate = deferred();
-      await act(async () => { const fps = field('导出帧率'); fps.value = '60'; fps.dispatchEvent(new Event('change', { bubbles: true })); });
+      await act(async () => { const fps = field('导出帧率'); fps.focus(); fps.value = '60'; fps.dispatchEvent(new Event('change', { bubbles: true })); });
       await key('Escape');
+      check(document.activeElement === dialog(), '保存开始禁用当前控件后焦点回到容器');
       check(dialog() && button('关闭设置').disabled && state.current === lease && lease.closes === 0, '保存期间 Esc 不能绕过关闭限制或释放修改权');
       await key('Tab'); check(dialog().contains(document.activeElement), '保存时所有控件禁用仍有焦点落点：' + document.activeElement.outerHTML.slice(0, 150) + ' open=' + dialog().open);
       await screenshot('settings-saving');
@@ -112,7 +133,7 @@ const script = String.raw`
       await key('Escape');
       check(dialog() && dialog().textContent.includes('字号尚未保存'), '未提交字号不能被 Esc 丢弃');
       await key('Tab'); await key('Escape');
-      check(!dialog() && lease.closes === 1 && state.status.snapshot.exportSettings.fontSize === 48, '保存完成后关闭并释放一次修改权');
+      check(!dialog() && document.activeElement === settings && lease.closes === 1 && state.status.snapshot.exportSettings.fontSize === 48, '保存完成后关闭并释放一次修改权');
       await poll();
       state.status.modification = { owner: 'codex' }; await poll();
       await click(button('更多')); await click(button('导出设置'));
@@ -193,3 +214,43 @@ for (const width of [1600, 420]) {
     skip: chrome ? false : '未执行：需要 Chrome/Chromium', timeout: 40000,
   }, t => checkInteractiveBrowser(t, script, fixture, width));
 }
+
+test('导出设置在窄矮视口可滚动到字段、提示和关闭操作', {
+  skip: chrome ? false : '未执行：需要 Chrome/Chromium', timeout: 40000,
+}, t => checkInteractiveBrowser(t, String.raw`
+  import { act } from 'react';
+  import { createRoot } from 'react-dom/client';
+  import { App } from './src/panel/app.tsx';
+  import { assertTheme, assertKeyboardFocus } from './tests/helpers/theme-contract.ts';
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const check = (value, message) => { if (!value) throw Error(message); };
+  const settle = () => new Promise(resolve => setTimeout(resolve, 60));
+  const button = text => [...document.querySelectorAll('button')].find(node => node.textContent === text);
+  const click = async text => { await act(async () => { button(text).click(); await settle(); }); await settle(); };
+  (async () => {
+    try {
+      await act(async () => { createRoot(document.getElementById('root')).render(<App />); await settle(); });
+      await click('更多'); await click('导出设置');
+      const dialog = document.querySelector('[role="dialog"][aria-modal="true"]');
+      const bounds = dialog.getBoundingClientRect();
+      check(bounds.left >= 0 && bounds.top >= 0 && bounds.right <= innerWidth && bounds.bottom <= innerHeight, '弹窗完整限制在视口内');
+      check(dialog.scrollHeight > dialog.clientHeight && dialog.scrollWidth <= dialog.clientWidth, '内容纵向滚动且无横向溢出');
+      assertTheme('dialog', dialog);
+      const visible = node => {
+        node.scrollIntoView({ block: 'nearest' });
+        const rect = node.getBoundingClientRect();
+        check(rect.top >= bounds.top && rect.bottom <= bounds.bottom, '标题、字段和提示可滚动到可见区域');
+      };
+      for (const node of [dialog.querySelector('h2'), ...dialog.querySelectorAll('label'), dialog.querySelector('[role="status"]')]) visible(node);
+      await act(async () => { await window.browserInput({ key: 'Tab' }); await settle(); });
+      await new Promise(resolve => setTimeout(resolve, 200));
+      assertKeyboardFocus(button('编辑设置'));
+      await act(async () => { await window.browserInput({ key: 'Tab' }); await settle(); });
+      await new Promise(resolve => setTimeout(resolve, 200));
+      assertKeyboardFocus(button('关闭设置')); visible(button('关闭设置'));
+      await act(async () => { await window.browserInput({ key: 'Enter' }); await settle(); }); await settle();
+      check(!document.querySelector('[role="dialog"]') && document.activeElement === button('更多'), '关闭后异步清理完成仍聚焦更多');
+      document.getElementById('result').dataset.state = 'passed';
+    } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; }
+  })();
+`, fixture, 360, 320));

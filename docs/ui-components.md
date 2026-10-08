@@ -43,3 +43,19 @@ Alert Dialog 源码取自 [官方 new-york-v4 registry](https://ui.shadcn.com/r/
 等待已确认请求时仍可取消或 Escape 关闭确认；这不撤回已发出的请求。若用户已转去查找，迟到响应不会重新打开确认或抢焦点。失败及结果未知均不自动重试。原有 Dialog 及非试点按钮继续服务设置、素材、配音等浮层；其嵌套与键盘测试保留。
 
 完整试点体积、方法与推广边界见 [试点评估](ui-pilot-evaluation.md)。本节描述源码行为，不能作为本机安装或实际宿主交付成功证明。
+
+## 导出设置表单（#80）
+
+导出设置的字号、操作按钮及三个原生选择器通过统一 UI 入口使用 Input、Button、NativeSelect；业务继续拥有草稿、修改权、自动保存与关闭校验。表单与弹窗切片分别实现，集成后由统一 Dialog 承载；选择器保留浏览器箭头、原生选项、`size`、禁用和键盘交互，不引入 Radix Select 或图标依赖。
+
+Input 和 NativeSelect 分别按 [官方 Input 模板](https://ui.shadcn.com/r/styles/new-york-v4/input.json) 与 [官方 Native Select 模板](https://ui.shadcn.com/r/styles/new-york-v4/native-select.json) 适配（2026-10-07；原始 JSON SHA256 分别为 `b1fffa12ba72ce30a291749012b47235eda110648b8106725ced22b5b31c8f1b`、`950729a758bef332865adc55f25c16667f45347ef850ee7be20b741667f55d8b`）。文件保留上游 MIT 许可；升级时对照模板审阅，保留本地 cn 入口、亮色表面与文字、实线边框和可见焦点。NativeSelect 省略包装层、自绘箭头与未使用的 Option/OptGroup 组件，直接透传原生 select 属性。Input 保留上游输入类型和属性透传；两者不管理任何业务状态。
+
+Tailwind 扫描范围与 Preflight 策略不变，没有新增全局 CSS 规则。既有弹窗字段布局规则继续负责宽度与间距，组件负责主题与禁用态。`tests/helpers/theme-contract.ts` 的 `form` 契约覆盖正常主题，键盘焦点另检蓝色轮廓。`tests/export-settings-panel.test.ts` 使用完整页面、真实 AG Grid、HTTP 客户端边界替身及生产同源样式，核对查看与编辑、任务锁及占用、加载与字体不可用、自动保存与字号边界、错误及断线，并在 1600×1000、420×800、420×360 视口验证控件可达性与主题；浏览器缺失明确失败。既有编辑、表格及弹窗测试继续执行。
+
+## 导出设置弹窗（#81）
+
+Dialog 源码按需参考 [官方 new-york-v4 registry](https://ui.shadcn.com/r/styles/new-york-v4/dialog.json)（2026-10-07，模板 SHA256 `0115e3a57aa55a978c5fed0d77f7e98edd694215aae3e569def3fff722ba9f26`）。保留 MIT 许可，沿用现有 radix-ui，无新增依赖。统一入口仅导出使用中的 Root、Content、Title 和 Description；省略 Trigger、右上角 Close、图标及未使用布局。采用 flex 避免与既有 .grid 类名冲突，显式浅灰实线边框及亮色前景背景，保留视口最大宽高和内部滚动。
+
+Content 初始聚焦容器，动态禁用当前控件时也以容器作为后备；Radix 提供模态背景隔离和 Tab 约束。明确 aria-modal，使原生 Dialog 的延迟恢复通过公共模态语义识别新弹窗，避免“更多”卸载后抢走焦点。原生浮层仍按原有嵌套路径恢复。遮罩点击被阻止；受控 Root 的关闭请求交给 ExportSettingsPanel 原有校验，保存、未提交字号及修改权释放规则仍在业务模块。关闭自动焦点由业务恢复至页头“更多”。
+
+dialog-panel 使用完整主视图、真实 AG Grid 与 HTTP 边界替身，覆盖标题说明、异步焦点交接、键盘环绕、遮罩隔离、保存中全部禁用、未提交字号、释放与焦点恢复；另覆盖 360×320 窄矮视口的滚动可达性与生产同源主题。layout-panel 以可见可访问语义兼容新旧弹窗，声音、素材及原生嵌套流程保留。这些源码测试不能代替本机插件安装和实际宿主验收。

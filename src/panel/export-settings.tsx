@@ -1,5 +1,5 @@
 import { panelServiceUrl } from './service-url.js';
-import { Dialog } from './dialog.js';
+import { Button, Input, NativeSelect, Dialog, DialogContent, DialogTitle, DialogDescription } from './components/ui/index.js';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { queryExportSettings, saveExportSettings } from '../shared/client.js';
 import type { ExportSettings, ExportStatus, ServiceStatus } from '../shared/contracts.js';
@@ -57,28 +57,30 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose, restor
   const disabled = mode !== 'editing';
   const settings = owns ? draft : status.snapshot.exportSettings;
   const issues = details?.issues ?? [];
-  return <Dialog label="全片导出设置" onClose={() => { void close(); }} restoreFocus={restoreFocus}>
-    <h2>全片导出设置</h2>
+  return <Dialog open onOpenChange={open => { if (!open) void close(); }}>
+    <DialogContent className="export-settings-dialog" onCloseAutoFocus={event => { event.preventDefault(); restoreFocus(); }}>
+    <DialogTitle>全片导出设置</DialogTitle>
     <p>适用于全片 · 16:9 · 1920×1080 · MP4</p>
-    <p>修改设置不会生成配音或更改已有成片，下一次导出采用当前设置。</p>
-    <label>编码<select aria-label="导出编码" disabled={disabled} value={settings.codec} onChange={event => { void save({ ...draft, codec: event.target.value as ExportSettings['codec'] }); }}>
+    <DialogDescription>修改设置不会生成配音或更改已有成片，下一次导出采用当前设置。</DialogDescription>
+    <label>编码<NativeSelect aria-label="导出编码" disabled={disabled} value={settings.codec} onChange={event => { void save({ ...draft, codec: event.target.value as ExportSettings['codec'] }); }}>
       <option value="libx264">H.264（默认）</option><option value="mpeg4">MPEG-4 Part 2</option>
-    </select></label>
-    <label>帧率<select aria-label="导出帧率" disabled={disabled} value={settings.fps} onChange={event => { void save({ ...draft, fps: Number(event.target.value) as ExportSettings['fps'] }); }}>
+    </NativeSelect></label>
+    <label>帧率<NativeSelect aria-label="导出帧率" disabled={disabled} value={settings.fps} onChange={event => { void save({ ...draft, fps: Number(event.target.value) as ExportSettings['fps'] }); }}>
       {[24, 25, 30, 50, 60].map(fps => <option key={fps} value={fps}>{fps} fps</option>)}
-    </select></label>
-    <label>字幕字体<select aria-label="字幕字体" disabled={disabled || !details} value={settings.fontFamily ?? ''} onChange={event => { void save({ ...draft, fontFamily: event.target.value || null }); }}>
+    </NativeSelect></label>
+    <label>字幕字体<NativeSelect aria-label="字幕字体" disabled={disabled || !details} value={settings.fontFamily ?? ''} onChange={event => { void save({ ...draft, fontFamily: event.target.value || null }); }}>
       <option value="">未设置，请选择字体</option>
       {settings.fontFamily && !details?.fonts.includes(settings.fontFamily) && <option value={settings.fontFamily}>{settings.fontFamily}（当前不可用）</option>}
       {details?.fonts.map(font => <option key={font} value={font}>{font}</option>)}
-    </select></label>
-    <label>字幕字号（px）<input aria-label="字幕字号（px）" type="number" min="1" max="1080" step="1" disabled={disabled} value={owns ? size : status.snapshot.exportSettings.fontSize?.toString() ?? ''} onChange={event => setSize(event.target.value)} onBlur={() => { void save({ ...draft, fontSize: size.trim() === '' ? null : Number(size) }); }} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }} /></label>
+    </NativeSelect></label>
+    <label>字幕字号（px）<Input aria-label="字幕字号（px）" type="number" min="1" max="1080" step="1" disabled={disabled} value={owns ? size : status.snapshot.exportSettings.fontSize?.toString() ?? ''} onChange={event => setSize(event.target.value)} onBlur={() => { void save({ ...draft, fontSize: size.trim() === '' ? null : Number(size) }); }} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }} /></label>
     <p>字号为 1080p 画布像素，范围 1–1080 的整数；字体与字号均须主动设置。字体来自本机 Fontconfig，安装字体后可关闭并重开此入口刷新。</p>
     {!!issues.length && <ul aria-label="导出设置待解决项">{issues.map(issue => <li key={issue}>{issue}</li>)}</ul>}
     <p role="status">{message}</p>
     <div className="toolbar">
-      {mode === 'view' && <button disabled={activity.busy || activity.editing || status.taskLocked || !!status.modification} onClick={() => { void edit(); }}>编辑设置</button>}
-      <button disabled={mode === 'saving'} onClick={() => { void close(); }}>关闭设置</button>
+      {mode === 'view' && <Button variant="outline" disabled={activity.busy || activity.editing || status.taskLocked || !!status.modification} onClick={() => { void edit(); }}>编辑设置</Button>}
+      <Button variant="outline" disabled={mode === 'saving'} onClick={() => { void close(); }}>关闭设置</Button>
     </div>
+    </DialogContent>
   </Dialog>;
 }
