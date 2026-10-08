@@ -165,3 +165,9 @@ header.searching .search-popover label { min-width: 72px; }
 .ag-row-hover .segment-drag-handle, .segment-drag-handle:focus-visible { opacity: 1; }
 .segment-drag-handle:active { cursor: grabbing; }
 .segment-drop-line { position: fixed; z-index: 100; height: 3px; background: var(--color-accent); pointer-events: none; }
+
+/* 导出设置迁移保留表单布局，通用弹窗拥有尺寸与主题。 */
+.export-settings-dialog { overflow-wrap: anywhere; }
+.export-settings-dialog h2 { font-size: 18px; margin-top: 0; }
+.export-settings-dialog label { display: block; margin: 12px 0; }
+.export-settings-dialog input, .export-settings-dialog select { display: block; width: 100%; font: inherit; padding: 8px; }

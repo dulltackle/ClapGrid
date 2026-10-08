@@ -1,6 +1,5 @@
 import { panelServiceUrl } from './service-url.js';
-import { Dialog } from './dialog.js';
-import { Button, Input, NativeSelect } from './components/ui/index.js';
+import { Button, Input, NativeSelect, Dialog, DialogContent, DialogTitle, DialogDescription } from './components/ui/index.js';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { queryExportSettings, saveExportSettings } from '../shared/client.js';
 import type { ExportSettings, ExportStatus, ServiceStatus } from '../shared/contracts.js';
@@ -58,10 +57,11 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose, restor
   const disabled = mode !== 'editing';
   const settings = owns ? draft : status.snapshot.exportSettings;
   const issues = details?.issues ?? [];
-  return <Dialog label="全片导出设置" onClose={() => { void close(); }} restoreFocus={restoreFocus}>
-    <h2>全片导出设置</h2>
+  return <Dialog open onOpenChange={open => { if (!open) void close(); }}>
+    <DialogContent className="export-settings-dialog" onCloseAutoFocus={event => { event.preventDefault(); restoreFocus(); }}>
+    <DialogTitle>全片导出设置</DialogTitle>
     <p>适用于全片 · 16:9 · 1920×1080 · MP4</p>
-    <p>修改设置不会生成配音或更改已有成片，下一次导出采用当前设置。</p>
+    <DialogDescription>修改设置不会生成配音或更改已有成片，下一次导出采用当前设置。</DialogDescription>
     <label>编码<NativeSelect aria-label="导出编码" disabled={disabled} value={settings.codec} onChange={event => { void save({ ...draft, codec: event.target.value as ExportSettings['codec'] }); }}>
       <option value="libx264">H.264（默认）</option><option value="mpeg4">MPEG-4 Part 2</option>
     </NativeSelect></label>
@@ -81,5 +81,6 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose, restor
       {mode === 'view' && <Button variant="outline" disabled={activity.busy || activity.editing || status.taskLocked || !!status.modification} onClick={() => { void edit(); }}>编辑设置</Button>}
       <Button variant="outline" disabled={mode === 'saving'} onClick={() => { void close(); }}>关闭设置</Button>
     </div>
+    </DialogContent>
   </Dialog>;
 }

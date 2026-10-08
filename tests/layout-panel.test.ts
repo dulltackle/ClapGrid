@@ -17,7 +17,7 @@ const script = String.raw`
   const button = text => [...document.querySelectorAll('button')].find(node => node.textContent === text);
   const click = async text => { await act(async () => { const node = button(text); check(node && !node.disabled, '入口可用：' + text); node.focus(); node.click(); await settle(); }); await settle(); };
   const key = async key => { await act(async () => { await window.browserInput({ key }); await settle(); }); await settle(); };
-  const dialog = () => document.querySelector('dialog[open]');
+  const dialog = () => document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]');
   const rect = () => document.querySelector('[role="grid"]').closest('.grid').getBoundingClientRect();
   const shot = name => window.browserInput({ screenshot: name });
   (async () => {
@@ -44,7 +44,7 @@ const script = String.raw`
       await shot('normal');
       for (const [entry, label] of [['声音设置', '统一声音设置'], ['导出设置', '全片导出设置'], ['粘贴多行文案', '粘贴多行文案'], ['任务记录', '任务记录'], ['导入本地视频', '导入本地视频']]) {
         await click('更多'); await click(entry);
-        check(dialog()?.getAttribute('aria-label') === label, '打开有名称的浮层：' + label);
+        check((dialog()?.getAttribute('aria-label') ?? document.getElementById(dialog()?.getAttribute('aria-labelledby'))?.textContent) === label, '打开有名称的浮层：' + label);
         check(dialog().contains(document.activeElement), '焦点进入浮层');
         check(rect().top === initial.top && (label === '导入本地视频' ? rect().height >= initial.height - 24 : rect().height === initial.height), '详情不推移表格：' + label + ' ' + JSON.stringify({ before: initial.toJSON(), after: rect().toJSON() }));
         const bounds = dialog().getBoundingClientRect();
