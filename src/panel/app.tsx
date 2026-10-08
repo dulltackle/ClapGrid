@@ -6,6 +6,7 @@ import { DeleteConfirm } from './delete-confirm.js';
 import { Dialog } from './dialog.js';
 import { AudioHistoryPanel, AudioListeningPanel } from './audio-panels.js';
 import { DetailPanel } from './detail-panel.js';
+import { VoicePanel } from './voice-panel.js';
 import { dialogReturnFocus } from './dialog-focus.js';
 import { ExportTaskDetails, exportStateLabel, useExportTasks } from './export-tasks.js';
 import { ExportSettingsPanel } from './export-settings.js';
@@ -410,25 +411,9 @@ export function App() {
       </div>
       <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail(null)}>关闭</Button>
     </DetailPanel>}
-    {detail === 'voice' && speech && <Dialog label="统一声音设置" onClose={() => { if (!editState.busy) setDetail(null); }} restoreFocus={returnFocus.current.detail}>
-      <h2>统一声音设置</h2>
-      <div className="toolbar">
-        <label>统一音色 <select aria-label="统一音色" disabled={disabled} value={speech.voice.speaker} onChange={event => { void changeVoice({ ...speech.voice, speaker: event.target.value as Voice['speaker'] }); }}>
-          <option value="zh_female_vv_uranus_bigtts">vivi 2.0</option>
-          <option value="zh_female_santongyongns_saturn_bigtts">流畅女声</option>
-          <option value="zh_male_ruyayichen_saturn_bigtts">儒雅逸辰</option>
-        </select></label>
-        <label>统一语速 {(1 + speech.voice.speechRate / 100).toFixed(2)} 倍
-          <select aria-label="统一语速" disabled={disabled} value={speech.voice.speechRate} onChange={event => { void changeVoice({ ...speech.voice, speechRate: Number(event.target.value) }); }}>
-            {Array.from({ length: 151 }, (_, index) => index - 50).map(rate => <option key={rate} value={rate}>{(1 + rate / 100).toFixed(2)} 倍</option>)}
-          </select>
-        </label>
-        <span>TokenDance 凭据：{speech.configured ? '已配置' : '未配置'}</span>
-      </div>
-      <p>文案通过 TokenDance seed-tts-2.0 生成配音，可能产生费用。配置位置：{speech.configPath}，键名 TOKENDANCE_KEY。已配置不代表服务已验证。</p>
-      {saveState === 'failed' && <p role="alert">{saveError}</p>}
-      <button disabled={editState.busy} onClick={() => setDetail(null)}>关闭声音设置</button>
-    </Dialog>}
+    {detail === 'voice' && speech && <VoicePanel speech={speech} disabled={disabled} busy={editState.busy}
+      error={saveState === 'failed' ? saveError : undefined} onChange={voice => { void changeVoice(voice); }}
+      onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail} />}
     {detail === 'tasks' && <DetailPanel title="任务记录" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
       <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail('diagnostics')}>连接诊断</Button>
       {speech && <section aria-label="配音任务" className="flex flex-col gap-2 [&_p]:my-2 [&_p]:text-[12px] [&_summary]:font-medium">

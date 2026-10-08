@@ -119,10 +119,10 @@ test('读取状态及迁移表单保留保存、取消与互斥规则', {
       state.speech = { locked: false, configured: true, configPath: '/tmp/config', voice: { speaker: 'zh_female_vv_uranus_bigtts', speechRate: 0 }, audio: [], tasks: [], operations: [] }; await poll();
       await click('更多'); await click('声音设置');
       state.voiceFailure = true; await change('统一语速', '20');
-      check(document.querySelector('dialog [role="alert"]')?.textContent.includes('声音保存失败'), '声音保存失败在当前浮层内可访问');
+      check(document.querySelector('[role="dialog"] [role="alert"]')?.textContent.includes('声音保存失败'), '声音保存失败在当前浮层内可访问');
       state.voiceFailure = false; state.saveGate = deferred();
       await change('统一语速', '20'); await key('Escape');
-      check(document.querySelector('dialog[open]') && field('统一音色').disabled, '声音提交中保留互斥和浮层');
+      check(document.querySelector('[role="dialog"][aria-modal="true"]') && field('统一音色').disabled, '声音提交中保留互斥和浮层');
       await act(async () => { state.saveGate.resolve(); state.saveGate = null; await settle(); });
       check(field('统一语速').value === '20', '声音即时保存生效'); await key('Escape');
       document.getElementById('result').dataset.state = 'passed';

@@ -36,7 +36,7 @@ for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`更�
       await new Promise(resolve => setTimeout(resolve, 200)); assertTheme('disabled', button('粘贴多行文案'));
       state.status.taskLocked = false; await poll();
       await click('声音设置');
-      check(document.querySelector('dialog[open]').contains(document.activeElement), '新更多向旧声音浮层交接焦点');
+      check(dialog().contains(document.activeElement), '更多向声音浮层交接焦点');
       await key('Escape'); check(document.activeElement === button('更多'), '旧浮层关闭恢复更多');
       state.exports.tasks = [{ id: 'result', state: 'failed', completed: 1, total: 2, createdAt: '2026-10-03T00:00:00Z', message: '导出失败', issues: [{ order: 1, segmentId: 'segment', message: '缺少有效配音' }], warnings: [{ order: 2, message: '使用静帧补齐' }], output: { path: '/tmp/' + '很长的成片位置'.repeat(25) + '.mp4', url: '/movie.mp4', previewUrl: '/preview.mp4' } }]; await poll();
       await click('更多'); await click('任务记录');
