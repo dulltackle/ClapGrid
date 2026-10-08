@@ -9,7 +9,9 @@ export function DeleteConfirm({ count, disabled, lock, onClose, onConfirm, resto
   const cancel = useRef<HTMLButtonElement>(null);
   const confirm = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (disabled && document.activeElement === confirm.current) cancel.current?.focus({ preventScroll: true });
+    // 旧版 Chrome 设置 disabled 时先把焦点移到 body，effect 中不能只检查确认按钮。
+    const active = document.activeElement;
+    if (disabled && (active === confirm.current || active === document.body)) cancel.current?.focus({ preventScroll: true });
   }, [disabled]);
   return <AlertDialog open onOpenChange={open => { if (!open) onClose(); }}>
     <AlertDialogContent onCloseAutoFocus={event => { event.preventDefault(); restoreFocus(); }}>
