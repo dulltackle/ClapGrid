@@ -34,7 +34,7 @@ const selected=ids=>check(JSON.stringify([...(state.selectionRequests.at(-1)??[]
  await input({click:'[row-id="a"] [col-id="text"]',button:'right'});await input({key:'Escape'});selected(['a','b']);check(!document.querySelector('[role="menu"]')&&search(),'行菜单 Escape 保留查找和勾选');
  await input({key:'Escape'});selected([]);layout();
  await input({click:'[row-id="a"] [col-id="text"]',key:'double'});
- check(document.querySelector('[aria-label="文案全文"]')&&document.querySelector('[row-id="a"] .segment-drag-handle').disabled,'全文编辑期间拖拽禁用');
+ check(document.querySelector('[aria-label="文案全文"]')&&document.querySelector('[row-id="a"] [aria-label^="拖动片段 "]').disabled,'全文编辑期间拖拽禁用');
  let nativeContext;document.addEventListener('contextmenu',event=>{setTimeout(()=>{nativeContext={prevented:event.defaultPrevented,tag:event.target.tagName};},0);},{once:true,capture:true});
  await input({click:'[aria-label="文案全文"]',button:'right'});check(nativeContext?.tag==='TEXTAREA'&&!nativeContext.prevented&&!document.querySelector('[role="menu"]'),'编辑文案保留系统右键菜单，不隐含行操作');
  await input({key:'Escape'});await poll();selected(['a']);
@@ -43,7 +43,7 @@ const selected=ids=>check(JSON.stringify([...(state.selectionRequests.at(-1)??[]
   await input({key:'Home'});check(document.activeElement.textContent==='删除口播片段','锁前聚焦可执行项');
   if(lock==='taskLocked')state.status.taskLocked=true;else if(lock==='speech')state.speech={locked:true,voice:{},tasks:[],operations:[],audio:[]};else state.status.modification={owner:lock};await poll();
   check(document.querySelectorAll('[role="menu"] [role="menuitem"]').length===3,'全部三项仍显示');
-  check([...document.querySelectorAll('[role="menu"] [role="menuitem"]')].every(node=>node.getAttribute('aria-disabled')==='true')&&document.querySelector('[row-id="a"] .segment-drag-handle').disabled,'动态锁禁用修改入口 '+lock);
+  check([...document.querySelectorAll('[role="menu"] [role="menuitem"]')].every(node=>node.getAttribute('aria-disabled')==='true')&&document.querySelector('[row-id="a"] [aria-label^="拖动片段 "]').disabled,'动态锁禁用修改入口 '+lock);
   for (const item of document.querySelectorAll('[role="menu"] [role="menuitem"]')) assertTheme('disabled', item);
   check(document.activeElement.matches('[role="menu"]'),'动态禁用后保留菜单有效焦点 '+document.activeElement.outerHTML);
   await input({key:'Escape'});selected(['a']);check(document.activeElement.isConnected&&!document.querySelector('[role="menu"]'),'锁定菜单关闭后焦点有效');

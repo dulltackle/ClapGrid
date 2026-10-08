@@ -28,6 +28,7 @@
 
 :root {
   color-scheme: light;
+  --font-size-ui: 14px;
   --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --color-surface: #ffffff;
   --color-surface-subtle: #f7f7f8;
@@ -47,7 +48,7 @@
   --radius-control: 6px;
   --radius-panel: 8px;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--font-size-ui);
   line-height: 1.5;
   color: var(--color-ink);
   background: var(--color-surface);
@@ -60,10 +61,6 @@ summary { width: fit-content; padding: var(--space-1) var(--space-2); border-rad
 summary:hover { background: var(--color-hover); }
 summary:active { background: var(--color-border); }
 :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
-.text-cell { display: flex; align-items: center; }
-.text-editor { width: min(560px, calc(100vw - 32px)); padding: var(--space-2); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); box-shadow: 0 4px 16px #0002; }
-.text-editor textarea { display: block; width: 100%; height: min(240px, 45dvh); min-height: 0; margin: 0; resize: none; line-height: 22px; color: var(--color-ink); background: var(--color-surface); }
-.text-editor p { margin: var(--space-2) 0 0; font-size: 12px; line-height: 18px; color: var(--color-ink-secondary); white-space: normal; }
 
 @layer components {
 button { font: inherit; color: var(--color-ink); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-1) var(--space-3); cursor: pointer; }
@@ -77,38 +74,24 @@ button:disabled { opacity: .5; cursor: default; }
 input, textarea { font: inherit; border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-1) var(--space-2); }
 }
 
-.video-cell { line-height: 20px; display: flex; align-items: center; gap: 8px; height: 100%; }
-.video-cell span { min-width: 0; overflow: hidden; text-overflow: ellipsis; flex: 1; }
-.thumbnail { overflow: hidden; padding: 0; height: 32px; width: 52px; flex-shrink: 0; }
-.thumbnail img { width: 100%; height: 100%; object-fit: contain; }
 .media-dialog::backdrop { background: #0006; }
 .media-dialog { color: var(--color-ink); border: 1px solid var(--color-border); margin: auto; overflow-wrap: anywhere; background: var(--color-surface); border-radius: var(--radius-panel); padding: 24px; width: min(680px, calc(100% - 32px)); max-height: calc(100dvh - 32px); overflow: auto; }
 .media-dialog h2 { font-size: 18px; margin-top: 0; }
 .media-dialog label { display: block; margin: 12px 0; }
 .media-dialog input, .media-dialog select { display: block; width: 100%; font: inherit; padding: 8px; }
 [hidden] { display: none !important; }
-.speech-cell { display: flex; flex-direction: column; justify-content: center; gap: 2px; height: 100%; white-space: normal; line-height: 18px; }
-.speech-actions { display: flex; gap: var(--space-1); }
-.speech-actions button { padding: 2px 6px; font-size: 12px; }
-.speech-cell button { flex-shrink: 0; }
-.speech-state { display: flex; flex-direction: column; min-width: 0; line-height: 18px; }
-.speech-state span { white-space: normal; }
-.speech-state span + span { font-size: 12px; color: var(--color-ink-secondary); }
 
 
 .media-dialog [data-focus-guard] { position: fixed; width: 1px; height: 1px; overflow: hidden; opacity: 0; }
 
 
-.speech-state .speech-warning { color: var(--color-error); }
 
-.segment-order { display: flex; align-items: center; gap: 8px; height: 100%; }
-.segment-drag-handle { opacity: 0; padding: 3px; line-height: 20px; flex-shrink: 0; cursor: grab; touch-action: none; }
-.ag-row-hover .segment-drag-handle, .segment-drag-handle:focus-visible { opacity: 1; }
-.segment-drag-handle:active { cursor: grabbing; }
-.segment-drop-line { position: fixed; z-index: 100; height: 3px; background: var(--color-accent); pointer-events: none; }
 
 /* 导出设置迁移保留表单布局，通用弹窗拥有尺寸与主题。 */
 .export-settings-dialog { overflow-wrap: anywhere; }
 .export-settings-dialog h2 { font-size: 18px; margin-top: 0; }
 .export-settings-dialog label { display: block; margin: 12px 0; }
 .export-settings-dialog input, .export-settings-dialog select { display: block; width: 100%; font: inherit; padding: 8px; }
+
+/* AG Grid 无层单元格规则需要同层适配，避免覆盖 Tailwind 的正文对齐。 */
+.ag-cell[col-id="text"] { display: flex; align-items: center; }

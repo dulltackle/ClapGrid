@@ -34,8 +34,8 @@ const theme = themeQuartz.withParams({
   headerTextColor: 'var(--color-ink-secondary)',
   rowHoverColor: 'var(--color-hover)',
   fontFamily: 'var(--font-ui)',
-  fontSize: 14,
-  spacing: 4,
+  fontSize: 'var(--font-size-ui)',
+  spacing: 'var(--space-1)',
   borderRadius: 'var(--radius-control)',
   wrapperBorderRadius: 'var(--radius-panel)',
   headerHeight: 40,
@@ -169,9 +169,9 @@ export function App() {
     } else failed(cause);
   });
   const columns: ColDef<Segment>[] = [
-    { headerName: '序号', field: 'order', width: 100, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="segment-order"><button className="segment-drag-handle" aria-label={`拖动片段 ${data.order}`} disabled={disabled} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}>⠿</button><span>{data.order}</span></span> },
+    { headerName: '序号', field: 'order', width: 100, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="flex h-full items-center gap-2"><button className="rounded-md border border-solid border-input bg-background text-foreground hover:bg-ui-accent shrink-0 cursor-grab touch-none p-[3px] leading-5 opacity-0 [.ag-row-hover_&]:opacity-100 focus-visible:opacity-100 active:cursor-grabbing disabled:opacity-0 [.ag-row-hover_&]:disabled:opacity-50" aria-label={`拖动片段 ${data.order}`} disabled={disabled} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}>⠿</button><span>{data.order}</span></span> },
     { headerName: '文案', field: 'text', flex: 1, minWidth: 200, editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
-      cellClass: 'text-cell', cellRenderer: SearchCell,
+      cellRenderer: SearchCell,
       cellRendererParams: { query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: searchRowHeight },
       cellEditor: TextEditor, cellEditorPopup: true,
       suppressKeyboardEvent: params => {
@@ -182,12 +182,12 @@ export function App() {
       const segment = params.data;
       if (!segment) return null;
       const asset = status?.snapshot.assets.find(asset => asset.id === segment.video?.assetId);
-      return <div className="video-cell">
-        {asset && <button className="thumbnail" aria-label={`播放 ${asset.name}`} onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(segment.video); }}>
-          <img src={`${panelServiceUrl()}/api/media/${asset.id}/thumbnail`} alt="" />
+      return <div className="flex h-full items-center gap-2 leading-5">
+        {asset && <button className="h-8 w-[52px] shrink-0 overflow-hidden rounded-md border border-solid border-input bg-background p-0 text-foreground hover:bg-ui-accent" aria-label={`播放 ${asset.name}`} onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(segment.video); }}>
+          <img src={`${panelServiceUrl()}/api/media/${asset.id}/thumbnail`} alt="" className="h-full w-full object-contain" />
         </button>}
-        <span>{asset ? asset.name : '未关联视频'}</span>
-        <button aria-label={`查看片段 ${segment.order} 的画面素材详情`} onClick={event => { rememberOrigin(event.currentTarget, 'material'); setVideoDetails(segment.id); }}>详情</button>
+        <span className="min-w-0 flex-1 truncate">{asset ? asset.name : '未关联视频'}</span>
+        <Button variant="outline" size="xs" className="border-solid border-input px-[6px] py-0 text-[12px] leading-[18px] focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-2" aria-label={`查看片段 ${segment.order} 的画面素材详情`} onClick={event => { rememberOrigin(event.currentTarget, 'material'); setVideoDetails(segment.id); }}>详情</Button>
       </div>;
     } },
     { headerName: '配音', initialWidth: 290, minWidth: 290, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: (params: { data?: Segment }) => {
@@ -197,14 +197,14 @@ export function App() {
       const taskLabel = latest ? { accepted: '已受理', running: '生成中', succeeded: '生成成功', failed: '生成失败', unknown: '结果未知，可能已计费' }[latest.state] : '未生成';
       const recordings = speech?.audio.filter(audio => audio.segmentId === segment.id) ?? [];
       const audio = recordings.filter(audio => audio.valid).at(-1) ?? recordings.at(-1);
-      return <div className="speech-cell">
-        <div className="speech-state">
+      return <div className="flex h-full flex-col justify-center gap-[2px] whitespace-normal leading-[18px]">
+        <div role="group" aria-label="配音状态" className="flex min-w-0 flex-col leading-[18px]">
           <span>{audio ? audio.valid ? '有效配音' : '配音待更新' : '配音缺失'}</span>
-          {latest && latest.state !== 'succeeded' && <span className={latest.state === 'failed' || latest.state === 'unknown' ? 'speech-warning' : ''}>最近任务：{taskLabel}</span>}
+          {latest && latest.state !== 'succeeded' && <span className={`text-[12px] ${latest.state === 'failed' || latest.state === 'unknown' ? 'text-destructive' : 'text-muted-foreground'}`}>最近任务：{taskLabel}</span>}
         </div>
-        <div className="speech-actions"><button disabled={disabled || !segment.text.trim()} onClick={() => { void generateSpeech(segment.id); }}>{latest?.state === 'failed' || latest?.state === 'unknown' ? '重试配音' : latest ? '重新生成' : '生成配音'}</button>
-        {audio && <button onClick={event => { rememberOrigin(event.currentTarget, 'audio'); setListening(audio); }}>试听{audio.valid ? '' : '（待更新）'}</button>}
-        <button aria-label={`展开片段 ${segment.order} 的保留音频`} onClick={event => { rememberOrigin(event.currentTarget, 'history'); setAudioHistory(segment.id); }}>详情</button></div>
+        <div role="group" aria-label="配音操作" className="flex gap-1"><Button variant="outline" size="xs" className="border-solid border-input px-[6px] py-0 text-[12px] leading-[18px] focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-2" disabled={disabled || !segment.text.trim()} onClick={() => { void generateSpeech(segment.id); }}>{latest?.state === 'failed' || latest?.state === 'unknown' ? '重试配音' : latest ? '重新生成' : '生成配音'}</Button>
+        {audio && <Button variant="outline" size="xs" className="border-solid border-input px-[6px] py-0 text-[12px] leading-[18px] focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-2" onClick={event => { rememberOrigin(event.currentTarget, 'audio'); setListening(audio); }}>试听{audio.valid ? '' : '（待更新）'}</Button>}
+        <Button variant="outline" size="xs" className="border-solid border-input px-[6px] py-0 text-[12px] leading-[18px] focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-2" aria-label={`展开片段 ${segment.order} 的保留音频`} onClick={event => { rememberOrigin(event.currentTarget, 'history'); setAudioHistory(segment.id); }}>详情</Button></div>
       </div>;
     } },
     { headerName: '画面说明', width: 180 },

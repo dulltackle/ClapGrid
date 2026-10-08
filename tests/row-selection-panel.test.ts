@@ -44,7 +44,7 @@ const script = String.raw`
       await input({ click: '[aria-label="查看片段 2 的画面素材详情"]' }); selected(['a']);
       check(modal('画面素材详情'), '画面素材详情已打开且具有模态语义');
       await input({ key: 'Escape' }); selected(['a']);
-      await input({ click: '[row-id="b"] .speech-actions button:nth-child(2)' }); selected(['a']);
+      await input({ click: '[row-id="b"] [aria-label="配音操作"] button:nth-child(2)' }); selected(['a']);
       check(modal('配音试听'), '未选中片段的试听正常打开');
       await input({ key: 'Escape' }); selected(['a']);
       check(!modal(), 'Esc 关闭试听并保留选择');
@@ -52,7 +52,7 @@ const script = String.raw`
       check(modal('保留音频'), '未选中片段的配音详情正常打开');
       await input({ key: 'Escape' }); selected(['a']);
       check(!modal(), 'Esc 关闭配音详情并保留选择');
-      await input({ click: '[row-id="b"] .speech-state' }); selected(['b']);
+      await input({ click: '[row-id="b"] [aria-label="配音状态"]' }); selected(['b']);
       await input({ click: row('b'), key: 'double' });
       check(document.querySelector('[aria-label="文案全文"]'), '双击经修改权仲裁进入全文编辑');
       await input({ key: 'Escape' }); selected(['b']);

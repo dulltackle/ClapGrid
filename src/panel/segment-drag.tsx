@@ -94,5 +94,5 @@ export function useSegmentDrag(options: Options) {
     window.addEventListener('pointercancel', cleanup); window.addEventListener('keydown', escape, true);
     window.addEventListener('scroll', update, true); window.addEventListener('blur', cleanup); frame = requestAnimationFrame(scroll);
   };
-  return { start, indicator: line && <div className="segment-drop-line" aria-label="口播片段插入位置" data-target-id={line.id} data-placement={line.after ? 'after' : 'before'} style={{ top: line.top, left: line.left, width: line.width }} /> };
+  return { start, indicator: line && <div className="pointer-events-none fixed z-100 h-[3px] bg-[var(--color-accent)]" aria-label="口播片段插入位置" data-target-id={line.id} data-placement={line.after ? 'after' : 'before'} style={{ top: line.top, left: line.left, width: line.width }} /> };
 }

@@ -60,8 +60,8 @@ const script = String.raw`
       check(cell('s0', '1').textContent.includes('有效配音') && cell('s0', '1').textContent.includes('生成失败'), '有效音频与最近失败独立显示');
       check(cell('s1', '1').textContent.includes('结果未知，可能已计费'), '未知结果保留完整计费警告');
       for (const [i, label] of [[2, '已受理'], [3, '生成中'], [5, '配音缺失']]) check(cell('s' + i, '1').textContent.includes(label), '状态可辨识：' + label);
-      for (const span of cell('s1', '1').querySelectorAll('.speech-state span')) check(span.scrollWidth <= span.clientWidth && span.scrollHeight <= span.clientHeight, '异常不能截断或依赖悬停');
-      for (const node of cell('s1', '1').querySelectorAll('.speech-state span, button')) {
+      for (const span of cell('s1', '1').querySelectorAll('[aria-label="配音状态"] span')) check(span.scrollWidth <= span.clientWidth && span.scrollHeight <= span.clientHeight, '异常不能截断或依赖悬停');
+      for (const node of cell('s1', '1').querySelectorAll('[aria-label="配音状态"] span, button')) {
         const box = node.getBoundingClientRect(), bounds = cell('s1', '1').getBoundingClientRect();
         check(box.top >= bounds.top && box.bottom <= bounds.bottom, '状态和操作均在行内完整可见');
       }
