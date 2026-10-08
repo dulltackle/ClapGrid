@@ -1,4 +1,22 @@
-# 试点组件维护
+# 统一组件维护
+
+## 当前全站约定（#83 / #91）
+
+页面及业务静态样式由所在 TSX 的 Tailwind 工具类拥有，通用控件从 `src/panel/components/ui/index.ts` 使用。已集中启用 Tailwind 4.3.3 Preflight，扫描范围仍为 `src/panel`；根主题覆盖页面和 body 下的 Dialog、Alert Dialog 与行菜单 Portal。保持亮色，表格强调色 `--color-accent` 与控件悬停色 `ui-accent` 分开。以下按工单编排的试点小节记录当时迁移过程，其中“不启用 Preflight”“保留旧 Dialog/CSS”仅为历史过渡状态，以本节现状为准。
+
+`style.css` 仅保留主题映射与变量、根字体/亮色、页面高度及滚动约束、全局可见键盘轮廓和一项 AG Grid 适配。Preflight 提供通用盒模型、零边距及 hidden 行为；已删除重复 reset、全局 button/input/textarea/summary 规则、旧业务选择器和原生 `dialog.tsx` 通用适配。统一 Dialog 保留 Radix 最上层动态焦点后备，DetailPanel 保留业务嵌套返回，`dialog-focus.ts` 保留稳定片段身份恢复；不再维护原生 Dialog 的混合层兼容。
+
+导出设置显式声明标题、说明、字段间距、问题列表与按钮布局；字号提交、自动保存及关闭校验仍由业务拥有。Button 的 outline 变体显式声明浅灰实线边框、亮色背景与前景，按钮光标也由组件拥有。任务 summary 在使用位置声明紧凑尺寸、悬停与按下样式，保留原生展开标记。标题、段落、列表与链接在各业务视图中明确表现；媒体布局与缩略图尺寸均由工具类维护，不依赖浏览器默认 margin 或旧控件规则。删除确认继续沿用本地 Alert Dialog 模板及可见主题契约。
+
+### 必要例外与归属
+
+- AG Grid 36.2.0 保留官方 `themeQuartz`、行高 80px、表头 40px、选择、编辑及虚拟滚动机制，项目主题配置使用共享语义变量。唯一无层 `.ag-cell[col-id="text"]` 用于维持文案垂直对齐：AG Grid 自带无层 display 会覆盖有层工具类，不能通过扩大样式冲突例外规避。
+- 原生 audio/video 的内部播放控件由浏览器拥有；项目仍以工具类负责外框、宽高、布局及文字。NativeSelect 保留浏览器箭头、选项、size、长列表键盘与禁用行为，外部主题由统一组件拥有。
+- 本次视频导入沿用“视频文件绝对路径”原生输入；当前没有 `type=file` 文件选择器，不新增文件选择系统，也不宣称已验证不存在的流程。
+- 文案编辑器是 AG Grid 专用 textarea，保留 Enter 保存、Escape 取消、Shift+Enter 及 IME 交接；静态样式在 `text-editor.tsx`。缩略图与拖动手柄保留专用 button 尺寸、pointer capture 与触摸规则，不强制套普通 Button 的尺寸。
+- 查找展开行高及 `text-search.tsx` 的 maxHeight、`segment-drag.tsx` 的 top/left/width 来自真实测量，保留动态 style；这些例外不豁免静态样式重写。
+
+#91 未添加模板或依赖；本轮新增 Textarea 的官方来源、固定生成器版本、模板摘要、MIT 许可与本地适配见下方 #87 小节，既有 Button/Input/NativeSelect/Dialog/Alert Dialog/Context Menu 继续沿用记录的来源。依赖升级必须单独审查。测试的取消按钮契约补强浅灰边框色与实线，既有背景、文字、禁用和蓝色焦点要求不降低，样式冲突例外保持不变。
 
 ## 自动样式门槛
 

@@ -1,10 +1,11 @@
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css" layer(utilities) source(".");
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* 保留现有页面与 AG Grid 的基础样式；试点不启用全局 Preflight 重置。 */
+/* 根主题同时服务页面与 body 下的 Portal；表格强调色与控件悬停色分开。 */
 @theme inline {
   --spacing: var(--space-1);
   --text-sm: 1rem;
@@ -54,44 +55,9 @@
   background: var(--color-surface);
   font-synthesis: none;
 }
-* { box-sizing: border-box; }
+/* 页面只在表格与浮层内部滚动；全局键盘轮廓也覆盖原生及第三方控件。 */
 html, body, #root { height: 100%; overflow: hidden; }
-body { margin: 0; }
-summary { width: fit-content; padding: var(--space-1) var(--space-2); border-radius: var(--radius-control); cursor: pointer; }
-summary:hover { background: var(--color-hover); }
-summary:active { background: var(--color-border); }
 :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
-
-@layer components {
-button { font: inherit; color: var(--color-ink); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-1) var(--space-3); cursor: pointer; }
-button:hover:not(:disabled) { background: var(--color-hover); }
-button:disabled { opacity: .5; cursor: default; }
-}
-
-.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
-.toolbar span { font-size: 12px; color: var(--color-ink-secondary); }
-@layer components {
-input, textarea { font: inherit; border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-1) var(--space-2); }
-}
-
-.media-dialog::backdrop { background: #0006; }
-.media-dialog { color: var(--color-ink); border: 1px solid var(--color-border); margin: auto; overflow-wrap: anywhere; background: var(--color-surface); border-radius: var(--radius-panel); padding: 24px; width: min(680px, calc(100% - 32px)); max-height: calc(100dvh - 32px); overflow: auto; }
-.media-dialog h2 { font-size: 18px; margin-top: 0; }
-.media-dialog label { display: block; margin: 12px 0; }
-.media-dialog input, .media-dialog select { display: block; width: 100%; font: inherit; padding: 8px; }
-[hidden] { display: none !important; }
-
-
-.media-dialog [data-focus-guard] { position: fixed; width: 1px; height: 1px; overflow: hidden; opacity: 0; }
-
-
-
-
-/* 导出设置迁移保留表单布局，通用弹窗拥有尺寸与主题。 */
-.export-settings-dialog { overflow-wrap: anywhere; }
-.export-settings-dialog h2 { font-size: 18px; margin-top: 0; }
-.export-settings-dialog label { display: block; margin: 12px 0; }
-.export-settings-dialog input, .export-settings-dialog select { display: block; width: 100%; font: inherit; padding: 8px; }
 
 /* AG Grid 无层单元格规则需要同层适配，避免覆盖 Tailwind 的正文对齐。 */
 .ag-cell[col-id="text"] { display: flex; align-items: center; }

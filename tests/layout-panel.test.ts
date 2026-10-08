@@ -17,7 +17,7 @@ const script = String.raw`
   const button = text => [...document.querySelectorAll('button')].find(node => node.textContent === text);
   const click = async text => { await act(async () => { const node = button(text); check(node && !node.disabled, '入口可用：' + text); node.focus(); node.click(); await settle(); }); await settle(); };
   const key = async key => { await act(async () => { await window.browserInput({ key }); await settle(); }); await settle(); };
-  const dialog = () => document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]');
+  const dialog = () => document.querySelector('[role="dialog"][aria-modal="true"]');
   const rect = () => document.querySelector('[role="grid"]').closest('.segment-grid').getBoundingClientRect();
   const shot = name => window.browserInput({ screenshot: name });
   (async () => {
@@ -109,10 +109,10 @@ test('读取状态及迁移表单保留保存、取消与互斥规则', {
       await click('更多'); await click('粘贴多行文案');
       await act(async () => { const node = field('多行文案'); Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(node, '第一段\n\n第二段'); node.dispatchEvent(new Event('input', { bubbles: true })); });
       state.batchFailure = true; await click('按非空行新增');
-      check(document.querySelector('dialog [role="alert"], [role="dialog"] [role="alert"]')?.textContent.includes('多行新增失败'), '新增失败在当前浮层内可访问');
+      check(document.querySelector('[role="dialog"] [role="alert"]')?.textContent.includes('多行新增失败'), '新增失败在当前浮层内可访问');
       state.batchFailure = false;
       state.saveGate = deferred(); await click('按非空行新增');
-      await key('Escape'); check(document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]') && button('按非空行新增').disabled, '新增提交中阻止重复操作和关闭');
+      await key('Escape'); check(document.querySelector('[role="dialog"][aria-modal="true"]') && button('按非空行新增').disabled, '新增提交中阻止重复操作和关闭');
       await act(async () => { state.saveGate.resolve(); state.saveGate = null; await settle(); });
       check(state.status.snapshot.segments.length === 2 && field('多行文案').value === '', '按非空行新增并清空已提交文案');
       await key('Escape'); await poll(); check(!state.current, '新增结束释放修改权');

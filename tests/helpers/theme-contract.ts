@@ -8,7 +8,7 @@ const theme = {
   form: { backgroundColor: surface, color: ink, borderTopColor: border, borderTopWidth: '1px', borderTopStyle: 'solid', borderTopLeftRadius: '6px' },
   menu: { backgroundColor: surface, color: ink, borderTopColor: border, borderTopWidth: '1px' },
   dialog: { backgroundColor: surface, color: ink, borderTopColor: border, borderTopWidth: '1px' },
-  cancel: { backgroundColor: surface, color: ink, borderTopWidth: '1px' },
+  cancel: { backgroundColor: surface, color: ink, borderTopColor: border, borderTopWidth: '1px', borderTopStyle: 'solid' },
   destructive: { backgroundColor: 'rgb(164, 38, 44)', color: surface },
   disabled: { opacity: '0.5' },
 } as const;

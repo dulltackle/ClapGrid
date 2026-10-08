@@ -17,7 +17,7 @@ export function DetailPanel({ title, label, description, className, onClose, res
   return <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
     <DialogContent aria-label={label} {...(!description ? { 'aria-describedby': undefined } : {})} className={cn("gap-3 [overflow-wrap:anywhere]", className)} onCloseAutoFocus={event => {
       event.preventDefault();
-      const layers = [...document.querySelectorAll<HTMLElement>('dialog:modal, [role="dialog"][aria-modal="true"], [role="alertdialog"][aria-modal="true"]')]
+      const layers = [...document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"], [role="alertdialog"][aria-modal="true"]')]
         .filter(layer => layer.dataset.state !== 'closed');
       if (layers.length) {
         if (restoreWithinLayer) restoreFocus();

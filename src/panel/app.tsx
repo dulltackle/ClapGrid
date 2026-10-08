@@ -4,7 +4,6 @@ import { buildIdentity } from '../build-identity.js';
 import { panelServiceUrl } from './service-url.js';
 import { RowMenu } from './row-menu.js';
 import { DeleteConfirm } from './delete-confirm.js';
-import { Dialog } from './dialog.js';
 import { AudioHistoryPanel, AudioListeningPanel } from './audio-panels.js';
 import { DetailPanel } from './detail-panel.js';
 import { VoicePanel } from './voice-panel.js';
@@ -183,7 +182,7 @@ export function App() {
       if (!segment) return null;
       const asset = status?.snapshot.assets.find(asset => asset.id === segment.video?.assetId);
       return <div className="flex h-full items-center gap-2 leading-5">
-        {asset && <button className="h-8 w-[52px] shrink-0 overflow-hidden rounded-md border border-solid border-input bg-background p-0 text-foreground hover:bg-ui-accent" aria-label={`播放 ${asset.name}`} onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(segment.video); }}>
+        {asset && <button className="h-8 w-[52px] shrink-0 cursor-pointer overflow-hidden rounded-md border border-solid border-input bg-background p-0 text-foreground hover:bg-ui-accent" aria-label={`播放 ${asset.name}`} onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(segment.video); }}>
           <img src={`${panelServiceUrl()}/api/media/${asset.id}/thumbnail`} alt="" className="h-full w-full object-contain" />
         </button>}
         <span className="min-w-0 flex-1 truncate">{asset ? asset.name : '未关联视频'}</span>
@@ -245,7 +244,7 @@ export function App() {
   }, failed);
   const openVideoEditor = (id?: string) => {
     const origin = document.activeElement;
-    const originLayer = origin?.closest('dialog, [role="dialog"]');
+    const originLayer = origin?.closest('[role="dialog"]');
     const stillRequested = () => id
       ? !!originLayer?.isConnected && originLayer.contains(document.activeElement)
       : document.activeElement === document.body || document.activeElement === moreButton.current || document.activeElement === origin;
@@ -420,12 +419,12 @@ export function App() {
       {speech && <section aria-label="配音任务" className="flex flex-col gap-2 [&_p]:my-2 [&_p]:text-[12px] [&_summary]:font-medium">
       {speech.operations.length > 0 && <section aria-label="批量配音进度" aria-live="polite">
         {speech.operations.slice().reverse().map(operation => <details key={operation.id} open={operation.summary.pending > 0}>
-          <summary>批量配音：完成 {operation.summary.completed} · 成功 {operation.summary.succeeded} · 失败 {operation.summary.failed} · 已中断 {operation.summary.interrupted} · 待完成 {operation.summary.pending} · 跳过 {operation.summary.skipped} · 拒绝 {operation.summary.rejected}</summary>
+          <summary className="w-fit cursor-pointer rounded-md px-2 py-1 hover:bg-ui-accent active:bg-input">批量配音：完成 {operation.summary.completed} · 成功 {operation.summary.succeeded} · 失败 {operation.summary.failed} · 已中断 {operation.summary.interrupted} · 待完成 {operation.summary.pending} · 跳过 {operation.summary.skipped} · 拒绝 {operation.summary.rejected}</summary>
           <p>操作 {operation.id} · 请求 {operation.request.requestId}</p>
           {operation.results.map(item => <p key={item.segmentId}>片段 {status?.snapshot.segments.find(segment => segment.id === item.segmentId)?.order ?? item.segmentId}：{({ accepted: '已受理', existing: '已有任务', skipped: '已跳过', rejected: '被拒绝' })[item.outcome]} · {item.state ? ({ accepted: '尚未完成', running: '正在生成', succeeded: '成功', failed: '失败', unknown: '已中断／结果未知' })[item.state] : ''} · {item.message}</p>)}
         </details>)}
       </section>}
-      {speech.tasks.length > 0 && <details open><summary>配音任务与请求标识</summary>{speech.tasks.map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{task.message}</p>)}</details>}
+      {speech.tasks.length > 0 && <details open><summary className="w-fit cursor-pointer rounded-md px-2 py-1 hover:bg-ui-accent active:bg-input">配音任务与请求标识</summary>{speech.tasks.map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{task.message}</p>)}</details>}
         {!speech.tasks.length && <p>暂无配音任务</p>}
       </section>}
       <ExportTaskDetails controller={exports} />
@@ -520,7 +519,7 @@ export function App() {
     }} onKeyDown={event => {
       if (event.key !== 'Escape' || event.nativeEvent.isComposing || event.defaultPrevented) return;
       const target = event.target as HTMLElement;
-      if (target.closest('input:not([type="checkbox"]), textarea, select, [contenteditable="true"], dialog, .ag-popup-editor') || editing.getState().editing) return;
+      if (target.closest('input:not([type="checkbox"]), textarea, select, [contenteditable="true"], [role="dialog"], [role="alertdialog"], .ag-popup-editor') || editing.getState().editing) return;
       event.preventDefault();
       grid.current?.deselectAll();
     }}>{drag.indicator}<AgGridProvider modules={[AllCommunityModule]}><AgGridReact

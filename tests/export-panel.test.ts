@@ -33,7 +33,7 @@ for (const width of [1600, 420]) test(`主视图全片导出与取消错误跨�
       check(document.getElementById('export-scope').textContent.includes('查找与勾选不改变范围'), '全项目导出范围明确');
       state.submitFailure = true; await click('导出全片');
       check(alerts().includes('Codex 正在修改'), '提交失败在状态栏可见');
-      filter.focus(); await poll(); check(document.activeElement === filter && !document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]'), '错误及任务更新不自动弹层或抢焦点');
+      filter.focus(); await poll(); check(document.activeElement === filter && !document.querySelector('[role="dialog"][aria-modal="true"]'), '错误及任务更新不自动弹层或抢焦点');
       state.exportFailure = true; state.statusFailure = true; await poll();
       check(alerts().includes('读取导出任务失败') && alerts().includes('Codex 正在修改') && alerts().includes('服务连接失败'), '不同错误分别保留');
       state.exportFailure = false; state.statusFailure = false; await poll();
@@ -53,7 +53,7 @@ for (const width of [1600, 420]) test(`主视图全片导出与取消错误跨�
       await shot('operation-error');
       state.exportFailure = true; await poll(); state.exportFailure = false; await poll();
       check(alerts().includes('取消导出失败'), '取消失败跨连接恢复保留');
-      await click('任务详情'); check(document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]').textContent.includes('任务 export-1'), '可查看标识');
+      await click('任务详情'); check(document.querySelector('[role="dialog"][aria-modal="true"]').textContent.includes('任务 export-1'), '可查看标识');
       state.cancelFailure = false; await click('取消导出'); check(!alerts(), '再次成功取消清除旧错误');
       await click('关闭任务记录');
       state.status.taskLocked = false; state.exports.locked = false;
@@ -68,7 +68,7 @@ for (const width of [1600, 420]) test(`主视图全片导出与取消错误跨�
       check(document.querySelector('footer').textContent.includes('配音 1/2'), '进行中的批量配音以紧凑进度常驻');
       await shot('persistent-error');
       await click('更多'); check(button('导入本地视频').disabled && button('粘贴多行文案').disabled, '迁移入口沿用禁用条件'); await click('任务记录');
-      check(document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]').textContent.includes('request-1') && document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]').textContent.includes('batch-request'), '配音请求与批量进度详情可访问');
+      check(document.querySelector('[role="dialog"][aria-modal="true"]').textContent.includes('request-1') && document.querySelector('[role="dialog"][aria-modal="true"]').textContent.includes('batch-request'), '配音请求与批量进度详情可访问');
       await shot('task-details'); await click('关闭任务记录');
       state.selectionFailure = true;
       await act(async () => { document.querySelector('[row-id="segment"] input[type="checkbox"]').click(); await settle(); });
@@ -78,7 +78,7 @@ for (const width of [1600, 420]) test(`主视图全片导出与取消错误跨�
       check(!alerts().includes('勾选连接已断开'), '主动重连后清除对应异常');
       state.exports.tasks = [{ ...state.exports.tasks[0], id: 'older-failure', state: 'failed', message: '较早导出的具体失败原因' }, ...Array.from({ length: 5 }, (_, index) => ({ ...state.exports.tasks[0], id: 'success-' + index, state: 'succeeded', message: '导出成功' }))];
       await poll(); await click('任务详情');
-      check(document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]').textContent.includes('older-failure') && document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]').textContent.includes('较早导出的具体失败原因'), '底部引用的较早失败必须仍可查看标识和错误');
+      check(document.querySelector('[role="dialog"][aria-modal="true"]').textContent.includes('older-failure') && document.querySelector('[role="dialog"][aria-modal="true"]').textContent.includes('较早导出的具体失败原因'), '底部引用的较早失败必须仍可查看标识和错误');
       await click('关闭任务记录');
       result.dataset.state = 'passed';
     } catch (error) { result.dataset.state = 'failed'; result.textContent = error.stack; }

@@ -44,7 +44,7 @@ export function ExportTaskDetails({ controller }: { controller: ReturnType<typeo
     {exports?.locked && <p role="status">导出进行中，项目已锁定；关闭面板后任务继续，取消清理完成后恢复编辑。</p>}
     {!exports?.tasks.length && <p>暂无导出任务</p>}
     {exports?.tasks.slice().reverse().map(task => <details className="rounded-md border border-solid border-input p-2 [&_p]:my-2" key={task.id} open={task.state !== 'succeeded'}>
-      <summary className="font-medium">{exportStateLabel[task.state]} · {task.completed}/{task.total} 个片段 · {new Date(task.createdAt).toLocaleString()}</summary>
+      <summary className="w-fit cursor-pointer rounded-md px-2 py-1 font-medium hover:bg-ui-accent active:bg-input">{exportStateLabel[task.state]} · {task.completed}/{task.total} 个片段 · {new Date(task.createdAt).toLocaleString()}</summary>
       <p role="status">{task.message}</p>
       <p>任务 {task.id}</p>
       {task.state === 'rendering' && <progress value={task.completed} max={task.total} aria-label="导出进度" />}

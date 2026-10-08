@@ -27,6 +27,8 @@ for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`更�
     (async () => { try {
       state.status.snapshot.project.directory = '/tmp/' + '很长的工作空间路径'.repeat(30);
       await act(async () => { createRoot(document.getElementById('root')).render(<App />); await settle(); }); await settle();
+      check(matchMedia('(prefers-color-scheme: dark)').matches,'真实浏览器已模拟深色偏好');
+      check(getComputedStyle(document.documentElement).colorScheme==='light' && getComputedStyle(document.documentElement).backgroundColor==='rgb(255, 255, 255)','深色宿主偏好仍保持亮色面板');
       await click('更多');
       check(dialog() && document.getElementById(dialog().getAttribute('aria-labelledby'))?.textContent === '更多操作', '更多由统一弹窗可见标题命名');
       assertTheme('dialog', dialog()); assertTheme('cancel', button('粘贴多行文案'));
@@ -37,10 +39,13 @@ for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`更�
       state.status.taskLocked = false; await poll();
       await click('声音设置');
       check(dialog().contains(document.activeElement), '更多向声音浮层交接焦点');
-      await key('Escape'); check(document.activeElement === button('更多'), '旧浮层关闭恢复更多');
+      await key('Escape'); check(document.activeElement === button('更多'), '声音浮层关闭恢复更多');
       state.exports.tasks = [{ id: 'result', state: 'failed', completed: 1, total: 2, createdAt: '2026-10-03T00:00:00Z', message: '导出失败', issues: [{ order: 1, segmentId: 'segment', message: '缺少有效配音' }], warnings: [{ order: 2, message: '使用静帧补齐' }], output: { path: '/tmp/' + '很长的成片位置'.repeat(25) + '.mp4', url: '/movie.mp4', previewUrl: '/preview.mp4' } }]; await poll();
       await click('更多'); await click('任务记录');
       check(dialog() && !button('声音设置') && document.activeElement === dialog(), '关闭更多并向任务容器交接焦点');
+      const summary=dialog().querySelector('summary');
+      check(getComputedStyle(summary).display==='list-item' && getComputedStyle(summary).listStyleType==='disclosure-open','任务摘要保留原生展开标记');
+      check(getComputedStyle(summary).cursor==='pointer' && getComputedStyle(summary).paddingTop==='4px' && getComputedStyle(summary).paddingLeft==='8px','任务摘要保持紧凑可操作间距');
       const issue = [...dialog().querySelectorAll('li')].find(n => n.textContent.includes('缺少有效配音'));
       check(issue && getComputedStyle(issue).color === 'rgb(164, 38, 44)', '错误列表有明确错误主题');
       const warning = [...dialog().querySelectorAll('li')].find(n => n.textContent.includes('使用静帧补齐'));
@@ -50,6 +55,8 @@ for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`更�
       for (const link of [preview, download]) check(getComputedStyle(link).color === 'rgb(8, 117, 209)' && getComputedStyle(link).textDecorationLine.includes('underline'), '成片链接清晰可辨');
       bounds(); await window.browserInput({ screenshot: 'tasks-' + innerHeight });
       state.exports.tasks[0].state = 'rendering'; state.exports.tasks[0].output = null; await poll();
+      const progress=dialog().querySelector('progress');
+      check(progress instanceof HTMLProgressElement && progress.value===1 && progress.max===2 && progress.getBoundingClientRect().width>0 && progress.getBoundingClientRect().height>0,'导出进度保留原生可见进度条');
       state.cancelGate = deferred(); await click('取消导出');
       check(button('取消导出').disabled && document.activeElement === dialog(), '取消请求中按钮禁用且焦点有后备');
       await act(async () => { state.cancelGate.resolve(); state.cancelGate = null; await settle(); });
@@ -70,5 +77,5 @@ for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`更�
       await key('Escape'); check(document.activeElement === button('更多'), '设置返回继续可用');
       document.getElementById('result').dataset.state = 'passed';
     } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; } })();
-  `, fixture, width!, height!);
+  `, fixture, width!, height!, { colorScheme: 'dark' });
 });

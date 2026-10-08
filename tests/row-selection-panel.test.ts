@@ -15,7 +15,7 @@ const script = String.raw`
   const check = (value, message) => { if (!value) throw Error(message); };
   const action = async callback => { await act(async () => { await callback(); await new Promise(r => setTimeout(r, 100)); }); await new Promise(r => setTimeout(r, 220)); };
   const input = options => action(() => window.browserInput(options));
-  const modal = label => [...document.querySelectorAll('dialog[open], [role="dialog"][aria-modal="true"]')].find(node => !label || (node.getAttribute('aria-label') ?? document.getElementById(node.getAttribute('aria-labelledby'))?.textContent) === label);
+  const modal = label => [...document.querySelectorAll('[role="dialog"][aria-modal="true"]')].find(node => !label || (node.getAttribute('aria-label') ?? document.getElementById(node.getAttribute('aria-labelledby'))?.textContent) === label);
   const row = id => '[row-id="' + id + '"] [col-id="text"]';
   const selected = ids => {
     const actual = [...document.querySelectorAll('.ag-row[aria-selected="true"]')].map(node => node.getAttribute('row-id')).sort();

@@ -19,7 +19,7 @@ const script = String.raw`
   const click = async node => { check(node && !node.disabled, '入口可用'); await act(async () => { node.focus(); node.click(); await settle(); }); await settle(); };
   const key = async (key, shift = false) => { await act(async () => { await window.browserInput({ key, shift }); await settle(); }); await settle(); };
   const poll = async () => { await act(async () => { [...intervals.values()].forEach(fn => fn()); await settle(); }); await settle(); };
-  const dialog = () => document.querySelector('[role="dialog"][aria-modal="true"], dialog[open]');
+  const dialog = () => document.querySelector('[role="dialog"][aria-modal="true"]');
   const cell = () => document.querySelector('[row-id="segment"] [col-id="1"]');
   const description = node => document.getElementById(node.getAttribute('aria-describedby'))?.textContent;
   (async () => {

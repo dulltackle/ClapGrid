@@ -22,7 +22,7 @@ for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`粘�
     const click = async text => { await act(async () => { const node = button(text); check(node && !node.disabled, '入口可用：' + text); node.focus(); node.click(); await settle(); }); await settle(); };
     const key = async (key, shift = false) => { await act(async () => { await window.browserInput({ key, shift }); await settle(); }); await settle(); };
     const poll = async () => { await act(async () => { [...intervals.values()].forEach(callback => callback()); await settle(); }); };
-    const dialog = () => document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]');
+    const dialog = () => document.querySelector('[role="dialog"][aria-modal="true"]');
     const field = () => document.querySelector('[aria-label="多行文案"]');
     const bounds = () => { const d = dialog(), r = d.getBoundingClientRect(); check(r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight && d.scrollWidth <= d.clientWidth, '内容不撑破视口'); };
     (async () => { try {
