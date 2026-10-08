@@ -87,7 +87,6 @@ textarea { display: block; width: 100%; min-height: 100px; margin: var(--space-2
 .media-dialog h2 { font-size: 18px; margin-top: 0; }
 .media-dialog label { display: block; margin: 12px 0; }
 .media-dialog input, .media-dialog select { display: block; width: 100%; font: inherit; padding: 8px; }
-.media-dialog video { display: block; width: 100%; max-height: 60vh; }
 [hidden] { display: none !important; }
 .speech-cell { display: flex; flex-direction: column; justify-content: center; gap: 2px; height: 100%; white-space: normal; line-height: 18px; }
 .speech-actions { display: flex; gap: var(--space-1); }

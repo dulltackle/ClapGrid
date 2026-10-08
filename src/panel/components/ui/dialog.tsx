@@ -35,7 +35,10 @@ export function DialogContent({ className, children, ...props }: React.Component
   const element = React.useRef<HTMLDivElement>(null);
   React.useLayoutEffect(() => {
     const content = element.current;
-    if (content && (!content.contains(document.activeElement) || document.activeElement?.matches(':disabled'))) {
+    const layers = [...document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"], [role="alertdialog"][aria-modal="true"]')].filter(layer => layer.dataset.state !== 'closed');
+    // 嵌套 Portal 不在父容器内；只有最上层负责动态禁用的后备焦点。
+    if (document.querySelector('dialog:modal')) return;
+    if (content && layers.at(-1) === content && (!content.contains(document.activeElement) || document.activeElement?.matches(':disabled'))) {
       content.focus({ preventScroll: true });
     }
   });
@@ -43,6 +46,11 @@ export function DialogContent({ className, children, ...props }: React.Component
     <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50" onPointerDown={event => event.preventDefault()} />
     <DialogPrimitive.Content {...props} ref={element} aria-modal="true"
       className={cn('fixed top-[50%] left-[50%] z-50 flex flex-col w-[680px] max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-lg border border-solid border-[var(--color-border)] bg-background text-foreground p-6 shadow-lg', className)}
+      onEscapeKeyDown={event => {
+        // 浏览器原生模态位于顶层时，Escape 留给该层自己的取消规则。
+        if (document.querySelector('dialog:modal')) event.preventDefault();
+        else props.onEscapeKeyDown?.(event);
+      }}
       onOpenAutoFocus={event => { event.preventDefault(); element.current?.focus({ preventScroll: true }); }}
       onPointerDownOutside={event => event.preventDefault()}>
       {children}

@@ -1,4 +1,4 @@
-import { Button, Input, ContextMenu, ContextMenuTrigger, ContextMenuItem } from '@/components/ui/index.js';
+import { Button, Input, NativeSelect, ContextMenu, ContextMenuTrigger, ContextMenuItem } from '@/components/ui/index.js';
 import { buildIdentity } from '../build-identity.js';
 import { panelServiceUrl } from './service-url.js';
 import { RowMenu } from './row-menu.js';
@@ -240,14 +240,25 @@ export function App() {
       if (batch.changes.some(change => change.kind === 'paste')) setPaste('');
     });
   }, failed);
-  const openVideoEditor = (id?: string) => editing.begin('segments', next => {
-    setStatus(next); setSaveError(''); setSaveState('saved');
-    if (id) {
-      const segment = next.snapshot.segments.find(segment => segment.id === id);
-      if (!segment) throw new Error('口播片段已删除');
-      setVideoEditor({ segment, assetId: segment.video?.assetId ?? '', start: String(segment.video?.start ?? 0) });
-    } else { setSourcePath(''); setImporting(true); }
-  }, disconnected, cause => { failed(cause); requestAnimationFrame(returnFocus.current.video); });
+  const openVideoEditor = (id?: string) => {
+    const origin = document.activeElement;
+    const originLayer = origin?.closest('dialog, [role="dialog"]');
+    const stillRequested = () => id
+      ? !!originLayer?.isConnected && originLayer.contains(document.activeElement)
+      : document.activeElement === document.body || document.activeElement === moreButton.current || document.activeElement === origin;
+    return editing.begin('segments', next => {
+      if (!stillRequested()) { void editing.cancel('segments'); return; }
+      setStatus(next); setSaveError(''); setSaveState('saved');
+      if (id) {
+        const segment = next.snapshot.segments.find(segment => segment.id === id);
+        if (!segment) throw new Error('口播片段已删除');
+        setVideoEditor({ segment, assetId: segment.video?.assetId ?? '', start: String(segment.video?.start ?? 0) });
+      } else { setSourcePath(''); setImporting(true); }
+    }, disconnected, cause => {
+      failed(cause);
+      requestAnimationFrame(() => { if (stillRequested()) returnFocus.current.video(); });
+    });
+  };
   const cancelVideo = () => {
     setVideoEditor(null); setImporting(false); setSaveState('saved');
     void editing.cancel('segments');
@@ -473,8 +484,7 @@ export function App() {
       <h2>配音试听</h2><p>{!currentListening ? '配音状态无法确认：此音频已不在当前保留音频列表中。' : currentListening.valid ? '有效配音' : '配音待更新：此音频与当前文案或声音设置不一致。'}</p><audio controls autoPlay src={listening.url} onError={() => { setSaveState('failed'); setSaveError('音频不可读取，请检查项目文件'); }} />
       <button onClick={() => setListening(null)}>关闭试听</button>
     </Dialog>}
-    {videoDetails && <Dialog label="画面素材详情" onClose={() => setVideoDetails(null)} restoreFocus={returnFocus.current.material}>
-      <h2>画面素材详情</h2>
+    {videoDetails && <DetailPanel title="画面素材详情" label="画面素材详情" restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={() => setVideoDetails(null)} restoreFocus={returnFocus.current.material}>
       {(() => {
         const segment = status?.snapshot.segments.find(segment => segment.id === videoDetails);
         const asset = status?.snapshot.assets.find(asset => asset.id === segment?.video?.assetId);
@@ -482,33 +492,32 @@ export function App() {
           <p>{asset?.name ?? '未关联视频'}</p>
           {asset && segment.video && <>
             <p>时长 {asset.duration.toFixed(2)} 秒 · 播放起点 {segment.video.start} 秒</p>
-            <button onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(segment.video); }}>播放预览</button>
+            <Button variant="outline" onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(segment.video); }}>播放预览</Button>
           </>}
-          <button disabled={disabled} onClick={event => { rememberOrigin(event.currentTarget, 'video'); void openVideoEditor(segment.id); }}>{asset ? '更改' : '关联'}</button>
+          <Button variant="outline" disabled={disabled} onClick={event => { rememberOrigin(event.currentTarget, 'video'); void openVideoEditor(segment.id); }}>{asset ? '更改' : '关联'}</Button>
           <p>当前支持关联一份本地视频；更改中可解除关联及调整播放起点。</p>
         </> : <p>口播片段已不存在。</p>;
       })()}
-      <button onClick={() => setVideoDetails(null)}>关闭详情</button>
-    </Dialog>}
-    {(videoEditor || importing) && <Dialog label={importing ? '导入本地视频' : '关联视频'} onClose={cancelVideo} restoreFocus={returnFocus.current.video}>
-      <h2>{importing ? '导入本地视频' : '关联视频'}</h2>
-      {importing ? <label>视频文件绝对路径<input aria-label="视频文件绝对路径" value={sourcePath} disabled={saveState === 'saving'} onChange={event => setSourcePath(event.target.value)} placeholder="粘贴要导入的本地视频完整路径" /></label>
+      <Button variant="outline" onClick={() => setVideoDetails(null)}>关闭详情</Button>
+    </DetailPanel>}
+    {(videoEditor || importing) && <DetailPanel title={importing ? '导入本地视频' : '关联视频'} label={importing ? '导入本地视频' : '关联视频'} restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={cancelVideo} restoreFocus={returnFocus.current.video}>
+      {importing ? <label className="flex min-w-0 flex-col gap-1">视频文件绝对路径<Input aria-label="视频文件绝对路径" value={sourcePath} disabled={saveState === 'saving'} onChange={event => setSourcePath(event.target.value)} placeholder="粘贴要导入的本地视频完整路径" /></label>
         : videoEditor && <>
-          <label>素材<select aria-label="关联素材" value={videoEditor.assetId} disabled={saveState === 'saving'} onChange={event => setVideoEditor({ ...videoEditor, assetId: event.target.value, start: '0' })}>
+          <label className="flex min-w-0 flex-col gap-1">素材<NativeSelect aria-label="关联素材" value={videoEditor.assetId} disabled={saveState === 'saving'} onChange={event => setVideoEditor({ ...videoEditor, assetId: event.target.value, start: '0' })}>
             <option value="">解除关联</option>
             {status?.snapshot.assets.map(asset => <option key={asset.id} value={asset.id}>{asset.name}（{asset.duration.toFixed(2)} 秒）</option>)}
-          </select></label>
-          <label>播放起点（秒）<input aria-label="播放起点（秒）" type="number" min="0" step="any" disabled={!videoEditor.assetId || saveState === 'saving'} value={videoEditor.start} onChange={event => setVideoEditor({ ...videoEditor, start: event.target.value })} /></label>
+          </NativeSelect></label>
+          <label className="flex min-w-0 flex-col gap-1">播放起点（秒）<Input aria-label="播放起点（秒）" type="number" min="0" step="any" disabled={!videoEditor.assetId || saveState === 'saving'} value={videoEditor.start} onChange={event => setVideoEditor({ ...videoEditor, start: event.target.value })} /></label>
           {!status?.snapshot.assets.length && <p>请先取消并导入本地视频。</p>}
         </>}
       {importing && <p>只读取指定文件，复制到项目并生成静音预览。原文件之后可移动或改名。</p>}
-      <div className="toolbar"><button disabled={saveState === 'saving' || (importing && !sourcePath.trim())} onClick={() => { void saveVideo(); }}>{saveState === 'saving' ? '正在处理…' : importing ? '导入并复制' : '保存关联与起点'}</button>
-        <button onClick={() => { void cancelVideo(); }}>取消</button></div>
-    </Dialog>}
-    {preview && <Dialog label="视频预览" onClose={() => setPreview(null)} restoreFocus={returnFocus.current.preview}>
-      <h2>视频预览</h2><video key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
-      <p>从 {preview.start} 秒开始，预览默认静音。</p><button onClick={() => setPreview(null)}>关闭预览</button>
-    </Dialog>}
+      <div className="flex flex-wrap items-center gap-2"><Button variant="outline" disabled={saveState === 'saving' || (importing && !sourcePath.trim())} onClick={() => { void saveVideo(); }}>{saveState === 'saving' ? '正在处理…' : importing ? '导入并复制' : '保存关联与起点'}</Button>
+        <Button variant="outline" onClick={() => { void cancelVideo(); }}>取消</Button></div>
+    </DetailPanel>}
+    {preview && <DetailPanel title="视频预览" label="视频预览" restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={() => setPreview(null)} restoreFocus={returnFocus.current.preview}>
+      <video className="block w-full max-h-[60dvh] shrink-0" key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
+      <p>从 {preview.start} 秒开始，预览默认静音。</p><Button variant="outline" onClick={() => setPreview(null)}>关闭预览</Button>
+    </DetailPanel>}
     {deleteTargets && <DeleteConfirm count={deleteTargets.length} disabled={disabled} lock={lock}
       onClose={() => setDeleteTargets(null)} restoreFocus={() => rowOrigin.current()}
       onConfirm={() => {

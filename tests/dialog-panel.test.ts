@@ -52,7 +52,7 @@ const script = String.raw`
       await click(button('更多')); await click(button('导出设置'));
       check(document.getElementById(dialog()?.getAttribute('aria-labelledby'))?.textContent === '全片导出设置', '设置必须由可见标题提供可访问名称');
       check(document.getElementById(dialog().getAttribute('aria-describedby'))?.textContent.includes('修改设置不会生成配音'), '设置必须提供关联说明');
-      check(!document.querySelector('dialog[open]'), '打开设置后旧更多浮层必须卸载');
+      check(document.querySelectorAll('dialog[open], [role="dialog"][aria-modal="true"]').length === 1 && ![...document.querySelectorAll('h2')].some(node => node.textContent === '更多操作'), '打开设置后只保留导出设置层，更多浮层必须卸载');
       check(document.activeElement === dialog(), '异步清理后初始焦点必须停留于容器');
       await key('Tab'); check(document.activeElement === button('编辑设置'), '首次 Tab 进入首个可用控件');
       // Button 的颜色过渡结束后核对最终主题，不采样中间颜色。
@@ -173,9 +173,7 @@ const script = String.raw`
       horizontal.scrollLeft = 520; await settle();
       await click(field('展开片段 21 的保留音频'));
       await act(async () => { state.acquireGate.resolve(); state.acquireGate = null; await settle(); });
-      check(document.querySelector('dialog[aria-label="关联视频"]').contains(document.activeElement), '异步打开素材调整时焦点进入最新浮层');
-      await key('Escape');
-      check(document.querySelector('dialog[aria-label="保留音频"]').contains(document.activeElement), '关闭上层后回到仍打开的音频详情');
+      check(!document.querySelector('[role="dialog"][aria-label="关联视频"]') && document.querySelector('dialog[aria-label="保留音频"], [role="dialog"][aria-label="保留音频"]').contains(document.activeElement), '等待修改权期间离开素材详情后，迟到结果不能抢音频详情焦点');
       await key('Escape');
       check(document.activeElement === cell(rowId, '1') && !state.current, '最后关闭音频回到其原列且无遗留修改权');
       await click(field('展开片段 21 的保留音频'));

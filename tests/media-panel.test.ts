@@ -19,7 +19,7 @@ const script = String.raw`
   const key = async key => { await act(async () => { await window.browserInput({ key }); await settle(); }); await settle(); };
   const poll = async () => { await act(async () => { [...intervals.values()].forEach(fn => fn()); await settle(); }); await settle(); };
   const cell = (id, col) => document.querySelector('[row-id="' + id + '"] [col-id="' + col + '"]');
-  const dialog = () => document.activeElement.closest('dialog[open]') ?? document.querySelector('dialog[open]');
+  const dialog = () => document.activeElement.closest('dialog[open], [role="dialog"][aria-modal="true"]') ?? document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]');
   (async () => {
     try {
       const longName = '素材长名称_用于确认名称不会挤压文案列_'.repeat(8) + '.mp4';

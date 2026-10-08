@@ -15,6 +15,7 @@ const script = String.raw`
   const check = (value, message) => { if (!value) throw Error(message); };
   const action = async callback => { await act(async () => { await callback(); await new Promise(r => setTimeout(r, 100)); }); await new Promise(r => setTimeout(r, 220)); };
   const input = options => action(() => window.browserInput(options));
+  const modal = label => [...document.querySelectorAll('dialog[open], [role="dialog"][aria-modal="true"]')].find(node => !label || (node.getAttribute('aria-label') ?? document.getElementById(node.getAttribute('aria-labelledby'))?.textContent) === label);
   const row = id => '[row-id="' + id + '"] [col-id="text"]';
   const selected = ids => {
     const actual = [...document.querySelectorAll('.ag-row[aria-selected="true"]')].map(node => node.getAttribute('row-id')).sort();
@@ -41,16 +42,16 @@ const script = String.raw`
       await input({ click: row('c'), shift: true }); selected(['a','b','c']);
       await input({ click: row('a') }); selected(['a']);
       await input({ click: '[aria-label="查看片段 2 的画面素材详情"]' }); selected(['a']);
-      check(document.querySelector('dialog[open]'), '详情已打开');
+      check(modal('画面素材详情'), '画面素材详情已打开且具有模态语义');
       await input({ key: 'Escape' }); selected(['a']);
       await input({ click: '[row-id="b"] .speech-actions button:nth-child(2)' }); selected(['a']);
-      check(document.querySelector('dialog[aria-label="配音试听"][open]'), '未选中片段的试听正常打开');
+      check(modal('配音试听'), '未选中片段的试听正常打开');
       await input({ key: 'Escape' }); selected(['a']);
-      check(!document.querySelector('dialog[open]'), 'Esc 关闭试听并保留选择');
+      check(!modal(), 'Esc 关闭试听并保留选择');
       await input({ click: '[aria-label="展开片段 2 的保留音频"]' }); selected(['a']);
-      check(document.querySelector('dialog[aria-label="保留音频"][open]'), '未选中片段的配音详情正常打开');
+      check(modal('保留音频'), '未选中片段的配音详情正常打开');
       await input({ key: 'Escape' }); selected(['a']);
-      check(!document.querySelector('dialog[open]'), 'Esc 关闭配音详情并保留选择');
+      check(!modal(), 'Esc 关闭配音详情并保留选择');
       await input({ click: '[row-id="b"] .speech-state' }); selected(['b']);
       await input({ click: row('b'), key: 'double' });
       check(document.querySelector('[aria-label="文案全文"]'), '双击经修改权仲裁进入全文编辑');
