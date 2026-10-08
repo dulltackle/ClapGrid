@@ -18,7 +18,7 @@ const script = String.raw`
   const click = async text => { await act(async () => { const node = button(text); check(node && !node.disabled, '入口可用：' + text); node.focus(); node.click(); await settle(); }); await settle(); };
   const key = async key => { await act(async () => { await window.browserInput({ key }); await settle(); }); await settle(); };
   const dialog = () => document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]');
-  const rect = () => document.querySelector('[role="grid"]').closest('.grid').getBoundingClientRect();
+  const rect = () => document.querySelector('[role="grid"]').closest('.segment-grid').getBoundingClientRect();
   const shot = name => window.browserInput({ screenshot: name });
   (async () => {
     try {
@@ -91,12 +91,12 @@ test('读取状态及迁移表单保留保存、取消与互斥规则', {
     try {
       state.delayQuery = true;
       await act(async () => { createRoot(document.getElementById('root')).render(<App />); await settle(); }); await settle();
-      check(document.querySelector('.grid').textContent.includes('正在连接本地服务') && !document.querySelector('.grid').textContent.includes('暂无口播片段'), '首次加载与空项目区分');
+      check(document.querySelector('.segment-grid').textContent.includes('正在连接本地服务') && !document.querySelector('.segment-grid').textContent.includes('暂无口播片段'), '首次加载与空项目区分');
       state.delayQuery = false; state.statusFailure = true;
       await act(async () => { state.queries.splice(0).forEach(item => item.gate.resolve()); }); await poll();
-      check(document.querySelector('.grid').textContent.includes('暂时无法读取口播片段'), '读取失败有专用提示');
+      check(document.querySelector('.segment-grid').textContent.includes('暂时无法读取口播片段'), '读取失败有专用提示');
       state.statusFailure = false; state.status.snapshot.segments = []; await poll();
-      check(document.querySelector('.grid').textContent.includes('暂无口播片段'), '成功空项目有专用提示');
+      check(document.querySelector('.segment-grid').textContent.includes('暂无口播片段'), '成功空项目有专用提示');
       await click('更多'); await click('导出设置'); await click('编辑设置');
       state.saveFailure = true; await change('导出帧率', '60');
       await click('关闭设置'); await poll();

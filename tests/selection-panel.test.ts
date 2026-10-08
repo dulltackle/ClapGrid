@@ -14,13 +14,20 @@ window.setInterval=callback=>{intervals.set(++timer,callback);return timer;}; wi
 const check=(ok,message)=>{if(!ok)throw Error(message);};
 const action=async fn=>{await act(async()=>{await fn();await new Promise(r=>setTimeout(r,80));});await new Promise(r=>setTimeout(r,180));};
 const input=options=>action(()=>window.browserInput(options));
+const clickHeader=name=>action(async()=>{
+ const node=[...document.querySelectorAll('header button')].find(node=>(node.getAttribute('aria-label')??node.textContent)===name&&!node.hidden);
+ check(node&&!node.disabled,'页头操作可用：'+name);
+ const rect=node.getBoundingClientRect(); const position={x:rect.x+rect.width/2,y:rect.y+rect.height/2};
+ await window.browserInput({pointer:{type:'mousePressed',...position}});
+ await window.browserInput({pointer:{type:'mouseReleased',...position}});
+});
 const select=id=>input({click:'[row-id="'+id+'"] input[type="checkbox"]'});
 const poll=()=>action(()=>[...intervals.values()].forEach(fn=>fn()));
 const selected=ids=>check(JSON.stringify([...(state.selectionRequests.at(-1)??[])].sort())===JSON.stringify(ids),'勾选同步范围 '+ids);
 (async()=>{try{
  state.status.snapshot.segments=[{id:'a',order:1,text:'第一段',video:null},{id:'b',order:2,text:'第二段',video:null},{id:'c',order:3,text:'第三段',video:null}];
  await action(()=>createRoot(document.getElementById('root')).render(<App/>));
- const geometry=()=>{const r=document.querySelector('.grid').getBoundingClientRect();return JSON.stringify([r.top,r.height]);};
+ const geometry=()=>{const r=document.querySelector('.segment-grid').getBoundingClientRect();return JSON.stringify([r.top,r.height]);};
  const baseline=geometry();
  const stable=()=>{
   check(!document.querySelector('header h1').hidden,'勾选后标题仍可见');
@@ -31,10 +38,10 @@ const selected=ids=>check(JSON.stringify([...(state.selectionRequests.at(-1)??[]
   check(document.documentElement.scrollWidth<=innerWidth,'页头无横向溢出');
   for(const node of buttons){const r=node.getBoundingClientRect();check(r.left>=0&&r.right<=innerWidth&&node.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)),'主入口可真实命中');}
  };
- stable(); await input({click:'header .primary-actions button:first-child'});
+ stable(); await clickHeader('新增口播片段');
  check(JSON.stringify(state.segmentRequests.at(-1).change)==='{"text":""}','顶部新增继续发送无锚点的末尾追加请求');await poll();stable(); await select('a'); stable(); selected(['a']); await select('b'); stable(); selected(['a','b']);
  await window.browserInput({screenshot:'stable-selected-header'});
- await input({click:'header .primary-actions button:nth-child(3)'});
+ await clickHeader('导出全片');
  check(state.exportRequests.length===1&&state.exportRequests[0].length===1,'全片导出仅传服务地址，不附带勾选范围');selected(['a','b']);
  await input({click:'header [aria-haspopup="dialog"]'});await input({key:'Escape'});
  check(!document.querySelector('dialog[open]')&&document.activeElement.textContent==='更多','Escape 仅关闭更多并返回稳定入口');selected(['a','b']);

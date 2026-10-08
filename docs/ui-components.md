@@ -22,7 +22,7 @@ Tailwind CSS 与 Vite 插件锁定 4.3.3，插件 peer 支持 Vite `^5.2.0 || ^6
 
 `@/*` 指向 `src/panel/*`。业务从统一 UI 入口导入，组件内部从 `@/lib/utils.js` 使用类名合并工具。模板仅定向适配工具入口与 `bg-ui-accent`：现有 `--color-accent` 已用于 AG Grid，不能覆盖为 shadcn 的悬停背景。
 
-Tailwind 使用[官方可分离的 theme/utilities 样式入口](https://tailwindcss.com/docs/preflight#disabling-preflight)，不启用全局 Preflight，防止试点重置未迁移控件的浏览器基础样式。工具类扫描仅限 `src/panel/components/ui`，避免为既有 `.grid` 等业务类名生成同名工具类。业务层通过 UI 组件使用样式；若未来需要在其他目录写工具类，先显式扩展扫描入口并核对命名冲突。仅通用 button 基础规则放在 components 层，让 utilities 层为试点 Button 提供样式；其余既有 CSS 保持无层优先级，保留 AG Grid 文案单元格等局部覆盖；AG Grid Quartz 及原有语义变量保持原值。`background/foreground` 对应现有 surface/ink，primary/ring 对应 focus，destructive 对应 error，ui-accent 对应 hover，圆角对应 radius-control。
+Tailwind 使用[官方可分离的 theme/utilities 样式入口](https://tailwindcss.com/docs/preflight#disabling-preflight)，不启用全局 Preflight，防止试点重置未迁移控件的浏览器基础样式。工具类扫描显式覆盖 `src/panel`，业务布局直接使用 Tailwind，通用控件经统一 UI 入口使用；原表格容器 `.grid` 已更名为 `.segment-grid` 并移除同名旧规则，避免与标准工具类冲突。扩大到面板之外之前，先核对命名冲突。仅通用 button 基础规则放在 components 层，让 utilities 层为试点 Button 提供样式；其余既有 CSS 保持无层优先级，保留 AG Grid 文案单元格等局部覆盖；AG Grid Quartz 及原有语义变量保持原值。`background/foreground` 对应现有 surface/ink，primary/ring 对应 focus，destructive 对应 error，ui-accent 对应 hover，圆角对应 radius-control。
 
 独立浏览器集成测试仍由 esbuild 打包页面，随后通过与生产相同的 Vite/Tailwind 插件编译同一 `style.css` 为 `test.css`，覆盖 esbuild 未转换的 CSS。测试从可见颜色、边框、点击高度与完整交互核对结果，不检查工具类组合。
 
@@ -59,3 +59,11 @@ Dialog 源码按需参考 [官方 new-york-v4 registry](https://ui.shadcn.com/r/
 Content 初始聚焦容器，动态禁用当前控件时也以容器作为后备；Radix 提供模态背景隔离和 Tab 约束。明确 aria-modal，使原生 Dialog 的延迟恢复通过公共模态语义识别新弹窗，避免“更多”卸载后抢走焦点。原生浮层仍按原有嵌套路径恢复。遮罩点击被阻止；受控 Root 的关闭请求交给 ExportSettingsPanel 原有校验，保存、未提交字号及修改权释放规则仍在业务模块。关闭自动焦点由业务恢复至页头“更多”。
 
 dialog-panel 使用完整主视图、真实 AG Grid 与 HTTP 边界替身，覆盖标题说明、异步焦点交接、键盘环绕、遮罩隔离、保存中全部禁用、未提交字号、释放与焦点恢复；另覆盖 360×320 窄矮视口的滚动可达性与生产同源主题。layout-panel 以可见可访问语义兼容新旧弹窗，声音、素材及原生嵌套流程保留。这些源码测试不能代替本机插件安装和实际宿主验收。
+
+## 页面壳、页头、查找和状态栏（#84）
+
+页面壳与表格剩余高度、页头、查找、文案摘要和高亮、状态及错误区域的静态样式由所在 TSX 的 Tailwind 工具类拥有，原有对应规则已移除。查找展开行高及命中滚动仍使用原运行时测量；`.segment-grid`、`.search-popover`、`.text-summary`、`.text-search-current` 保留为稳定定位标识，不再拥有 CSS 规则。
+
+页头、查找定位和状态操作使用既有 Button，查找使用 Input；页头保持 32px，查找及状态操作使用紧凑尺寸。未引入新依赖或启用 Preflight。input/textarea 的原基础规则放入 components 层，使 Input 的工具类可生效；未迁移表单及文案编辑器保留局部布局覆盖。表格强调色仍为 `--color-accent`，控件悬停继续使用 `ui-accent`，冲突例外未扩大。
+
+完整页面测试增加 1600×1000、420×800、420×360 的操作可达性、主题、键盘焦点、任务锁及错误可见性，浏览器缺失明确失败；原查找全流程继续覆盖匹配循环、勾选、长文案展开、滚动、编辑和重新打开。迁移前生产产物、锁定依赖及宽窄/窄矮视觉证据由 #83 运行记录的 baseline 目录持久保存，用于收尾在同环境比较。源码测试不代表实际宿主交付。

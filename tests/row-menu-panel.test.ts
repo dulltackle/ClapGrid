@@ -40,7 +40,7 @@ check(getComputedStyle(legacy).borderTopWidth === '1px' && getComputedStyle(lega
 const textCell = document.querySelector('[row-id="a"] [col-id="text"]');
 const textRect = textCell.querySelector('.text-summary').getBoundingClientRect(), cellRect = textCell.getBoundingClientRect();
 check(getComputedStyle(textCell).display === 'flex' && Math.abs(textRect.top + textRect.height / 2 - cellRect.top - cellRect.height / 2) <= 1, '文案单元格保留垂直居中的弹性布局');
-check(getComputedStyle(document.querySelector('.grid')).display === 'block', '表格容器保持原有块布局，不被同名工具类覆盖');
+check(getComputedStyle(document.querySelector('.segment-grid')).display === 'block', '表格容器保持原有块布局，不被同名工具类覆盖');
 check(document.querySelector('[row-id="a"] [col-id="text"]').getBoundingClientRect().height > 20, '真实表格行布局保持可用');
 check(!state.batchRequests, '尚未提交');
 check(document.activeElement === cancel, '默认聚焦安全的取消按钮');
@@ -58,7 +58,7 @@ await input({click:'[role="alertdialog"] [data-delete-confirm]'});
 check(state.batchRequests.at(-1).changes[0].expected.id === 'c', '明确确认提交固定目标');
 await action(() => new Promise(r => setTimeout(r, 400)));
 check(!document.querySelector('[row-id="c"]'), '删除结果更新表格');
-await input({click:'.grid',button:'right'}); check(!menu(), '空白无隐含行目标');
+await input({click:'.segment-grid',button:'right'}); check(!menu(), '空白无隐含行目标');
 document.getElementById('result').dataset.state='passed';
 } catch(e) { document.getElementById('result').dataset.state='failed'; document.getElementById('result').textContent=e.stack; }})();
 `;

@@ -99,7 +99,7 @@ for (const label of ['导出编码','导出帧率','字幕字体','字幕字号�
 }
 const close=button('关闭设置'); await action(() => close.scrollIntoView({block:'center'})); bounds(close); assertTheme('cancel',close);
 await input({key:'Tab'}); assertKeyboardFocus(close);
-check(getComputedStyle(document.querySelector('.grid')).display==='block','真实表格仍使用原布局');
+check(getComputedStyle(document.querySelector('.segment-grid')).display==='block','真实表格仍使用原布局');
 check(getComputedStyle(button('更多')).borderTopWidth==='1px','未迁移按钮保留边框');
 await input({key:'Enter'}); check(!field('导出编码'),'关闭操作可达');
 pass();

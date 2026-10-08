@@ -16,11 +16,11 @@ const selected=ids=>check(JSON.stringify([...(state.selectionRequests.at(-1)??[]
 (async()=>{try{
  state.status.snapshot.segments=[{id:'a',order:1,text:'第一段',video:null},{id:'b',order:2,text:'第二段',video:null}];
  await action(()=>createRoot(document.getElementById('root')).render(<App/>));
- const geometry=()=>{const r=document.querySelector('.grid').getBoundingClientRect();return JSON.stringify([r.top,r.height]);};const baseline=geometry();
+ const geometry=()=>{const r=document.querySelector('.segment-grid').getBoundingClientRect();return JSON.stringify([r.top,r.height]);};const baseline=geometry();
  const layout=()=>{
   check(geometry()===baseline,'选择和查找不移动或压缩表格');check(!document.querySelector('header [aria-haspopup="menu"]')&&!document.querySelector('.organization'),'查找不再出现等效选择菜单');
   check(document.documentElement.scrollWidth<=innerWidth,'查找与勾选共存无横向溢出');
-  for(const node of document.querySelectorAll('header button,header input')){const r=node.getBoundingClientRect();if(!r.width)continue;check(r.left>=0&&r.right<=innerWidth&&r.bottom<=document.querySelector('.grid').getBoundingClientRect().top,'查找控件在页头范围内');check(node.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)),'查找控件命中无遮挡');}
+  for(const node of document.querySelectorAll('header button,header input')){const r=node.getBoundingClientRect();if(!r.width)continue;check(r.left>=0&&r.right<=innerWidth&&r.bottom<=document.querySelector('.segment-grid').getBoundingClientRect().top,'查找控件在页头范围内');check(node.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)),'查找控件命中无遮挡');}
   check(search().getBoundingClientRect().width>=72,'查找保留可用宽度');
  };
  await input({click:'.search-trigger'});await input({key:'第'});layout();

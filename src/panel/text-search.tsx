@@ -25,8 +25,8 @@ export function SearchText({ text, query, current, visit, rowHeight }: { text: s
   }, [current, visit, rowHeight]);
   const parts = []; let end = 0;
   for (const [start, next] of ranges) {
-    parts.push(text.slice(end, start), <mark key={start}>{text.slice(start, next)}</mark>); end = next;
+    parts.push(text.slice(end, start), <mark className={current ? "bg-[#ffd35c] text-inherit" : "bg-[#fff0a6] text-inherit"} key={start}>{text.slice(start, next)}</mark>); end = next;
   }
   parts.push(text.slice(end));
-  return <span ref={container} style={current ? { maxHeight: rowHeight - 20 } : undefined} className={`text-summary${current ? ' text-search-current' : ''}`}>{parts}</span>;
+  return <span ref={container} style={current ? { maxHeight: rowHeight - 20 } : undefined} className={`text-summary whitespace-pre-wrap wrap-anywhere leading-[22px] ${current ? 'text-search-current block max-h-[220px] overflow-y-auto w-full relative' : 'line-clamp-3 max-h-[66px]'}`}>{parts}</span>;
 }

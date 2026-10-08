@@ -61,9 +61,9 @@ test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿�
       await input(editor, '已保存的新文案');
       state.saveGate = deferred();
       await act(async () => { editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await settle(); });
-      check(document.querySelector('.save-status').textContent.includes('保存中'), '连接先正常关闭时仍等待保存响应');
+      check(document.querySelector('[data-save-status]').textContent.includes('保存中'), '连接先正常关闭时仍等待保存响应');
       await act(async () => { state.saveGate.resolve(); state.saveGate = null; await settle(); });
-      check(document.querySelector('.save-status').textContent === '已保存', '连接先关闭、保存后成功不能误报失败');
+      check(document.querySelector('[data-save-status]').textContent === '已保存', '连接先关闭、保存后成功不能误报失败');
       check(document.querySelector('.ag-row[row-id="segment"] [col-id="text"]').textContent === '已保存的新文案', '表格应显示保存结果');
       await click('更多'); await click('导入本地视频');
       await input(field('视频文件绝对路径'), '/tmp/example.mp4');
