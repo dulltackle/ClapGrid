@@ -9,6 +9,7 @@ test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿�
   import { act, StrictMode } from 'react';
   import { createRoot } from 'react-dom/client';
   import { App } from './src/panel/app.tsx';
+  import { assertTheme } from './tests/helpers/theme-contract.ts';
   import { state, deferred } from 'editing-fixture';
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   const intervals = new Map(); let nextTimer = 0;
@@ -34,6 +35,8 @@ test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿�
       state.delayQuery = true; await poll();
       check(state.queries.length > 0, '必须先发出一条会迟到的项目查询');
       await click('更多'); await click('导出设置'); await click('编辑设置');
+      assertTheme('form', field('导出编码'));
+      assertTheme('form', field('字幕字号（px）'));
       const settingsLease = state.current;
       await change('导出帧率', '60');
       await change('导出编码', 'mpeg4');

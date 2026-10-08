@@ -43,3 +43,11 @@ Alert Dialog 源码取自 [官方 new-york-v4 registry](https://ui.shadcn.com/r/
 等待已确认请求时仍可取消或 Escape 关闭确认；这不撤回已发出的请求。若用户已转去查找，迟到响应不会重新打开确认或抢焦点。失败及结果未知均不自动重试。原有 Dialog 及非试点按钮继续服务设置、素材、配音等浮层；其嵌套与键盘测试保留。
 
 完整试点体积、方法与推广边界见 [试点评估](ui-pilot-evaluation.md)。本节描述源码行为，不能作为本机安装或实际宿主交付成功证明。
+
+## 导出设置表单（#80）
+
+导出设置的字号、操作按钮及三个原生选择器通过统一 UI 入口使用 Input、Button、NativeSelect；业务继续拥有草稿、修改权、自动保存与关闭校验。此次表单切片沿用原弹窗，选择器保留浏览器箭头、原生选项、`size`、禁用和键盘交互，不引入 Radix Select 或图标依赖。
+
+Input 和 NativeSelect 分别按 [官方 Input 模板](https://ui.shadcn.com/r/styles/new-york-v4/input.json) 与 [官方 Native Select 模板](https://ui.shadcn.com/r/styles/new-york-v4/native-select.json) 适配（2026-10-07；原始 JSON SHA256 分别为 `b1fffa12ba72ce30a291749012b47235eda110648b8106725ced22b5b31c8f1b`、`950729a758bef332865adc55f25c16667f45347ef850ee7be20b741667f55d8b`）。文件保留上游 MIT 许可；升级时对照模板审阅，保留本地 cn 入口、亮色表面与文字、实线边框和可见焦点。NativeSelect 省略包装层、自绘箭头与未使用的 Option/OptGroup 组件，直接透传原生 select 属性。Input 保留上游输入类型和属性透传；两者不管理任何业务状态。
+
+Tailwind 扫描范围与 Preflight 策略不变，没有新增全局 CSS 规则。既有弹窗字段布局规则继续负责宽度与间距，组件负责主题与禁用态。`tests/helpers/theme-contract.ts` 的 `form` 契约覆盖正常主题，键盘焦点另检蓝色轮廓。`tests/export-settings-panel.test.ts` 使用完整页面、真实 AG Grid、HTTP 客户端边界替身及生产同源样式，核对查看与编辑、任务锁及占用、加载与字体不可用、自动保存与字号边界、错误及断线，并在 1600×1000、420×800、420×360 视口验证控件可达性与主题；浏览器缺失明确失败。既有编辑、表格及弹窗测试继续执行。

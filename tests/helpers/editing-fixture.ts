@@ -16,7 +16,11 @@ export const fixture = String.raw`
   }
   export async function querySpeech() { return copy(state.speech) ?? { locked: false, voice: { speaker: 'zh_female_vv_uranus_bigtts', speechRate: 0 }, configured: false, configPath: '/tmp/config', operations: [], tasks: [], audio: [] }; }
   export async function queryExports() { state.exportQueries++; if (state.exportFailure) throw Error('读取导出任务失败'); return copy(state.exports); }
-  export async function queryExportSettings() { return { settings: copy(state.status.snapshot.exportSettings), fonts: ['Test'], issues: [] }; }
+  export async function queryExportSettings() {
+    if (state.settingsGate) await state.settingsGate.promise;
+    if (state.settingsFailure) throw Error('媒体组件与字体读取失败');
+    return { settings: copy(state.status.snapshot.exportSettings), fonts: state.fonts ?? ['Test'], issues: state.settingsIssues ?? [] };
+  }
   export async function beginEdit() {
     if (state.current) throw Error('用户正在编辑');
     const ended = deferred();
@@ -28,7 +32,9 @@ export const fixture = String.raw`
     if (state.acquireGate) await state.acquireGate.promise;
     return lease;
   }
-  export async function saveExportSettings(_, { settings }) {
+  export async function saveExportSettings(_, { expected, settings }, token) {
+    (state.settingsRequests ??= []).push({ expected: copy(expected), settings: copy(settings), token });
+    if (settings.fontSize !== null && (!Number.isInteger(settings.fontSize) || settings.fontSize < 1 || settings.fontSize > 1080)) throw Error('字幕字号须为 1–1080 的整数');
     if (state.saveFailure) throw Error('设置保存失败');
     state.saves++; state.status.snapshot.exportSettings = copy(settings);
     const result = { settings: copy(settings), status: copy(state.status) };
