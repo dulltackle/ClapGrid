@@ -4,6 +4,7 @@ import { panelServiceUrl } from './service-url.js';
 import { RowMenu } from './row-menu.js';
 import { DeleteConfirm } from './delete-confirm.js';
 import { Dialog } from './dialog.js';
+import { AudioHistoryPanel, AudioListeningPanel } from './audio-panels.js';
 import { DetailPanel } from './detail-panel.js';
 import { dialogReturnFocus } from './dialog-focus.js';
 import { ExportTaskDetails, exportStateLabel, useExportTasks } from './export-tasks.js';
@@ -469,21 +470,9 @@ export function App() {
       </div>
     </Dialog>}
     {exportSettingsOpen && status && <ExportSettingsPanel restoreFocus={returnFocus.current.settings} editing={editing} status={status} onStatus={setStatus} onSaveState={(state, message = '') => { setSaveState(state); setSaveError(message); }} onClose={() => setExportSettingsOpen(false)} />}
-    {audioHistory && <Dialog label="保留音频" onClose={() => setAudioHistory(null)} restoreFocus={returnFocus.current.history}>
-      <h2>配音详情与保留音频</h2>
-      <section aria-label="配音任务记录">{speech?.tasks.filter(task => task.segmentId === audioHistory).slice().reverse().map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{({ accepted: '已受理', running: '生成中', succeeded: '生成成功', failed: '生成失败', unknown: '结果未知，可能已计费' })[task.state]}<br />{task.message}</p>)}</section>
-      {!speech?.audio.some(audio => audio.segmentId === audioHistory) && <p>暂无保留音频</p>}
-      <ul className="audio-history">{speech?.audio.filter(audio => audio.segmentId === audioHistory).slice().reverse().map(audio => <li key={audio.taskId}>
-        <p><time dateTime={audio.createdAt}>{new Date(audio.createdAt).toLocaleString()}</time> · {audio.valid ? '有效配音' : '配音待更新'}</p>
-        <p className="audio-text">{audio.input.text}</p>
-        <audio controls preload="none" src={audio.url} aria-label={`试听 ${audio.input.text}`} />
-      </li>)}</ul>
-      <button onClick={() => setAudioHistory(null)}>关闭</button>
-    </Dialog>}
-    {listening && <Dialog label="配音试听" onClose={() => setListening(null)} restoreFocus={returnFocus.current.audio}>
-      <h2>配音试听</h2><p>{!currentListening ? '配音状态无法确认：此音频已不在当前保留音频列表中。' : currentListening.valid ? '有效配音' : '配音待更新：此音频与当前文案或声音设置不一致。'}</p><audio controls autoPlay src={listening.url} onError={() => { setSaveState('failed'); setSaveError('音频不可读取，请检查项目文件'); }} />
-      <button onClick={() => setListening(null)}>关闭试听</button>
-    </Dialog>}
+    {audioHistory && <AudioHistoryPanel segmentId={audioHistory} speech={speech} onClose={() => setAudioHistory(null)} restoreFocus={returnFocus.current.history} />}
+    {listening && <AudioListeningPanel audio={listening} currentAudio={currentListening} onClose={() => setListening(null)} restoreFocus={returnFocus.current.audio}
+      onError={() => { setSaveState('failed'); setSaveError('音频不可读取，请检查项目文件'); }} />}
     {videoDetails && <DetailPanel title="画面素材详情" label="画面素材详情" restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={() => setVideoDetails(null)} restoreFocus={returnFocus.current.material}>
       {(() => {
         const segment = status?.snapshot.segments.find(segment => segment.id === videoDetails);
