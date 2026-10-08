@@ -53,7 +53,7 @@ const script = String.raw`
         await key('Escape');
         check(!dialog() && document.activeElement === button('更多'), '关闭迁移详情返回更多');
       }
-      await click('任务详情'); await click('连接诊断'); check(dialog()?.getAttribute('aria-label') === '连接诊断', '状态入口打开诊断');
+      await click('任务详情'); await click('连接诊断'); check((dialog()?.getAttribute('aria-label') ?? document.getElementById(dialog()?.getAttribute('aria-labelledby'))?.textContent) === '连接诊断', '状态入口打开诊断');
       check(dialog().textContent.includes('/tmp/project'), '可查看项目路径'); await key('Escape');
       check(state.saves === 0 && state.mutations.length === 0, '仅查看详情不提交任务或设置');
       check(!state.current, '取消导入释放修改权');

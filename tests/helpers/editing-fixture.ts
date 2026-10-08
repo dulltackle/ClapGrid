@@ -76,5 +76,5 @@ export const fixture = String.raw`
     if (state.saveGate) await state.saveGate.promise;
     return result;
   }
-  export async function submitExport(...args) { state.exportRequests.push(args); if (state.submitFailure) throw Error('Codex 正在修改'); state.mutations.push('导出'); } export async function cancelExport() { if (state.cancelFailure) throw Error('取消导出失败'); state.mutations.push('取消导出'); }
+  export async function submitExport(...args) { state.exportRequests.push(args); if (state.submitFailure) throw Error('Codex 正在修改'); state.mutations.push('导出'); } export async function cancelExport() { if (state.cancelGate) await state.cancelGate.promise; if (state.cancelFailure) throw Error('取消导出失败'); state.mutations.push('取消导出'); }
 `;

@@ -44,7 +44,7 @@ const selected=ids=>check(JSON.stringify([...(state.selectionRequests.at(-1)??[]
  await clickHeader('导出全片');
  check(state.exportRequests.length===1&&state.exportRequests[0].length===1,'全片导出仅传服务地址，不附带勾选范围');selected(['a','b']);
  await input({click:'header [aria-haspopup="dialog"]'});await input({key:'Escape'});
- check(!document.querySelector('dialog[open]')&&document.activeElement.textContent==='更多','Escape 仅关闭更多并返回稳定入口');selected(['a','b']);
+ check(!document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]')&&document.activeElement.textContent==='更多','Escape 仅关闭更多并返回稳定入口');selected(['a','b']);
  await input({click:'.search-trigger'});await input({key:'第'});
  check(document.querySelectorAll('.ag-row[row-id]').length===3,'查找保持全部片段');selected(['a','b']);
  await input({key:'Escape'});check(document.activeElement.classList.contains('search-trigger'),'关闭查找回到查找按钮');selected(['a','b']);stable();

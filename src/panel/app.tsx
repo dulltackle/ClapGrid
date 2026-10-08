@@ -4,6 +4,7 @@ import { panelServiceUrl } from './service-url.js';
 import { RowMenu } from './row-menu.js';
 import { DeleteConfirm } from './delete-confirm.js';
 import { Dialog } from './dialog.js';
+import { DetailPanel } from './detail-panel.js';
 import { dialogReturnFocus } from './dialog-focus.js';
 import { ExportTaskDetails, exportStateLabel, useExportTasks } from './export-tasks.js';
 import { ExportSettingsPanel } from './export-settings.js';
@@ -382,22 +383,21 @@ export function App() {
       </div>
     </header>
     <p id="export-scope" className="sr-only">全片导出：查找与勾选不改变范围</p>
-    {detail === 'more' && <Dialog label="更多操作" onClose={() => setDetail(null)} restoreFocus={() => returnFocus.current.detail()}>
-      <h2>更多操作</h2>
-      <div className="more-actions">
+    {detail === 'more' && <DetailPanel title="更多操作" onClose={() => setDetail(null)} restoreFocus={() => returnFocus.current.detail()}>
+      <div className="flex flex-col gap-2 mb-1">
         {searchOpen && <>
-          <button disabled={disabled} onClick={() => { setDetail(null); void save({ text: '' }); }}>新增口播片段</button>
-          <button disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { setDetail(null); void exports.run(); }}>导出全片</button>
+          <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => { setDetail(null); void save({ text: '' }); }}>新增口播片段</Button>
+          <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { setDetail(null); void exports.run(); }}>导出全片</Button>
         </>}
-        <p className="export-scope">全片导出：查找与勾选不改变范围</p>
-        <button disabled={disabled} onClick={() => { rememberOrigin(moreButton.current!, 'video'); setDetail(null); void openVideoEditor(); }}>导入本地视频</button>
-        <button disabled={disabled} onClick={() => setDetail('paste')}>粘贴多行文案</button>
-        <button disabled={!speech} onClick={() => setDetail('voice')}>声音设置</button>
-        <button disabled={!status} onClick={() => { rememberOrigin(moreButton.current!, 'settings'); setDetail(null); setExportSettingsOpen(true); }}>导出设置</button>
-        <button onClick={() => setDetail('tasks')}>任务记录</button>
+        <p className="m-0 text-[12px] text-muted-foreground">全片导出：查找与勾选不改变范围</p>
+        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => { rememberOrigin(moreButton.current!, 'video'); setDetail(null); void openVideoEditor(); }}>导入本地视频</Button>
+        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => setDetail('paste')}>粘贴多行文案</Button>
+        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!speech} onClick={() => setDetail('voice')}>声音设置</Button>
+        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!status} onClick={() => { rememberOrigin(moreButton.current!, 'settings'); setDetail(null); setExportSettingsOpen(true); }}>导出设置</Button>
+        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" onClick={() => setDetail('tasks')}>任务记录</Button>
       </div>
-      <button onClick={() => setDetail(null)}>关闭</button>
-    </Dialog>}
+      <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail(null)}>关闭</Button>
+    </DetailPanel>}
     {detail === 'voice' && speech && <Dialog label="统一声音设置" onClose={() => { if (!editState.busy) setDetail(null); }} restoreFocus={returnFocus.current.detail}>
       <h2>统一声音设置</h2>
       <div className="toolbar">
@@ -417,10 +417,9 @@ export function App() {
       {saveState === 'failed' && <p role="alert">{saveError}</p>}
       <button disabled={editState.busy} onClick={() => setDetail(null)}>关闭声音设置</button>
     </Dialog>}
-    {detail === 'tasks' && <Dialog label="任务记录" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
-      <h2>任务记录</h2>
-      <button onClick={() => setDetail('diagnostics')}>连接诊断</button>
-      {speech && <section aria-label="配音任务">
+    {detail === 'tasks' && <DetailPanel title="任务记录" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
+      <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail('diagnostics')}>连接诊断</Button>
+      {speech && <section aria-label="配音任务" className="flex flex-col gap-2 [&_p]:my-2 [&_p]:text-[12px] [&_summary]:font-medium">
       {speech.operations.length > 0 && <section aria-label="批量配音进度" aria-live="polite">
         {speech.operations.slice().reverse().map(operation => <details key={operation.id} open={operation.summary.pending > 0}>
           <summary>批量配音：完成 {operation.summary.completed} · 成功 {operation.summary.succeeded} · 失败 {operation.summary.failed} · 已中断 {operation.summary.interrupted} · 待完成 {operation.summary.pending} · 跳过 {operation.summary.skipped} · 拒绝 {operation.summary.rejected}</summary>
@@ -432,11 +431,11 @@ export function App() {
         {!speech.tasks.length && <p>暂无配音任务</p>}
       </section>}
       <ExportTaskDetails controller={exports} />
-      <button onClick={() => setDetail(null)}>关闭任务记录</button>
-    </Dialog>}
-    {detail === 'diagnostics' && <Dialog label="连接诊断" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
-      <h2>连接诊断</h2><p>{error || (status ? '本地服务已连接' : '正在连接本地服务…')}</p>
-      {status && <dl className="diagnostics">
+      <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail(null)}>关闭任务记录</Button>
+    </DetailPanel>}
+    {detail === 'diagnostics' && <DetailPanel title="连接诊断" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
+      <p className="m-0" role="status">{error || (status ? '本地服务已连接' : '正在连接本地服务…')}</p>
+      {status && <dl className="m-0 rounded-md border border-solid border-input bg-muted p-3 text-[12px] [&_dt]:font-semibold [&_dd]:m-0 [&_dd]:mb-2 [&_dd:last-child]:mb-0">
         <dt>面板版本</dt><dd>{buildIdentity.state === 'known' ? `${buildIdentity.version} (${buildIdentity.contentFingerprint})` : '未知（开发构建或旧版本）'}</dd>
         <dt>服务版本</dt><dd>{status.buildIdentity?.state === 'known' ? `${status.buildIdentity.version} (${status.buildIdentity.contentFingerprint})` : '未知（开发构建或旧版本）'}</dd>
         <dt>版本核对</dt><dd>{buildIdentity.state === 'known' && status.buildIdentity?.state === 'known'
@@ -446,9 +445,9 @@ export function App() {
         <dt>服务实例</dt><dd>{status.instanceId}</dd>
         <dt>PID</dt><dd>{status.pid}</dd>
       </dl>}
-      <p>{selectionState}</p>
-      <button onClick={() => setDetail(null)}>关闭诊断</button>
-    </Dialog>}
+      <p className="m-0 text-[12px] text-muted-foreground">{selectionState}</p>
+      <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail(null)}>关闭诊断</Button>
+    </DetailPanel>}
     {detail === 'paste' && <Dialog label="粘贴多行文案" onClose={() => { if (!editState.busy) setDetail(null); }} restoreFocus={returnFocus.current.detail}>
       <h2>粘贴多行文案</h2>
       {saveState === 'failed' && <p role="alert">{saveError}</p>}
