@@ -21,7 +21,7 @@ const order = ids => check(state.status.snapshot.segments.map(s => s.id).join() 
 (async () => { try {
 state.status.snapshot.segments=Array.from({length:100},(_,i)=>({id:String(i+1),order:i+1,text:'片段 '+(i+1),video:null}));
 await action(() => createRoot(document.getElementById('root')).render(<App />));
-await input({pointer:{selector:'[row-id="1"] .segment-drag-handle',type:'mousePressed'}});
+await input({pointer:{selector:'[row-id="1"] [aria-label^="拖动片段 "]',type:'mousePressed'}});
 await pointer('5','mouseMoved',0.8);
 const r=document.querySelector('[row-id="5"] [col-id="order"]').getBoundingClientRect();
 const x=r.x+r.width/2,y=r.y+r.height*.8;

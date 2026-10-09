@@ -88,7 +88,18 @@ for (const [width,height] of [[1600,1000],[420,800],[420,360]]) test(`导出表�
 const input = async request => { await action(() => window.browserInput(request)); await new Promise(r => setTimeout(r, 200)); };
 const bounds = node => { const r=node.getBoundingClientRect(); check(r.left>=0 && r.right<=innerWidth && r.top>=0 && r.bottom<=innerHeight,'控件在视口内可达'); };
 (async () => { try {
-await action(() => root.render(<App/>)); await click('更多'); await click('导出设置');
+await action(() => root.render(<App/>));
+state.settingsIssues=['字幕字体需要确认'];
+await click('更多'); await click('导出设置');
+const modal=document.querySelector('[role="dialog"][aria-modal="true"]');
+check(modal.parentElement===document.body,'导出设置位于 body portal');
+assertTheme('dialog',modal);
+const title=modal.querySelector('h2');
+check(getComputedStyle(title).fontSize==='18px' && getComputedStyle(title).fontWeight==='600','导出设置标题保持统一的 18px 半粗层级');
+const issues=modal.querySelector('[aria-label="导出设置待解决项"]');
+check(getComputedStyle(issues).listStyleType==='disc' && parseFloat(getComputedStyle(issues).paddingLeft)>=20,'待解决项保留项目符号与缩进');
+check([...modal.querySelectorAll('p')].every(n=>parseFloat(getComputedStyle(n).lineHeight)>=21),'说明与状态保留可读行距');
+await input({screenshot:'export-settings-'+innerHeight+'-view'});
 for (const label of ['导出编码','导出帧率','字幕字体','字幕字号（px）']) { assertTheme('form',field(label)); assertTheme('disabled',field(label)); }
 await click('编辑设置');
 for (const label of ['导出编码','导出帧率','字幕字体','字幕字号（px）']) assertTheme('form',field(label));
@@ -99,8 +110,9 @@ for (const label of ['导出编码','导出帧率','字幕字体','字幕字号�
 }
 const close=button('关闭设置'); await action(() => close.scrollIntoView({block:'center'})); bounds(close); assertTheme('cancel',close);
 await input({key:'Tab'}); assertKeyboardFocus(close);
-check(getComputedStyle(document.querySelector('.grid')).display==='block','真实表格仍使用原布局');
-check(getComputedStyle(button('更多')).borderTopWidth==='1px','未迁移按钮保留边框');
+await input({screenshot:'export-settings-'+innerHeight+'-focus'});
+check(getComputedStyle(document.querySelector('.segment-grid')).display==='block','真实表格仍使用原布局');
+check(getComputedStyle(button('更多')).borderTopWidth==='1px','页头按钮保留边框');
 await input({key:'Enter'}); check(!field('导出编码'),'关闭操作可达');
 pass();
 } catch(e) { fail(e); } })();`, fixture,width,height);

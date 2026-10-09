@@ -4,10 +4,11 @@ const border = 'rgb(227, 228, 231)';
 
 /** 试点组件共用可观察主题契约；结构、范围与表格布局仍由原行为测试覆盖。 */
 const theme = {
+  statusError: { color: 'rgb(164, 38, 44)', backgroundColor: 'rgb(255, 243, 243)' },
   form: { backgroundColor: surface, color: ink, borderTopColor: border, borderTopWidth: '1px', borderTopStyle: 'solid', borderTopLeftRadius: '6px' },
   menu: { backgroundColor: surface, color: ink, borderTopColor: border, borderTopWidth: '1px' },
   dialog: { backgroundColor: surface, color: ink, borderTopColor: border, borderTopWidth: '1px' },
-  cancel: { backgroundColor: surface, color: ink, borderTopWidth: '1px' },
+  cancel: { backgroundColor: surface, color: ink, borderTopColor: border, borderTopWidth: '1px', borderTopStyle: 'solid' },
   destructive: { backgroundColor: 'rgb(164, 38, 44)', color: surface },
   disabled: { opacity: '0.5' },
 } as const;

@@ -3,7 +3,7 @@ import { chrome } from './helpers/browser.js';
 import { fixture } from './helpers/editing-fixture.js';
 import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
 
-for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮连续文案（${width}px）`, {
+for (const [width, height] of [[1600, 1000], [420, 720], [420, 360]]) test(`查找保留全部口播片段并高亮连续文案（${width}×${height}）`, {
   skip: chrome ? false : '未执行：需要 Chrome/Chromium', timeout: 40000,
 }, t => checkInteractiveBrowser(t, String.raw`
   import { act } from 'react';
@@ -33,9 +33,9 @@ for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮�
       let root = createRoot(document.getElementById('root'));
       await action(() => root.render(<App />));
       check(!document.querySelector('[aria-label="筛选文案"]'), '移除常驻筛选');
-      const gridBeforeSearch = document.querySelector('.grid').getBoundingClientRect();
+      const gridBeforeSearch = document.querySelector('.segment-grid').getBoundingClientRect();
       await openSearch();
-      const gridWithSearch = document.querySelector('.grid').getBoundingClientRect();
+      const gridWithSearch = document.querySelector('.segment-grid').getBoundingClientRect();
       check(gridBeforeSearch.top === gridWithSearch.top && gridBeforeSearch.height === gridWithSearch.height, '查找浮窗不挤压或移动表格');
       check(!button('新增口播片段') && !button('导出全片'), '查找时次要操作收纳');
       await click('更多');
@@ -69,16 +69,16 @@ for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮�
       check(current().scrollTop > 0 && mark.top >= bounds.top && mark.bottom <= bounds.bottom, '展开长文案并滚动到末尾命中');
       const popover = document.querySelector('.search-popover').getBoundingClientRect();
       check(popover.left >= 0 && popover.right <= innerWidth, '窄视口浮窗完整可见');
-      check(popover.bottom <= document.querySelector('.grid').getBoundingClientRect().top, '查找浮窗不得遮挡表格');
+      check(popover.bottom <= document.querySelector('.segment-grid').getBoundingClientRect().top, '查找浮窗不得遮挡表格');
       const cellBounds = current().closest('[role="gridcell"]').getBoundingClientRect();
       check(mark.top >= cellBounds.top && mark.bottom <= cellBounds.bottom, '命中不能被单元格裁剪：' + JSON.stringify({mark: mark.toJSON(), cell: cellBounds.toJSON(), bounds: bounds.toJSON(), scroll: current().scrollTop}));
       check(document.elementFromPoint(mark.left + 2, mark.top + 2)?.closest('mark'), '命中不被其他行或查找浮窗遮挡：' + JSON.stringify({ mark: mark.toJSON(), cell: cellBounds.toJSON(), bounds: bounds.toJSON(), covering: document.elementFromPoint(mark.left + 2, mark.top + 2)?.outerHTML.slice(0,300) }));
-      await window.browserInput({ screenshot: 'search-long-text' });
+      await window.browserInput({ screenshot: 'search-long-text-' + innerHeight });
       state.exportFailure = true; await poll();
       const compactMark = current().querySelector('mark').getBoundingClientRect();
-      const compactGrid = document.querySelector('.grid').getBoundingClientRect();
+      const compactGrid = document.querySelector('.segment-grid').getBoundingClientRect();
       check(compactMark.top >= compactGrid.top + 40 && compactMark.bottom <= compactGrid.bottom - 16 && document.elementFromPoint(compactMark.left + 2, compactMark.top + 2)?.closest('mark'), '底部异常压缩表格后命中仍完整可见');
-      await window.browserInput({ screenshot: 'search-with-error' });
+      await window.browserInput({ screenshot: 'search-with-error-' + innerHeight });
       state.exportFailure = false; await poll();
       await click('下一个');
       check(!document.querySelector('[row-id="a"] .text-search-current'), '离开长文案恢复摘要');
@@ -116,9 +116,9 @@ for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮�
       await action(() => { document.querySelector('.ag-body-vertical-scroll-viewport').scrollTop = 0; });
       check(!document.querySelector('[row-id="far-79"]'), '查找前第80个片段在虚拟滚动视口之外：' + document.querySelector('[row-id="far-79"]')?.getAttribute('row-index'));
       await query('far needle');
-      check(document.querySelector('.text-search-current mark'), '屏幕外命中已渲染：' + count() + ' / ' + document.querySelector('.grid').textContent.slice(0, 100));
+      check(document.querySelector('.text-search-current mark'), '屏幕外命中已渲染：' + count() + ' / ' + document.querySelector('.segment-grid').textContent.slice(0, 100));
       const farMark = document.querySelector('.text-search-current mark').getBoundingClientRect();
-      const gridBounds = document.querySelector('.grid').getBoundingClientRect();
+      const gridBounds = document.querySelector('.segment-grid').getBoundingClientRect();
       check(farMark.top >= gridBounds.top + 40 && farMark.bottom <= gridBounds.bottom && document.elementFromPoint(farMark.left + 2, farMark.top + 2)?.closest('mark'), '虚拟滚动定位屏幕外长文案的命中：' + JSON.stringify({mark: farMark.toJSON(), grid: gridBounds.toJSON(), covering: document.elementFromPoint(farMark.left + 2, farMark.top + 2)?.outerHTML.slice(0,200)}));
       await query('hello world');
       const secondPanel = document.createElement('div'); document.body.append(secondPanel);
@@ -132,4 +132,4 @@ for (const width of [1600, 420]) test(`查找保留全部口播片段并高亮�
       document.getElementById('result').dataset.state = 'passed';
     } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; }
   })();
-`, fixture, width, width === 420 ? 720 : 1000));
+`, fixture, width, height));

@@ -23,7 +23,7 @@ export function DeleteConfirm({ count, disabled, lock, onClose, onConfirm, resto
         <AlertDialogCancel ref={cancel}>取消</AlertDialogCancel>
         <AlertDialogAction ref={confirm} variant="destructive" data-delete-confirm disabled={disabled} onClick={event => { event.preventDefault(); onConfirm(); }}>删除</AlertDialogAction>
       </AlertDialogFooter>
-      {lock && <p role="status">{lock}</p>}
+      {lock && <p className="m-0" role="status">{lock}</p>}
     </AlertDialogContent>
   </AlertDialog>;
 }

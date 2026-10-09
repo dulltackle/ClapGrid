@@ -58,26 +58,26 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose, restor
   const settings = owns ? draft : status.snapshot.exportSettings;
   const issues = details?.issues ?? [];
   return <Dialog open onOpenChange={open => { if (!open) void close(); }}>
-    <DialogContent className="export-settings-dialog" onCloseAutoFocus={event => { event.preventDefault(); restoreFocus(); }}>
-    <DialogTitle>全片导出设置</DialogTitle>
-    <p>适用于全片 · 16:9 · 1920×1080 · MP4</p>
-    <DialogDescription>修改设置不会生成配音或更改已有成片，下一次导出采用当前设置。</DialogDescription>
-    <label>编码<NativeSelect aria-label="导出编码" disabled={disabled} value={settings.codec} onChange={event => { void save({ ...draft, codec: event.target.value as ExportSettings['codec'] }); }}>
+    <DialogContent className="gap-3 [overflow-wrap:anywhere] [&>*]:shrink-0" onCloseAutoFocus={event => { event.preventDefault(); restoreFocus(); }}>
+    <DialogTitle className="m-0 text-[18px] font-semibold">全片导出设置</DialogTitle>
+    <p className="m-0">适用于全片 · 16:9 · 1920×1080 · MP4</p>
+    <DialogDescription className="m-0">修改设置不会生成配音或更改已有成片，下一次导出采用当前设置。</DialogDescription>
+    <label className="flex min-w-0 flex-col gap-1">编码<NativeSelect aria-label="导出编码" disabled={disabled} value={settings.codec} onChange={event => { void save({ ...draft, codec: event.target.value as ExportSettings['codec'] }); }}>
       <option value="libx264">H.264（默认）</option><option value="mpeg4">MPEG-4 Part 2</option>
     </NativeSelect></label>
-    <label>帧率<NativeSelect aria-label="导出帧率" disabled={disabled} value={settings.fps} onChange={event => { void save({ ...draft, fps: Number(event.target.value) as ExportSettings['fps'] }); }}>
+    <label className="flex min-w-0 flex-col gap-1">帧率<NativeSelect aria-label="导出帧率" disabled={disabled} value={settings.fps} onChange={event => { void save({ ...draft, fps: Number(event.target.value) as ExportSettings['fps'] }); }}>
       {[24, 25, 30, 50, 60].map(fps => <option key={fps} value={fps}>{fps} fps</option>)}
     </NativeSelect></label>
-    <label>字幕字体<NativeSelect aria-label="字幕字体" disabled={disabled || !details} value={settings.fontFamily ?? ''} onChange={event => { void save({ ...draft, fontFamily: event.target.value || null }); }}>
+    <label className="flex min-w-0 flex-col gap-1">字幕字体<NativeSelect aria-label="字幕字体" disabled={disabled || !details} value={settings.fontFamily ?? ''} onChange={event => { void save({ ...draft, fontFamily: event.target.value || null }); }}>
       <option value="">未设置，请选择字体</option>
       {settings.fontFamily && !details?.fonts.includes(settings.fontFamily) && <option value={settings.fontFamily}>{settings.fontFamily}（当前不可用）</option>}
       {details?.fonts.map(font => <option key={font} value={font}>{font}</option>)}
     </NativeSelect></label>
-    <label>字幕字号（px）<Input aria-label="字幕字号（px）" type="number" min="1" max="1080" step="1" disabled={disabled} value={owns ? size : status.snapshot.exportSettings.fontSize?.toString() ?? ''} onChange={event => setSize(event.target.value)} onBlur={() => { void save({ ...draft, fontSize: size.trim() === '' ? null : Number(size) }); }} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }} /></label>
-    <p>字号为 1080p 画布像素，范围 1–1080 的整数；字体与字号均须主动设置。字体来自本机 Fontconfig，安装字体后可关闭并重开此入口刷新。</p>
-    {!!issues.length && <ul aria-label="导出设置待解决项">{issues.map(issue => <li key={issue}>{issue}</li>)}</ul>}
-    <p role="status">{message}</p>
-    <div className="toolbar">
+    <label className="flex min-w-0 flex-col gap-1">字幕字号（px）<Input aria-label="字幕字号（px）" type="number" min="1" max="1080" step="1" disabled={disabled} value={owns ? size : status.snapshot.exportSettings.fontSize?.toString() ?? ''} onChange={event => setSize(event.target.value)} onBlur={() => { void save({ ...draft, fontSize: size.trim() === '' ? null : Number(size) }); }} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }} /></label>
+    <p className="m-0">字号为 1080p 画布像素，范围 1–1080 的整数；字体与字号均须主动设置。字体来自本机 Fontconfig，安装字体后可关闭并重开此入口刷新。</p>
+    {!!issues.length && <ul className="m-0 list-disc pl-5" aria-label="导出设置待解决项">{issues.map(issue => <li key={issue}>{issue}</li>)}</ul>}
+    <p className="m-0" role="status">{message}</p>
+    <div className="flex flex-wrap items-center gap-2">
       {mode === 'view' && <Button variant="outline" disabled={activity.busy || activity.editing || status.taskLocked || !!status.modification} onClick={() => { void edit(); }}>编辑设置</Button>}
       <Button variant="outline" disabled={mode === 'saving'} onClick={() => { void close(); }}>关闭设置</Button>
     </div>

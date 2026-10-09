@@ -17,8 +17,8 @@ const script = String.raw`
   const button = text => [...document.querySelectorAll('button')].find(node => node.textContent === text);
   const click = async text => { await act(async () => { const node = button(text); check(node && !node.disabled, '入口可用：' + text); node.focus(); node.click(); await settle(); }); await settle(); };
   const key = async key => { await act(async () => { await window.browserInput({ key }); await settle(); }); await settle(); };
-  const dialog = () => document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]');
-  const rect = () => document.querySelector('[role="grid"]').closest('.grid').getBoundingClientRect();
+  const dialog = () => document.querySelector('[role="dialog"][aria-modal="true"]');
+  const rect = () => document.querySelector('[role="grid"]').closest('.segment-grid').getBoundingClientRect();
   const shot = name => window.browserInput({ screenshot: name });
   (async () => {
     try {
@@ -53,7 +53,7 @@ const script = String.raw`
         await key('Escape');
         check(!dialog() && document.activeElement === button('更多'), '关闭迁移详情返回更多');
       }
-      await click('任务详情'); await click('连接诊断'); check(dialog()?.getAttribute('aria-label') === '连接诊断', '状态入口打开诊断');
+      await click('任务详情'); await click('连接诊断'); check((dialog()?.getAttribute('aria-label') ?? document.getElementById(dialog()?.getAttribute('aria-labelledby'))?.textContent) === '连接诊断', '状态入口打开诊断');
       check(dialog().textContent.includes('/tmp/project'), '可查看项目路径'); await key('Escape');
       check(state.saves === 0 && state.mutations.length === 0, '仅查看详情不提交任务或设置');
       check(!state.current, '取消导入释放修改权');
@@ -91,12 +91,12 @@ test('读取状态及迁移表单保留保存、取消与互斥规则', {
     try {
       state.delayQuery = true;
       await act(async () => { createRoot(document.getElementById('root')).render(<App />); await settle(); }); await settle();
-      check(document.querySelector('.grid').textContent.includes('正在连接本地服务') && !document.querySelector('.grid').textContent.includes('暂无口播片段'), '首次加载与空项目区分');
+      check(document.querySelector('.segment-grid').textContent.includes('正在连接本地服务') && !document.querySelector('.segment-grid').textContent.includes('暂无口播片段'), '首次加载与空项目区分');
       state.delayQuery = false; state.statusFailure = true;
       await act(async () => { state.queries.splice(0).forEach(item => item.gate.resolve()); }); await poll();
-      check(document.querySelector('.grid').textContent.includes('暂时无法读取口播片段'), '读取失败有专用提示');
+      check(document.querySelector('.segment-grid').textContent.includes('暂时无法读取口播片段'), '读取失败有专用提示');
       state.statusFailure = false; state.status.snapshot.segments = []; await poll();
-      check(document.querySelector('.grid').textContent.includes('暂无口播片段'), '成功空项目有专用提示');
+      check(document.querySelector('.segment-grid').textContent.includes('暂无口播片段'), '成功空项目有专用提示');
       await click('更多'); await click('导出设置'); await click('编辑设置');
       state.saveFailure = true; await change('导出帧率', '60');
       await click('关闭设置'); await poll();
@@ -109,20 +109,20 @@ test('读取状态及迁移表单保留保存、取消与互斥规则', {
       await click('更多'); await click('粘贴多行文案');
       await act(async () => { const node = field('多行文案'); Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(node, '第一段\n\n第二段'); node.dispatchEvent(new Event('input', { bubbles: true })); });
       state.batchFailure = true; await click('按非空行新增');
-      check(document.querySelector('dialog [role="alert"]')?.textContent.includes('多行新增失败'), '新增失败在当前浮层内可访问');
+      check(document.querySelector('[role="dialog"] [role="alert"]')?.textContent.includes('多行新增失败'), '新增失败在当前浮层内可访问');
       state.batchFailure = false;
       state.saveGate = deferred(); await click('按非空行新增');
-      await key('Escape'); check(document.querySelector('dialog[open]') && button('按非空行新增').disabled, '新增提交中阻止重复操作和关闭');
+      await key('Escape'); check(document.querySelector('[role="dialog"][aria-modal="true"]') && button('按非空行新增').disabled, '新增提交中阻止重复操作和关闭');
       await act(async () => { state.saveGate.resolve(); state.saveGate = null; await settle(); });
       check(state.status.snapshot.segments.length === 2 && field('多行文案').value === '', '按非空行新增并清空已提交文案');
       await key('Escape'); await poll(); check(!state.current, '新增结束释放修改权');
       state.speech = { locked: false, configured: true, configPath: '/tmp/config', voice: { speaker: 'zh_female_vv_uranus_bigtts', speechRate: 0 }, audio: [], tasks: [], operations: [] }; await poll();
       await click('更多'); await click('声音设置');
       state.voiceFailure = true; await change('统一语速', '20');
-      check(document.querySelector('dialog [role="alert"]')?.textContent.includes('声音保存失败'), '声音保存失败在当前浮层内可访问');
+      check(document.querySelector('[role="dialog"] [role="alert"]')?.textContent.includes('声音保存失败'), '声音保存失败在当前浮层内可访问');
       state.voiceFailure = false; state.saveGate = deferred();
       await change('统一语速', '20'); await key('Escape');
-      check(document.querySelector('dialog[open]') && field('统一音色').disabled, '声音提交中保留互斥和浮层');
+      check(document.querySelector('[role="dialog"][aria-modal="true"]') && field('统一音色').disabled, '声音提交中保留互斥和浮层');
       await act(async () => { state.saveGate.resolve(); state.saveGate = null; await settle(); });
       check(field('统一语速').value === '20', '声音即时保存生效'); await key('Escape');
       document.getElementById('result').dataset.state = 'passed';

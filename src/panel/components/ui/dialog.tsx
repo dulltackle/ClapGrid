@@ -35,7 +35,9 @@ export function DialogContent({ className, children, ...props }: React.Component
   const element = React.useRef<HTMLDivElement>(null);
   React.useLayoutEffect(() => {
     const content = element.current;
-    if (content && (!content.contains(document.activeElement) || document.activeElement?.matches(':disabled'))) {
+    const layers = [...document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"], [role="alertdialog"][aria-modal="true"]')].filter(layer => layer.dataset.state !== 'closed');
+    // 嵌套 Portal 不在父容器内；只有最上层负责动态禁用的后备焦点。
+    if (content && layers.at(-1) === content && (!content.contains(document.activeElement) || document.activeElement?.matches(':disabled'))) {
       content.focus({ preventScroll: true });
     }
   });

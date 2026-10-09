@@ -26,7 +26,7 @@ const order = ids => check(state.status.snapshot.segments.map(s => s.id).join() 
   check(document.querySelector('[row-id="1"]').getAttribute('row-index') === '0', '列标题不能改变项目顺序');
   await input({click:'[row-id="2"] input[type="checkbox"]'});
   await input({click:'[row-id="4"] input[type="checkbox"]'});
-  await input({pointer:{selector:'[row-id="4"] .segment-drag-handle',type:'mousePressed'}});
+  await input({pointer:{selector:'[row-id="4"] [aria-label^="拖动片段 "]',type:'mousePressed'}});
   await pointer('5','mouseMoved',0.8);
   check(document.querySelector('[aria-label="口播片段插入位置"]'), '实际指针拖拽显示插入线');
   await window.browserInput({screenshot:'drag-insertion'});
@@ -34,7 +34,7 @@ const order = ids => check(state.status.snapshot.segments.map(s => s.id).join() 
   order('1,3,5,2,4,6');
   const original = Array.from({length:6},(_,i)=>({id:String(i+1),order:i+1,text:'片段 '+(i+1),video:i===1?{assetId:'video-2',start:3}:null}));
   const reset = async () => { state.status.snapshot.segments = structuredClone(original); await refresh(); await input({click:'[row-id="1"] [col-id="text"]'}); await input({key:'Escape'}); };
-  const begin = id => input({pointer:{selector:'[row-id="'+id+'"] .segment-drag-handle',type:'mousePressed'}});
+  const begin = id => input({pointer:{selector:'[row-id="'+id+'"] [aria-label^="拖动片段 "]',type:'mousePressed'}});
   const drag = async (from,to,fraction=0.8) => { await begin(from); await pointer(to,'mouseMoved',fraction); await pointer(to,'mouseReleased',fraction); await refresh(); };
   await reset();
   await input({click:'[row-id="2"] input[type="checkbox"]'}); await input({click:'[row-id="4"] input[type="checkbox"]'});

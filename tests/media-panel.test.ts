@@ -19,7 +19,7 @@ const script = String.raw`
   const key = async key => { await act(async () => { await window.browserInput({ key }); await settle(); }); await settle(); };
   const poll = async () => { await act(async () => { [...intervals.values()].forEach(fn => fn()); await settle(); }); await settle(); };
   const cell = (id, col) => document.querySelector('[row-id="' + id + '"] [col-id="' + col + '"]');
-  const dialog = () => document.activeElement.closest('dialog[open]') ?? document.querySelector('dialog[open]');
+  const dialog = () => document.activeElement.closest('[role="dialog"][aria-modal="true"]') ?? document.querySelector('[role="dialog"][aria-modal="true"]');
   (async () => {
     try {
       const longName = '素材长名称_用于确认名称不会挤压文案列_'.repeat(8) + '.mp4';
@@ -32,7 +32,7 @@ const script = String.raw`
       const horizontal = document.querySelector('.ag-body-horizontal-scroll-viewport');
       if (innerWidth > 1000) check(cell('s0', 'text').getBoundingClientRect().width > 600, '精简后文案获得剩余宽度');
       horizontal.scrollLeft = 300; await settle();
-      const gridRect = document.querySelector('.grid').getBoundingClientRect();
+      const gridRect = document.querySelector('.segment-grid').getBoundingClientRect();
       await click(button('详情', cell('s0', '0')));
       check(dialog()?.getAttribute('aria-label') === '画面素材详情' && dialog().textContent.includes(longName), '素材详情显示完整名称');
       check(state.leases.length === 0 && state.mutations.length === 0, '只读素材详情不申请修改权');
@@ -60,8 +60,8 @@ const script = String.raw`
       check(cell('s0', '1').textContent.includes('有效配音') && cell('s0', '1').textContent.includes('生成失败'), '有效音频与最近失败独立显示');
       check(cell('s1', '1').textContent.includes('结果未知，可能已计费'), '未知结果保留完整计费警告');
       for (const [i, label] of [[2, '已受理'], [3, '生成中'], [5, '配音缺失']]) check(cell('s' + i, '1').textContent.includes(label), '状态可辨识：' + label);
-      for (const span of cell('s1', '1').querySelectorAll('.speech-state span')) check(span.scrollWidth <= span.clientWidth && span.scrollHeight <= span.clientHeight, '异常不能截断或依赖悬停');
-      for (const node of cell('s1', '1').querySelectorAll('.speech-state span, button')) {
+      for (const span of cell('s1', '1').querySelectorAll('[aria-label="配音状态"] span')) check(span.scrollWidth <= span.clientWidth && span.scrollHeight <= span.clientHeight, '异常不能截断或依赖悬停');
+      for (const node of cell('s1', '1').querySelectorAll('[aria-label="配音状态"] span, button')) {
         const box = node.getBoundingClientRect(), bounds = cell('s1', '1').getBoundingClientRect();
         check(box.top >= bounds.top && box.bottom <= bounds.bottom, '状态和操作均在行内完整可见');
       }
@@ -82,7 +82,7 @@ const script = String.raw`
       check(dialog().textContent.includes('配音状态无法确认'), '音频移除后不保留错误的有效性声明');
       await key('Escape'); state.speech.audio = retainedAudio; state.speech.audio[0].valid = true; await poll();
       check(state.mutations.length === before, '查看详情与试听不触发计费');
-      check(document.querySelector('.grid').getBoundingClientRect().top === gridRect.top, '浮层不推移表格');
+      check(document.querySelector('.segment-grid').getBoundingClientRect().top === gridRect.top, '浮层不推移表格');
       state.speechGate = deferred(); state.speechFailure = true;
       await click(button('重试配音', cell('s0', '1')));
       check(button('重试配音', cell('s0', '1')).disabled, '提交期间重复入口禁用');

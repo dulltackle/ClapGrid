@@ -20,7 +20,7 @@ const position = id => document.querySelector('[row-id="'+id+'"]').getAttribute(
   state.status.snapshot.segments = Array.from({length: SEGMENT_COUNT}, (_,index)=>({id:String(index+1),order:index+1,text: index > 2 ? '用于复核拖拽反馈的长口播。'.repeat(150) : '片段 '+(index+1),video:null}));
   await action(()=>createRoot(document.getElementById('root')).render(<App/>));
   state.acquireGate = deferred();
-  await input({pointer:{selector:'[row-id="1"] .segment-drag-handle',type:'mousePressed'}});
+  await input({pointer:{selector:'[row-id="1"] [aria-label^="拖动片段 "]',type:'mousePressed'}});
   await input({pointer:{selector:'[row-id="2"] [col-id="order"]',type:'mouseMoved',fraction:0.8}});
   await input({pointer:{selector:'[row-id="2"] [col-id="order"]',type:'mouseReleased',fraction:0.8}});
   check(position('1')==='1', '松手后仍停留在原位置，视觉反馈被取得编辑权阻塞');
@@ -36,7 +36,7 @@ const position = id => document.querySelector('[row-id="'+id+'"]').getAttribute(
   state.acquireGate=null; state.saveGate=null; state.batchFailure=true;
   await action(()=>[...intervals.values()].forEach(fn=>fn()));
   await action(()=>new Promise(r=>setTimeout(r,350)));
-  await input({pointer:{selector:'[row-id="1"] .segment-drag-handle',type:'mousePressed'}});
+  await input({pointer:{selector:'[row-id="1"] [aria-label^="拖动片段 "]',type:'mousePressed'}});
   await input({pointer:{selector:'[row-id="2"] [col-id="order"]',type:'mouseMoved',fraction:0.2}});
   await input({pointer:{selector:'[row-id="2"] [col-id="order"]',type:'mouseReleased',fraction:0.2}});
   check(position('1')==='1', '失败后恢复已确认的项目顺序');

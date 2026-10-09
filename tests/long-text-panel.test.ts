@@ -73,7 +73,7 @@ const script = String.raw`
       check(state.segmentRequests.length === 1 && state.segmentRequests[0].change.text === complete + '\n' && state.segmentRequests[0].token === lease.token, '保存携带修改权和完整文案且重复 Enter 不重复提交');
       check(document.querySelector('footer').textContent.includes('保存中'), '连接先关闭仍等待保存响应');
       await act(async () => { state.saveGate.resolve(); state.saveGate = null; await settle(); });
-      check(!editor() && cell().textContent === complete + '\n' && document.querySelector('.save-status').textContent === '已保存', '保存成功正常结束且展示完整结果的摘要');
+      check(!editor() && cell().textContent === complete + '\n' && document.querySelector('[data-save-status]').textContent === '已保存', '保存成功正常结束且展示完整结果的摘要');
       await open('Enter'); check(editor().value === complete + '\n', '再次编辑保留完整内容');
       await input(complete + '第二次保存'); await key('Tab');
       check(!editor() && state.segmentRequests.length === 2 && state.segmentRequests[1].change.text === complete + '第二次保存', 'Tab 沿用结束编辑并保存的约定');

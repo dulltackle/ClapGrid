@@ -1,9 +1,12 @@
-import { ContextMenu, ContextMenuTrigger, ContextMenuItem } from '@/components/ui/index.js';
+import { PastePanel } from './paste-panel.js';
+import { Button, Input, NativeSelect, ContextMenu, ContextMenuTrigger, ContextMenuItem } from '@/components/ui/index.js';
 import { buildIdentity } from '../build-identity.js';
 import { panelServiceUrl } from './service-url.js';
 import { RowMenu } from './row-menu.js';
 import { DeleteConfirm } from './delete-confirm.js';
-import { Dialog } from './dialog.js';
+import { AudioHistoryPanel, AudioListeningPanel } from './audio-panels.js';
+import { DetailPanel } from './detail-panel.js';
+import { VoicePanel } from './voice-panel.js';
 import { dialogReturnFocus } from './dialog-focus.js';
 import { ExportTaskDetails, exportStateLabel, useExportTasks } from './export-tasks.js';
 import { ExportSettingsPanel } from './export-settings.js';
@@ -30,8 +33,8 @@ const theme = themeQuartz.withParams({
   headerTextColor: 'var(--color-ink-secondary)',
   rowHoverColor: 'var(--color-hover)',
   fontFamily: 'var(--font-ui)',
-  fontSize: 14,
-  spacing: 4,
+  fontSize: 'var(--font-size-ui)',
+  spacing: 'var(--space-1)',
   borderRadius: 'var(--radius-control)',
   wrapperBorderRadius: 'var(--radius-panel)',
   headerHeight: 40,
@@ -165,9 +168,9 @@ export function App() {
     } else failed(cause);
   });
   const columns: ColDef<Segment>[] = [
-    { headerName: '序号', field: 'order', width: 100, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="segment-order"><button className="segment-drag-handle" aria-label={`拖动片段 ${data.order}`} disabled={disabled} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}>⠿</button><span>{data.order}</span></span> },
+    { headerName: '序号', field: 'order', width: 100, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="flex h-full items-center gap-2"><button className="rounded-md border border-solid border-input bg-background text-foreground hover:bg-ui-accent shrink-0 cursor-grab touch-none p-[3px] leading-5 opacity-0 [.ag-row-hover_&]:opacity-100 focus-visible:opacity-100 active:cursor-grabbing disabled:opacity-0 [.ag-row-hover_&]:disabled:opacity-50" aria-label={`拖动片段 ${data.order}`} disabled={disabled} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}>⠿</button><span>{data.order}</span></span> },
     { headerName: '文案', field: 'text', flex: 1, minWidth: 200, editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
-      cellClass: 'text-cell', cellRenderer: SearchCell,
+      cellRenderer: SearchCell,
       cellRendererParams: { query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: searchRowHeight },
       cellEditor: TextEditor, cellEditorPopup: true,
       suppressKeyboardEvent: params => {
@@ -178,12 +181,12 @@ export function App() {
       const segment = params.data;
       if (!segment) return null;
       const asset = status?.snapshot.assets.find(asset => asset.id === segment.video?.assetId);
-      return <div className="video-cell">
-        {asset && <button className="thumbnail" aria-label={`播放 ${asset.name}`} onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(segment.video); }}>
-          <img src={`${panelServiceUrl()}/api/media/${asset.id}/thumbnail`} alt="" />
+      return <div className="flex h-full items-center gap-2 leading-5">
+        {asset && <button className="h-8 w-[52px] shrink-0 cursor-pointer overflow-hidden rounded-md border border-solid border-input bg-background p-0 text-foreground hover:bg-ui-accent" aria-label={`播放 ${asset.name}`} onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(segment.video); }}>
+          <img src={`${panelServiceUrl()}/api/media/${asset.id}/thumbnail`} alt="" className="h-full w-full object-contain" />
         </button>}
-        <span>{asset ? asset.name : '未关联视频'}</span>
-        <button aria-label={`查看片段 ${segment.order} 的画面素材详情`} onClick={event => { rememberOrigin(event.currentTarget, 'material'); setVideoDetails(segment.id); }}>详情</button>
+        <span className="min-w-0 flex-1 truncate">{asset ? asset.name : '未关联视频'}</span>
+        <Button variant="outline" size="xs" className="border-solid border-input px-[6px] py-0 text-[12px] leading-[18px] focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-2" aria-label={`查看片段 ${segment.order} 的画面素材详情`} onClick={event => { rememberOrigin(event.currentTarget, 'material'); setVideoDetails(segment.id); }}>详情</Button>
       </div>;
     } },
     { headerName: '配音', initialWidth: 290, minWidth: 290, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: (params: { data?: Segment }) => {
@@ -193,14 +196,14 @@ export function App() {
       const taskLabel = latest ? { accepted: '已受理', running: '生成中', succeeded: '生成成功', failed: '生成失败', unknown: '结果未知，可能已计费' }[latest.state] : '未生成';
       const recordings = speech?.audio.filter(audio => audio.segmentId === segment.id) ?? [];
       const audio = recordings.filter(audio => audio.valid).at(-1) ?? recordings.at(-1);
-      return <div className="speech-cell">
-        <div className="speech-state">
+      return <div className="flex h-full flex-col justify-center gap-[2px] whitespace-normal leading-[18px]">
+        <div role="group" aria-label="配音状态" className="flex min-w-0 flex-col leading-[18px]">
           <span>{audio ? audio.valid ? '有效配音' : '配音待更新' : '配音缺失'}</span>
-          {latest && latest.state !== 'succeeded' && <span className={latest.state === 'failed' || latest.state === 'unknown' ? 'speech-warning' : ''}>最近任务：{taskLabel}</span>}
+          {latest && latest.state !== 'succeeded' && <span className={`text-[12px] ${latest.state === 'failed' || latest.state === 'unknown' ? 'text-destructive' : 'text-muted-foreground'}`}>最近任务：{taskLabel}</span>}
         </div>
-        <div className="speech-actions"><button disabled={disabled || !segment.text.trim()} onClick={() => { void generateSpeech(segment.id); }}>{latest?.state === 'failed' || latest?.state === 'unknown' ? '重试配音' : latest ? '重新生成' : '生成配音'}</button>
-        {audio && <button onClick={event => { rememberOrigin(event.currentTarget, 'audio'); setListening(audio); }}>试听{audio.valid ? '' : '（待更新）'}</button>}
-        <button aria-label={`展开片段 ${segment.order} 的保留音频`} onClick={event => { rememberOrigin(event.currentTarget, 'history'); setAudioHistory(segment.id); }}>详情</button></div>
+        <div role="group" aria-label="配音操作" className="flex gap-1"><Button variant="outline" size="xs" className="border-solid border-input px-[6px] py-0 text-[12px] leading-[18px] focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-2" disabled={disabled || !segment.text.trim()} onClick={() => { void generateSpeech(segment.id); }}>{latest?.state === 'failed' || latest?.state === 'unknown' ? '重试配音' : latest ? '重新生成' : '生成配音'}</Button>
+        {audio && <Button variant="outline" size="xs" className="border-solid border-input px-[6px] py-0 text-[12px] leading-[18px] focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-2" onClick={event => { rememberOrigin(event.currentTarget, 'audio'); setListening(audio); }}>试听{audio.valid ? '' : '（待更新）'}</Button>}
+        <Button variant="outline" size="xs" className="border-solid border-input px-[6px] py-0 text-[12px] leading-[18px] focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-2" aria-label={`展开片段 ${segment.order} 的保留音频`} onClick={event => { rememberOrigin(event.currentTarget, 'history'); setAudioHistory(segment.id); }}>详情</Button></div>
       </div>;
     } },
     { headerName: '画面说明', width: 180 },
@@ -239,14 +242,25 @@ export function App() {
       if (batch.changes.some(change => change.kind === 'paste')) setPaste('');
     });
   }, failed);
-  const openVideoEditor = (id?: string) => editing.begin('segments', next => {
-    setStatus(next); setSaveError(''); setSaveState('saved');
-    if (id) {
-      const segment = next.snapshot.segments.find(segment => segment.id === id);
-      if (!segment) throw new Error('口播片段已删除');
-      setVideoEditor({ segment, assetId: segment.video?.assetId ?? '', start: String(segment.video?.start ?? 0) });
-    } else { setSourcePath(''); setImporting(true); }
-  }, disconnected, cause => { failed(cause); requestAnimationFrame(returnFocus.current.video); });
+  const openVideoEditor = (id?: string) => {
+    const origin = document.activeElement;
+    const originLayer = origin?.closest('[role="dialog"]');
+    const stillRequested = () => id
+      ? !!originLayer?.isConnected && originLayer.contains(document.activeElement)
+      : document.activeElement === document.body || document.activeElement === moreButton.current || document.activeElement === origin;
+    return editing.begin('segments', next => {
+      if (!stillRequested()) { void editing.cancel('segments'); return; }
+      setStatus(next); setSaveError(''); setSaveState('saved');
+      if (id) {
+        const segment = next.snapshot.segments.find(segment => segment.id === id);
+        if (!segment) throw new Error('口播片段已删除');
+        setVideoEditor({ segment, assetId: segment.video?.assetId ?? '', start: String(segment.video?.start ?? 0) });
+      } else { setSourcePath(''); setImporting(true); }
+    }, disconnected, cause => {
+      failed(cause);
+      requestAnimationFrame(() => { if (stillRequested()) returnFocus.current.video(); });
+    });
+  };
   const cancelVideo = () => {
     setVideoEditor(null); setImporting(false); setSaveState('saved');
     void editing.cancel('segments');
@@ -360,83 +374,65 @@ export function App() {
   const exportProblems = exports.exports?.tasks.filter(task => task.state === 'failed' || task.state === 'interrupted') ?? [];
   const lock = speech?.locked ? '配音进行中，项目已锁定；可查询和试听' : status?.taskLocked || exports.exports?.locked ? '导出进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : '';
   const searchStatus = !query ? '输入文案查找' : !matchedIds.length ? '无匹配片段' : activeMatch ? `第 ${matchedIds.indexOf(activeMatch) + 1} / ${matchedIds.length} 个匹配片段` : `${matchedIds.length} 个匹配片段，点击下一个定位`;
-  return <main>
-    <header className={searchOpen ? 'searching' : ''}>
-      <h1 hidden={searchOpen}>口播片段</h1>
-      {searchOpen && <section id="segment-search" className="search-popover" role="dialog" aria-modal="false" aria-label="查找口播片段">
-        <label><input ref={searchInput} aria-label="查找文案" placeholder="查找文案" value={query}
+  return <main className="mx-auto flex h-dvh min-w-0 max-w-[1600px] flex-col gap-2 px-4 py-3 max-[600px]:p-2">
+    <header className={`flex h-8 min-h-8 flex-none flex-nowrap items-center justify-between max-[600px]:gap-1 ${searchOpen ? 'gap-1' : 'gap-3'}`}>
+      <h1 className="m-0 flex-none text-[18px] leading-normal font-semibold" hidden={searchOpen}>口播片段</h1>
+      {searchOpen && <section id="segment-search" className="search-popover flex h-8 min-w-0 flex-1 items-center gap-1" role="dialog" aria-modal="false" aria-label="查找口播片段">
+        <label className="min-w-[72px] flex-1"><Input className="h-6 px-1.5 py-0.5 text-[12px] md:text-[12px]" ref={searchInput} aria-label="查找文案" placeholder="查找文案" value={query}
           onChange={event => { setQuery(event.target.value); locate(event.target.value, 1, true); }}
           onKeyDown={event => { if (event.nativeEvent.isComposing) return; if (event.key === 'Escape') { event.preventDefault(); closeSearch(); } else if (event.key === 'Enter') { event.preventDefault(); locate(query, event.shiftKey ? -1 : 1); } }} /></label>
-        <span role="status" aria-label={searchStatus} title={searchStatus}>{searchStatus}</span>
-        <div className="toolbar">
-          <button disabled={!matchedIds.length} onClick={() => locate(query, -1)}>上一个</button>
-          <button disabled={!matchedIds.length} onClick={() => locate(query, 1)}>下一个</button>
-          <button onClick={closeSearch}>关闭查找</button>
+        <span className="min-w-0 flex-[0_1_116px] overflow-hidden text-[11px] text-muted-foreground text-ellipsis whitespace-nowrap" role="status" aria-label={searchStatus} title={searchStatus}>{searchStatus}</span>
+        <div className="flex flex-none flex-nowrap items-center gap-0.5">
+          <Button variant="outline" size="xs" className="border-input text-foreground px-1 py-0.5 text-[11px]" disabled={!matchedIds.length} onClick={() => locate(query, -1)}>上一个</Button>
+          <Button variant="outline" size="xs" className="border-input text-foreground px-1 py-0.5 text-[11px]" disabled={!matchedIds.length} onClick={() => locate(query, 1)}>下一个</Button>
+          <Button variant="outline" size="xs" className="border-input text-foreground px-1 py-0.5 text-[11px]" onClick={closeSearch}>关闭查找</Button>
         </div>
       </section>}
-      <div className="toolbar primary-actions">
-        <button hidden={searchOpen} disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</button>
-        <button hidden={searchOpen} className="search-trigger" ref={tableFallback} aria-expanded={searchOpen} aria-controls="segment-search" onClick={() => { setSearchOpen(true); locate(query, 1, true); }}>查找</button>
-        <button hidden={searchOpen} disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" title="全片导出：查找与勾选不改变范围" onClick={() => { void exports.run(); }}>导出全片</button>
-        <button ref={moreButton} aria-haspopup="dialog" aria-expanded={detail === 'more'} onClick={event => openDetail('more', event.currentTarget)}>更多</button>
+      <div className="flex flex-none flex-nowrap items-center gap-2 max-[600px]:gap-1">
+        <Button variant="outline" size="sm" className="border-input text-foreground max-[600px]:px-2" hidden={searchOpen} disabled={disabled} onClick={() => { void save({ text: '' }); }}>新增口播片段</Button>
+        <Button variant="outline" size="sm" className="search-trigger border-input text-foreground max-[600px]:px-2" hidden={searchOpen} ref={tableFallback} aria-expanded={searchOpen} aria-controls="segment-search" onClick={() => { setSearchOpen(true); locate(query, 1, true); }}>查找</Button>
+        <Button variant="outline" size="sm" className="border-input text-foreground max-[600px]:px-2" hidden={searchOpen} disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" title="全片导出：查找与勾选不改变范围" onClick={() => { void exports.run(); }}>导出全片</Button>
+        <Button variant="outline" size="sm" className="border-input text-foreground max-[600px]:px-2" ref={moreButton} aria-haspopup="dialog" aria-expanded={detail === 'more'} onClick={event => openDetail('more', event.currentTarget)}>更多</Button>
       </div>
     </header>
-    <p id="export-scope" className="visually-hidden">全片导出：查找与勾选不改变范围</p>
-    {detail === 'more' && <Dialog label="更多操作" onClose={() => setDetail(null)} restoreFocus={() => returnFocus.current.detail()}>
-      <h2>更多操作</h2>
-      <div className="more-actions">
+    <p id="export-scope" className="sr-only">全片导出：查找与勾选不改变范围</p>
+    {detail === 'more' && <DetailPanel title="更多操作" onClose={() => setDetail(null)} restoreFocus={() => returnFocus.current.detail()}>
+      <div className="flex flex-col gap-2 mb-1">
         {searchOpen && <>
-          <button disabled={disabled} onClick={() => { setDetail(null); void save({ text: '' }); }}>新增口播片段</button>
-          <button disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { setDetail(null); void exports.run(); }}>导出全片</button>
+          <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => { setDetail(null); void save({ text: '' }); }}>新增口播片段</Button>
+          <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { setDetail(null); void exports.run(); }}>导出全片</Button>
         </>}
-        <p className="export-scope">全片导出：查找与勾选不改变范围</p>
-        <button disabled={disabled} onClick={() => { rememberOrigin(moreButton.current!, 'video'); setDetail(null); void openVideoEditor(); }}>导入本地视频</button>
-        <button disabled={disabled} onClick={() => setDetail('paste')}>粘贴多行文案</button>
-        <button disabled={!speech} onClick={() => setDetail('voice')}>声音设置</button>
-        <button disabled={!status} onClick={() => { rememberOrigin(moreButton.current!, 'settings'); setDetail(null); setExportSettingsOpen(true); }}>导出设置</button>
-        <button onClick={() => setDetail('tasks')}>任务记录</button>
+        <p className="m-0 text-[12px] text-muted-foreground">全片导出：查找与勾选不改变范围</p>
+        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => { rememberOrigin(moreButton.current!, 'video'); setDetail(null); void openVideoEditor(); }}>导入本地视频</Button>
+        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => setDetail('paste')}>粘贴多行文案</Button>
+        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!speech} onClick={() => setDetail('voice')}>声音设置</Button>
+        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!status} onClick={() => { rememberOrigin(moreButton.current!, 'settings'); setDetail(null); setExportSettingsOpen(true); }}>导出设置</Button>
+        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" onClick={() => setDetail('tasks')}>任务记录</Button>
       </div>
-      <button onClick={() => setDetail(null)}>关闭</button>
-    </Dialog>}
-    {detail === 'voice' && speech && <Dialog label="统一声音设置" onClose={() => { if (!editState.busy) setDetail(null); }} restoreFocus={returnFocus.current.detail}>
-      <h2>统一声音设置</h2>
-      <div className="toolbar">
-        <label>统一音色 <select aria-label="统一音色" disabled={disabled} value={speech.voice.speaker} onChange={event => { void changeVoice({ ...speech.voice, speaker: event.target.value as Voice['speaker'] }); }}>
-          <option value="zh_female_vv_uranus_bigtts">vivi 2.0</option>
-          <option value="zh_female_santongyongns_saturn_bigtts">流畅女声</option>
-          <option value="zh_male_ruyayichen_saturn_bigtts">儒雅逸辰</option>
-        </select></label>
-        <label>统一语速 {(1 + speech.voice.speechRate / 100).toFixed(2)} 倍
-          <select aria-label="统一语速" disabled={disabled} value={speech.voice.speechRate} onChange={event => { void changeVoice({ ...speech.voice, speechRate: Number(event.target.value) }); }}>
-            {Array.from({ length: 151 }, (_, index) => index - 50).map(rate => <option key={rate} value={rate}>{(1 + rate / 100).toFixed(2)} 倍</option>)}
-          </select>
-        </label>
-        <span>TokenDance 凭据：{speech.configured ? '已配置' : '未配置'}</span>
-      </div>
-      <p>文案通过 TokenDance seed-tts-2.0 生成配音，可能产生费用。配置位置：{speech.configPath}，键名 TOKENDANCE_KEY。已配置不代表服务已验证。</p>
-      {saveState === 'failed' && <p role="alert">{saveError}</p>}
-      <button disabled={editState.busy} onClick={() => setDetail(null)}>关闭声音设置</button>
-    </Dialog>}
-    {detail === 'tasks' && <Dialog label="任务记录" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
-      <h2>任务记录</h2>
-      <button onClick={() => setDetail('diagnostics')}>连接诊断</button>
-      {speech && <section aria-label="配音任务">
+      <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail(null)}>关闭</Button>
+    </DetailPanel>}
+    {detail === 'voice' && speech && <VoicePanel speech={speech} disabled={disabled} busy={editState.busy}
+      error={saveState === 'failed' ? saveError : undefined} onChange={voice => { void changeVoice(voice); }}
+      onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail} />}
+    {detail === 'tasks' && <DetailPanel title="任务记录" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
+      <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail('diagnostics')}>连接诊断</Button>
+      {speech && <section aria-label="配音任务" className="flex flex-col gap-2 [&_p]:my-2 [&_p]:text-[12px] [&_summary]:font-medium">
       {speech.operations.length > 0 && <section aria-label="批量配音进度" aria-live="polite">
         {speech.operations.slice().reverse().map(operation => <details key={operation.id} open={operation.summary.pending > 0}>
-          <summary>批量配音：完成 {operation.summary.completed} · 成功 {operation.summary.succeeded} · 失败 {operation.summary.failed} · 已中断 {operation.summary.interrupted} · 待完成 {operation.summary.pending} · 跳过 {operation.summary.skipped} · 拒绝 {operation.summary.rejected}</summary>
+          <summary className="w-fit cursor-pointer rounded-md px-2 py-1 hover:bg-ui-accent active:bg-input">批量配音：完成 {operation.summary.completed} · 成功 {operation.summary.succeeded} · 失败 {operation.summary.failed} · 已中断 {operation.summary.interrupted} · 待完成 {operation.summary.pending} · 跳过 {operation.summary.skipped} · 拒绝 {operation.summary.rejected}</summary>
           <p>操作 {operation.id} · 请求 {operation.request.requestId}</p>
           {operation.results.map(item => <p key={item.segmentId}>片段 {status?.snapshot.segments.find(segment => segment.id === item.segmentId)?.order ?? item.segmentId}：{({ accepted: '已受理', existing: '已有任务', skipped: '已跳过', rejected: '被拒绝' })[item.outcome]} · {item.state ? ({ accepted: '尚未完成', running: '正在生成', succeeded: '成功', failed: '失败', unknown: '已中断／结果未知' })[item.state] : ''} · {item.message}</p>)}
         </details>)}
       </section>}
-      {speech.tasks.length > 0 && <details open><summary>配音任务与请求标识</summary>{speech.tasks.map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{task.message}</p>)}</details>}
+      {speech.tasks.length > 0 && <details open><summary className="w-fit cursor-pointer rounded-md px-2 py-1 hover:bg-ui-accent active:bg-input">配音任务与请求标识</summary>{speech.tasks.map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{task.message}</p>)}</details>}
         {!speech.tasks.length && <p>暂无配音任务</p>}
       </section>}
       <ExportTaskDetails controller={exports} />
-      <button onClick={() => setDetail(null)}>关闭任务记录</button>
-    </Dialog>}
-    {detail === 'diagnostics' && <Dialog label="连接诊断" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
-      <h2>连接诊断</h2><p>{error || (status ? '本地服务已连接' : '正在连接本地服务…')}</p>
-      {status && <dl className="diagnostics">
+      <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail(null)}>关闭任务记录</Button>
+    </DetailPanel>}
+    {detail === 'diagnostics' && <DetailPanel title="连接诊断" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
+      <p className="m-0" role="status">{error || (status ? '本地服务已连接' : '正在连接本地服务…')}</p>
+      {status && <dl className="m-0 rounded-md border border-solid border-input bg-muted p-3 text-[12px] [&_dt]:font-semibold [&_dd]:m-0 [&_dd]:mb-2 [&_dd:last-child]:mb-0">
         <dt>面板版本</dt><dd>{buildIdentity.state === 'known' ? `${buildIdentity.version} (${buildIdentity.contentFingerprint})` : '未知（开发构建或旧版本）'}</dd>
         <dt>服务版本</dt><dd>{status.buildIdentity?.state === 'known' ? `${status.buildIdentity.version} (${status.buildIdentity.contentFingerprint})` : '未知（开发构建或旧版本）'}</dd>
         <dt>版本核对</dt><dd>{buildIdentity.state === 'known' && status.buildIdentity?.state === 'known'
@@ -446,36 +442,18 @@ export function App() {
         <dt>服务实例</dt><dd>{status.instanceId}</dd>
         <dt>PID</dt><dd>{status.pid}</dd>
       </dl>}
-      <p>{selectionState}</p>
-      <button onClick={() => setDetail(null)}>关闭诊断</button>
-    </Dialog>}
-    {detail === 'paste' && <Dialog label="粘贴多行文案" onClose={() => { if (!editState.busy) setDetail(null); }} restoreFocus={returnFocus.current.detail}>
-      <h2>粘贴多行文案</h2>
-      {saveState === 'failed' && <p role="alert">{saveError}</p>}
-      <textarea aria-label="多行文案" value={paste} disabled={editState.busy} onChange={event => setPaste(event.target.value)} placeholder="每个非空行创建一个口播片段" />
-      <div className="toolbar">
-        <button disabled={disabled || !paste.trim()} onClick={() => { void organize({ changes: [{ kind: 'paste', text: paste }] }); }}>按非空行新增</button>
-        <button disabled={editState.busy} onClick={() => setDetail(null)}>关闭</button>
-      </div>
-    </Dialog>}
+      <p className="m-0 text-[12px] text-muted-foreground">{selectionState}</p>
+      <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail(null)}>关闭诊断</Button>
+    </DetailPanel>}
+    {detail === 'paste' && <PastePanel value={paste} busy={editState.busy} disabled={disabled}
+      error={saveState === 'failed' ? saveError : ''} onChange={setPaste}
+      onSubmit={() => { void organize({ changes: [{ kind: 'paste', text: paste }] }); }}
+      onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail} />}
     {exportSettingsOpen && status && <ExportSettingsPanel restoreFocus={returnFocus.current.settings} editing={editing} status={status} onStatus={setStatus} onSaveState={(state, message = '') => { setSaveState(state); setSaveError(message); }} onClose={() => setExportSettingsOpen(false)} />}
-    {audioHistory && <Dialog label="保留音频" onClose={() => setAudioHistory(null)} restoreFocus={returnFocus.current.history}>
-      <h2>配音详情与保留音频</h2>
-      <section aria-label="配音任务记录">{speech?.tasks.filter(task => task.segmentId === audioHistory).slice().reverse().map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{({ accepted: '已受理', running: '生成中', succeeded: '生成成功', failed: '生成失败', unknown: '结果未知，可能已计费' })[task.state]}<br />{task.message}</p>)}</section>
-      {!speech?.audio.some(audio => audio.segmentId === audioHistory) && <p>暂无保留音频</p>}
-      <ul className="audio-history">{speech?.audio.filter(audio => audio.segmentId === audioHistory).slice().reverse().map(audio => <li key={audio.taskId}>
-        <p><time dateTime={audio.createdAt}>{new Date(audio.createdAt).toLocaleString()}</time> · {audio.valid ? '有效配音' : '配音待更新'}</p>
-        <p className="audio-text">{audio.input.text}</p>
-        <audio controls preload="none" src={audio.url} aria-label={`试听 ${audio.input.text}`} />
-      </li>)}</ul>
-      <button onClick={() => setAudioHistory(null)}>关闭</button>
-    </Dialog>}
-    {listening && <Dialog label="配音试听" onClose={() => setListening(null)} restoreFocus={returnFocus.current.audio}>
-      <h2>配音试听</h2><p>{!currentListening ? '配音状态无法确认：此音频已不在当前保留音频列表中。' : currentListening.valid ? '有效配音' : '配音待更新：此音频与当前文案或声音设置不一致。'}</p><audio controls autoPlay src={listening.url} onError={() => { setSaveState('failed'); setSaveError('音频不可读取，请检查项目文件'); }} />
-      <button onClick={() => setListening(null)}>关闭试听</button>
-    </Dialog>}
-    {videoDetails && <Dialog label="画面素材详情" onClose={() => setVideoDetails(null)} restoreFocus={returnFocus.current.material}>
-      <h2>画面素材详情</h2>
+    {audioHistory && <AudioHistoryPanel segmentId={audioHistory} speech={speech} onClose={() => setAudioHistory(null)} restoreFocus={returnFocus.current.history} />}
+    {listening && <AudioListeningPanel audio={listening} currentAudio={currentListening} onClose={() => setListening(null)} restoreFocus={returnFocus.current.audio}
+      onError={() => { setSaveState('failed'); setSaveError('音频不可读取，请检查项目文件'); }} />}
+    {videoDetails && <DetailPanel title="画面素材详情" label="画面素材详情" restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={() => setVideoDetails(null)} restoreFocus={returnFocus.current.material}>
       {(() => {
         const segment = status?.snapshot.segments.find(segment => segment.id === videoDetails);
         const asset = status?.snapshot.assets.find(asset => asset.id === segment?.video?.assetId);
@@ -483,33 +461,32 @@ export function App() {
           <p>{asset?.name ?? '未关联视频'}</p>
           {asset && segment.video && <>
             <p>时长 {asset.duration.toFixed(2)} 秒 · 播放起点 {segment.video.start} 秒</p>
-            <button onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(segment.video); }}>播放预览</button>
+            <Button variant="outline" onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(segment.video); }}>播放预览</Button>
           </>}
-          <button disabled={disabled} onClick={event => { rememberOrigin(event.currentTarget, 'video'); void openVideoEditor(segment.id); }}>{asset ? '更改' : '关联'}</button>
+          <Button variant="outline" disabled={disabled} onClick={event => { rememberOrigin(event.currentTarget, 'video'); void openVideoEditor(segment.id); }}>{asset ? '更改' : '关联'}</Button>
           <p>当前支持关联一份本地视频；更改中可解除关联及调整播放起点。</p>
         </> : <p>口播片段已不存在。</p>;
       })()}
-      <button onClick={() => setVideoDetails(null)}>关闭详情</button>
-    </Dialog>}
-    {(videoEditor || importing) && <Dialog label={importing ? '导入本地视频' : '关联视频'} onClose={cancelVideo} restoreFocus={returnFocus.current.video}>
-      <h2>{importing ? '导入本地视频' : '关联视频'}</h2>
-      {importing ? <label>视频文件绝对路径<input aria-label="视频文件绝对路径" value={sourcePath} disabled={saveState === 'saving'} onChange={event => setSourcePath(event.target.value)} placeholder="粘贴要导入的本地视频完整路径" /></label>
+      <Button variant="outline" onClick={() => setVideoDetails(null)}>关闭详情</Button>
+    </DetailPanel>}
+    {(videoEditor || importing) && <DetailPanel title={importing ? '导入本地视频' : '关联视频'} label={importing ? '导入本地视频' : '关联视频'} restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={cancelVideo} restoreFocus={returnFocus.current.video}>
+      {importing ? <label className="flex min-w-0 flex-col gap-1">视频文件绝对路径<Input aria-label="视频文件绝对路径" value={sourcePath} disabled={saveState === 'saving'} onChange={event => setSourcePath(event.target.value)} placeholder="粘贴要导入的本地视频完整路径" /></label>
         : videoEditor && <>
-          <label>素材<select aria-label="关联素材" value={videoEditor.assetId} disabled={saveState === 'saving'} onChange={event => setVideoEditor({ ...videoEditor, assetId: event.target.value, start: '0' })}>
+          <label className="flex min-w-0 flex-col gap-1">素材<NativeSelect aria-label="关联素材" value={videoEditor.assetId} disabled={saveState === 'saving'} onChange={event => setVideoEditor({ ...videoEditor, assetId: event.target.value, start: '0' })}>
             <option value="">解除关联</option>
             {status?.snapshot.assets.map(asset => <option key={asset.id} value={asset.id}>{asset.name}（{asset.duration.toFixed(2)} 秒）</option>)}
-          </select></label>
-          <label>播放起点（秒）<input aria-label="播放起点（秒）" type="number" min="0" step="any" disabled={!videoEditor.assetId || saveState === 'saving'} value={videoEditor.start} onChange={event => setVideoEditor({ ...videoEditor, start: event.target.value })} /></label>
+          </NativeSelect></label>
+          <label className="flex min-w-0 flex-col gap-1">播放起点（秒）<Input aria-label="播放起点（秒）" type="number" min="0" step="any" disabled={!videoEditor.assetId || saveState === 'saving'} value={videoEditor.start} onChange={event => setVideoEditor({ ...videoEditor, start: event.target.value })} /></label>
           {!status?.snapshot.assets.length && <p>请先取消并导入本地视频。</p>}
         </>}
       {importing && <p>只读取指定文件，复制到项目并生成静音预览。原文件之后可移动或改名。</p>}
-      <div className="toolbar"><button disabled={saveState === 'saving' || (importing && !sourcePath.trim())} onClick={() => { void saveVideo(); }}>{saveState === 'saving' ? '正在处理…' : importing ? '导入并复制' : '保存关联与起点'}</button>
-        <button onClick={() => { void cancelVideo(); }}>取消</button></div>
-    </Dialog>}
-    {preview && <Dialog label="视频预览" onClose={() => setPreview(null)} restoreFocus={returnFocus.current.preview}>
-      <h2>视频预览</h2><video key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
-      <p>从 {preview.start} 秒开始，预览默认静音。</p><button onClick={() => setPreview(null)}>关闭预览</button>
-    </Dialog>}
+      <div className="flex flex-wrap items-center gap-2"><Button variant="outline" disabled={saveState === 'saving' || (importing && !sourcePath.trim())} onClick={() => { void saveVideo(); }}>{saveState === 'saving' ? '正在处理…' : importing ? '导入并复制' : '保存关联与起点'}</Button>
+        <Button variant="outline" onClick={() => { void cancelVideo(); }}>取消</Button></div>
+    </DetailPanel>}
+    {preview && <DetailPanel title="视频预览" label="视频预览" restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={() => setPreview(null)} restoreFocus={returnFocus.current.preview}>
+      <video className="block w-full max-h-[60dvh] shrink-0" key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
+      <p>从 {preview.start} 秒开始，预览默认静音。</p><Button variant="outline" onClick={() => setPreview(null)}>关闭预览</Button>
+    </DetailPanel>}
     {deleteTargets && <DeleteConfirm count={deleteTargets.length} disabled={disabled} lock={lock}
       onClose={() => setDeleteTargets(null)} restoreFocus={() => rowOrigin.current()}
       onConfirm={() => {
@@ -522,7 +499,7 @@ export function App() {
       }} />}
     <ContextMenu modal={false} open={rowMenuOpen} onOpenChange={setRowMenuOpen}>
     <ContextMenuTrigger asChild>
-    <div className="grid" ref={gridElement} onContextMenuCapture={event => {
+    <div className="segment-grid w-full min-w-0 flex-1 min-h-0" ref={gridElement} onContextMenuCapture={event => {
       // 编辑器的复制粘贴属于系统菜单：只阻止 Trigger 收到事件，不取消浏览器默认行为。
       if (editing.getState().editing || (event.target as HTMLElement).closest('input:not([type="checkbox"]), textarea, .ag-popup-editor')) {
         event.stopPropagation(); setRowMenuOpen(false);
@@ -542,7 +519,7 @@ export function App() {
     }} onKeyDown={event => {
       if (event.key !== 'Escape' || event.nativeEvent.isComposing || event.defaultPrevented) return;
       const target = event.target as HTMLElement;
-      if (target.closest('input:not([type="checkbox"]), textarea, select, [contenteditable="true"], dialog, .ag-popup-editor') || editing.getState().editing) return;
+      if (target.closest('input:not([type="checkbox"]), textarea, select, [contenteditable="true"], [role="dialog"], [role="alertdialog"], .ag-popup-editor') || editing.getState().editing) return;
       event.preventDefault();
       grid.current?.deselectAll();
     }}>{drag.indicator}<AgGridProvider modules={[AllCommunityModule]}><AgGridReact
@@ -580,22 +557,22 @@ export function App() {
       <ContextMenuItem disabled={disabled || selectedIds.length !== 1} onSelect={() => { void insertRelative('after'); }}>下方添加</ContextMenuItem>
     </RowMenu>}
     </ContextMenu>
-    <footer className="status-bar" aria-label="项目状态">
-      <div className="status-line" role="status">
-        <span>{error ? '服务连接失败' : status ? '本地服务已连接' : '正在连接本地服务…'}</span>
-        <span className={`save-status${saveState === 'failed' ? ' save-error' : ''}`}>{saveState === 'saving' ? '保存中…' : saveState === 'failed' ? '保存失败' : status ? '已保存' : '等待读取项目'}</span>
-        <span className="task-summary">{batchTask && batchTask.summary.pending > 0 ? `配音 ${batchTask.summary.completed}/${batchTask.summary.completed + batchTask.summary.pending}` : speechTask && (speechTask.state === 'running' || speechTask.state === 'accepted') ? '配音生成中' : exportTask && exports.exports?.locked ? `${exportStateLabel[exportTask.state]} ${exportTask.completed}/${exportTask.total}` : ''}</span>
-        <button onClick={event => openDetail('tasks', event.currentTarget)}>任务详情</button>
+    <footer className="flex-none border-0 border-t border-solid border-input pt-2 text-[12px] text-muted-foreground [&_p]:m-0 [&_p]:wrap-anywhere" aria-label="项目状态">
+      <div className="flex min-w-0 flex-nowrap items-center gap-1.5" role="status">
+        <span className="flex-none">{error ? '服务连接失败' : status ? '本地服务已连接' : '正在连接本地服务…'}</span>
+        <span data-save-status className={`flex-none ${saveState === 'failed' ? 'text-destructive' : ''}`}>{saveState === 'saving' ? '保存中…' : saveState === 'failed' ? '保存失败' : status ? '已保存' : '等待读取项目'}</span>
+        <span className="min-w-0 flex-1 truncate">{batchTask && batchTask.summary.pending > 0 ? `配音 ${batchTask.summary.completed}/${batchTask.summary.completed + batchTask.summary.pending}` : speechTask && (speechTask.state === 'running' || speechTask.state === 'accepted') ? '配音生成中' : exportTask && exports.exports?.locked ? `${exportStateLabel[exportTask.state]} ${exportTask.completed}/${exportTask.total}` : ''}</span>
+        <Button variant="outline" size="xs" className="border-input text-foreground px-1.5 py-0.5 text-[12px]" onClick={event => openDetail('tasks', event.currentTarget)}>任务详情</Button>
       </div>
-      {lock && <p className="lock-status" role="status">{lock}</p>}
-      {(error || saveError || exports.connectionError || exports.operationError || speechProblems.length > 0 || exportProblems.length > 0 || selectionState.includes('断开')) && <div className="status-errors" aria-label="操作异常">
+      {lock && <p className="pt-1" role="status">{lock}</p>}
+      {(error || saveError || exports.connectionError || exports.operationError || speechProblems.length > 0 || exportProblems.length > 0 || selectionState.includes('断开')) && <div className="max-h-[22dvh] overflow-auto bg-[var(--color-error-surface)] text-destructive" aria-label="操作异常">
         {error && <p role="alert">{error}</p>}
         {saveError && <p role={saveState === 'failed' ? 'alert' : 'status'}>{saveError}</p>}
         {exports.connectionError && <p role="alert">{exports.connectionError}</p>}
         {exports.operationError && <p role="alert">{exports.operationError}</p>}
         {speechProblems.length > 0 && <p role="alert">配音异常 {speechProblems.length} 项{speechProblems.some(task => task.state === 'unknown') ? ' · 结果未知，可能已计费' : ' · 生成失败'}，请查看任务详情</p>}
         {exportProblems.length > 0 && <p role="alert">导出失败或中断 {exportProblems.length} 项，请查看任务详情</p>}
-        {selectionState.includes('断开') && <p role="alert">{selectionState} <button onClick={() => setConnectionVersion(version => version + 1)}>重新连接勾选</button></p>}
+        {selectionState.includes('断开') && <p role="alert">{selectionState} <Button variant="outline" size="xs" className="border-input text-foreground px-1.5 py-0.5 text-[12px]" onClick={() => setConnectionVersion(version => version + 1)}>重新连接勾选</Button></p>}
       </div>}
     </footer>
   </main>;

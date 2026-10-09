@@ -33,5 +33,5 @@ test('生产同源 CSS 的工具类不得覆盖既有业务类名', async t => {
   const exceptions = JSON.parse(readFileSync(join(root, 'scripts/style-collision-exceptions.json'), 'utf8'));
   assert.doesNotThrow(() => checkStyleCollisions(authored, generated, exceptions));
   // 使用真实产物注入历史 .grid 冲突，证明门槛能拦截复发。
-  assert.throws(() => checkStyleCollisions(authored, generated + '@layer utilities {.grid {display:grid}}', exceptions), /grid/);
+  assert.throws(() => checkStyleCollisions(authored + '.grid {width:100%}', generated + '@layer utilities {.grid {display:grid}}', exceptions), /grid/);
 });
