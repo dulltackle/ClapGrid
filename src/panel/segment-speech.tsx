@@ -1,5 +1,6 @@
-import type { ComponentProps } from 'react';
-import { Button } from '@/components/ui/index.js';
+import { useRef, type ComponentProps } from 'react';
+import { TriangleRightIcon, PauseIcon, ReloadIcon, DotsHorizontalIcon, DotFilledIcon } from '@radix-ui/react-icons';
+import { Button, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/index.js';
 import type { Segment, SpeechStatus } from '../shared/contracts.js';
 
 export function segmentSpeech(segmentId: string, speech: SpeechStatus | undefined) {
@@ -20,16 +21,35 @@ export function SegmentSpeech({ segment, speech, disabled, reason, playing, gene
   const { latest, audio, state, generateLabel } = segmentSpeech(segment.id, speech);
   const problem = latest?.state === 'failed' || latest?.state === 'unknown';
   const explanation = !segment.text.trim() ? '请先填写文案' : reason;
-  return <section title={explanation || undefined} aria-label={detail ? '详情配音' : `片段 ${segment.order} 配音`} className={detail ? 'space-y-2' : 'flex h-full flex-col justify-center gap-1 leading-5'}>
+  const pending = latest?.state === 'accepted' || latest?.state === 'running';
+  const trigger = useRef<HTMLButtonElement>(null);
+  const handoff = useRef(false);
+  const statusLine = (label: string, tone: string, spinning = false) => <span className="flex items-center gap-1 text-xs text-muted-foreground">{spinning ? <ReloadIcon aria-hidden className="size-3 shrink-0 animate-spin text-primary motion-reduce:animate-none" /> : <DotFilledIcon aria-hidden className={`size-3 shrink-0 ${tone}`} />}<span className={tone === 'text-destructive' ? tone : undefined}>{label}</span></span>;
+  return <section title={explanation || undefined} aria-label={detail ? '详情配音' : `片段 ${segment.order} 配音`} className={detail ? 'space-y-2' : 'flex h-full min-w-0 flex-col justify-center gap-1 leading-5'}>
+    {!detail && <div role="group" aria-label="配音操作" className="flex min-w-0 items-center gap-1">
+      <Button variant={audio || pending ? 'outline' : problem ? 'outline' : 'default'} size="xs"
+        className={`h-7 min-w-0 flex-1 gap-1 rounded-full px-1 text-[11px] ${!audio && problem ? 'border-destructive/30 text-destructive bg-destructive/5 hover:bg-destructive/10' : ''}`}
+        aria-label={audio ? playing === audio.taskId ? '暂停试听' : '试听' : pending ? state : generateLabel}
+        title={audio ? audio.valid ? '试听配音' : '试听配音（待更新）' : explanation || generateLabel}
+        disabled={!audio && (disabled || !segment.text.trim() || pending)} onClick={() => audio ? listen(audio) : generate()}>
+        {audio ? playing === audio.taskId ? <PauseIcon aria-hidden className="size-3 text-primary" /> : <TriangleRightIcon aria-hidden className="size-3 text-primary" /> : <ReloadIcon aria-hidden className={`size-3 ${pending ? 'animate-spin motion-reduce:animate-none' : ''}`} />}
+        <span>{audio ? playing === audio.taskId ? '暂停试听' : '试听配音' : pending ? state : generateLabel}</span>
+      </Button>
+      <DropdownMenu modal={false} onOpenChange={open => { if (open) handoff.current = false; }}>
+        <DropdownMenuTrigger asChild><Button ref={trigger} variant="outline" size="xs" className="h-7 w-7 shrink-0 rounded-full p-0" data-speech-more aria-label={`片段 ${segment.order} 配音更多操作`} title="配音更多操作"><DotsHorizontalIcon aria-hidden className="size-3" /></Button></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" aria-label={`片段 ${segment.order} 配音操作`} onCloseAutoFocus={event => { if (handoff.current) event.preventDefault(); }} onClick={event => event.stopPropagation()}>
+          <DropdownMenuItem data-speech-generate disabled={disabled || !segment.text.trim() || pending} onSelect={generate}>{generateLabel}</DropdownMenuItem>
+          <DropdownMenuItem data-speech-history onSelect={() => { if (trigger.current) { handoff.current = true; history(trigger.current); } }}>保留音频与任务记录</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>}
     <div className="flex items-center gap-2">{detail && <h3 className="m-0 font-medium">配音</h3>}
-      <span role="status" className={`text-xs ${problem ? 'text-destructive' : 'text-muted-foreground'}`} title={latest?.message}>{audio && latest && latest.state !== 'succeeded' ? <>{audio.valid ? '有效配音' : '配音待更新'}<br />{state}</> : state}</span>
+      <div role="status" className="min-w-0" title={latest?.message}>
+        {audio && latest && latest.state !== 'succeeded' && statusLine(audio.valid ? '有效配音' : '配音待更新', audio.valid ? 'text-green-600' : 'text-amber-500')}
+        {statusLine(!detail && pending && !audio ? '请稍候' : state, problem ? 'text-destructive' : pending ? 'text-primary' : audio ? audio.valid ? 'text-green-600' : 'text-amber-500' : 'text-muted-foreground', pending)}
+      </div>
       {detail && <Button size="sm" variant="outline" className="ml-auto" title={explanation || generateLabel} disabled={disabled || !segment.text.trim()} onClick={generate}>{generateLabel}</Button>}
     </div>
-    {!detail && <div role="group" aria-label="配音操作" className="flex items-center">
-      {audio && <Button variant="ghost" size="xs" className="h-7 w-7 p-0" aria-label={playing === audio.taskId ? '暂停试听' : '试听'} title={playing === audio.taskId ? '暂停试听' : audio.valid ? '试听' : '试听（待更新）'} onClick={() => listen(audio)}>{playing === audio.taskId ? 'Ⅱ' : '▷'}</Button>}
-      <Button variant="ghost" size="xs" className="h-7 w-7 p-0" aria-label={generateLabel} title={explanation || generateLabel} disabled={disabled || !segment.text.trim()} onClick={generate}>↻</Button>
-      <Button variant="ghost" size="xs" className="h-7 w-7 p-0" aria-label={`展开片段 ${segment.order} 的保留音频`} title="保留音频与任务记录" onClick={event => history(event.currentTarget)}>⋯</Button>
-    </div>}
     {detail && <>
       {audio && <audio key={audio.url} controls preload="none" className="block w-full" aria-label="详情配音播放器" src={audio.url} onError={onError} />}
       {explanation && <p className="m-0 text-xs text-muted-foreground">{explanation}</p>}

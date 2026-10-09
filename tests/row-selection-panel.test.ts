@@ -50,7 +50,7 @@ const script = String.raw`
       check(document.activeElement.closest('[row-id="b"]'), '行内试听保持焦点，Escape 沿用表格清空勾选规则');
       check(!modal(), '键盘操作不打开试听弹窗');
       await input({ click: row('a') }); selected(['a']);
-      await input({ click: '[aria-label="展开片段 2 的保留音频"]' }); selected(['a']);
+      await input({ click: '[aria-label="片段 2 配音更多操作"]' }); selected(['a']); await input({ click: '[data-speech-history]' });
       check(modal('保留音频'), '未选中片段的配音详情正常打开');
       await input({ key: 'Escape' }); selected(['a']);
       check(!modal(), 'Esc 关闭配音详情并保留选择');

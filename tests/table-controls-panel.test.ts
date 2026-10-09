@@ -41,7 +41,7 @@ const action = async fn => { await act(async () => { await fn(); await new Promi
   assertKeyboardFocus(detail());
   const generate = () => [...row().querySelectorAll('button')].find(node => node.getAttribute('aria-label') === '生成配音');
   check(generate().getBoundingClientRect().height >= 24, '配音操作保持紧凑');
-  check(getComputedStyle(generate()).color === 'rgb(26, 28, 31)', '生成图标前景可见');
+  check(getComputedStyle(generate()).color === 'rgb(255, 255, 255)' && getComputedStyle(generate()).backgroundColor === 'rgb(8, 117, 209)', '生成主按钮使用蓝底白字');
   state.speech = { locked: true, configured: true, configPath: '/tmp/config', voice: { speaker: 'voice', speechRate: 0 }, operations: [], audio: [], tasks: [] };
   await action(() => [...intervals.values()].forEach(fn => fn()));
   // act 提交禁用状态后，等待保留按钮实例的主题过渡完成。

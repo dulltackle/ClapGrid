@@ -16,7 +16,7 @@ const script = String.raw`
   const check = (value, message) => { if (!value) throw Error(message); };
   const settle = () => new Promise(resolve => setTimeout(resolve, 80));
   const button = (text, parent = document) => [...parent.querySelectorAll('button')].find(node => node.textContent === text || node.getAttribute('aria-label') === text);
-  const click = async node => { check(node && !node.disabled, '入口可用'); await act(async () => { node.focus(); node.click(); await settle(); }); await settle(); };
+  const click = async node => { check(node && !node.disabled, '入口可用'); await act(async () => { node.focus(); if (node.hasAttribute('data-speech-more')) await window.browserInput({ click: '[aria-label="' + node.getAttribute('aria-label') + '"]' }); else node.click(); await settle(); }); await settle(); };
   const key = async (key, shift = false) => { await act(async () => { await window.browserInput({ key, shift }); await settle(); }); await settle(); };
   const poll = async () => { await act(async () => { [...intervals.values()].forEach(fn => fn()); await settle(); }); await settle(); };
   const dialog = () => document.querySelector('[role="dialog"][aria-modal="true"]');
@@ -37,7 +37,7 @@ const script = String.raw`
         audio: [0, 1].map(i => ({ segmentId: 'segment', taskId: 'a' + i, valid: i === 1, url: audioUrl, createdAt: '2026-10-03T00:00:00Z', input: { text: i === 1 ? longText : '旧文案' } })) };
       await act(async () => { createRoot(document.getElementById('root')).render(<App />); await settle(); }); await settle();
       document.querySelector('.ag-body-horizontal-scroll-viewport').scrollLeft = 520; await settle();
-      await click(button('展开片段 1 的保留音频', cell()));
+      await click(button('片段 1 配音更多操作', cell())); await click(document.querySelector('[data-speech-history]'));
       check(description(dialog())?.includes('配音任务记录'), '保留音频有可访问标题与说明');
       check(dialog().getAttribute('aria-labelledby') && document.getElementById(dialog().getAttribute('aria-labelledby')).textContent === '配音详情与保留音频', '标题关联正确');
       const history = dialog();
@@ -66,7 +66,7 @@ const script = String.raw`
       check(document.activeElement?.getAttribute('aria-label') === '暂停试听', '播放后焦点保留在原暂停按钮');
       await click(button('暂停试听', cell())); check(player.paused, '单元格暂停实际媒体'); check(document.activeElement?.getAttribute('aria-label') === '试听', '暂停后仍保留图标焦点');
       await click(button('试听', cell())); check(!player.paused, '可以恢复试听');
-      await click(button('展开片段 1 的保留音频', cell()));
+      await click(button('片段 1 配音更多操作', cell())); await click(document.querySelector('[data-speech-history]'));
       const historyPlayer = dialog().querySelector('audio');
       await act(async () => { await historyPlayer.play(); await settle(); });
       check(player.paused && !historyPlayer.paused, '播放保留音频停止表格试听');
@@ -75,7 +75,7 @@ const script = String.raw`
       await key('Escape');
       state.speech.audio = []; await poll();
       check(!document.querySelector('main > audio'), '轮询移除音频后停止并移除旧播放');
-      await click(button('展开片段 1 的保留音频', cell()));
+      await click(button('片段 1 配音更多操作', cell())); await click(document.querySelector('[data-speech-history]'));
       check(dialog().textContent.includes('暂无保留音频'), '空历史保留明确提示');
       await act(async () => { button('关闭', dialog()).click(); });
       button('更多').focus(); await settle();

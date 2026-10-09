@@ -8,6 +8,7 @@ const script = String.raw`
   import { createRoot } from 'react-dom/client';
   import { App } from './src/panel/app.tsx';
   import { state, deferred } from 'editing-fixture';
+  import { assertTheme, assertKeyboardFocus } from './tests/helpers/theme-contract.ts';
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   const intervals = new Map(); let timer = 0;
   window.setInterval = callback => { intervals.set(++timer, callback); return timer; };
@@ -15,7 +16,7 @@ const script = String.raw`
   const check = (value, message) => { if (!value) throw Error(message); };
   const settle = () => new Promise(resolve => setTimeout(resolve, 80));
   const button = (text, parent = document) => [...parent.querySelectorAll('button')].find(node => node.textContent === text || node.getAttribute('aria-label') === text);
-  const click = async node => { check(node && !node.disabled, '入口可用：' + (node?.outerHTML ?? document.querySelector('[row-id="s1"]')?.textContent)); await act(async () => { node.focus(); node.click(); await settle(); }); await settle(); };
+  const click = async node => { check(node && !node.disabled, '入口可用：' + (node?.outerHTML ?? document.querySelector('[row-id="s1"]')?.textContent)); await act(async () => { node.focus(); if (node.hasAttribute('data-speech-more')) await window.browserInput({ click: '[aria-label="' + node.getAttribute('aria-label') + '"]' }); else node.click(); await settle(); }); await settle(); };
   const key = async key => { await act(async () => { await window.browserInput({ key }); await settle(); }); await settle(); };
   const poll = async () => { await act(async () => { [...intervals.values()].forEach(fn => fn()); await settle(); }); await settle(); };
   const cell = (id, col) => document.querySelector('[row-id="' + id + '"] [col-id="' + col + '"]');
@@ -42,7 +43,7 @@ const script = String.raw`
       await key('Escape');
       check(dialog()?.getAttribute('aria-label') === '口播片段详情' && dialog().contains(document.activeElement), '取消编辑回到详情');
       await key('Escape');
-      check(document.activeElement === cell('s0', 'details'), '关闭详情恢复行尾单元格'); await poll();
+      check(document.activeElement === button('查看片段 1 的详情'), '关闭详情恢复行悬浮入口'); await poll();
       for (const [assetId, start] of [['', 0], ['asset', 4]]) {
         await click(button('查看片段 1 的详情')); await click(button(assetId ? '关联' : '更改', dialog()));
         await act(async () => {
@@ -68,7 +69,15 @@ const script = String.raw`
       }
       await window.browserInput({ screenshot: 'speech-states' });
       const before = state.mutations.length;
-      await click(button('展开片段 2 的保留音频', cell('s1', '1')));
+      await click(button('片段 2 配音更多操作', cell('s1', '1')));
+      const menu = document.querySelector('[role="menu"][aria-label="片段 2 配音操作"]');
+      assertTheme('menu', menu);
+      const menuBox = menu.getBoundingClientRect();
+      check(menuBox.left >= 0 && menuBox.right <= innerWidth && menuBox.top >= 0 && menuBox.bottom <= innerHeight, '配音菜单不越出视口');
+      await key('ArrowDown'); assertKeyboardFocus(document.activeElement);
+      await key('Escape');
+      check(document.activeElement === button('片段 2 配音更多操作', cell('s1', '1')), '菜单 Escape 返回更多入口');
+      await click(button('片段 2 配音更多操作', cell('s1', '1'))); await click(document.querySelector('[data-speech-history]'));
       check(dialog().textContent.includes('结果未知，可能已计费，请核对后再重试'), '详情提供完整任务信息');
       check(dialog().textContent.includes('配音待更新'), '历史音频标明待更新');
       await key('Escape');
@@ -84,15 +93,18 @@ const script = String.raw`
       check(state.mutations.length === before, '查看详情与试听不触发计费');
       check(document.querySelector('.segment-grid').getBoundingClientRect().top === gridRect.top, '浮层不推移表格');
       state.speechGate = deferred(); state.speechFailure = true;
-      await click(button('重试配音', cell('s0', '1')));
-      check(button('重试配音', cell('s0', '1')).disabled, '提交期间重复入口禁用');
-      await act(async () => { button('重试配音', cell('s0', '1')).click(); await settle(); });
+      await click(button('片段 1 配音更多操作', cell('s0', '1')));
+      await click(document.querySelector('[data-speech-generate]'));
+      await click(button('片段 1 配音更多操作', cell('s0', '1')));
+      check(document.querySelector('[data-speech-generate]').getAttribute('aria-disabled') === 'true', '提交期间重复入口禁用');
+      await act(async () => { document.querySelector('[data-speech-generate]').click(); await settle(); });
       check(state.speechRequests.length === 1 && state.speechRequests[0].segmentId === 's0', '一次点击只提交当前片段一次');
       await act(async () => { state.speechGate.resolve(); state.speechGate = null; await settle(); });
-      state.speechFailure = false; await click(button('重试配音', cell('s0', '1')));
+      state.speechFailure = false; await click(document.querySelector('[data-speech-generate]'));
       check(state.speechRequests.length === 2 && state.speechRequests[0].requestId === state.speechRequests[1].requestId, '未知提交结果复用请求标识防止重复计费');
       state.speech.locked = true; await poll();
-      check(button('重试配音', cell('s0', '1')).disabled && !button('试听', cell('s0', '1')).disabled, '锁定时禁止生成但允许试听');
+      await click(button('片段 1 配音更多操作', cell('s0', '1')));
+      check(document.querySelector('[data-speech-generate]').getAttribute('aria-disabled') === 'true' && !button('试听', cell('s0', '1')).disabled, '锁定时禁止生成但允许试听');
       document.getElementById('result').dataset.state = 'passed';
     } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; }
   })();

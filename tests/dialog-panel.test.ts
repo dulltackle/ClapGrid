@@ -19,7 +19,7 @@ const script = String.raw`
   const button = text => [...document.querySelectorAll('button')].find(node => node.textContent === text);
   const dialog = () => document.activeElement.closest('[role="dialog"][aria-modal="true"]') ?? document.querySelector('[role="dialog"][aria-modal="true"]') ?? document.querySelector('aside');
   const field = label => document.querySelector('[aria-label="' + label + '"]');
-  const click = async node => { await act(async () => { check(node && !node.disabled, '入口必须可用：'+JSON.stringify({node:node?.outerHTML,active:document.activeElement?.outerHTML,body:document.body.textContent.slice(-800)})); node.focus(); node.click(); await settle(); }); await settle(); };
+  const click = async node => { await act(async () => { check(node && !node.disabled, '入口必须可用：'+JSON.stringify({node:node?.outerHTML,active:document.activeElement?.outerHTML,body:document.body.textContent.slice(-800)})); node.focus(); if (node.hasAttribute('data-speech-more')) await window.browserInput({ click: '[aria-label="' + node.getAttribute('aria-label') + '"]' }); else node.click(); await settle(); }); await settle(); };
   const visibleControl = async label => {
     for (let attempt = 0; attempt < 100; attempt++) { const node = field(label); if (node) return node; await settle(); }
     throw Error('表格虚拟滚动后入口未出现：' + label);
@@ -92,11 +92,11 @@ const script = String.raw`
       horizontal.scrollLeft = 520; await settle();
       const before = JSON.stringify(state.status.snapshot.segments);
       const scrollTop = body.scrollTop, scrollLeft = horizontal.scrollLeft;
-      const history = await visibleControl('展开片段 21 的保留音频');
+      const history = await visibleControl('片段 21 配音更多操作');
       check(history, '真实 AG Grid 必须显示保留音频入口');
       cell(rowId, '1').focus(); await key('Tab');
       check(document.activeElement.tagName === 'BUTTON', 'Tab 应能从配音单元格进入按钮');
-      field('展开片段 21 的保留音频').focus(); await key('Enter');
+      field('片段 21 配音更多操作').focus(); await key('Enter'); await key('ArrowDown'); await key('Enter');
       check(dialog()?.getAttribute('aria-label') === '保留音频' && dialog().contains(document.activeElement), '键盘打开保留音频并进入浮层');
       await screenshot('audio-history');
       await poll();
@@ -142,7 +142,7 @@ const script = String.raw`
 
       horizontal.scrollLeft = 650; await settle();
       const videoButton = async () => {
-        await click(cell(rowId, 'details').querySelector('button'));
+        await click(document.querySelector('[row-id="' + rowId + '"] [data-row-details]'));
         return button('更改');
       };
       await click(await videoButton());
@@ -153,7 +153,7 @@ const script = String.raw`
       await key('Escape');
       check(dialog()?.getAttribute('aria-label') === '口播片段详情' && videoLease.closes === 1 && state.status.snapshot.segments.find(segment => segment.id === rowId).video.start === 2, 'Esc 取消素材草稿并释放修改权');
       await key('Escape');
-      check(document.activeElement === cell(rowId, 'details'), '关闭详情后恢复行尾单元格');
+      check(document.activeElement === document.querySelector('[row-id="' + rowId + '"] [data-row-details]'), '关闭详情后恢复行悬浮入口');
       await poll(); await click(await videoButton()); await input(field('播放起点（秒）'), '5');
       await click(button('保存关联与起点')); await settle();
       check(dialog()?.getAttribute('aria-label') === '口播片段详情' && state.status.snapshot.segments.find(segment => segment.id === rowId).video.start === 5, '素材保存保持原有行为');
@@ -170,13 +170,14 @@ const script = String.raw`
       await key('Escape'); await poll();
       horizontal.scrollLeft = 650; await settle();
       state.acquireGate = deferred(); await click(await videoButton()); await key('Escape');
-      horizontal.scrollLeft = 520; await settle();
-      await click(field('展开片段 21 的保留音频'));
+      // 获取修改权时抽屉暂时禁关；通过仍可用的只读历史入口转向音频详情。
+      await click(button('保留音频'));
       await act(async () => { state.acquireGate.resolve(); state.acquireGate = null; await settle(); });
       check(!document.querySelector('[role="dialog"][aria-label="关联视频"]') && document.querySelector('[role="dialog"][aria-label="保留音频"]').contains(document.activeElement), '等待修改权期间离开素材详情后，迟到结果不能抢音频详情焦点');
       await key('Escape');
-      check(document.activeElement === cell(rowId, '1') && !state.current, '最后关闭音频回到其原列且无遗留修改权');
-      await click(field('展开片段 21 的保留音频'));
+      check(document.activeElement === button('保留音频') && !state.current, '最后关闭音频回到抽屉历史入口且无遗留修改权');
+      await key('Escape'); horizontal.scrollLeft = 520; await settle();
+      await click(field('片段 21 配音更多操作')); await click(document.querySelector('[data-speech-history]'));
       const originalOrder = [...state.status.snapshot.segments];
       const moved = originalOrder.find(segment => segment.id === rowId);
       state.status.snapshot.segments = originalOrder.filter(segment => segment.id !== rowId);
@@ -194,13 +195,13 @@ const script = String.raw`
       await key('ArrowDown');
       check(document.activeElement.closest('[row-id]')?.getAttribute('row-id') === 'segment-10', '重排后继续从恢复的片段位置键盘导航');
       await key('ArrowUp');
-      await click(field('展开片段 21 的保留音频'));
+      await click(field('片段 21 配音更多操作')); await click(document.querySelector('[data-speech-history]'));
       state.status.snapshot.segments = originalOrder; await poll(); await key('Escape');
-      await click(field('展开片段 21 的保留音频'));
+      await click(field('片段 21 配音更多操作')); await click(document.querySelector('[data-speech-history]'));
       state.status.snapshot.segments = state.status.snapshot.segments.filter(segment => segment.id !== rowId);
       await poll(); await key('Escape');
       check(document.activeElement.closest('[row-id]')?.getAttribute('row-id') === 'segment-21', '原片段消失后返回邻近可用片段');
-      await click(field('展开片段 22 的保留音频'));
+      await click(field('片段 22 配音更多操作')); await click(document.querySelector('[data-speech-history]'));
       state.status.snapshot.segments = []; await poll(); await key('Escape');
       check(document.activeElement === field('查找文案'), '表格变空且查找打开时回到可见的查找输入框');
       result.dataset.state = 'passed'; result.textContent = '浮层键盘验证通过';

@@ -10,3 +10,4 @@ export { Input } from "./input.js";
 export { NativeSelect } from "./native-select.js";
 
 export { Textarea } from "./textarea.js";
+export { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './dropdown-menu.js';
