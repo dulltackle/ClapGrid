@@ -404,7 +404,7 @@ export function App() {
   const exportProblems = exports.exports?.tasks.filter(task => task.state === 'failed' || task.state === 'interrupted') ?? [];
   const lock = speech?.locked ? '配音进行中，项目已锁定；可查询和试听' : status?.taskLocked || exports.exports?.locked ? '导出进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : '';
   const columns: ColDef<Segment>[] = [
-    { headerName: '序号', field: 'order', width: 80, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="flex h-full items-center gap-2"><button className="rounded-md border border-solid border-input bg-background text-foreground hover:bg-ui-accent shrink-0 cursor-grab touch-none p-[3px] leading-5 opacity-0 [.ag-row-hover_&]:opacity-100 focus-visible:opacity-100 active:cursor-grabbing disabled:opacity-0 [.ag-row-hover_&]:disabled:opacity-50" aria-label={`拖动片段 ${data.order}`} disabled={disabled} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}>⠿</button><span>{data.order}</span></span> },
+    { headerName: '序号', field: 'order', width: 80, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="flex h-full items-center gap-2"><button className="rounded-md border border-solid border-input bg-background text-foreground hover:bg-ui-accent shrink-0 cursor-grab touch-none p-[3px] leading-5 opacity-0 group-[:hover]/segment:opacity-100 focus-visible:opacity-100 active:cursor-grabbing disabled:opacity-0 group-[:hover]/segment:disabled:opacity-50" aria-label={`拖动片段 ${data.order}`} disabled={disabled} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}>⠿</button><span>{data.order}</span></span> },
     { headerName: '文案', field: 'text', flex: 1, minWidth: 200, editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
       cellRenderer: SearchCell,
       cellRendererParams: { query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: searchRowHeight },
@@ -593,7 +593,7 @@ export function App() {
       getRowId={params => params.data.id}
       onCellEditingStopped={() => editing.finishCell()}
       onCellEditRequest={event => { void save({ id: event.data.id, text: String(event.newValue ?? '') }); }}
-      theme={theme} loading={!status && !error} columnDefs={columns} rowData={reorderPreview ?? status?.snapshot.segments ?? []}
+      rowClass="group/segment" suppressRowHoverHighlight theme={theme} loading={!status && !error} columnDefs={columns} rowData={reorderPreview ?? status?.snapshot.segments ?? []}
       defaultColDef={{ editable: false, sortable: false, resizable: true }}
       overlayLoadingTemplate="<span>正在连接本地服务…</span>"
       noRowsOverlayComponent={EmptyProject}
