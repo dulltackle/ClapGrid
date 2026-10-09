@@ -16,7 +16,7 @@ const script = String.raw`
   const action = async callback => { await act(async () => { await callback(); await new Promise(r => setTimeout(r, 100)); }); await new Promise(r => setTimeout(r, 220)); };
   const input = options => action(() => window.browserInput(options));
   const modal = label => [...document.querySelectorAll('[role="dialog"][aria-modal="true"]')].find(node => !label || (node.getAttribute('aria-label') ?? document.getElementById(node.getAttribute('aria-labelledby'))?.textContent) === label);
-  const row = id => '[row-id="' + id + '"] [col-id="text"]';
+  const row = id => '[row-id="' + id + '"] [col-id="order"]';
   const selected = ids => {
     const actual = [...document.querySelectorAll('.ag-row[aria-selected="true"]')].map(node => node.getAttribute('row-id')).sort();
     check(JSON.stringify(actual) === JSON.stringify(ids), '可见选择应为 ' + ids + '，实际 ' + actual);
@@ -41,20 +41,22 @@ const script = String.raw`
       await input({ click: row('a') });
       await input({ click: row('c'), shift: true }); selected(['a','b','c']);
       await input({ click: row('a') }); selected(['a']);
-      await input({ click: '[aria-label="查看片段 2 的画面素材详情"]' }); selected(['a']);
-      check(modal('画面素材详情'), '画面素材详情已打开且具有模态语义');
+      await input({ click: '[aria-label="查看片段 2 的详情"]' }); selected(['a']);
+      check(document.querySelector('aside'), '片段详情已打开且不改变勾选');
       await input({ key: 'Escape' }); selected(['a']);
-      await input({ click: '[row-id="b"] [aria-label="配音操作"] button:nth-child(2)' }); selected(['a']);
-      check(modal('配音试听'), '未选中片段的试听正常打开');
-      await input({ key: 'Escape' }); selected(['a']);
-      check(!modal(), 'Esc 关闭试听并保留选择');
+      await input({ click: '[row-id="b"] [aria-label="试听"]' }); selected(['a']);
+      check(document.querySelector('main > audio') && !modal(), '未选中片段在单元格试听，不打开弹窗');
+      await input({ key: 'Escape' }); selected([]);
+      check(document.activeElement.closest('[row-id="b"]'), '行内试听保持焦点，Escape 沿用表格清空勾选规则');
+      check(!modal(), '键盘操作不打开试听弹窗');
+      await input({ click: row('a') }); selected(['a']);
       await input({ click: '[aria-label="展开片段 2 的保留音频"]' }); selected(['a']);
       check(modal('保留音频'), '未选中片段的配音详情正常打开');
       await input({ key: 'Escape' }); selected(['a']);
       check(!modal(), 'Esc 关闭配音详情并保留选择');
-      await input({ click: '[row-id="b"] [aria-label="配音状态"]' }); selected(['b']);
-      await input({ click: row('b'), key: 'double' });
-      check(document.querySelector('[aria-label="文案全文"]'), '双击经修改权仲裁进入全文编辑');
+      await input({ click: '[row-id="b"] [role="status"]' }); selected(['b']);
+      await input({ click: '[row-id="b"] [col-id="text"]' });
+      check(document.querySelector('[aria-label="文案全文"]'), '单击经修改权仲裁进入全文编辑');
       await input({ key: 'Escape' }); selected(['b']);
       check(!document.querySelector('[aria-label="文案全文"]'), 'Esc 关闭全文编辑');
       await input({ key: 'Escape' }); selected([]);
@@ -81,6 +83,7 @@ const script = String.raw`
       await input({ click: row('b') });
       await input({ key: 'ArrowUp' }); selected(['b']);
       check(document.activeElement.closest('[row-id="a"]'), '普通方向键移动单元格焦点');
+      await action(() => document.querySelector('[row-id="a"] [col-id="text"]').focus());
       await input({ key: 'F2' });
       check(document.querySelector('[aria-label="文案全文"]'), 'F2 进入全文编辑');
       await input({ key: 'Escape' }); selected(['b']);

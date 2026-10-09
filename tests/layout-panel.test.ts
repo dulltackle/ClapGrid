@@ -40,7 +40,7 @@ const script = String.raw`
         document.querySelectorAll('[role="columnheader"] .ag-header-cell-text').forEach(node => headers.add(node.textContent.trim()));
       }
       horizontal.scrollLeft = 0; await settle();
-      check(['序号', '文案', '画面素材', '配音', '画面说明'].every(name => headers.has(name)), '五个业务列均保留');
+      check(['序号', '文案', '画面素材', '配音'].every(name => headers.has(name)), '业务列均保留');
       await shot('normal');
       for (const [entry, label] of [['声音设置', '统一声音设置'], ['导出设置', '全片导出设置'], ['粘贴多行文案', '粘贴多行文案'], ['任务记录', '任务记录'], ['导入本地视频', '导入本地视频']]) {
         await click('更多'); await click(entry);

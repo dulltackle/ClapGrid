@@ -33,7 +33,7 @@ const order = ids => check(state.status.snapshot.segments.map(s => s.id).join() 
   await pointer('5','mouseReleased',0.8);
   order('1,3,5,2,4,6');
   const original = Array.from({length:6},(_,i)=>({id:String(i+1),order:i+1,text:'片段 '+(i+1),video:i===1?{assetId:'video-2',start:3}:null}));
-  const reset = async () => { state.status.snapshot.segments = structuredClone(original); await refresh(); await input({click:'[row-id="1"] [col-id="text"]'}); await input({key:'Escape'}); };
+  const reset = async () => { state.status.snapshot.segments = structuredClone(original); await refresh(); await input({click:'[row-id="1"] [col-id="order"]'}); await input({key:'Escape'}); };
   const begin = id => input({pointer:{selector:'[row-id="'+id+'"] [aria-label^="拖动片段 "]',type:'mousePressed'}});
   const drag = async (from,to,fraction=0.8) => { await begin(from); await pointer(to,'mouseMoved',fraction); await pointer(to,'mouseReleased',fraction); await refresh(); };
   await reset();
@@ -45,7 +45,7 @@ const order = ids => check(state.status.snapshot.segments.map(s => s.id).join() 
   await drag('6','1',0.2); order('6,1,2,3,4,5');
   check(state.selectionRequests.at(-1).join()==='6','未勾选拖动仅选中该行');
   await drag('6','5'); order('1,2,3,4,5,6');
-  await input({click:'[row-id="2"] [col-id="text"]'}); await input({click:'[row-id="3"] [col-id="text"]',ctrl:true});
+  await input({click:'[row-id="2"] [col-id="order"]'}); await input({click:'[row-id="3"] [col-id="order"]',ctrl:true});
   await drag('3','1',0.2); order('2,3,1,4,5,6');
   const saves=state.saves;
   await drag('2','1',0.2); check(state.saves===saves,'最终顺序不变不提交');
@@ -59,7 +59,7 @@ const order = ids => check(state.status.snapshot.segments.map(s => s.id).join() 
   state.status.snapshot.segments=[...state.status.snapshot.segments].reverse(); await refresh(); await pointer('5','mouseReleased');
   check(state.saves===saves && document.querySelector('footer').textContent.includes('顺序已变化'),'期间顺序变化拒绝且不覆盖');
   state.status.snapshot.segments=Array.from({length:100},(_,i)=>({id:String(i+1),order:i+1,text:'长表格片段 '+(i+1),video:null})); await refresh();
-  await input({click:'[row-id="1"] [col-id="text"]'}); await begin('1');
+  await input({click:'[row-id="1"] [col-id="order"]'}); await begin('1');
   await pointer('5','mouseMoved');
   await input({pointer:{selector:'.ag-grid-viewport',type:'mouseWheel',buttons:1,deltaY:4000}});
   await action(()=>new Promise(r=>setTimeout(r,400)));

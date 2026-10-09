@@ -20,7 +20,7 @@ const selected=ids=>check(JSON.stringify([...(state.selectionRequests.at(-1)??[]
  const layout=()=>{
   check(geometry()===baseline,'选择和查找不移动或压缩表格');check(!document.querySelector('header [aria-haspopup="menu"]')&&!document.querySelector('.organization'),'查找不再出现等效选择菜单');
   check(document.documentElement.scrollWidth<=innerWidth,'查找与勾选共存无横向溢出');
-  for(const node of document.querySelectorAll('header button,header input')){const r=node.getBoundingClientRect();if(!r.width)continue;check(r.left>=0&&r.right<=innerWidth&&r.bottom<=document.querySelector('.segment-grid').getBoundingClientRect().top,'查找控件在页头范围内');check(node.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)),'查找控件命中无遮挡');}
+  for(const node of document.querySelectorAll('header button,header input')){const r=node.getBoundingClientRect();if(!r.width)continue;check(r.left>=0&&r.right<=innerWidth&&r.bottom<=(node.closest('.search-popover')?innerHeight:document.querySelector('.segment-grid').getBoundingClientRect().top),'页头与浮动查找控件位于可用视口');check(node.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)),'查找控件命中无遮挡');}
   check(search().getBoundingClientRect().width>=72,'查找保留可用宽度');
  };
  await input({click:'.search-trigger'});await input({key:'第'});layout();
@@ -33,7 +33,7 @@ const selected=ids=>check(JSON.stringify([...(state.selectionRequests.at(-1)??[]
  await input({click:'[row-id="a"] [col-id="text"]',button:'right'});await input({click:'[aria-label="查找文案"]'});check(document.activeElement===search()&&!document.querySelector('[role="menu"]'),'外部点击关闭菜单并保留查找输入焦点');selected(['a','b']);
  await input({click:'[row-id="a"] [col-id="text"]',button:'right'});await input({key:'Escape'});selected(['a','b']);check(!document.querySelector('[role="menu"]')&&search(),'行菜单 Escape 保留查找和勾选');
  await input({key:'Escape'});selected([]);layout();
- await input({click:'[row-id="a"] [col-id="text"]',key:'double'});
+ await input({click:'[row-id="a"] [col-id="text"]'});
  check(document.querySelector('[aria-label="文案全文"]')&&document.querySelector('[row-id="a"] [aria-label^="拖动片段 "]').disabled,'全文编辑期间拖拽禁用');
  let nativeContext;document.addEventListener('contextmenu',event=>{setTimeout(()=>{nativeContext={prevented:event.defaultPrevented,tag:event.target.tagName};},0);},{once:true,capture:true});
  await input({click:'[aria-label="文案全文"]',button:'right'});check(nativeContext?.tag==='TEXTAREA'&&!nativeContext.prevented&&!document.querySelector('[role="menu"]'),'编辑文案保留系统右键菜单，不隐含行操作');

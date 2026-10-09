@@ -26,7 +26,7 @@ for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`页�
       await action(() => createRoot(document.getElementById('root')).render(<App />));
       const header = document.querySelector('header');
       for (const node of header.querySelectorAll('button')) {
-        visible(node); assertTheme('form', node);
+        visible(node); if (node.textContent === '新增口播片段') check(getComputedStyle(node).backgroundColor === 'rgb(8, 117, 209)' && getComputedStyle(node).color === 'rgb(255, 255, 255)', '新增入口使用主题主色和白色文字'); else assertTheme('form', node);
         check(node.getBoundingClientRect().height === 32, '页头统一为紧凑 32px 操作高度');
       }
       await action(() => window.browserInput({ key: 'Tab' }));

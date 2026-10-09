@@ -45,7 +45,8 @@ export const fixture = String.raw`
     (state.segmentRequests ??= []).push({ change: copy(change), token });
     if (state.segmentFailure) throw Error('文案保存失败');
     state.saves++;
-    if (change.id) state.status.snapshot.segments[0].text = change.text;
+    if (change.id) { const segment = state.status.snapshot.segments.find(item => item.id === change.id); if (!segment) throw Error('片段已删除'); segment.text = change.text; }
+    else state.status.snapshot.segments.push({ id: 'created-' + state.saves, order: state.status.snapshot.segments.length + 1, text: change.text, video: null });
     state.current.disconnect();
     const result = copy(state.status);
     if (state.saveGate) await state.saveGate.promise;
@@ -62,7 +63,9 @@ export const fixture = String.raw`
     (state.batchRequests ??= []).push(copy(batch));
     if (state.batchFailure) throw Error('多行新增失败');
     state.saves++; state.mutations.push('片段');
+    let addedId;
     for (const change of batch.changes) {
+      if (change.kind === 'add' && !change.relative) { addedId = 'created-' + state.saves; state.status.snapshot.segments.push({ id: addedId, order: 0, text: change.text, video: null }); }
       if (change.kind === 'paste') for (const text of change.text.split('\n').filter(line => line.trim())) state.status.snapshot.segments.push({ id: 'paste-' + state.status.snapshot.segments.length, order: state.status.snapshot.segments.length + 1, text, video: null });
       if (change.kind === 'delete') state.status.snapshot.segments = state.status.snapshot.segments.filter(item => item.id !== change.expected.id);
       if (change.kind === 'reorder') state.status.snapshot.segments = change.ids.map(id => state.status.snapshot.segments.find(item => item.id === id));
@@ -73,6 +76,7 @@ export const fixture = String.raw`
     }
     state.status.snapshot.segments.forEach((segment, index) => { segment.order = index + 1; });
     const result = { status: copy(state.status), summary: { applied: batch.changes.length }, results: [] };
+    if (addedId) result.results = [{ index: 0, id: addedId, outcome: 'applied', message: '已添加' }];
     if (state.saveGate) await state.saveGate.promise;
     return result;
   }

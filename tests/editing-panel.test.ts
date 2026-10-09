@@ -54,10 +54,10 @@ test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿�
       await act(async () => {
         const cell = document.querySelector('.ag-row[row-id="segment"] [col-id="text"]');
         check(cell, '应显示真实表格文案单元格');
-        cell.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await settle();
+        cell.dispatchEvent(new MouseEvent('click', { bubbles: true })); await settle();
       });
       const editor = field('文案全文');
-      check(editor, '双击应打开真实文案编辑器');
+      check(editor, '单击应打开真实文案编辑器');
       await input(editor, '已保存的新文案');
       state.saveGate = deferred();
       await act(async () => { editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await settle(); });

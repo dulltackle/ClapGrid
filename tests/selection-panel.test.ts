@@ -39,19 +39,19 @@ const selected=ids=>check(JSON.stringify([...(state.selectionRequests.at(-1)??[]
   for(const node of buttons){const r=node.getBoundingClientRect();check(r.left>=0&&r.right<=innerWidth&&node.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)),'主入口可真实命中');}
  };
  stable(); await clickHeader('新增口播片段');
- check(JSON.stringify(state.segmentRequests.at(-1).change)==='{"text":""}','顶部新增继续发送无锚点的末尾追加请求');await poll();stable(); await select('a'); stable(); selected(['a']); await select('b'); stable(); selected(['a','b']);
+ check(JSON.stringify(state.batchRequests.at(-1).changes)==='[{"kind":"add","text":""}]','顶部新增发送无锚点的末尾追加请求'); await input({key:'Escape'}); await input({key:'Escape'}); await poll();stable(); await select('a'); stable(); selected(['a']); await select('b'); stable(); selected(['a','b']);
  await window.browserInput({screenshot:'stable-selected-header'});
  await clickHeader('导出全片');
  check(state.exportRequests.length===1&&state.exportRequests[0].length===1,'全片导出仅传服务地址，不附带勾选范围');selected(['a','b']);
  await input({click:'header [aria-haspopup="dialog"]'});await input({key:'Escape'});
  check(!document.querySelector('[role="dialog"][aria-modal="true"]')&&document.activeElement.textContent==='更多','Escape 仅关闭更多并返回稳定入口');selected(['a','b']);
  await input({click:'.search-trigger'});await input({key:'第'});
- check(document.querySelectorAll('.ag-row[row-id]').length===3,'查找保持全部片段');selected(['a','b']);
+ check(document.querySelectorAll('.ag-row[row-id]').length===4,'查找保持全部片段');selected(['a','b']);
  await input({key:'Escape'});check(document.activeElement.classList.contains('search-trigger'),'关闭查找回到查找按钮');selected(['a','b']);stable();
  await input({click:'[row-id="b"] [col-id="text"]',button:'right'});
  await input({key:'Escape'});selected(['a','b']);check(!document.querySelector('[role="menu"]'),'Escape 关闭行菜单');
  await input({key:'Escape'});selected([]);stable();
- await input({click:'.ag-header input[type="checkbox"]'});selected(['a','b','c']);
+ await input({click:'.ag-header input[type="checkbox"]'});selected(['a','b','c','created-1']);
  await input({click:'.ag-header input[type="checkbox"]'});selected([]);
  await select('a');await select('b');
  await input({click:'[row-id="a"] [col-id="text"]',button:'right'});
@@ -60,7 +60,7 @@ const selected=ids=>check(JSON.stringify([...(state.selectionRequests.at(-1)??[]
  check(document.querySelector('[role="alertdialog"]').textContent.includes('2 个'),'新入口确认准确删除范围');
  await input({click:'[data-delete-confirm]'});
  check(state.batchRequests.at(-1).changes.map(change=>change.expected.id).join()==='a,b','确认后删除全部勾选');
- await poll();check(state.status.snapshot.segments.map(s=>s.id).join()==='c','保留未勾选片段');stable();
+ await poll();check(state.status.snapshot.segments.map(s=>s.id).join()==='c,created-1','保留未勾选片段');stable();
  await select('c');await action(()=>state.tableConnections.at(-1).resolve());
  check(!document.querySelector('.ag-row[aria-selected="true"]')&&document.querySelector('footer').textContent.includes('勾选连接已断开'),'断线清空勾选并保留恢复入口');
  await input({click:'footer [role="alert"] button'});await select('c');selected(['c']);

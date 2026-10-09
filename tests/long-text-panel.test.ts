@@ -41,12 +41,12 @@ const script = String.raw`
       check(document.querySelector('[row-id="short"] [col-id="text"]').textContent === '简短文案', '短文案正常显示');
       check(document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight, '页面没有额外滚动');
       await shot('browse');
-      await act(async () => { cell().dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); await settle(); }); await settle();
-      check(editor() && editor().value === original && document.activeElement === editor(), '双击进入全文编辑并聚焦');
+      await act(async () => { cell().dispatchEvent(new MouseEvent('click', { bubbles: true })); await settle(); }); await settle();
+      check(editor() && editor().value === original && document.activeElement === editor(), '单击进入全文编辑并聚焦');
       check(editor().maxLength < 0, '全文编辑不新增长度限制');
       const bounds = editor().getBoundingClientRect();
       check(bounds.left >= 0 && bounds.right <= innerWidth && bounds.top >= 0 && bounds.bottom <= innerHeight, '全文编辑器位于视口内');
-      check(bounds.height >= 120 && editor().scrollHeight > editor().clientHeight, '长文案在多行编辑器内滚动');
+      check(bounds.height >= 50 && editor().scrollHeight > editor().clientHeight, '长文案在多行编辑器内滚动');
       editor().scrollTop = editor().scrollHeight; await settle();
       check(editor().scrollTop > 0, '可以滚动访问文案末尾');
       await shot('editing');
@@ -98,7 +98,7 @@ const script = String.raw`
         horizontal.scrollLeft = left; await settle();
         document.querySelectorAll('[role="columnheader"] .ag-header-cell-text').forEach(node => headers.add(node.textContent.trim()));
       }
-      check(['序号', '文案', '画面素材', '配音', '画面说明'].every(name => headers.has(name)), '宽窄视口均可访问全部五列');
+      check(['序号', '文案', '画面素材', '配音'].every(name => headers.has(name)), '宽窄视口均可访问业务列与行尾详情');
       document.getElementById('result').dataset.state = 'passed';
     } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; }
   })();

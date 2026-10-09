@@ -37,7 +37,7 @@ for (const [width, height] of [[1600, 1000], [420, 720], [420, 360]]) test(`查�
       await openSearch();
       const gridWithSearch = document.querySelector('.segment-grid').getBoundingClientRect();
       check(gridBeforeSearch.top === gridWithSearch.top && gridBeforeSearch.height === gridWithSearch.height, '查找浮窗不挤压或移动表格');
-      check(!button('新增口播片段') && !button('导出全片'), '查找时次要操作收纳');
+      check(button('新增口播片段') && button('导出全片'), '浮动查找时顶部操作仍可访问');
       await click('更多');
       check(button('新增口播片段') && button('导出全片'), '查找时更多仍提供新增和导出');
       await click('关闭');
@@ -69,7 +69,7 @@ for (const [width, height] of [[1600, 1000], [420, 720], [420, 360]]) test(`查�
       check(current().scrollTop > 0 && mark.top >= bounds.top && mark.bottom <= bounds.bottom, '展开长文案并滚动到末尾命中');
       const popover = document.querySelector('.search-popover').getBoundingClientRect();
       check(popover.left >= 0 && popover.right <= innerWidth, '窄视口浮窗完整可见');
-      check(popover.bottom <= document.querySelector('.segment-grid').getBoundingClientRect().top, '查找浮窗不得遮挡表格');
+      check(getComputedStyle(document.querySelector('.search-popover')).position === 'absolute', '查找浮层脱离布局且不挤占表格');
       const cellBounds = current().closest('[role="gridcell"]').getBoundingClientRect();
       check(mark.top >= cellBounds.top && mark.bottom <= cellBounds.bottom, '命中不能被单元格裁剪：' + JSON.stringify({mark: mark.toJSON(), cell: cellBounds.toJSON(), bounds: bounds.toJSON(), scroll: current().scrollTop}));
       check(document.elementFromPoint(mark.left + 2, mark.top + 2)?.closest('mark'), '命中不被其他行或查找浮窗遮挡：' + JSON.stringify({ mark: mark.toJSON(), cell: cellBounds.toJSON(), bounds: bounds.toJSON(), covering: document.elementFromPoint(mark.left + 2, mark.top + 2)?.outerHTML.slice(0,300) }));
@@ -87,7 +87,7 @@ for (const [width, height] of [[1600, 1000], [420, 720], [420, 360]]) test(`查�
       check(count().includes('第 2 / 2'), '列标题保持项目顺序与匹配位置');
       await click('下一个'); check(current().closest('[row-id]').getAttribute('row-id') === 'a', '按项目顺序跳转');
       await click('下一个'); check(current().closest('[row-id]').getAttribute('row-id') === 'c', '按项目顺序循环');
-      await action(() => document.querySelector('[row-id="c"] [col-id="text"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true })));
+      await action(() => document.querySelector('[row-id="c"] [col-id="text"]').dispatchEvent(new MouseEvent('click', { bubbles: true })));
       const editor = document.querySelector('[aria-label="文案全文"]');
       check(editor && document.activeElement === editor, '查找打开期间可编辑');
       const scroll = document.querySelector('.ag-body-vertical-scroll-viewport').scrollTop;
@@ -96,7 +96,7 @@ for (const [width, height] of [[1600, 1000], [420, 720], [420, 360]]) test(`查�
       state.status.snapshot.segments[2].text = '不再匹配'; await poll();
       check(!current() && count().includes('点击下一个定位'), '当前片段不再匹配时等待用户定位');
       await click('下一个'); check(current().closest('[row-id]').getAttribute('row-id') === 'a', '失效后显式跳转');
-      await action(() => document.querySelector('[row-id="a"] [col-id="text"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true })));
+      await action(() => document.querySelector('[row-id="a"] [col-id="text"]').dispatchEvent(new MouseEvent('click', { bubbles: true })));
       const savingEditor = document.querySelector('[aria-label="文案全文"]');
       await action(() => { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(savingEditor, '新的文案'); savingEditor.dispatchEvent(new Event('input', { bubbles: true })); });
       check(document.activeElement === savingEditor, '输入期间保留编辑焦点');

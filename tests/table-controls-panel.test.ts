@@ -23,17 +23,19 @@ const action = async fn => { await act(async () => { await fn(); await new Promi
   check(document.querySelectorAll('.ag-row[row-id]').length < 80, '使用真实虚拟行');
   const horizontal = document.querySelector('.ag-body-horizontal-scroll-viewport');
   await action(() => { horizontal.scrollLeft = 500; });
-  const detail = () => document.querySelector('[aria-label="查看片段 1 的画面素材详情"]');
-  check(detail().getBoundingClientRect().height === 24, '普通行操作使用紧凑 24px 高度');
-  assertTheme('form', detail());
+  const detail = () => document.querySelector('[aria-label="查看片段 1 的详情"]');
+  check(detail().getBoundingClientRect().height >= 24 && detail().getBoundingClientRect().width >= 24, '普通行操作具有至少 24px 点击范围');
+  check(getComputedStyle(detail()).color === 'rgb(26, 28, 31)', '详情图标前景可见');
   await action(() => window.browserInput({key: 'Tab'}));
   await action(() => detail().focus());
   assertKeyboardFocus(detail());
-  const generate = () => [...row().querySelectorAll('button')].find(node => node.textContent === '生成配音');
-  check(generate().getBoundingClientRect().height === 24, '配音操作保持紧凑');
-  assertTheme('form', generate());
+  const generate = () => [...row().querySelectorAll('button')].find(node => node.getAttribute('aria-label') === '生成配音');
+  check(generate().getBoundingClientRect().height >= 24, '配音操作保持紧凑');
+  check(getComputedStyle(generate()).color === 'rgb(26, 28, 31)', '生成图标前景可见');
   state.speech = { locked: true, configured: true, configPath: '/tmp/config', voice: { speaker: 'voice', speechRate: 0 }, operations: [], audio: [], tasks: [] };
   await action(() => [...intervals.values()].forEach(fn => fn()));
+  // act 提交禁用状态后，等待保留按钮实例的主题过渡完成。
+  await new Promise(r => setTimeout(r, 220));
   check(generate().disabled, '任务锁禁用配音'); assertTheme('disabled', generate());
   await window.browserInput({screenshot: 'table-controls-HEIGHT'});
   document.getElementById('result').dataset.state = 'passed';

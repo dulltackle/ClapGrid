@@ -1,3 +1,4 @@
+import { createServer } from 'node:http';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -11,7 +12,7 @@ import { buildPanelStyles } from './panel-styles.js';
 import { chrome } from './browser.js';
 
 /** 真实浏览器按键用于原生焦点导航；业务替身仍只位于 HTTP 客户端边界。 */
-export async function checkInteractiveBrowser(t: TestContext, script: string, fixture: string, width = 1600, height = 1000, options: { colorScheme?: 'light' | 'dark' } = {}) {
+export async function checkInteractiveBrowser(t: TestContext, script: string, fixture: string, width = 1600, height = 1000, options: { colorScheme?: 'light' | 'dark'; reducedMotion?: boolean; resources?: Record<string, { body: Uint8Array; type: string }> } = {}) {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-dialog-'));
   await build({
     stdin: { resolveDir: fileURLToPath(new URL('../..', import.meta.url)), loader: 'tsx', contents: script },
@@ -23,6 +24,27 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
   });
   await buildPanelStyles(directory);
   writeFileSync(join(directory, 'index.html'), '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="test.css"><div id="root"></div><pre id="result" data-state="pending"></pre><script src="test.js"></script></html>');
+  let pageUrl = pathToFileURL(join(directory, 'index.html')).href;
+  if (options.resources) {
+    const server = createServer((request, response) => {
+      const resource = options.resources?.[request.url ?? ''];
+      if (resource) {
+        response.setHeader('Content-Type', resource.type); response.setHeader('Accept-Ranges', 'bytes');
+        const range = /^bytes=(\d+)-(\d*)$/.exec(request.headers.range ?? '');
+        const start = range ? Number(range[1]) : 0;
+        const end = range?.[2] ? Math.min(Number(range[2]), resource.body.length - 1) : resource.body.length - 1;
+        if (range) { response.statusCode = 206; response.setHeader('Content-Range', `bytes ${start}-${end}/${resource.body.length}`); }
+        response.setHeader('Content-Length', end - start + 1); response.end(resource.body.subarray(start, end + 1)); return;
+      }
+      const file = ({ '/': 'index.html', '/test.js': 'test.js', '/test.css': 'test.css' } as Record<string, string>)[request.url ?? ''];
+      if (!file) { response.statusCode = 404; response.end(); return; }
+      response.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : 'text/html');
+      response.end(readFileSync(join(directory, file)));
+    });
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    pageUrl = `http://127.0.0.1:${(server.address() as { port: number }).port}/`;
+    t.after(() => { server.closeAllConnections(); server.close(); });
+  }
   // 旧版 Chrome 的滚轮命中仍受实际窗口边界限制，需与模拟视口同时设置。
   const browser = spawn(chrome!, ['--headless', `--window-size=${width},${height}`, '--no-sandbox', '--disable-dev-shm-usage', '--remote-debugging-port=0', `--user-data-dir=${join(directory, 'profile')}`, 'about:blank'], { stdio: 'ignore' });
   let socket: WebSocket | undefined;
@@ -73,7 +95,7 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
           if (pointer.type === 'mousePressed') await send('Input.dispatchMouseEvent', { ...position, type: 'mouseMoved', button: 'none', buttons: 0 });
           await send('Input.dispatchMouseEvent', { ...position, type: pointer.type, button: pointer.type === 'mouseMoved' ? 'none' : button, buttons: pointer.buttons ?? (pointer.type === 'mouseReleased' ? 0 : button === 'right' ? 2 : 1), clickCount: 1, ...(pointer.type === 'mouseWheel' ? { deltaX: 0, deltaY: pointer.deltaY ?? 600 } : {}) });
         } else if (click) {
-          const position = await send('Runtime.evaluate', { expression: `(() => { const node = document.querySelector(${JSON.stringify(click)}); if (!node) throw Error('找不到鼠标目标'); node.scrollIntoView({ block: 'nearest', inline: 'nearest' }); const rect = node.getBoundingClientRect(); return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }; })()`, returnByValue: true });
+          const position = await send('Runtime.evaluate', { expression: `(() => { const node = document.querySelector(${JSON.stringify(click)}); if (!node) throw Error('找不到鼠标目标 ' + ${JSON.stringify(click)}); node.scrollIntoView({ block: 'nearest', inline: 'nearest' }); const rect = node.getBoundingClientRect(); return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }; })()`, returnByValue: true });
           if (position.exceptionDetails) throw Error(JSON.stringify(position.exceptionDetails));
           const modifiers = (shift ? 8 : 0) | (ctrl ? 2 : 0) | (meta ? 4 : 0);
           for (let count = 1; count <= (key === 'double' ? 2 : 1); count++) {
@@ -91,7 +113,7 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
   });
   await send('Runtime.enable'); await send('Page.enable');
   await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
-  if (options.colorScheme) await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: options.colorScheme }] });
+  await send('Emulation.setEmulatedMedia', { features: [...(options.colorScheme ? [{ name: 'prefers-color-scheme', value: options.colorScheme }] : []), ...(options.reducedMotion ? [{ name: 'prefers-reduced-motion', value: 'reduce' }] : [])] });
   await send('Runtime.addBinding', { name: '__browserInput' });
   await send('Page.addScriptToEvaluateOnNewDocument', { source: `
     const pendingInput = new Map(); let nextInput = 0;
@@ -100,7 +122,7 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
       pendingInput.set(++nextInput, resolve); window.__browserInput(JSON.stringify({ id: nextInput, ...options }));
     });
   ` });
-  await send('Page.navigate', { url: pathToFileURL(join(directory, 'index.html')).href });
+  await send('Page.navigate', { url: pageUrl });
   let result;
   for (let attempt = 0; attempt < 600; attempt++) {
     const response = await send('Runtime.evaluate', { expression: 'document.getElementById("result")?.outerHTML', returnByValue: true });
