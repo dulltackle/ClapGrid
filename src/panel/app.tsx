@@ -441,7 +441,7 @@ export function App() {
         if (params.editing && params.event.key === 'Tab') { params.api.stopEditing(); return true; }
         return !params.editing && (['Enter', 'F2', 'Backspace', 'Delete'].includes(params.event.key) || params.event.key.length === 1);
       } },
-    { headerName: '', colId: 'details', width: 44, minWidth: 44, maxWidth: 44, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <Button variant="ghost" size="xs" className="h-7 w-7 p-0" aria-label={`查看片段 ${data.order} 的详情`} title="片段详情" onClick={event => { rememberOrigin(event.currentTarget, 'material'); segmentDetail.navigate({ id: data.id }); }}>›</Button> },
+    { headerName: '', colId: 'details', pinned: 'right', lockPinned: true, width: 44, minWidth: 44, maxWidth: 44, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <Button variant="ghost" size="xs" className="h-7 w-7 p-0" aria-label={`查看片段 ${data.order} 的详情`} title="片段详情" onClick={event => { rememberOrigin(event.currentTarget, 'material'); segmentDetail.navigate({ id: data.id }); }}>›</Button> },
   ];
   const searchStatus = !query ? '输入文案查找' : !matchedIds.length ? '无匹配片段' : activeMatch ? `第 ${matchedIds.indexOf(activeMatch) + 1} / ${matchedIds.length} 个匹配片段` : `${matchedIds.length} 个匹配片段，点击下一个定位`;
   return <main className="relative mx-auto flex h-dvh min-w-0 max-w-[1600px] flex-col gap-2 px-4 py-3 max-[600px]:p-2">

@@ -22,8 +22,16 @@ const action = async fn => { await act(async () => { await fn(); await new Promi
   check(row().getBoundingClientRect().height === 80, '保持 80px 行高');
   check(document.querySelectorAll('.ag-row[row-id]').length < 80, '使用真实虚拟行');
   const horizontal = document.querySelector('.ag-body-horizontal-scroll-viewport');
-  await action(() => { horizontal.scrollLeft = 500; });
   const detail = () => document.querySelector('[aria-label="查看片段 1 的详情"]');
+  const initialDetail = detail().getBoundingClientRect().toJSON();
+  check(initialDetail.left >= 0 && initialDetail.right <= innerWidth, '横向滚动前详情入口完整可见');
+  for (const scrollLeft of [200, horizontal.scrollWidth, 0]) {
+    await action(() => { horizontal.scrollLeft = scrollLeft; });
+    const rect = detail().getBoundingClientRect();
+    check(rect.x === initialDetail.x && rect.width === initialDetail.width, '横向滚动时详情入口固定在右侧');
+    check(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)?.closest('button') === detail(), '固定入口可点击且未被滚动内容覆盖');
+  }
+  await action(() => { horizontal.scrollLeft = 500; });
   check(detail().getBoundingClientRect().height >= 24 && detail().getBoundingClientRect().width >= 24, '普通行操作具有至少 24px 点击范围');
   check(getComputedStyle(detail()).color === 'rgb(26, 28, 31)', '详情图标前景可见');
   await action(() => window.browserInput({key: 'Tab'}));
@@ -37,6 +45,12 @@ const action = async fn => { await act(async () => { await fn(); await new Promi
   // act 提交禁用状态后，等待保留按钮实例的主题过渡完成。
   await new Promise(r => setTimeout(r, 220));
   check(generate().disabled, '任务锁禁用配音'); assertTheme('disabled', generate());
+  const rect = detail().getBoundingClientRect();
+  await action(async () => {
+    await window.browserInput({pointer: {type: 'mousePressed', x: rect.x + rect.width / 2, y: rect.y + rect.height / 2}});
+    await window.browserInput({pointer: {type: 'mouseReleased', x: rect.x + rect.width / 2, y: rect.y + rect.height / 2}});
+  });
+  check(document.querySelector('[aria-label="口播片段详情"]')?.textContent.includes('片段 1'), '固定入口通过真实点击打开对应片段详情');
   await window.browserInput({screenshot: 'table-controls-HEIGHT'});
   document.getElementById('result').dataset.state = 'passed';
 } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; } })();
