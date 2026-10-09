@@ -23,6 +23,8 @@ const action = async fn => { await act(async () => { await fn(); await new Promi
   check(document.querySelectorAll('.ag-row[row-id]').length < 80, '使用真实虚拟行');
   const horizontal = document.querySelector('.ag-body-horizontal-scroll-viewport');
   const detail = () => document.querySelector('[aria-label="查看片段 1 的详情"]');
+  check(document.querySelectorAll('[role="columnheader"]').length === 6, '仅五个业务表头和勾选列，没有详情列');
+  check(!document.querySelector('[col-id="details"]'), '详情入口不占用单元格或列宽');
   const initialDetail = detail().getBoundingClientRect().toJSON();
   check(initialDetail.left >= 0 && initialDetail.right <= innerWidth, '横向滚动前详情入口完整可见');
   for (const scrollLeft of [200, horizontal.scrollWidth, 0]) {
@@ -51,6 +53,17 @@ const action = async fn => { await act(async () => { await fn(); await new Promi
     await window.browserInput({pointer: {type: 'mouseReleased', x: rect.x + rect.width / 2, y: rect.y + rect.height / 2}});
   });
   check(document.querySelector('[aria-label="口播片段详情"]')?.textContent.includes('片段 1'), '固定入口通过真实点击打开对应片段详情');
+  await action(() => window.browserInput({click: '[aria-label="口播片段详情"] button:not([aria-label])'}));
+  check(document.activeElement === detail(), '关闭详情后焦点返回行悬浮按钮');
+  await action(() => window.browserInput({key: 'Enter'}));
+  check(document.querySelector('[aria-label="口播片段详情"]')?.textContent.includes('片段 1'), '悬浮入口支持键盘打开详情');
+  await action(() => window.browserInput({click: '[aria-label="口播片段详情"] button:not([aria-label])'}));
+  const viewport = document.querySelector('.ag-grid-viewport');
+  await action(() => { viewport.scrollTop = viewport.scrollHeight; });
+  const lastDetail = document.querySelector('[aria-label="查看片段 80 的详情"]');
+  check(lastDetail && !detail(), '纵向虚拟滚动更新入口身份并卸载离开的行');
+  const lastRect = lastDetail.getBoundingClientRect();
+  check(lastRect.left >= 0 && lastRect.right <= innerWidth && lastRect.top >= 0 && lastRect.bottom <= innerHeight, '末行悬浮入口仍在视口内');
   await window.browserInput({screenshot: 'table-controls-HEIGHT'});
   document.getElementById('result').dataset.state = 'passed';
 } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; } })();

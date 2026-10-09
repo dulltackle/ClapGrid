@@ -1,5 +1,6 @@
 import { SegmentSpeech, SegmentSpeechCell } from './segment-speech.js';
 import { SegmentDetails, useSegmentDetails } from './segment-details.js';
+import { SegmentRowDetails } from './segment-row-details.js';
 import { PastePanel } from './paste-panel.js';
 import { Button, Input, NativeSelect, ContextMenu, ContextMenuTrigger, ContextMenuItem } from '@/components/ui/index.js';
 import { buildIdentity } from '../build-identity.js';
@@ -435,13 +436,12 @@ export function App() {
         history: (id: string, trigger: HTMLElement) => { rememberOrigin(trigger, 'history'); setAudioHistory(id); }, onError: audioError } },
     { headerName: '画面说明', field: 'visualNote', initialWidth: 220, minWidth: 160,
       editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
-      cellRenderer: ({ value }: { value?: string }) => <span className="block max-h-[66px] overflow-hidden whitespace-pre-wrap break-words leading-[22px]">{value}</span>,
+      cellRenderer: ({ value }: { value?: string }) => <span className="block min-w-0 max-h-[66px] overflow-hidden whitespace-pre-wrap break-words pr-11 leading-[22px]">{value}</span>,
       cellEditor: TextEditor,
       suppressKeyboardEvent: params => {
         if (params.editing && params.event.key === 'Tab') { params.api.stopEditing(); return true; }
         return !params.editing && (['Enter', 'F2', 'Backspace', 'Delete'].includes(params.event.key) || params.event.key.length === 1);
       } },
-    { headerName: '', colId: 'details', pinned: 'right', lockPinned: true, width: 44, minWidth: 44, maxWidth: 44, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <Button variant="ghost" size="xs" className="h-7 w-7 p-0" aria-label={`查看片段 ${data.order} 的详情`} title="片段详情" onClick={event => { rememberOrigin(event.currentTarget, 'material'); segmentDetail.navigate({ id: data.id }); }}>›</Button> },
   ];
   const searchStatus = !query ? '输入文案查找' : !matchedIds.length ? '无匹配片段' : activeMatch ? `第 ${matchedIds.indexOf(activeMatch) + 1} / ${matchedIds.length} 个匹配片段` : `${matchedIds.length} 个匹配片段，点击下一个定位`;
   return <main className="relative mx-auto flex h-dvh min-w-0 max-w-[1600px] flex-col gap-2 px-4 py-3 max-[600px]:p-2">
@@ -609,7 +609,9 @@ export function App() {
       defaultColDef={{ editable: false, sortable: false, resizable: true }}
       overlayLoadingTemplate="<span>正在连接本地服务…</span>"
       noRowsOverlayComponent={EmptyProject}
-      noRowsOverlayComponentParams={{ message: error ? '暂时无法读取口播片段' : '暂无口播片段' }} /></AgGridProvider></div>
+      noRowsOverlayComponentParams={{ message: error ? '暂时无法读取口播片段' : '暂无口播片段' }} /></AgGridProvider>
+      <SegmentRowDetails element={gridElement} segments={reorderPreview ?? status?.snapshot.segments ?? []} onOpen={(id, trigger) => { rememberOrigin(trigger, 'material'); segmentDetail.navigate({ id }); }} />
+    </div>
     </ContextMenuTrigger>
     {rowMenu && <RowMenu onCloseAutoFocus={event => {
       event.preventDefault();

@@ -6,7 +6,7 @@ import type { Segment } from '../shared/contracts.js';
 export function TextEditor({ value, onValueChange, stopEditing, column }: CustomCellEditorProps<Segment, string>) {
   const input = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { input.current?.focus(); input.current?.select(); }, []);
-  return <div className="h-full w-full py-1">
+  return <div className={`h-full w-full py-1 ${column.getColId() === 'visualNote' ? 'pr-11' : ''}`}>
     <textarea className="m-0 block h-full min-h-0 w-full resize-none rounded-md border border-solid border-input bg-background px-2 py-1 font-[inherit] leading-[22px] text-foreground" ref={input} aria-label={column.getColId() === 'visualNote' ? '画面说明全文' : '文案全文'} value={value ?? ''}
       onChange={event => onValueChange(event.target.value)}
       onBlur={() => {

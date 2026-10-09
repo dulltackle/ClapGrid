@@ -8,6 +8,7 @@ export function dialogReturnFocus(trigger: HTMLElement, grid: () => GridApi<Segm
   const segmentId = row?.getAttribute('row-id');
   const rowIndex = Number(row?.getAttribute('row-index') ?? 0);
   const colId = trigger.closest('[col-id]')?.getAttribute('col-id');
+  const rowDetails = trigger.hasAttribute('data-row-details');
   const focus = (element: HTMLElement | null | undefined) => {
     if (!element?.isConnected || element.matches(':disabled') || !element.getClientRects().length) return false;
     element.focus({ preventScroll: true });
@@ -16,12 +17,12 @@ export function dialogReturnFocus(trigger: HTMLElement, grid: () => GridApi<Segm
   return function restore() {
     if (!segmentId && focus(trigger)) return;
     const api = grid();
-    if (segmentId && colId && api && !api.isDestroyed()) {
+    if (segmentId && (colId || rowDetails) && api && !api.isDestroyed()) {
       const original = api.getRowNode(segmentId);
       const index = original?.rowIndex ?? Math.min(rowIndex, api.getDisplayedRowCount() - 1);
       const target = index >= 0 ? api.getDisplayedRowAtIndex(index) : undefined;
       if (target) {
-        const selector = `[row-id="${CSS.escape(target.id!)}"] [col-id="${CSS.escape(colId)}"]`;
+        const selector = `[row-id="${CSS.escape(target.id!)}"] ${rowDetails ? '[data-row-details]' : `[col-id="${CSS.escape(colId!)}"]`}`;
         // 缓冲行虽然有 DOM，仍可能被视口裁剪；正常返回不移动横纵位置。
         const range = api.getVerticalPixelRange();
         const top = target.rowTop ?? 0;
@@ -29,12 +30,12 @@ export function dialogReturnFocus(trigger: HTMLElement, grid: () => GridApi<Segm
           flushSync(() => api.ensureIndexVisible(index));
         }
         if (!document.querySelector(selector)) {
-          api.ensureColumnVisible(colId);
+          if (colId) api.ensureColumnVisible(colId);
           // React 的虚拟行可能在 ensureIndexVisible 返回后才挂载；等待该帧后再取新 DOM。
           requestAnimationFrame(() => {
             if (api.isDestroyed()) return;
             const cell = document.querySelector<HTMLElement>(selector);
-            if (focus(cell)) api.setFocusedCell(target.rowIndex!, colId);
+            if (focus(cell)) { if (colId) api.setFocusedCell(target.rowIndex!, colId); }
             else focus(fallback());
           });
           return;
@@ -42,7 +43,7 @@ export function dialogReturnFocus(trigger: HTMLElement, grid: () => GridApi<Segm
         const cell = document.querySelector<HTMLElement>(selector);
         // 先无滚动聚焦，再同步表格焦点；反序会按重排动画中的位置滚动，动画结束后遮住目标。
         if (focus(cell)) {
-          api.setFocusedCell(index, colId);
+          if (colId) api.setFocusedCell(index, colId);
           return;
         }
       }
