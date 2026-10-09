@@ -19,7 +19,7 @@ test('相对锚点原子插入空白片段，保留其他内容且兼容末尾�
     const result = await business.modifyBatch(token, {changes:[{kind:'add',text:'',relative:{anchor:before[anchorIndex]!,placement,expectedIds:before.map(s=>s.id)}}]});
     assert.equal(result.summary.applied,1);
     const next = business.getSnapshot().segments;
-    assert.deepEqual(next[expectedIndex],{id:result.results[0]!.id,order:expectedIndex+1,text:'',video:null});
+    assert.deepEqual(next[expectedIndex],{id:result.results[0]!.id,order:expectedIndex+1,text:'',visualNote:'',video:null});
     assert.deepEqual(next.filter(s=>s.id!==result.results[0]!.id).map(({order,...s})=>s),before.map(({order,...s})=>s));
     assert.deepEqual(next.map(s=>s.order),Array.from({length:next.length},(_,i)=>i+1));
   }

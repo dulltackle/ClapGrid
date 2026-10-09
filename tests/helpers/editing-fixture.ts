@@ -4,7 +4,7 @@ export const fixture = String.raw`
   export const state = {
     status: { instanceId: 'test', pid: 1, modification: null, taskLocked: false, snapshot: {
       project: { id: 'project', directory: '/tmp/project' }, assets: [],
-      segments: [{ id: 'segment', order: 1, text: '原文', video: null }],
+      segments: [{ id: 'segment', order: 1, text: '原文', visualNote: '', video: null }],
       exportSettings: { codec: 'libx264', fps: 30, fontFamily: 'Test', fontSize: 32 },
     } }, queries: [], delayQuery: false, acquireGate: null, saveGate: null, current: null, leases: [], saves: 0, mutations: [], speech: null, exports: { locked: false, tasks: [] }, statusFailure: false, exportFailure: false, submitFailure: false, cancelFailure: false, saveFailure: false, selectionFailure: false, voiceFailure: false, batchFailure: false, exportRequests: [], exportQueries: 0,
   };
@@ -45,8 +45,8 @@ export const fixture = String.raw`
     (state.segmentRequests ??= []).push({ change: copy(change), token });
     if (state.segmentFailure) throw Error('文案保存失败');
     state.saves++;
-    if (change.id) { const segment = state.status.snapshot.segments.find(item => item.id === change.id); if (!segment) throw Error('片段已删除'); segment.text = change.text; }
-    else state.status.snapshot.segments.push({ id: 'created-' + state.saves, order: state.status.snapshot.segments.length + 1, text: change.text, video: null });
+    if (change.id) { const segment = state.status.snapshot.segments.find(item => item.id === change.id); if (!segment) throw Error('片段已删除'); if (change.text !== undefined) segment.text = change.text; if (change.visualNote !== undefined) segment.visualNote = change.visualNote; }
+    else state.status.snapshot.segments.push({ id: 'created-' + state.saves, order: state.status.snapshot.segments.length + 1, text: change.text, visualNote: change.visualNote ?? '', video: null });
     state.current.disconnect();
     const result = copy(state.status);
     if (state.saveGate) await state.saveGate.promise;
@@ -65,8 +65,8 @@ export const fixture = String.raw`
     state.saves++; state.mutations.push('片段');
     let addedId;
     for (const change of batch.changes) {
-      if (change.kind === 'add' && !change.relative) { addedId = 'created-' + state.saves; state.status.snapshot.segments.push({ id: addedId, order: 0, text: change.text, video: null }); }
-      if (change.kind === 'paste') for (const text of change.text.split('\n').filter(line => line.trim())) state.status.snapshot.segments.push({ id: 'paste-' + state.status.snapshot.segments.length, order: state.status.snapshot.segments.length + 1, text, video: null });
+      if (change.kind === 'add' && !change.relative) { addedId = 'created-' + state.saves; state.status.snapshot.segments.push({ id: addedId, order: 0, text: change.text, visualNote: change.visualNote ?? '', video: null }); }
+      if (change.kind === 'paste') for (const text of change.text.split('\n').filter(line => line.trim())) state.status.snapshot.segments.push({ id: 'paste-' + state.status.snapshot.segments.length, order: state.status.snapshot.segments.length + 1, text, visualNote: '', video: null });
       if (change.kind === 'delete') state.status.snapshot.segments = state.status.snapshot.segments.filter(item => item.id !== change.expected.id);
       if (change.kind === 'reorder') state.status.snapshot.segments = change.ids.map(id => state.status.snapshot.segments.find(item => item.id === id));
       if (change.kind === 'video') {

@@ -388,10 +388,10 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
             completeEdit(); release(); json({ ...result, status: status() });
           } else {
             const parsed = (path.endsWith('/add') ? addSegmentSchema : editSegmentSchema).safeParse(input);
-            if (!parsed.success) { reject(400, '请提供有效的片段身份和文案，不允许修改其他状态。'); return; }
+            if (!parsed.success) { reject(400, '请提供有效的片段身份及文案或画面说明，不允许修改其他状态。'); return; }
             const data = parsed.data;
-            if ('id' in data) business.editSegment(editSegmentSchema.parse(data).id, data.text, token);
-            else business.addSegment(data.text, token);
+            if ('id' in data) business.updateSegment(data.id, data, token);
+            else business.addSegment(data.text, token, data.visualNote);
             completeEdit(); release(); json(status());
           }
         } catch {

@@ -39,6 +39,7 @@ test('HTTP 单行提交与 MCP 共用任务，面板断开不解锁且支持查�
   await assert.rejects(beginEdit(service.url), /配音/);
   for (const [name, args] of [
     ['clapgrid_modify', { changes: [{ kind: 'add', text: '锁定' }] }],
+    ['clapgrid_modify', { changes: [{ kind: 'edit', expected: status.snapshot.segments[0], visualNote: '任务期间不可修改' }] }],
     ['clapgrid_import_video', { sourcePath: '/tmp/no-video.mp4' }],
     ['clapgrid_set_voice', { speaker: 'zh_female_vv_uranus_bigtts', speechRate: 20 }],
     ['clapgrid_submit_speech', { ...input, requestId: randomUUID() }],
@@ -51,6 +52,13 @@ test('HTTP 单行提交与 MCP 共用任务，面板断开不解锁且支持查�
   const audio = await fetch(`${service.url}${speech.audio[0]!.url}`, { headers: { Range: 'bytes=0-2' } });
   assert.equal(audio.status, 206); assert.equal(await audio.text(), 'ID3');
   assert.equal(JSON.stringify(speech).includes('secret'), false);
+  const expected = (await (await fetch(`${service.url}/api/status`)).json()).snapshot.segments[0];
+  const noted = await client.callTool({ name: 'clapgrid_modify', arguments: { changes: [{ kind: 'edit', expected, visualNote: '产品特写' }] } });
+  assert.notEqual(noted.isError, true);
+  const afterNote = await (await fetch(`${service.url}/api/speech`)).json();
+  assert.equal(afterNote.audio[0].valid, true);
+  assert.equal(afterNote.tasks.length, speech.tasks.length);
+  assert.equal(calls, 1);
 });
 
 test('MCP 批量提交返回逐项受理，HTTP 查询与重发共享持久化结果', async t => {

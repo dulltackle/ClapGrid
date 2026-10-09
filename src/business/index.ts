@@ -28,7 +28,8 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       CREATE TABLE IF NOT EXISTS segments (
         id TEXT PRIMARY KEY,
         position INTEGER NOT NULL UNIQUE CHECK (position > 0),
-        text TEXT NOT NULL
+        text TEXT NOT NULL,
+        visual_note TEXT NOT NULL DEFAULT ''
       );
       CREATE TABLE IF NOT EXISTS video_assets (
         id TEXT PRIMARY KEY, name TEXT NOT NULL, duration REAL NOT NULL
@@ -42,6 +43,10 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
         created_at TEXT NOT NULL
       );
     `);
+    // 旧项目就地补列，原有片段和所有新增入口共享空说明默认值。
+    if (!db.prepare('PRAGMA table_info(segments)').all().some(column => column.name === 'visual_note')) {
+      db.exec("ALTER TABLE segments ADD COLUMN visual_note TEXT NOT NULL DEFAULT ''");
+    }
     db.prepare('INSERT OR IGNORE INTO project_identity VALUES (1, ?, ?)')
       .run(randomUUID(), new Date().toISOString());
   } catch (error) {
@@ -54,7 +59,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       project: { id: row.id, directory: projectDirectory, createdAt: row.created_at },
       storage: { database, mediaDirectory },
       exportSettings: getExportSettings(),
-      segments: db.prepare('SELECT id, ROW_NUMBER() OVER (ORDER BY position) AS "order", text FROM segments ORDER BY position').all().map(segment => {
+      segments: db.prepare('SELECT id, ROW_NUMBER() OVER (ORDER BY position) AS "order", text, visual_note AS visualNote FROM segments ORDER BY position').all().map(segment => {
         const video = db.prepare('SELECT asset_id AS assetId, start FROM segment_video WHERE segment_id = ?').get(segment.id!);
         return { ...segment, video: video ?? null };
       }),
@@ -216,19 +221,22 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       return { modification, taskLocked: task !== null };
     },
     owns: access.owns,
-    addSegment(text: string, token?: string): Snapshot {
+    addSegment(text: string, token?: string, visualNote = ''): Snapshot {
       access.assertWritable(token);
-      addSegmentSchema.parse({ text });
+      addSegmentSchema.parse({ text, visualNote });
       return commit(() => {
-        db.prepare('INSERT INTO segments (id, position, text) SELECT ?, COALESCE(MAX(position), 0) + 1, ? FROM segments')
-          .run(randomUUID(), text);
+        db.prepare('INSERT INTO segments (id, position, text, visual_note) SELECT ?, COALESCE(MAX(position), 0) + 1, ?, ? FROM segments')
+          .run(randomUUID(), text, visualNote);
       }, token);
     },
     editSegment(id: string, text: string, token?: string): Snapshot {
+      return business.updateSegment(id, { text }, token);
+    },
+    updateSegment(id: string, fields: { text?: string; visualNote?: string }, token?: string): Snapshot {
       access.assertWritable(token);
-      editSegmentSchema.parse({ id, text });
+      const patch = editSegmentSchema.parse({ id, ...fields });
       return commit(() => {
-        const result = db.prepare('UPDATE segments SET text = ? WHERE id = ?').run(text, id);
+        const result = db.prepare('UPDATE segments SET text = COALESCE(?, text), visual_note = COALESCE(?, visual_note) WHERE id = ?').run(patch.text ?? null, patch.visualNote ?? null, id);
         if (result.changes !== 1) throw new Error('口播片段不存在，请刷新后重试。');
       }, token);
     },
@@ -248,7 +256,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
           if (change.kind === 'video') {
             const current = getSnapshot().segments.find(segment => segment.id === id);
             if (!current) { results.push({ index, id, outcome: 'deleted', message: '口播片段已删除，已跳过' }); continue; }
-            if (JSON.stringify(current.video) !== JSON.stringify(change.expected.video) || current.text !== change.expected.text || (submittedOrder.get(current.id) ?? current.order) !== change.expected.order) {
+            if (JSON.stringify(current.video) !== JSON.stringify(change.expected.video) || current.text !== change.expected.text || current.visualNote !== change.expected.visualNote || (submittedOrder.get(current.id) ?? current.order) !== change.expected.order) {
               results.push({ index, id, outcome: 'changed', message: '目标内容已变化，请重新查询', current }); continue;
             }
           }
@@ -295,13 +303,13 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
                 const offset = Number(db.prepare('SELECT COALESCE(MAX(position), 0) AS maximum FROM segments').get()!.maximum) + ids.length;
                 for (const [position, segment] of current.entries()) db.prepare('UPDATE segments SET position = ? WHERE id = ?').run(offset + position + 1, segment.id);
                 for (const [position, id] of ids.entries()) {
-                  if (id === newId) db.prepare('INSERT INTO segments (id, position, text) VALUES (?, ?, ?)').run(id, position + 1, change.text);
+                  if (id === newId) db.prepare('INSERT INTO segments (id, position, text, visual_note) VALUES (?, ?, ?, ?)').run(id, position + 1, change.text, change.visualNote ?? '');
                   else db.prepare('UPDATE segments SET position = ? WHERE id = ?').run(position + 1, id);
                 }
                 result.id = newId; return;
               }
-              db.prepare('INSERT INTO segments (id, position, text) SELECT ?, COALESCE(MAX(position), 0) + 1, ? FROM segments')
-                .run(newId, change.text);
+              db.prepare('INSERT INTO segments (id, position, text, visual_note) SELECT ?, COALESCE(MAX(position), 0) + 1, ?, ? FROM segments')
+                .run(newId, change.text, change.visualNote ?? '');
               result.id = newId;
               return;
             }
@@ -309,10 +317,10 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
             if (!current) {
               result = { index, id, outcome: 'deleted', message: '口播片段已删除，已跳过' }; return;
             }
-            if (JSON.stringify(current.video) !== JSON.stringify(change.expected.video) || current.text !== change.expected.text || (submittedOrder.get(current.id) ?? current.order) !== change.expected.order) {
+            if (JSON.stringify(current.video) !== JSON.stringify(change.expected.video) || current.text !== change.expected.text || current.visualNote !== change.expected.visualNote || (submittedOrder.get(current.id) ?? current.order) !== change.expected.order) {
               result = { index, id, outcome: 'changed', message: '目标内容已变化，请核对最新内容后重新提交', current }; return;
             }
-            if (change.kind === 'edit') db.prepare('UPDATE segments SET text = ? WHERE id = ?').run(change.text, id!);
+            if (change.kind === 'edit') db.prepare('UPDATE segments SET text = COALESCE(?, text), visual_note = COALESCE(?, visual_note) WHERE id = ?').run(change.text ?? null, change.visualNote ?? null, id!);
             else if (change.kind === 'video') {
               if (change.assetId) db.prepare('INSERT OR REPLACE INTO segment_video VALUES (?, ?, ?)').run(id!, change.assetId, change.start);
               else db.prepare('DELETE FROM segment_video WHERE segment_id = ?').run(id!);

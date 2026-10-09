@@ -45,9 +45,16 @@ test('MCP 修改和查询与面板 HTTP 读取同一服务，服务离线时明�
   assert.equal(noSelection.isError, true);
   assert.match(JSON.stringify(noSelection.content), /无可用选择/);
   const edited = await client.callTool({ name: 'clapgrid_process_segments', arguments: {
-    scope: { kind: 'ids', ids: [segments[0]!.id] }, expected: segments, action: { kind: 'edit', text: '按明确身份修改' },
+    scope: { kind: 'ids', ids: [segments[0]!.id] }, expected: segments, action: { kind: 'edit', text: '按明确身份修改', visualNote: '展示产品特写' },
   } });
   assert.notEqual(edited.isError, true);
+  const withNote = (edited.structuredContent as any).status.snapshot.segments[0];
+  assert.equal(withNote.visualNote, '展示产品特写');
+  const stale = await client.callTool({ name: 'clapgrid_modify', arguments: { changes: [{ kind: 'edit', expected: segments[0], visualNote: '过时说明' }] } });
+  assert.equal((stale.structuredContent as any).results[0].outcome, 'changed');
+  const noteOnly = await client.callTool({ name: 'clapgrid_modify', arguments: { changes: [{ kind: 'edit', expected: withNote, visualNote: '镜头切换' }] } });
+  assert.equal((noteOnly.structuredContent as any).status.snapshot.segments[0].text, '按明确身份修改');
+  assert.equal((noteOnly.structuredContent as any).status.snapshot.segments[0].visualNote, '镜头切换');
   const table = await connectTable(service.url);
   await table.select([segments[0]!.id]);
   const selected = await client.callTool({ name: 'clapgrid_query_segments', arguments: { scope: { kind: 'selected' } } });

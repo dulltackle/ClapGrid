@@ -84,7 +84,7 @@ export function createBusinessMcp(url?: string) {
     }
   });
   server.registerTool('clapgrid_modify', {
-    description: '批量新增、粘贴、修改、删除或重排口播片段，或设置视频关联。video 操作携带完整 expected、assetId 和 start（秒）；assetId 为 null 解除关联，否则关联/替换已导入素材并设置起点，使用同一 assetId 可只调整起点。paste 按非空行创建片段；reorder 必须提供查询时项目顺序 expectedIds 及包含全部身份的新顺序 ids。修改/删除必须携带 clapgrid_status 查询得到的完整 expected 片段快照。用户编辑时立即拒绝；目标变化或删除逐项跳过。仅最终结果代表已提交，不自动重试。',
+    description: '批量新增、粘贴、修改、删除或重排口播片段，或设置视频关联。edit 可提供 text（文案）、visualNote（画面说明）或两者，省略的字段保持原值，空字符串清空；画面说明供参考，不改变配音或导出。video 操作携带完整 expected、assetId 和 start（秒）；assetId 为 null 解除关联，否则关联/替换已导入素材并设置起点，使用同一 assetId 可只调整起点。paste 按非空行创建片段；reorder 必须提供查询时项目顺序 expectedIds 及包含全部身份的新顺序 ids。修改/删除必须携带 clapgrid_status 查询得到的完整 expected 片段快照。用户编辑时立即拒绝；目标变化或删除逐项跳过。仅最终结果代表已提交，不自动重试。',
     inputSchema: batchSchema,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
   }, async (input, extra) => {
@@ -96,7 +96,7 @@ export function createBusinessMcp(url?: string) {
     }
   });
   server.registerTool('clapgrid_query_segments', {
-    description: '按 all、明确 ids、文案包含条件 query 或表格当前勾选 selected 查询片段。返回项目顺序、稳定身份及当前对话面板的勾选。selected 没有选择、关联缺失或已断开返回 unavailable；当前对话多个面板返回 ambiguous。关联不明时请用户明确指定片段，不能猜测其他对话面板；tableId 仍须属于当前对话。不会扩大为全项目。',
+    description: '按 all、明确 ids、文案包含条件 query 或表格当前勾选 selected 查询片段。返回项目顺序、稳定身份、文案、画面说明（visualNote）及当前对话面板的勾选。selected 没有选择、关联缺失或已断开返回 unavailable；当前对话多个面板返回 ambiguous。关联不明时请用户明确指定片段，不能猜测其他对话面板；tableId 仍须属于当前对话。不会扩大为全项目。',
     inputSchema: segmentQuerySchema,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async (input, extra) => {
@@ -108,7 +108,7 @@ export function createBusinessMcp(url?: string) {
     }
   });
   server.registerTool('clapgrid_process_segments', {
-    description: '按明确范围修改文案或删除片段。必须携带查询得到的 expected 片段快照；提交时固定目标，后续勾选变化不影响操作。空选择/断开拒绝，新增勾选未查询过则拒绝；内容过时逐项跳过。不会自动扩大范围或重试。',
+    description: '按明确范围修改文案、画面说明或删除片段。edit 可提供 text、visualNote 或两者，省略字段保持原值，空字符串清空；说明不改变配音或导出。必须携带查询得到的 expected 片段快照；提交时固定目标，后续勾选变化不影响操作。空选择/断开拒绝，新增勾选未查询过则拒绝；内容过时逐项跳过。不会自动扩大范围或重试。',
     inputSchema: scopedOperationSchema,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
   }, async (input, extra) => {

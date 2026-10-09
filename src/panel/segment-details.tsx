@@ -3,23 +3,26 @@ import { Button, Textarea, AlertDialog, AlertDialogContent, AlertDialogTitle, Al
 import type { Segment, ServiceStatus } from '../shared/contracts.js';
 import type { ProjectEditing } from './project-editing.js';
 
-export type SegmentIntent = { id: string; inline?: boolean; focusText?: boolean } | null;
+export type SegmentTextField = 'text' | 'visualNote';
+export type SegmentIntent = { id: string; inline?: boolean; field?: SegmentTextField; focusText?: boolean } | null;
 
 /** 详情草稿持有现有编辑租约；导航意图按稳定身份保存，提交成功后才继续。 */
 export function useSegmentDetails({ editing, status, accept, save, failed, inline, stopInline, restore }: {
   editing: ProjectEditing; status: ServiceStatus | undefined; accept: (status: ServiceStatus) => void;
-  save: (id: string, text: string) => Promise<boolean>; failed: (error: Error) => void;
-  inline: (id: string) => Promise<void>; stopInline: () => void; restore: () => void;
+  save: (id: string, fields: { text: string; visualNote: string }) => Promise<boolean>; failed: (error: Error) => void;
+  inline: (id: string, field: SegmentTextField) => Promise<void>; stopInline: () => void; restore: () => void;
 }) {
   const [id, setId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<{ id: string; base: string; text: string } | null>(null);
+  const [draft, setDraft] = useState<{ id: string; base: string; text: string; baseVisualNote: string; visualNote: string } | null>(null);
   const [focusRequest, setFocusRequest] = useState<'text' | 'panel' | null>(null);
   const [pending, setPending] = useState<{ intent: SegmentIntent } | null>(null);
   const text = useRef<HTMLTextAreaElement>(null);
+  const visualNote = useRef<HTMLTextAreaElement>(null);
+  const activeField = useRef<SegmentTextField>('text');
   const panel = useRef<HTMLElement>(null);
   const sequence = useRef(0);
   const current = useRef(status); current.current = status;
-  const dirty = !!draft && draft.text !== draft.base;
+  const dirty = !!draft && (draft.text !== draft.base || draft.visualNote !== draft.baseVisualNote);
   const idle = () => new Promise<void>(resolve => {
     const check = () => { const state = editing.getState(); if (!state.busy && !state.editing) { unsubscribe(); resolve(); } };
     const unsubscribe = editing.subscribe(check); check();
@@ -32,7 +35,7 @@ export function useSegmentDetails({ editing, status, accept, save, failed, inlin
     if (!intent) { setId(null); requestAnimationFrame(() => { if (document.activeElement === document.body || panel.current?.contains(document.activeElement)) restore(); }); return; }
     if (!current.current?.snapshot.segments.some(segment => segment.id === intent.id)) { failed(new Error('口播片段已删除，请选择其他片段。')); return; }
     if (!intent.inline || id) setId(intent.id);
-    if (intent.inline) await inline(intent.id);
+    if (intent.inline) await inline(intent.id, intent.field ?? 'text');
     else setFocusRequest(intent.focusText ? 'text' : 'panel');
   };
   const navigate = (intent: SegmentIntent) => {
@@ -40,18 +43,20 @@ export function useSegmentDetails({ editing, status, accept, save, failed, inlin
     if (dirty) { setPending({ intent }); return; }
     void execute(intent);
   };
-  const begin = () => {
+  const begin = (field: SegmentTextField = 'text') => {
+    activeField.current = field;
     if (!id || draft || editing.getState().editing || editing.getState().busy) return;
     const requested = sequence.current;
-    const origin = text.current;
+    const input = field === 'text' ? text : visualNote;
+    const origin = input.current;
     let acquired = false;
     const stillRequested = () => requested === sequence.current && (document.activeElement === origin || document.activeElement === panel.current);
     void editing.begin('segments', next => {
       if (!stillRequested()) { void editing.cancel('segments'); return; }
       const segment = next.snapshot.segments.find(item => item.id === id);
       if (!segment) throw new Error('口播片段已删除，请选择其他片段。');
-      accept(next); acquired = true; setDraft({ id, base: segment.text, text: segment.text });
-    }, () => failed(new Error('编辑连接已断开，详情草稿已保留；请重新保存或放弃。')), failed).then(() => { if (acquired) requestAnimationFrame(() => { if (stillRequested()) text.current?.focus({ preventScroll: true }); }); });
+      accept(next); acquired = true; setDraft({ id, base: segment.text, text: segment.text, baseVisualNote: segment.visualNote ?? '', visualNote: segment.visualNote ?? '' });
+    }, () => failed(new Error('编辑连接已断开，详情草稿已保留；请重新保存或放弃。')), failed).then(() => { if (acquired) requestAnimationFrame(() => { if (stillRequested()) input.current?.focus({ preventScroll: true }); }); });
   };
   const commit = async () => {
     if (!draft) return true;
@@ -60,19 +65,19 @@ export function useSegmentDetails({ editing, status, accept, save, failed, inlin
       await editing.begin('segments', next => {
         const current = next.snapshot.segments.find(segment => segment.id === draft.id);
         if (!current) throw new Error('口播片段已删除，草稿仍保留，请复制后关闭。');
-        if (current.text !== draft.base) throw new Error('文案已被其他操作修改，草稿仍保留；请核对后放弃或复制，不能覆盖新内容。');
+        if (current.text !== draft.base || (current.visualNote ?? '') !== draft.baseVisualNote) throw new Error('文案或画面说明已被其他操作修改，草稿仍保留；请核对后放弃或复制，不能覆盖新内容。');
         accept(next); acquired = true;
       }, () => failed(new Error('编辑连接已断开，详情草稿已保留；请重新保存或放弃。')), failed);
       if (!acquired) return false;
     }
-    const success = await save(draft.id, draft.text);
+    const success = await save(draft.id, { text: draft.text, visualNote: draft.visualNote });
     if (success) setDraft(null);
     return success;
   };
-  return { id, draft, dirty, pending, text, panel, navigate, begin, focusRequest, consumeFocus: () => setFocusRequest(null),
-    change: (value: string) => setDraft(previous => previous && ({ ...previous, text: value })),
+  return { id, draft, dirty, pending, text, visualNote, panel, navigate, begin, focusRequest, consumeFocus: () => setFocusRequest(null),
+    change: (value: string, field: SegmentTextField = 'text') => setDraft(previous => previous && ({ ...previous, [field]: value })),
     commit,
-    continueEditing: () => { setPending(null); requestAnimationFrame(() => text.current?.focus()); },
+    continueEditing: () => { setPending(null); requestAnimationFrame(() => (activeField.current === 'text' ? text : visualNote).current?.focus()); },
     discard: async () => { const intent = pending?.intent ?? null; setPending(null); await execute(intent); },
     saveAndContinue: async () => { const intent = pending?.intent ?? null; if (await commit()) { setPending(null); await execute(intent); } },
   };
@@ -115,17 +120,23 @@ export function SegmentDetails({ controller, segment, segments, busy, disabled, 
         <section className="space-y-2"><label htmlFor="segment-draft" className="font-medium">文案</label>
           <Textarea id="segment-draft" aria-label="详情文案" ref={controller.text} value={controller.draft?.text ?? segment?.text ?? ''}
             disabled={busy || (!controller.draft && disabled)} readOnly={!controller.draft || !segment}
-            onFocus={controller.begin} onChange={event => controller.change(event.target.value)} />
-          {controller.draft && <Button size="sm" disabled={busy || !segment} onClick={() => { void controller.commit(); }}>保存文案</Button>}
+            onFocus={() => controller.begin('text')} onChange={event => controller.change(event.target.value)} />
         </section>
-        {!segment && <p role="status" className="m-0 text-muted-foreground">片段已删除，未保存文案仍可选中复制；无法保存到已删除片段。</p>}
+        <section className="space-y-2"><label htmlFor="segment-visual-note" className="font-medium">画面说明</label>
+          <Textarea id="segment-visual-note" aria-label="详情画面说明" ref={controller.visualNote} value={controller.draft?.visualNote ?? segment?.visualNote ?? ''}
+            disabled={busy || (!controller.draft && disabled)} readOnly={!controller.draft || !segment}
+            onFocus={() => controller.begin('visualNote')} onChange={event => controller.change(event.target.value, 'visualNote')} />
+          <p className="m-0 text-xs text-muted-foreground">可选，供你和 Codex 参考；保存说明不直接改变制作结果。</p>
+        </section>
+        {controller.draft && <Button size="sm" disabled={busy || !segment} onClick={() => { void controller.commit(); }}>{controller.draft.visualNote !== controller.draft.baseVisualNote ? (controller.draft.text !== controller.draft.base ? '保存片段' : '保存画面说明') : '保存文案'}</Button>}
+        {!segment && <p role="status" className="m-0 text-muted-foreground">片段已删除，未保存内容仍可选中复制；无法保存到已删除片段。</p>}
         {segment && children}
       </>}
       {error && <p className="m-0 text-destructive" role="alert">{error}</p>}
     </aside>
     {controller.pending && <AlertDialog open onOpenChange={open => { if (!open && !busy) controller.continueEditing(); }}>
       <AlertDialogContent onCloseAutoFocus={event => event.preventDefault()}>
-        <AlertDialogTitle>保存未提交的文案？</AlertDialogTitle>
+        <AlertDialogTitle>{controller.draft?.visualNote !== controller.draft?.baseVisualNote ? '保存未提交的片段内容？' : '保存未提交的文案？'}</AlertDialogTitle>
         <AlertDialogDescription>保存后继续原操作，或放弃这次修改。</AlertDialogDescription>
         {error && <p role="alert" className="text-destructive">{error}</p>}
         <div className="flex flex-wrap justify-end gap-2">

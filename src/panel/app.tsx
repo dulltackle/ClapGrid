@@ -172,18 +172,22 @@ export function App() {
     grid.current?.stopEditing(true);
     failed(new Error('编辑连接已断开，未提交输入已取消；请重新读取后编辑。'));
   };
-  const startEdit = (id: string) => editing.begin('segments', next => {
+  const startEdit = (id: string, field: 'text' | 'visualNote' = 'text') => {
+    if (status?.taskLocked || speech?.locked || exports.exports?.locked) return Promise.resolve();
+    return editing.begin('segments', next => {
     flushSync(() => { setStatus(next); setError(''); setSaveError(''); setSaveState('saved'); });
     const row = grid.current?.getRowNode(id);
     if (row?.rowIndex == null) throw new Error('口播片段已删除，请选择其他片段。');
     if (segmentDetail.id) row.setSelected(true, true);
-    grid.current?.startEditingCell({ rowIndex: row.rowIndex, colKey: 'text' });
+    grid.current?.ensureColumnVisible(field);
+    grid.current?.startEditingCell({ rowIndex: row.rowIndex, colKey: field });
   }, disconnected, cause => {
     if (cause.message === 'Codex 正在修改' || cause.message === '用户正在编辑') {
       setSaveState('saved');
       queueMicrotask(() => { void editing.refresh(() => queryStatus(panelServiceUrl()), setStatus, () => {}); });
     } else failed(cause);
-  });
+    });
+  };
   const audioError = () => failed(new Error('音频无法播放，请检查项目文件后重试。'));
   useEffect(() => {
     if (inlineAudio && speech && !speech.audio.some(audio => audio.taskId === inlineAudio.taskId && audio.segmentId === inlineAudio.segmentId)) {
@@ -214,18 +218,18 @@ export function App() {
     const next = await querySpeech(panelServiceUrl());
     action.apply(() => { setSpeech(next); setSaveState('saved'); });
   }, failed);
-  const save = (change: { id?: string; text: string }) => editing.save('segments', { acquire: !change.id }, async (token, action) => {
+  const save = (change: { id?: string; text?: string; visualNote?: string }) => editing.save('segments', { acquire: !change.id }, async (token, action) => {
     setSaveState('saving'); setSaveError('');
     const next = await saveSegment(panelServiceUrl(), change, token);
     action.apply(() => { setStatus(next); setError(''); setSaveState('saved'); });
   }, cause => failed(new Error(`保存失败：${cause.message}`)));
   const segmentDetail = useSegmentDetails({ editing, status, accept: setStatus, failed, inline: startEdit,
     stopInline: () => grid.current?.stopEditing(), restore: () => returnFocus.current.material(),
-    save: async (id, text) => {
+    save: async (id, fields) => {
       let saved = false;
       await editing.save('segments', { acquire: true }, async (token, action) => {
         setSaveState('saving'); setSaveError('');
-        const next = await saveSegment(panelServiceUrl(), { id, text }, token);
+        const next = await saveSegment(panelServiceUrl(), { id, ...fields }, token);
         action.apply(() => { setStatus(next); setSaveState('saved'); saved = true; });
       }, cause => failed(new Error(`保存失败：${cause.message}`)));
       return saved;
@@ -429,6 +433,14 @@ export function App() {
       cellRendererParams: { suppressMouseEventHandling: cellControlMouse, speech, disabled, reason: disabled ? '请先结束编辑或等待项目解除占用' : '', playing,
         generate: (id: string) => { void generateSpeech(id); }, listen: toggleAudio,
         history: (id: string, trigger: HTMLElement) => { rememberOrigin(trigger, 'history'); setAudioHistory(id); }, onError: audioError } },
+    { headerName: '画面说明', field: 'visualNote', initialWidth: 220, minWidth: 160,
+      editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
+      cellRenderer: ({ value }: { value?: string }) => <span className="block max-h-[66px] overflow-hidden whitespace-pre-wrap break-words leading-[22px]">{value}</span>,
+      cellEditor: TextEditor,
+      suppressKeyboardEvent: params => {
+        if (params.editing && params.event.key === 'Tab') { params.api.stopEditing(); return true; }
+        return !params.editing && (['Enter', 'F2', 'Backspace', 'Delete'].includes(params.event.key) || params.event.key.length === 1);
+      } },
     { headerName: '', colId: 'details', width: 44, minWidth: 44, maxWidth: 44, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <Button variant="ghost" size="xs" className="h-7 w-7 p-0" aria-label={`查看片段 ${data.order} 的详情`} title="片段详情" onClick={event => { rememberOrigin(event.currentTarget, 'material'); segmentDetail.navigate({ id: data.id }); }}>›</Button> },
   ];
   const searchStatus = !query ? '输入文案查找' : !matchedIds.length ? '无匹配片段' : activeMatch ? `第 ${matchedIds.indexOf(activeMatch) + 1} / ${matchedIds.length} 个匹配片段` : `${matchedIds.length} 个匹配片段，点击下一个定位`;
@@ -516,7 +528,7 @@ export function App() {
         {detailAsset ? <><p className="m-0 break-all">{detailAsset.name}</p><p className="m-0 text-xs text-muted-foreground">时长 {detailAsset.duration.toFixed(2)} 秒 · 播放起点 {detailSegment?.video?.start} 秒</p><Button variant="ghost" className="h-auto w-full overflow-hidden rounded-lg bg-muted p-0" aria-label="播放预览" onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(detailSegment!.video); }}><img className="aspect-video w-full object-contain" src={`${panelServiceUrl()}/api/media/${detailAsset.id}/thumbnail`} alt="" /><span className="sr-only">播放预览</span></Button></> : <p className="m-0 text-muted-foreground">未关联视频</p>}
         <Button variant="outline" disabled={disabled} onClick={event => { rememberOrigin(event.currentTarget, 'video'); void openVideoEditor(segmentDetail.id!); }}>{detailAsset ? '更改' : '关联'}</Button>
       </>}>
-      {detailSegment && <SegmentSpeech detail segment={detailSegment} speech={speech} disabled={disabled || segmentDetail.dirty} reason={segmentDetail.draft ? '请先保存文案或结束编辑' : disabled ? lock || '项目暂不可修改' : ''} playing={playing}
+      {detailSegment && <SegmentSpeech detail segment={detailSegment} speech={speech} disabled={disabled || segmentDetail.dirty} reason={segmentDetail.draft ? '请先保存片段内容或结束编辑' : disabled ? lock || '项目暂不可修改' : ''} playing={playing}
         generate={() => { void generateSpeech(detailSegment.id); }} listen={toggleAudio}
         history={trigger => { rememberOrigin(trigger, 'history'); setAudioHistory(detailSegment.id); }} onError={audioError} /> }
     </SegmentDetails>}
@@ -585,14 +597,14 @@ export function App() {
         if (currentMatch) { const index = event.api.getRowNode(currentMatch)?.rowIndex; if (index != null) searchAnchor.current = index; }
       }}
       getRowHeight={params => params.data?.id === searchLayout.current.activeMatch ? searchLayout.current.rowHeight : 80}
-      onCellClicked={event => { if (event.colDef.field === 'text' && event.data && !(event.event?.target as HTMLElement)?.closest('textarea')) { segmentDetail.navigate({ id: event.data.id, inline: true }); } }}
+      onCellClicked={event => { if ((event.colDef.field === 'text' || event.colDef.field === 'visualNote') && event.data && !(event.event?.target as HTMLElement)?.closest('textarea')) { segmentDetail.navigate({ id: event.data.id, inline: true, field: event.colDef.field as 'text' | 'visualNote' }); } }}
       onCellKeyDown={event => {
         const key = (event.event as KeyboardEvent).key;
-        if ('colDef' in event && event.colDef.field === 'text' && event.data && !editing.getState().editing && (['Enter', 'F2'].includes(key) || key.length === 1)) segmentDetail.navigate({ id: event.data.id, inline: true });
+        if ('colDef' in event && (event.colDef.field === 'text' || event.colDef.field === 'visualNote') && event.data && !editing.getState().editing && (['Enter', 'F2'].includes(key) || key.length === 1)) segmentDetail.navigate({ id: event.data.id, inline: true, field: event.colDef.field as 'text' | 'visualNote' });
       }}
       getRowId={params => params.data.id}
       onCellEditingStopped={() => editing.finishCell()}
-      onCellEditRequest={event => { void save({ id: event.data.id, text: String(event.newValue ?? '') }); }}
+      onCellEditRequest={event => { const field = event.colDef.field; if (field === 'text' || field === 'visualNote') void save({ id: event.data.id, [field]: String(event.newValue ?? '') }); }}
       rowClass="group/segment" suppressRowHoverHighlight theme={theme} loading={!status && !error} columnDefs={columns} rowData={reorderPreview ?? status?.snapshot.segments ?? []}
       defaultColDef={{ editable: false, sortable: false, resizable: true }}
       overlayLoadingTemplate="<span>正在连接本地服务…</span>"
