@@ -1,0 +1,39 @@
+{
+  "ticket": 107,
+  "baseline": "122a787d7ce02e008404833e920d4e1f8c17682e",
+  "testBoundary": "#104 用户确认的媒体输入/产物及独立归档恢复边界；不对实现私有辅助函数造测试",
+  "redGreen": [
+    "107-red-card.log → 107-green-card.log：独立v0.2映射核对",
+    "107-red-media.log → 实际输出全解码媒体检测",
+    "107-red-archive.log → 独立版本档案SHA与输入身份核对、解包资源及代表段重渲染"
+  ],
+  "sources": {
+    "narration": "#96 v0.2",
+    "visual": "#97 最终规则",
+    "speech": "#99",
+    "archive": "#101"
+  },
+  "parameters": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "textureSeed": 17,
+    "textLayer": "独立SVG文字层",
+    "assembly": "无旁白无旁白字幕；保留结构标注",
+    "preview": "原速真实旁白+整段原文字幕"
+  },
+  "visualReviewByImplementer": {
+    "FH05": "检查末帧供血局部淡/虚线，少量细支不整体堵塞；FH04相同路径保证内部衔接",
+    "FH06": "正常/坏死后局部骨架完全相同；细胞内标记不同；指示点定位真实骨梁",
+    "FH07": "完整外形，可能性标注；不等同于痊愈",
+    "FH08/FH09": "修复发生在不同局部，紫色新骨带文字；旧骨边缘局部吸收，整体骨架和外形保留"
+  },
+  "reviewStatuses": {
+    "新画面用户确认": "待审",
+    "同步技术核对": "实际输入有效/MP3字节匹配/原速完整音轨相关性/探测完整解码/工作及恢复浏览器起止播放通过；不代表逐字ASR",
+    "人工听审": "待用户",
+    "全片终审": "待后续完整版本，不能扩大本组范围"
+  },
+  "commandsLogDirectory": "/home/forclaw/tmp/implement-spec-104",
+  "entry": "entry107.tsx"
+}

@@ -1,0 +1,25 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>FH05–FH09 审阅版本 group107-v1</title><style>body{background:#fbf4e4;color:#344d4a;font:18px sans-serif;max-width:1180px;margin:32px auto}video{width:100%;background:#fbf4e4}article{padding:24px 0;border-top:1px solid #c6bca5}li{margin:10px 0}</style>
+<h1>FH05–FH09 审阅版本 group107-v1</h1>
+<p>改了什么：把已确认静态规则重绘为可编辑动画，配合 ClapGrid 实际原速配音；血供仅局部淡化，细胞改变时保留骨架，修复在不同局部同时发生。</p>
+<p>之前确认过什么：#96 v0.2 原文，#97 温暖分层及关键机制视觉规则，#99 现有配音流程，#101 独立归档设计。确认范围不自动扩展至这些新动画。</p>
+<p>这次需要看什么：画面表达与风格、整段字幕、FH05–FH09 内部衔接，实际发音。画面确认、人工听审与全片终审仍待用户；技术核对不能代签。</p>
+<button id="verify-playback">从头至尾顺序播放技术核对</button><pre id="playback-result">尚未执行实际播放</pre>
+<article><h2>本组连续审阅 · 带旁白与字幕</h2><video id="group107" controls preload="metadata" src="outputs/group107-review.webm"></video></article>
+<article><h2>FH05 · 局部供血</h2><video id="FH05" controls preload="metadata" src="outputs/FH05-review.webm"></video></article>
+<article><h2>FH06 · 骨架保留</h2><video id="FH06" controls preload="metadata" src="outputs/FH06-review.webm"></video></article>
+<article><h2>FH07 · 外形仍可能完整</h2><video id="FH07" controls preload="metadata" src="outputs/FH07-review.webm"></video></article>
+<article><h2>FH08 · 尝试修复</h2><video id="FH08" controls preload="metadata" src="outputs/FH08-review.webm"></video></article>
+<article><h2>FH09 · 不同局部修复</h2><video id="FH09" controls preload="metadata" src="outputs/FH09-review.webm"></video></article>
+<p>装配素材为 outputs/FH05..FH09-assembly.mp4：无旁白音轨、无烧录旁白字幕，保留结构标注。审阅副本 WebM 为 960×540；正式 MP4 为 1920×1080、30 fps。</p><script>
+document.querySelector('#verify-playback').addEventListener('click',async()=>{
+ const output=document.querySelector('#playback-result');const records=[];const button=document.querySelector('#verify-playback');button.disabled=true;
+ for(const video of document.querySelectorAll('video')){
+  const record={id:video.id,source:video.getAttribute('src'),startedAt:new Date().toISOString(),start:0,ended:false,timeupdates:0,playingEvents:0};records.push(record);
+  video.currentTime=0;video.muted=false;video.playbackRate=1;const time=()=>record.timeupdates++;const playing=()=>record.playingEvents++;video.addEventListener('timeupdate',time);video.addEventListener('playing',playing);
+  output.textContent=JSON.stringify(records,null,2);
+  try{await new Promise((resolve,reject)=>{video.addEventListener('ended',resolve,{once:true});video.addEventListener('error',()=>reject(new Error('媒体错误')),{once:true});video.play().catch(reject);});record.ended=video.ended;record.currentTime=video.currentTime;record.duration=video.duration;record.readyState=video.readyState;record.error=video.error?video.error.code:null;record.muted=video.muted;record.playbackRate=video.playbackRate;record.completedAt=new Date().toISOString();}catch(e){record.errorMessage=String(e);output.textContent=JSON.stringify(records,null,2);break;}
+  video.removeEventListener('timeupdate',time);video.removeEventListener('playing',playing);output.textContent=JSON.stringify(records,null,2);
+ }
+ button.disabled=false;
+});
+</script></html>

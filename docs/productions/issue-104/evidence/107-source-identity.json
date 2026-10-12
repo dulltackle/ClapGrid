@@ -1,0 +1,13 @@
+{
+  "baseline": "122a787d7ce02e008404833e920d4e1f8c17682e",
+  "sourceSha256": {
+    "entry107.tsx": "fe7b24836abf384ca3d88e31edf4f47dee729b82643cf8544f737cdc0a42c245",
+    "src/group107.tsx": "84cc50e8379b5eacd07b05265c09d03849cd5ce02db14923b7c688231b89a3ae",
+    "src/shared.tsx": "96f9d0c8f41a9c172a5af3f8ddc7532daca3f1513c2f39582b85b598987eeb7b",
+    "src/anatomy.tsx": "69495c5356e7b7172064a73e2c5fdd31377d111029acb6377a415718d68159fe",
+    "render.mjs": "bfe66df44c862bc6d836b97539eeb211b2e07a7927d357de1603e25369d138e3",
+    "package-lock.json": "b1a0ce3000fe089a4f8d28e3374c509f916e9a6ef18d7141544009fb03d9fffd",
+    "public/fonts/noto-cjk-sc.otf": "61610e9246dbdc6fbd71cc0cb649e3586734d3f965a625d9c7554eb3b02f6261"
+  },
+  "postRenderChangeScope": "完成全组第二轮后仅移动FH09限定分支的提示文字至空白区；FH09单独重渲染，不影响FH05–FH08。所有媒体检查在最终产物上执行。"
+}

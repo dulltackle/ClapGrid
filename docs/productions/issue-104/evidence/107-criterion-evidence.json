@@ -1,0 +1,70 @@
+{
+  "ticket": 107,
+  "criteria": [
+    {
+      "criterion": "沿用已确认旁白 v0.2 完成 FH05–FH09，补齐各制作卡的依据、画面、动作顺序、标注和关联素材，并沿用稳定片段身份。",
+      "implementationEvidence": "cards/FH05..FH09.json、segment-mapping.json、107-actual-speech.json",
+      "formalStatus": "未勾选；由独立审查/最终验收结合实际证据处理"
+    },
+    {
+      "criterion": "用少量细分支局部变淡或虚线表示血供减弱，不预设命名血管、血栓或整条堵塞。",
+      "implementationEvidence": "src/group107.tsx:Vessels、FH05真实预览",
+      "formalStatus": "未勾选；由独立审查/最终验收结合实际证据处理"
+    },
+    {
+      "criterion": "细胞状态改变时保留骨架与可能完整的外形，不画突然空洞、腐烂或坏死即塌陷。",
+      "implementationEvidence": "src/group107.tsx:CellDetail/CellsComparison，完整共享BoneGeometry",
+      "formalStatus": "未勾选；由独立审查/最终验收结合实际证据处理"
+    },
+    {
+      "criterion": "不同局部呈现旧骨吸收与新骨形成，新骨使用紫色并保留文字标注；不画整体先拆后建，不暗示修复必然有害或必然恢复足够支撑。",
+      "implementationEvidence": "src/group107.tsx:RepairDetail，FH08/09真实预览",
+      "formalStatus": "未勾选；由独立审查/最终验收结合实际证据处理"
+    },
+    {
+      "criterion": "按照实际有效配音制作连续审阅预览，核对 FH05–FH09 内部衔接、字幕与动作时间；各段纯画面素材关联实际 ClapGrid 口播片段。",
+      "implementationEvidence": "107-media-report、107-continuous-media-report；ClapGrid关联由协调者执行；107-project-link.json与107-import-result.json证明5段素材实际关联",
+      "formalStatus": "未勾选；由独立审查/最终验收结合实际证据处理"
+    },
+    {
+      "criterion": "本组制作卡、实际音频、可编辑动画、预览及复现资源独立归档，可按稳定身份和清单追溯。",
+      "implementationEvidence": "独立archives/group107-v1/manifest.json（建立后核对）",
+      "formalStatus": "未勾选；由独立审查/最终验收结合实际证据处理"
+    },
+    {
+      "criterion": "沿用项目声音设置与现有配音流程；有效配音直接复用，缺失或待更新时按既有流程处理，失败或结果未知不无限重试，不另设渠道、试听或预算审批关卡。实测当前音频时长，原速完整保留旁白。",
+      "implementationEvidence": "107-actual-speech、107-audio-integrity",
+      "formalStatus": "未勾选；由独立审查/最终验收结合实际证据处理"
+    },
+    {
+      "criterion": "沿用温暖分层风格与 Remotion 可编辑 SVG 路线，文字独立成层、纹理种子固定；制作基线为 1920×1080、30 fps。装配素材不含旁白音轨或烧录旁白字幕，结构标注保留；带配音字幕的审阅预览另行输出并明确标识。",
+      "implementationEvidence": "共享Canvas/BoneGeometry及107-source-identity；实际30fps/1080媒体报告",
+      "formalStatus": "未勾选；由独立审查/最终验收结合实际证据处理"
+    },
+    {
+      "criterion": "实际探测、解码并从头播放到结束，核对媒体尺寸、帧率、时长、音频完整性及字幕可读性，记录受验输入和范围；不以历史原型验证代替本次证据。",
+      "implementationEvidence": "107-media-report、107-audio-integrity、实际浏览器播放记录",
+      "formalStatus": "未勾选；由独立审查/最终验收结合实际证据处理"
+    },
+    {
+      "criterion": "独立档案实际保存旁白、制作卡、音频、动画源文件、图像来源与生成记录、依赖和字体资源、预览及审阅说明。清单记录版本及前一版本、变更、片段顺序和稳定身份、文案与声音输入、任务身份、文件位置和校验值、制作参数、确认来源及范围；文件齐全且校验一致，新版本另存、旧版保留至试点结束。",
+      "implementationEvidence": "archives/group107-v1：实际文件清单、依赖/font/图像来源和输入对应",
+      "formalStatus": "未勾选；由独立审查/最终验收结合实际证据处理"
+    },
+    {
+      "criterion": "提交本组预览时明确“改了什么、之前确认过什么、这次需要看什么”；画面确认、同步技术核对、人工听审和全片终审分别记录，未执行仍为待审，本组技术交付不冒充全片终审。",
+      "implementationEvidence": "review107.html：改了什么/之前确认/本次待审；人工听审与终审保持待审",
+      "formalStatus": "未勾选；由独立审查/最终验收结合实际证据处理"
+    }
+  ],
+  "pendingHuman": [
+    "本次新画面确认",
+    "人工听审",
+    "完整成片终审"
+  ],
+  "pendingCoordinator": [
+    "独立OCR与逐项技术阅读",
+    "集成提交正式验收"
+  ],
+  "omissions": "不执行独立医学专家审核、逐字ASR、不把技术播放或本组预览冒充全片终审"
+}

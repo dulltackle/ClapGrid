@@ -1,0 +1,57 @@
+[
+  {
+    "id": "FH05",
+    "sourceTaskId": "6658739d-4778-4f59-8ae6-a764ea8e36af",
+    "rawMp3Sha256": "fbba37fe233321b69d6cd6d3bf040186f9989c6eff96660829b75ec49579a3fb",
+    "archiveCopyMatchesActualMp3": true,
+    "decodedOriginalSamples24k": 116352,
+    "decodedReviewSamples24k": 117760,
+    "alignedFullAudioCorrelation": 0.9999621856189497,
+    "completeOriginalSpanRetained": true,
+    "limitation": "相关性验证是完整原速音轨技术证据，不是发音人工听审或逐字ASR"
+  },
+  {
+    "id": "FH06",
+    "sourceTaskId": "2ec5815c-42ad-4c0c-ba00-1ec664062a5f",
+    "rawMp3Sha256": "7a161bce7244f0a5c6e1f9460e490bd41eeeb2439fc427a456e82e9ab88bb3c2",
+    "archiveCopyMatchesActualMp3": true,
+    "decodedOriginalSamples24k": 92736,
+    "decodedReviewSamples24k": 93184,
+    "alignedFullAudioCorrelation": 0.9999309292341534,
+    "completeOriginalSpanRetained": true,
+    "limitation": "相关性验证是完整原速音轨技术证据，不是发音人工听审或逐字ASR"
+  },
+  {
+    "id": "FH07",
+    "sourceTaskId": "83cc7d16-a2a0-4f43-a179-bbb884adcdc8",
+    "rawMp3Sha256": "ce878058ab7d6218265bd61bf243622a0fdb6ef212f7320c002e58c71788e5a6",
+    "archiveCopyMatchesActualMp3": true,
+    "decodedOriginalSamples24k": 92736,
+    "decodedReviewSamples24k": 93184,
+    "alignedFullAudioCorrelation": 0.9999223273298414,
+    "completeOriginalSpanRetained": true,
+    "limitation": "相关性验证是完整原速音轨技术证据，不是发音人工听审或逐字ASR"
+  },
+  {
+    "id": "FH08",
+    "sourceTaskId": "e59b50fd-4f54-4057-8612-611f4435ad4f",
+    "rawMp3Sha256": "6beac68c48d554178d66ee517d2115ffbc68fe895db5bbd91ae8417018950f52",
+    "archiveCopyMatchesActualMp3": true,
+    "decodedOriginalSamples24k": 67968,
+    "decodedReviewSamples24k": 68608,
+    "alignedFullAudioCorrelation": 0.9999099878416325,
+    "completeOriginalSpanRetained": true,
+    "limitation": "相关性验证是完整原速音轨技术证据，不是发音人工听审或逐字ASR"
+  },
+  {
+    "id": "FH09",
+    "sourceTaskId": "aae43103-e516-42a1-8e8f-75cd0e5fd4a5",
+    "rawMp3Sha256": "28dd2b7bc33c56388501474cea7b5c57a461c30f3ef936b66042a87a853c4e99",
+    "archiveCopyMatchesActualMp3": true,
+    "decodedOriginalSamples24k": 140544,
+    "decodedReviewSamples24k": 141312,
+    "alignedFullAudioCorrelation": 0.9999386696597097,
+    "completeOriginalSpanRetained": true,
+    "limitation": "相关性验证是完整原速音轨技术证据，不是发音人工听审或逐字ASR"
+  }
+]

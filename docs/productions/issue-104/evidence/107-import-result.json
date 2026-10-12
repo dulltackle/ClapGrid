@@ -1,0 +1,93 @@
+{
+  "source": "actual-host",
+  "observedAt": "2026-10-12T07:35:14.404Z",
+  "imported": [
+    {
+      "card": "FH05",
+      "segmentId": "1e09a362-e6eb-4cf0-90bb-ce7f1d3b81c4",
+      "sourcePath": "/home/forclaw/tmp/spec-104-ticket-107/docs/productions/issue-104/outputs/FH05-assembly.mp4",
+      "asset": {
+        "id": "376e336a-a71f-4d22-bb9f-ebce0a653f62",
+        "name": "FH05-assembly.mp4",
+        "duration": 4.866666
+      },
+      "sourceSha256": "7c0fde7cd1af5dbc6a1cce8d022d1dbaeba36cc625f7cad32fc6d834910dd7cc"
+    },
+    {
+      "card": "FH06",
+      "segmentId": "09985f81-72ee-43c5-bc56-0a48e78d7b0d",
+      "sourcePath": "/home/forclaw/tmp/spec-104-ticket-107/docs/productions/issue-104/outputs/FH06-assembly.mp4",
+      "asset": {
+        "id": "dcf55c4c-e6ae-4d23-820a-c1aa98166fb3",
+        "name": "FH06-assembly.mp4",
+        "duration": 3.866666
+      },
+      "sourceSha256": "262b32553d42cd19f45121a3a5a991abe2315db5ffbefee634908bf92580a39e"
+    },
+    {
+      "card": "FH07",
+      "segmentId": "5b18fddd-76d9-44f5-90e9-8663ff71e12c",
+      "sourcePath": "/home/forclaw/tmp/spec-104-ticket-107/docs/productions/issue-104/outputs/FH07-assembly.mp4",
+      "asset": {
+        "id": "dc7832d4-3b8e-49d0-ac71-6b1b9aa108c3",
+        "name": "FH07-assembly.mp4",
+        "duration": 3.866666
+      },
+      "sourceSha256": "2e0bc857eee554c11f1244a5b4ecf0b27ac62bd45de945b34a00e09e0551290e"
+    },
+    {
+      "card": "FH08",
+      "segmentId": "f27fcec6-b3b4-4048-9dd4-79eaa9cf6930",
+      "sourcePath": "/home/forclaw/tmp/spec-104-ticket-107/docs/productions/issue-104/outputs/FH08-assembly.mp4",
+      "asset": {
+        "id": "66540b5d-b313-493e-85f9-fb1b02e57494",
+        "name": "FH08-assembly.mp4",
+        "duration": 2.833333
+      },
+      "sourceSha256": "31ef4b30bc1947f8fb96d8f47ee54ad10a1f38136c2fd8391c8429914774979c"
+    },
+    {
+      "card": "FH09",
+      "segmentId": "9556199e-a633-4052-bb15-63f46f5a409c",
+      "sourcePath": "/home/forclaw/tmp/spec-104-ticket-107/docs/productions/issue-104/outputs/FH09-assembly.mp4",
+      "asset": {
+        "id": "f0998caf-6d8b-4e80-88c7-f652e933d613",
+        "name": "FH09-assembly.mp4",
+        "duration": 5.866666
+      },
+      "sourceSha256": "b8f763316ef8de6d8563ab1db173a41b3487e85bf7c657fbc626facdda99c5ab"
+    }
+  ],
+  "results": [
+    {
+      "index": 0,
+      "id": "1e09a362-e6eb-4cf0-90bb-ce7f1d3b81c4",
+      "outcome": "applied",
+      "message": "已完成"
+    },
+    {
+      "index": 1,
+      "id": "09985f81-72ee-43c5-bc56-0a48e78d7b0d",
+      "outcome": "applied",
+      "message": "已完成"
+    },
+    {
+      "index": 2,
+      "id": "5b18fddd-76d9-44f5-90e9-8663ff71e12c",
+      "outcome": "applied",
+      "message": "已完成"
+    },
+    {
+      "index": 3,
+      "id": "f27fcec6-b3b4-4048-9dd4-79eaa9cf6930",
+      "outcome": "applied",
+      "message": "已完成"
+    },
+    {
+      "index": 4,
+      "id": "9556199e-a633-4052-bb15-63f46f5a409c",
+      "outcome": "applied",
+      "message": "已完成"
+    }
+  ]
+}
