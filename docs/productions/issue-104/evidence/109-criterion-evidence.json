@@ -1,0 +1,71 @@
+{
+  "ticket": 109,
+  "criteria": [
+    {
+      "criterion": "沿用旁白 v0.2 完成 FH13–FH16，补齐制作卡中的依据、画面、动作、标注及素材，使用既定稳定片段身份。",
+      "implementationEvidence": "cards/FH13..16.json、segment-mapping.json、109-actual-speech",
+      "formalStatus": "未勾选；等待独立技术阅读/集成正式验收以及所需用户审阅"
+    },
+    {
+      "criterion": "明确标为机制示意，展示保持完整与局部下陷两种可能，不用必经阶段箭头、概率数字或五五分图；构图面积不代表比例，保持完整不等于痊愈。",
+      "implementationEvidence": "src/group109.tsx:FH13；outputs/FH13-review.png/video",
+      "formalStatus": "未勾选；等待独立技术阅读/集成正式验收以及所需用户审阅"
+    },
+    {
+      "criterion": "解释受损范围、位置等因素影响进展，不扩展为分期、诊断或治疗建议。",
+      "implementationEvidence": "src/group109.tsx:FH14；outputs/FH14-review.png/video",
+      "formalStatus": "未勾选；等待独立技术阅读/集成正式验收以及所需用户审阅"
+    },
+    {
+      "criterion": "结尾清楚对照“坏死是骨组织死亡”与“塌陷是支撑失效后的外形改变”，与开头问题呼应。",
+      "implementationEvidence": "FH15第三细胞标记由间隙移至浅桃支撑曲线；新ROI媒体回归与后续reviewer105复审，FH16语义/源码分支/媒体未变",
+      "formalStatus": "未勾选；等待独立技术阅读/集成正式验收以及所需用户审阅"
+    },
+    {
+      "criterion": "按照实际有效配音完成本组连续预览，核对动作、字幕及段间衔接；纯画面素材关联实际 ClapGrid 片段。",
+      "implementationEvidence": "109-continuous-media与109-audio-integrity；109-project-link、109-import-result",
+      "formalStatus": "未勾选；等待独立技术阅读/集成正式验收以及所需用户审阅"
+    },
+    {
+      "criterion": "本组制作卡、实际音频、可编辑动画、复现资源和审阅预览独立归档，可按稳定身份及清单复现。",
+      "implementationEvidence": "独立group109-v1/manifest.json与恢复证据",
+      "formalStatus": "未勾选；等待独立技术阅读/集成正式验收以及所需用户审阅"
+    },
+    {
+      "criterion": "沿用项目声音设置与现有配音流程；有效配音直接复用，缺失或待更新时按既有流程处理，失败或结果未知不无限重试，不另设渠道、试听或预算审批关卡。实测当前音频时长，原速完整保留旁白。",
+      "implementationEvidence": "109-actual-speech、109-audio-integrity与原MP3SHA",
+      "formalStatus": "未勾选；等待独立技术阅读/集成正式验收以及所需用户审阅"
+    },
+    {
+      "criterion": "沿用温暖分层风格与 Remotion 可编辑 SVG 路线，文字独立成层、纹理种子固定；制作基线为 1920×1080、30 fps。装配素材不含旁白音轨或烧录旁白字幕，结构标注保留；带配音字幕的审阅预览另行输出并明确标识。",
+      "implementationEvidence": "共享Canvas/BoneGeometry及109-source-identity、verify109媒体报告",
+      "formalStatus": "未勾选；等待独立技术阅读/集成正式验收以及所需用户审阅"
+    },
+    {
+      "criterion": "实际探测、解码并从头播放到结束，核对媒体尺寸、帧率、时长、音频完整性及字幕可读性，记录受验输入和范围；不以历史原型验证代替本次证据。",
+      "implementationEvidence": "v2新FH15/连续/恢复20视频实际探测及完整解码、原速完整音轨、公开ROI绿证据；v2连续0→16.267完整结束，独立FH15首次.033665自动从头至3.68结束、未seek/改速/静音，error null",
+      "formalStatus": "未勾选；等待独立技术阅读/集成正式验收以及所需用户审阅"
+    },
+    {
+      "criterion": "独立档案实际保存旁白、制作卡、音频、动画源文件、图像来源与生成记录、依赖和字体资源、预览及审阅说明。清单记录版本及前一版本、变更、片段顺序和稳定身份、文案与声音输入、任务身份、文件位置和校验值、制作参数、确认来源及范围；文件齐全且校验一致，新版本另存、旧版保留至试点结束。",
+      "implementationEvidence": "独立group109-v1：实际源/卡/MP3/依赖/字体/图像与109-generation-record；稳定身份清单",
+      "formalStatus": "未勾选；等待独立技术阅读/集成正式验收以及所需用户审阅"
+    },
+    {
+      "criterion": "提交本组预览时明确“改了什么、之前确认过什么、这次需要看什么”；画面确认、同步技术核对、人工听审和全片终审分别记录，未执行仍为待审，本组技术交付不冒充全片终审。",
+      "implementationEvidence": "review109.html、archive review.md：变化、既有确认、待审范围分开",
+      "formalStatus": "未勾选；等待独立技术阅读/集成正式验收以及所需用户审阅"
+    }
+  ],
+  "pendingHuman": [
+    "本次新动画画面确认",
+    "人工发音听审",
+    "全片终审"
+  ],
+  "pendingCoordinator": [
+    "同reviewer105复审两项有效finding",
+    "集成正式验收与事项回写"
+  ],
+  "omissions": "不提供分期/诊断/治疗建议，不执行独立医学专家审核、不把音轨技术相关性当作人工听审或ASR。",
+  "version": "group109-v2"
+}

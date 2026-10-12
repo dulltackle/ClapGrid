@@ -1,0 +1,71 @@
+{
+  "version": "group109-v2",
+  "source": "协调者实际Codex IAB采集",
+  "records": [
+    {
+      "evidence": "evidence/109-browser-continuous.json",
+      "media": "outputs/group109-review.webm",
+      "sha256": "303bedbad68c423f8b315723e7659cc2dbf79783f06c04611de6dbb08b764edc",
+      "startedObservedAt": "2026-10-12T08:40:21.569Z",
+      "endedObservedAt": "2026-10-12T08:41:09.250Z",
+      "initial": {
+        "observedAt": "2026-10-12T08:40:21.569Z",
+        "currentTime": 0,
+        "duration": 16.267,
+        "paused": true,
+        "ended": false,
+        "muted": false,
+        "playbackRate": 1,
+        "error": null,
+        "readyState": 4
+      },
+      "final": {
+        "observedAt": "2026-10-12T08:41:09.250Z",
+        "currentTime": 16.267,
+        "duration": 16.267,
+        "paused": true,
+        "ended": true,
+        "muted": false,
+        "playbackRate": 1,
+        "error": null,
+        "readyState": 4
+      },
+      "method": "CUA HTML #group109原生Space从头至ended，无seek/改速",
+      "sourceAndArchiveBytesVerified": true
+    },
+    {
+      "evidence": "evidence/109-browser-archive.json",
+      "media": "outputs/group109-reproduced-FH15/FH15-review.webm",
+      "sha256": "2d2d9fcb8c64b238d5bd2fcddd20711790d75ac1d00b1691cde3cd002358ae3d",
+      "startedObservedAt": "2026-10-12T08:43:32.182Z",
+      "endedObservedAt": "2026-10-12T08:44:01.899Z",
+      "initial": {
+        "observedAt": "2026-10-12T08:43:32.182Z",
+        "currentTime": 0.033665,
+        "duration": 3.68,
+        "paused": false,
+        "ended": false,
+        "muted": false,
+        "playbackRate": 1,
+        "error": null,
+        "readyState": 4
+      },
+      "final": {
+        "observedAt": "2026-10-12T08:44:01.899Z",
+        "currentTime": 3.68,
+        "duration": 3.68,
+        "paused": true,
+        "ended": true,
+        "muted": false,
+        "playbackRate": 1,
+        "error": null,
+        "readyState": 4
+      },
+      "method": "CUA直接导航实际独立恢复重渲染WebM，自动从头播放；首次采样.033665如实记录，无seek/改速/静音",
+      "sourceAndArchiveBytesVerified": true
+    }
+  ],
+  "status": "新受影响连续与独立恢复FH15均完整结束",
+  "scope": "原速未静音，无seek、无媒体错误；恢复自动从头，首次采样.033665秒如实保留，不代签人工听审/新画面/全片终审",
+  "historicalRecordsResolveAgainst": "group109-v1；*-v1.json仅对应其记录的旧哈希，不用于宣称新媒体播放"
+}

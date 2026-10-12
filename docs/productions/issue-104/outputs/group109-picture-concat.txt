@@ -1,0 +1,8 @@
+file '/home/forclaw/tmp/spec-104-ticket-109/docs/productions/issue-104/outputs/FH13-review.mp4'
+duration 4.056000000
+file '/home/forclaw/tmp/spec-104-ticket-109/docs/productions/issue-104/outputs/FH14-review.mp4'
+duration 3.864000000
+file '/home/forclaw/tmp/spec-104-ticket-109/docs/productions/issue-104/outputs/FH15-review.mp4'
+duration 3.624000000
+file '/home/forclaw/tmp/spec-104-ticket-109/docs/productions/issue-104/outputs/FH16-review.mp4'
+duration 4.680000000

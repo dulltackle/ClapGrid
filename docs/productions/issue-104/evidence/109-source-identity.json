@@ -1,0 +1,21 @@
+{
+  "initialBaseline": "122a787d7ce02e008404833e920d4e1f8c17682e",
+  "integratedBaseline": "43600d586552c742f44c41300c746e2272a911e1",
+  "sourceSha256": {
+    "src/shared.tsx": "96f9d0c8f41a9c172a5af3f8ddc7532daca3f1513c2f39582b85b598987eeb7b",
+    "src/anatomy.tsx": "69495c5356e7b7172064a73e2c5fdd31377d111029acb6377a415718d68159fe",
+    "src/group109.tsx": "8f42d54547496978a0ecf0634ace93600fc394aafe428e44bc17edc2389838b6",
+    "entry109.tsx": "c86344a5f6bcbdb10b7a21d80efdf9d23b2a0f95a7d89f14c89260fcbd610736",
+    "render.mjs": "bfe66df44c862bc6d836b97539eeb211b2e07a7927d357de1603e25369d138e3",
+    "render109-group.py": "fc942ca6a7278f2e864d43af5b40eaf5df7523c7764b7e61770f923ae0a2d667",
+    "verify109.py": "e76d0721be5c0312d2458f2a20bba0344c34f7efd1a19f5f343e0f501cc068e4",
+    "package-lock.json": "b1a0ce3000fe089a4f8d28e3374c509f916e9a6ef18d7141544009fb03d9fffd",
+    "public/fonts/noto-cjk-sc.otf": "61610e9246dbdc6fbd71cc0cb649e3586734d3f965a625d9c7554eb3b02f6261"
+  },
+  "scope": "v2独立保存改变来源及资源；不继承旧受影响媒体哈希的播放通过。",
+  "verifiedAfterSynchronization": "d314191455fec6f99f20b283a958d09c9e0d303d",
+  "version": "group109-v2",
+  "previousVersion": "group109-v1",
+  "changedSource": "src/group109.tsx仅第三ellipse由(893,455)改(895,501)；verify109补实际prompt与新FH15恢复媒体检查；其他render/shared/anatomy与声音参数不变",
+  "synchronizationDidNotChangeSharedSource": true
+}

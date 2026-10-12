@@ -1,0 +1,124 @@
+{
+  "card": {
+    "id": "FH16",
+    "segmentId": "665a5773-57f1-4bfd-918a-680dd3eb3d41",
+    "order": 15,
+    "text": "塌陷说的是支撑结构失效后，外形发生了改变。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "8ab61b38-3aa1-45ea-aae1-6b8d2911486d",
+    "audio": "public/audio/FH16.mp3",
+    "audioSha256": "82fa379ac721cc25539190b4ef341402b5a0522be208a595d388a00b1e981d27",
+    "audioDuration": 4.68,
+    "durationInFrames": 141,
+    "依据": [
+      "#96 v0.2已确认旁白",
+      "#97最终视觉规则：非必然性、范围位置、完整不等于痊愈",
+      "#104制作及证据边界"
+    ],
+    "关键画面": "独立局部截面用原轮廓虚线与局部下陷对照，软骨和下骨层共同变形。",
+    "动作顺序": [
+      "显示原局部连续表面",
+      "中间小区域逐渐下陷，周边不动",
+      "保持原轮廓虚线与概念对照"
+    ],
+    "标注": [
+      "塌陷：支撑失效后的外形改变",
+      "原轮廓",
+      "可能局部下陷",
+      "坏死与塌陷描述的是不同变化"
+    ],
+    "关联素材": {
+      "assembly": "outputs/FH16-assembly.mp4",
+      "review": "outputs/FH16-review.mp4",
+      "assetId": "d21020b8-4299-4362-b97f-8cece1c460d8"
+    },
+    "当前核对": "evidence/109-actual-speech.json：当前声音/文案/任务及有效音频一致，实测原声不裁切不变速。",
+    "确认范围": {
+      "旁白": "https://github.com/dulltackle/ClapGrid/issues/96#issuecomment-6108628717",
+      "视觉规则": "https://github.com/dulltackle/ClapGrid/issues/97#issuecomment-6110063575"
+    },
+    "本次待审": [
+      "新生成画面医学表达与风格",
+      "人工发音听审",
+      "全片终审"
+    ],
+    "actualAssetId": "d21020b8-4299-4362-b97f-8cece1c460d8",
+    "当前核对证据": [
+      "evidence/109-actual-speech.json",
+      "evidence/109-project-link.json"
+    ]
+  },
+  "entry": "entry109.tsx",
+  "browserExecutable": "/usr/bin/google-chrome",
+  "audioProbe": {
+    "streams": [
+      {
+        "index": 0,
+        "codec_name": "mp3",
+        "codec_long_name": "MP3 (MPEG audio layer 3)",
+        "codec_type": "audio",
+        "codec_tag_string": "[0][0][0][0]",
+        "codec_tag": "0x0000",
+        "sample_fmt": "fltp",
+        "sample_rate": "24000",
+        "channels": 1,
+        "channel_layout": "mono",
+        "bits_per_sample": 0,
+        "initial_padding": 0,
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "time_base": "1/14112000",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 66044160,
+        "duration": "4.680000",
+        "bit_rate": "64000",
+        "disposition": {
+          "default": 0,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        }
+      }
+    ],
+    "format": {
+      "filename": "/home/forclaw/tmp/implement-spec-104/recovery109-v1/public/audio/FH16.mp3",
+      "nb_streams": 1,
+      "nb_programs": 0,
+      "nb_stream_groups": 0,
+      "format_name": "mp3",
+      "format_long_name": "MP2/3 (MPEG audio layer 2/3)",
+      "start_time": "0.000000",
+      "duration": "4.680000",
+      "size": "37485",
+      "bit_rate": "64076",
+      "probe_score": 51,
+      "tags": {
+        "encoder": "Lavf58.76.100"
+      }
+    }
+  },
+  "outputs": [
+    "FH16-assembly.mp4",
+    "FH16-review.mp4",
+    "FH16-review.webm"
+  ]
+}

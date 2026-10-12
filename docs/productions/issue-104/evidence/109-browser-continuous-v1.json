@@ -1,0 +1,33 @@
+{
+  "source": "actual-browser",
+  "observedAt": "2026-10-12T08:07:47.662386+00:00",
+  "media": "outputs/group109-review.webm",
+  "sha256": "aaf07245ccc3920dd0593028ab22db066d0602f6346bb711a22f4e7454a83bc5",
+  "sourceAndArchiveBytesEqual": true,
+  "initial": {
+    "currentTime": 0,
+    "duration": 16.267,
+    "paused": true,
+    "ended": false,
+    "muted": false,
+    "playbackRate": 1,
+    "readyState": 4
+  },
+  "running": {
+    "currentTime": 0.027924,
+    "paused": false,
+    "ended": false
+  },
+  "final": {
+    "currentTime": 16.267,
+    "duration": 16.267,
+    "paused": true,
+    "ended": true,
+    "muted": false,
+    "playbackRate": 1,
+    "readyState": 4,
+    "error": null
+  },
+  "method": "CUA在独立档案HTML页原生Space播放连续副本，未seek或改速，源工作目录媒体字节完全相同",
+  "scope": "本组四段完整技术播放；不代签新画面/发音听审/全片终审"
+}

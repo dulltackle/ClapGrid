@@ -1,0 +1,63 @@
+{
+  "source": "协调者真实Codex IAB采集，保存实际观测时间及完整起止记录",
+  "records": [
+    {
+      "evidence": "evidence/109-browser-continuous.json",
+      "media": "outputs/group109-review.webm",
+      "sha256": "aaf07245ccc3920dd0593028ab22db066d0602f6346bb711a22f4e7454a83bc5",
+      "observedAt": "2026-10-12T08:07:47.662386+00:00",
+      "ended": true,
+      "sourceAndArchiveBytesVerified": true,
+      "initial": {
+        "currentTime": 0,
+        "duration": 16.267,
+        "paused": true,
+        "ended": false,
+        "muted": false,
+        "playbackRate": 1,
+        "readyState": 4
+      },
+      "final": {
+        "currentTime": 16.267,
+        "duration": 16.267,
+        "paused": true,
+        "ended": true,
+        "muted": false,
+        "playbackRate": 1,
+        "readyState": 4,
+        "error": null
+      },
+      "method": "CUA在独立档案HTML页原生Space播放连续副本，未seek或改速，源工作目录媒体字节完全相同"
+    },
+    {
+      "evidence": "evidence/109-browser-archive.json",
+      "media": "outputs/group109-reproduced/FH16-review.webm",
+      "sha256": "9edac1c8d482520c69ee557eba0337e94fb42e168dffd71684146a2915178af4",
+      "observedAt": "2026-10-12T08:09:54.494011+00:00",
+      "ended": true,
+      "sourceAndArchiveBytesVerified": true,
+      "initial": {
+        "currentTime": 0.039811,
+        "duration": 4.747,
+        "paused": false,
+        "ended": false,
+        "muted": false,
+        "playbackRate": 1,
+        "readyState": 4
+      },
+      "final": {
+        "currentTime": 4.747,
+        "duration": 4.747,
+        "paused": true,
+        "ended": true,
+        "muted": false,
+        "playbackRate": 1,
+        "readyState": 4,
+        "error": null
+      },
+      "method": "直接导航实际独立恢复并另存的WebM，自动从头播放；首次观察.039811，不seek/改速/静音"
+    }
+  ],
+  "scope": "本组连续预览与独立FH16实际重渲染媒体技术播放；原速未静音、无seek、无错误",
+  "boundary": "恢复直导航自动从头播放，首次采样0.039811秒如实保留；技术证据不代签新画面、人工听审及全片终审"
+}

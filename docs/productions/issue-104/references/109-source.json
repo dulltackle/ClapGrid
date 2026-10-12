@@ -1,0 +1,10 @@
+{
+  "sourceCommit": "67166d4e966739f5ec669ea977589e42a5544c7d",
+  "sourcePath": "docs/prototypes/issue-97-style/keyframes/fh13-outcomes-v02.png",
+  "sha256": "a8ec8247e95404c47a7dea9209a9052dbcd18cebaf5fc2a1b7ae8f3651e1736a",
+  "generationRecord": "references/109-generation-record.json",
+  "confirmedScope": "#97静态视觉规则；本次新动画待审",
+  "generationRecordScope": "既有静态参考的资产来源与SHA清单，不包含生成提示词。",
+  "generationPrompts": "references/109-generation-prompts.json",
+  "generationPromptsSource": "固定#97提交67166d4e966739f5ec669ea977589e42a5544c7d的keyframes/remaining-review.json；保存既有生成提示词及修订记录，未生成新图。"
+}

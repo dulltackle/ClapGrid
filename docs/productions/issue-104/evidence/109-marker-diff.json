@@ -1,0 +1,100 @@
+{
+  "oldPngSha256": "a748db6a111ed0cdac31e280f02fdcaba940997b4cb8fe6eeb26348363bc6326",
+  "newPngSha256": "ae488c4bcde6d09742a540b408be2593a3b439c9ec8ef40819c5ca4056b5d35d",
+  "changedPixelCount": 801,
+  "differenceBounds": [
+    1012,
+    513,
+    1040,
+    584
+  ],
+  "allowedMarkerRegionUnion": [
+    [
+      1009,
+      509,
+      1042,
+      536
+    ],
+    [
+      1011,
+      562,
+      1044,
+      589
+    ]
+  ],
+  "unchangedOutsideTwoMarkerRegions": true,
+  "otherSegmentOutputsIdenticalToV1": [
+    {
+      "file": "outputs/FH13-assembly.mp4",
+      "sha256": "3d41cfc2327ac62a2c70f1b9b4d27d18f3da3477f2fe29454e52b3c5cf422b8b"
+    },
+    {
+      "file": "outputs/FH13-assembly.png",
+      "sha256": "995b23b5de976b320a95c68ce25622f101f5c5e5924f1d533ac6cb776558ab75"
+    },
+    {
+      "file": "outputs/FH13-render.json",
+      "sha256": "161dd2aa6c4c00cd61c71b9d7eecfd5c3b80096578d46764d4a19215ec589d74"
+    },
+    {
+      "file": "outputs/FH13-review.mp4",
+      "sha256": "308cae8ecf3ebb851e5bbe65863058a1c4a4813cf6ecf81e91eb7e8c5ed1060d"
+    },
+    {
+      "file": "outputs/FH13-review.png",
+      "sha256": "590d64c9069c8f1409ff6d5fd4f5bbe8c6b42613e3e43495004be54b35e55954"
+    },
+    {
+      "file": "outputs/FH13-review.webm",
+      "sha256": "a8f3e8e8749c231ff5e95fbd4aaf6111ed6fd82964bd209b684662b79a44bc99"
+    },
+    {
+      "file": "outputs/FH14-assembly.mp4",
+      "sha256": "4d0ee82922cc4ef943a9adeb9876294e4fa3fb8f2c2fb128fdd2d1d9d5730dc5"
+    },
+    {
+      "file": "outputs/FH14-assembly.png",
+      "sha256": "42e4d0f3499bba1541843da2d76c9ba9c2f76efb1600d6aff4ceb0240874c850"
+    },
+    {
+      "file": "outputs/FH14-render.json",
+      "sha256": "1dc7e99b309ad7d643fea160e39910782a28c33b9b337d9a722d2fb3903a2423"
+    },
+    {
+      "file": "outputs/FH14-review.mp4",
+      "sha256": "27163568808262bd0d65b42ee6cfcb1b24b69bbb73a768cb26491474129e0d9f"
+    },
+    {
+      "file": "outputs/FH14-review.png",
+      "sha256": "35f1a813e455188142ddb96dd167b07a3d6fccd18ba98669a05365f4d63f6025"
+    },
+    {
+      "file": "outputs/FH14-review.webm",
+      "sha256": "55dbf074647f3920ef8d9c9921cb2df6fbd15ca312e11eafe7a1d8fc02710494"
+    },
+    {
+      "file": "outputs/FH16-assembly.mp4",
+      "sha256": "d11e55d8f6ceba101c8c8ae6bccc905d968b141a6c032820199b3a6f6d323ea7"
+    },
+    {
+      "file": "outputs/FH16-assembly.png",
+      "sha256": "1b96b10b6f41b7e62e5f627ed8a57fe391b8449c47b12d3ae3d7eca99bdd27b7"
+    },
+    {
+      "file": "outputs/FH16-render.json",
+      "sha256": "7ec82661fc1fc6aa69f7354e55dba90cfc5ecd979d02118f472ec38365a7c0e9"
+    },
+    {
+      "file": "outputs/FH16-review.mp4",
+      "sha256": "315e2a3ba64016895551445beb90c6e164ced1076bceb7ab709d2f83c1e0cc79"
+    },
+    {
+      "file": "outputs/FH16-review.png",
+      "sha256": "396139abab008011c86968d530c85104229bacfb7ad61fee662c9ca1cf6c079d"
+    },
+    {
+      "file": "outputs/FH16-review.webm",
+      "sha256": "bab0836ca1bb8babc62b4ee90bcd20e54492d3d7bf2a9ad57695216a11c9b19a"
+    }
+  ]
+}

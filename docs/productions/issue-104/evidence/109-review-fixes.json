@@ -1,0 +1,69 @@
+{
+  "version": "group109-v2",
+  "previousVersion": "group109-v1",
+  "sourceBeforeCommit": "f5c76bf3485e50bf95302a82351dd6a1646894c0",
+  "findings": [
+    {
+      "id": "R109-1",
+      "reviewer": "reviewer105",
+      "disposition": "有效，第三细胞标记由骨梁间背景移至浅桃支撑曲线起点(895,501)，仅此一个SVG坐标改动",
+      "redEvidence": "{\n  \"input\": \"docs/productions/issue-104/outputs/FH15-assembly.png\",\n  \"expectedByIndependentReview\": \"第三细胞标记落在支撑曲线起点(895,501)，原错误间隙(893,455)不保留标记\",\n  \"oldGapMarked\": true,\n  \"supportCurveMarked\": false\n}\nTraceback (most recent call last):\n  File \"/home/forclaw/tmp/implement-spec-104/109-marker-media-test.py\", line 13, in <module>\n    print(json.dumps(report,ensure_ascii=False,indent=2));assert report['oldGapMarked'] is False and report['supportCurveMarked'] is True\n                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n",
+      "greenEvidence": {
+        "input": "docs/productions/issue-104/outputs/FH15-assembly.png",
+        "expectedByIndependentReview": "第三细胞标记落在支撑曲线起点(895,501)，原错误间隙(893,455)不保留标记",
+        "oldGapMarked": false,
+        "supportCurveMarked": true
+      },
+      "publicMediaTestScript": "\"\"\"在公开渲染帧验证独立审查要求的标记位置，而非断言SVG内部实现。\"\"\"\nfrom pathlib import Path\nimport subprocess,json,sys\np=Path(sys.argv[1]);raw=subprocess.check_output(['ffmpeg','-v','error','-i',str(p),'-f','rawvideo','-pix_fmt','rgb24','-'])\nscale=1920/1672;target=(157,139,137)\ndef marked(x,y):\n cx=round(x*scale);cy=round(y*scale+(1080-940*scale)/2);samples=[]\n for py in range(cy-4,cy+5):\n  for px in range(cx-4,cx+5):\n   start=(py*1920+px)*3;color=tuple(raw[start:start+3]);samples.append(color)\n return any(all(abs(a-b)<4 for a,b in zip(color,target)) for color in samples)\nreport={'input':str(p),'expectedByIndependentReview':'第三细胞标记落在支撑曲线起点(895,501)，原错误间隙(893,455)不保留标记','oldGapMarked':marked(893,455),'supportCurveMarked':marked(895,501)}\nprint(json.dumps(report,ensure_ascii=False,indent=2));assert report['oldGapMarked'] is False and report['supportCurveMarked'] is True\n"
+    },
+    {
+      "id": "R109-2",
+      "reviewer": "reviewer105",
+      "disposition": "有效，原generation-record只有资产来源/校验清单；补实际生成prompt文件并分别指明",
+      "generationRecord": "references/109-generation-record.json",
+      "actualPromptRecord": "references/109-generation-prompts.json",
+      "promptSha256": "290332d499a138f3aae60c65b0c0819158713b5be412306d157aa327ea101591",
+      "newImageGeneration": false
+    }
+  ],
+  "reuseFH16": [
+    {
+      "path": "outputs/group109-reproduced/FH16-assembly.mp4",
+      "sha256": "d11e55d8f6ceba101c8c8ae6bccc905d968b141a6c032820199b3a6f6d323ea7",
+      "sourceVersion": "group109-v1",
+      "unchanged": true
+    },
+    {
+      "path": "outputs/group109-reproduced/FH16-assembly.png",
+      "sha256": "1b96b10b6f41b7e62e5f627ed8a57fe391b8449c47b12d3ae3d7eca99bdd27b7",
+      "sourceVersion": "group109-v1",
+      "unchanged": true
+    },
+    {
+      "path": "outputs/group109-reproduced/FH16-render.json",
+      "sha256": "1d8cd01167e21192d5f080708d12f959e648bd8a71a8fd3272d8b168aaed00e9",
+      "sourceVersion": "group109-v1",
+      "unchanged": true
+    },
+    {
+      "path": "outputs/group109-reproduced/FH16-review.mp4",
+      "sha256": "315e2a3ba64016895551445beb90c6e164ced1076bceb7ab709d2f83c1e0cc79",
+      "sourceVersion": "group109-v1",
+      "unchanged": true
+    },
+    {
+      "path": "outputs/group109-reproduced/FH16-review.png",
+      "sha256": "396139abab008011c86968d530c85104229bacfb7ad61fee662c9ca1cf6c079d",
+      "sourceVersion": "group109-v1",
+      "unchanged": true
+    },
+    {
+      "path": "outputs/group109-reproduced/FH16-review.webm",
+      "sha256": "9edac1c8d482520c69ee557eba0337e94fb42e168dffd71684146a2915178af4",
+      "sourceVersion": "group109-v1",
+      "unchanged": true
+    }
+  ],
+  "scope": "前两个细胞标记、FH13/14/16画面分支及全部旁白/原声/参数未改；v1全部旧文件原样保留；新受影响媒体实际播放与MCP关联待协调者",
+  "reviewStatus": "待同reviewer105复审，作者不代签"
+}

@@ -1,0 +1,116 @@
+{
+  "card": {
+    "id": "FH14",
+    "segmentId": "95695858-1813-4d56-bd80-b310d5bd84b7",
+    "order": 13,
+    "text": "受损范围、位置等因素，都会影响进展。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "aef6e056-25fa-4a28-83a9-f1709316f654",
+    "audio": "public/audio/FH14.mp3",
+    "audioSha256": "29d4ffa908f8baba2f5b0b426ae5b560ff7c45fc49f996dfe919eb098d906328",
+    "audioDuration": 3.864,
+    "durationInFrames": 116,
+    "依据": [
+      "#96 v0.2已确认旁白",
+      "#97最终视觉规则：非必然性、范围位置、完整不等于痊愈",
+      "#104制作及证据边界"
+    ],
+    "关键画面": "同一骨轮廓显示不同局部的受损示意区域，仅标注范围与位置。",
+    "动作顺序": [
+      "保留骨结构",
+      "不同局部示意区域淡入，范围和位置文字保持"
+    ],
+    "标注": [
+      "受损范围",
+      "位置",
+      "示意区域不表示概率，也不用于分期或诊断"
+    ],
+    "关联素材": {
+      "assembly": "outputs/FH14-assembly.mp4",
+      "review": "outputs/FH14-review.mp4"
+    },
+    "当前核对": "evidence/109-actual-speech.json：当前声音/文案/任务及有效音频一致，实测原声不裁切不变速。",
+    "确认范围": {
+      "旁白": "https://github.com/dulltackle/ClapGrid/issues/96#issuecomment-6108628717",
+      "视觉规则": "https://github.com/dulltackle/ClapGrid/issues/97#issuecomment-6110063575"
+    },
+    "本次待审": [
+      "新生成画面医学表达与风格",
+      "人工发音听审",
+      "全片终审"
+    ]
+  },
+  "entry": "entry109.tsx",
+  "browserExecutable": "/usr/bin/google-chrome",
+  "audioProbe": {
+    "streams": [
+      {
+        "index": 0,
+        "codec_name": "mp3",
+        "codec_long_name": "MP3 (MPEG audio layer 3)",
+        "codec_type": "audio",
+        "codec_tag_string": "[0][0][0][0]",
+        "codec_tag": "0x0000",
+        "sample_fmt": "fltp",
+        "sample_rate": "24000",
+        "channels": 1,
+        "channel_layout": "mono",
+        "bits_per_sample": 0,
+        "initial_padding": 0,
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "time_base": "1/14112000",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 54528768,
+        "duration": "3.864000",
+        "bit_rate": "64000",
+        "disposition": {
+          "default": 0,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        }
+      }
+    ],
+    "format": {
+      "filename": "/home/forclaw/tmp/spec-104-ticket-109/docs/productions/issue-104/public/audio/FH14.mp3",
+      "nb_streams": 1,
+      "nb_programs": 0,
+      "nb_stream_groups": 0,
+      "format_name": "mp3",
+      "format_long_name": "MP2/3 (MPEG audio layer 2/3)",
+      "start_time": "0.000000",
+      "duration": "3.864000",
+      "size": "30957",
+      "bit_rate": "64093",
+      "probe_score": 51,
+      "tags": {
+        "encoder": "Lavf58.76.100"
+      }
+    }
+  },
+  "outputs": [
+    "FH14-assembly.mp4",
+    "FH14-review.mp4",
+    "FH14-review.webm"
+  ]
+}
