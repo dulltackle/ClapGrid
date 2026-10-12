@@ -1,0 +1,57 @@
+{
+  "finding": "R110 素材关联误指105基线",
+  "correction": "仅纠正本版角色映射并另存修正版；源画面、音轨、渲染媒体和参数不变",
+  "verifiedAt": "2026-10-12T08:02:47.220020+00:00",
+  "recoverableOriginals": "/home/forclaw/tmp/implement-spec-104/110-role-fix/originals",
+  "archives": [
+    {
+      "version": "fh10-before-v2",
+      "previousVersion": "fh10-before-v1",
+      "sourceArchive": "/home/forclaw/tmp/implement-spec-104/archives/fh10-before-v1",
+      "sourceManifestSha256": "d66ae4ce4f6673377c41a6142873f9200278f96c52ab3c1779b21466b63dfce6",
+      "correctedArchive": "/home/forclaw/tmp/implement-spec-104/archives/fh10-before-v2",
+      "videoSrc": "outputs/FH10-before-review.webm",
+      "videoSha256": "3c72a586f74a89440708505ec314a98efbd3d66709050e208d674de48b765140",
+      "unchangedMedia": {
+        "outputs/FH10-before-assembly.mp4": "4e5ab1c92ac2e4a5d7e2ce4f55bd12d710a0f4df09ed0ab42f075bda3e22ad81",
+        "outputs/FH10-before-review.mp4": "92c134e17e4487a06df6ec6929ce799f5ad253d5bb4afba3f75221c512ad39a6",
+        "outputs/FH10-before-review.webm": "3c72a586f74a89440708505ec314a98efbd3d66709050e208d674de48b765140",
+        "outputs/FH10-before-frame-0.png": "a9b4ca285b8d3c147e3db86d470153e56281e00f35de750999962cac4e2cb753",
+        "outputs/FH10-before-frame-71.png": "a9b4ca285b8d3c147e3db86d470153e56281e00f35de750999962cac4e2cb753",
+        "outputs/FH10-before-frame-84.png": "469fbef869f19115c1b8068a7273f5cc86f8d95dccb6f0f8c34402d7777b0536",
+        "outputs/FH10-before-frame-94.png": "f80e783b2ea2b043c5cc3a7aa5a3a4bfe3602b336ca81b33b0654638ba782126",
+        "outputs/FH10-before-frame-104.png": "6224b81ff860d2c8fc71c1d7e751894dd0fc3a5e1dbdeb8195b577571ee5bff7",
+        "outputs/FH10-before-frame-115.png": "6f59f6e09f29636f5de0eda74d7d80174499091f9076dcdf1b5d8d4f052d659f",
+        "outputs/FH10-before-frame-145.png": "6f59f6e09f29636f5de0eda74d7d80174499091f9076dcdf1b5d8d4f052d659f"
+      }
+    },
+    {
+      "version": "fh10-slow-v3",
+      "previousVersion": "fh10-slow-v2",
+      "sourceArchive": "/home/forclaw/tmp/implement-spec-104/archives/fh10-slow-v2",
+      "sourceManifestSha256": "e0d5a9e99136f9052c9b435cd2e5871b2633f275a8ceecf252c8fa702da2c94e",
+      "correctedArchive": "/home/forclaw/tmp/implement-spec-104/archives/fh10-slow-v3",
+      "videoSrc": "outputs/FH10-slow-review.webm",
+      "videoSha256": "0054c918cef32991d0679472bc9e9ec5230557d4ca2776c9b739a2dd9f53b102",
+      "unchangedMedia": {
+        "outputs/FH10-slow-assembly.mp4": "ed17ff95a5964791e719d15aec3f28a774508084b2ad88545529445d1a6c5f69",
+        "outputs/FH10-slow-review.mp4": "b0ff2d8a8b7a194a4d24ea6f9b5b43f47f9252f68855fc3ea5f507a974d2d9af",
+        "outputs/FH10-slow-review.webm": "0054c918cef32991d0679472bc9e9ec5230557d4ca2776c9b739a2dd9f53b102",
+        "outputs/FH10-slow-frame-0.png": "a9b4ca285b8d3c147e3db86d470153e56281e00f35de750999962cac4e2cb753",
+        "outputs/FH10-slow-frame-71.png": "a9b4ca285b8d3c147e3db86d470153e56281e00f35de750999962cac4e2cb753",
+        "outputs/FH10-slow-frame-84.png": "e969381b9c356ec56810e66ff002a39daee24b4412df804151b54871957da163",
+        "outputs/FH10-slow-frame-94.png": "5a893bee60bf7b796d1c9c42685b9ee9363ae9b289beb8f786424d769290bfaa",
+        "outputs/FH10-slow-frame-104.png": "d73eeb038d7b6074f41e19ba84eee3d214841abc8e256c05693ca66417d75f9b",
+        "outputs/FH10-slow-frame-115.png": "6f59f6e09f29636f5de0eda74d7d80174499091f9076dcdf1b5d8d4f052d659f",
+        "outputs/FH10-slow-frame-145.png": "6f59f6e09f29636f5de0eda74d7d80174499091f9076dcdf1b5d8d4f052d659f"
+      }
+    }
+  ],
+  "restored": {
+    "path": "/home/forclaw/tmp/implement-spec-104/110-restore-before",
+    "version": "fh10-before-v2-restored",
+    "videoSrc": "outputs/FH10-before-review.webm",
+    "videoSha256": "7c253b3ac0570db8b67031c9ab6e0873749d2ac98e562e454beba48bd4dbe56d",
+    "originalBackup": "/home/forclaw/tmp/implement-spec-104/110-role-fix/originals/restore"
+  }
+}

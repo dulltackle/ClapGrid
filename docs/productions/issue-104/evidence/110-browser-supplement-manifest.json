@@ -1,0 +1,63 @@
+{
+  "role": "只读版本之外的实际浏览器技术审阅补充档案；不改任何封存版本或媒体",
+  "directory": "/home/forclaw/tmp/implement-spec-104/archives/110-technical-handoff/browser-role-corrected-v1",
+  "versions": [
+    {
+      "version": "fh10-before-v2",
+      "directory": "/home/forclaw/tmp/implement-spec-104/archives/fh10-before-v2",
+      "videoSrc": "outputs/FH10-before-review.webm",
+      "videoSha256": "3c72a586f74a89440708505ec314a98efbd3d66709050e208d674de48b765140",
+      "manifestSha256": "358bc1724faf4784087389e9541f7ae9a8f5166aca7cefdbeb5d4773e3121b4c",
+      "evidence": "110-browser-fh10-before-v2.json",
+      "evidenceSha256": "7d7f1d259c2b93fc81185293987a9ed199f74f9259f8495b629fdc4f03a0107c",
+      "scope": "当前文件hash对应技术从0至ended播放；不代签人工画面、发音或箭头节奏"
+    },
+    {
+      "version": "fh10-slow-v3",
+      "directory": "/home/forclaw/tmp/implement-spec-104/archives/fh10-slow-v3",
+      "videoSrc": "outputs/FH10-slow-review.webm",
+      "videoSha256": "0054c918cef32991d0679472bc9e9ec5230557d4ca2776c9b739a2dd9f53b102",
+      "manifestSha256": "800a2994e813f29ecf36a06f593889ec8c76af7cff87a2fa82e24603eb22bbbc",
+      "evidence": "110-browser-fh10-slow-v3.json",
+      "evidenceSha256": "7881ba7f8da5a4f538c0640bdb4a57370e3c9e4c187493ed345fe28fa076661b",
+      "scope": "当前文件hash对应技术从0至ended播放；不代签人工画面、发音或箭头节奏"
+    },
+    {
+      "version": "fh10-before-v2-restored",
+      "directory": "/home/forclaw/tmp/implement-spec-104/110-restore-before",
+      "videoSrc": "outputs/FH10-before-review.webm",
+      "videoSha256": "7c253b3ac0570db8b67031c9ab6e0873749d2ac98e562e454beba48bd4dbe56d",
+      "manifestSha256": "173ad21d11142b53330bcbc5fa3e8eddfcbd3da27a58ae7bff4b08093810c34e",
+      "evidence": "110-browser-fh10-before-v2-restored.json",
+      "evidenceSha256": "b7c54baebcfaf31d183ba96561775099d332f31f15fd8c97d038511573d63e85",
+      "scope": "当前文件hash对应技术从0至ended播放；不代签人工画面、发音或箭头节奏"
+    }
+  ],
+  "humanStatus": {
+    "visualAndArrowPace": "待#112人工复审",
+    "listening": "待人工听审",
+    "fullFilm": "待终审"
+  },
+  "files": [
+    {
+      "path": "110-browser-fh10-before-v2-restored.json",
+      "sha256": "b7c54baebcfaf31d183ba96561775099d332f31f15fd8c97d038511573d63e85",
+      "bytes": 952
+    },
+    {
+      "path": "110-browser-fh10-before-v2.json",
+      "sha256": "7d7f1d259c2b93fc81185293987a9ed199f74f9259f8495b629fdc4f03a0107c",
+      "bytes": 923
+    },
+    {
+      "path": "110-browser-fh10-slow-v3.json",
+      "sha256": "7881ba7f8da5a4f538c0640bdb4a57370e3c9e4c187493ed345fe28fa076661b",
+      "bytes": 955
+    },
+    {
+      "path": "110-review-status.json",
+      "sha256": "9272ac8fefeb046d355cf50fc023ea9a8af178a98e2158d072a95d396d88a405",
+      "bytes": 2172
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "source": "actual-host",
+  "observedAt": "2026-10-12T08:29:52.005Z",
+  "scope": "现行FH10选用slow-v3的实际导入/关联/说明操作；此操作不是独立恢复回接，也不表示人工动作或全片确认",
+  "rawFile": "/home/forclaw/tmp/implement-spec-104/import-110-slow-v3.json",
+  "rawSha256": "102eba18b77c479356071020aa3aaf95b181840b1e5cf435f05b392d58863100",
+  "response": {
+    "project": {
+      "id": "cd43eb48-a982-4004-8bc1-989c6fba9b3a",
+      "directory": "/home/forclaw/code/ClapGrid/clapgrid",
+      "createdAt": "2026-10-04T08:20:25.627Z"
+    },
+    "instanceId": "646e600d-d631-47ba-91de-6212e3cb9504",
+    "buildIdentity": {
+      "schemaVersion": 1,
+      "state": "known",
+      "version": "0.1.0+git.907c064de1c5.3a610292288b",
+      "source": {
+        "commit": "907c064de1c5449e2967e0b127776c794e605b73",
+        "state": "clean"
+      },
+      "contentFingerprint": "sha256:a23ffc9873c25a20b4c25c3832f33248c2b38f0565b57e710b3f876318547ab3"
+    },
+    "segment": {
+      "id": "d9b6c5b5-abe9-4a98-bd84-c7667eb44dce",
+      "order": 10,
+      "text": "如果局部结构继续受损，承重时就可能出现细小骨折。",
+      "visualNote": "FH10 · 当前基线：平缓承重箭头、骨组织既有细小裂隙及局部放大，软骨连续。",
+      "video": {
+        "assetId": "e3d910cc-be98-42a7-b417-99c0c03b68e9",
+        "start": 0
+      }
+    },
+    "assets": [
+      {
+        "id": "4f2c6388-eba2-4823-a813-be23f4d53808",
+        "name": "FH10-slow-assembly.mp4",
+        "duration": 4.866666
+      }
+    ],
+    "importedAsset": {
+      "id": "4f2c6388-eba2-4823-a813-be23f4d53808",
+      "name": "FH10-slow-assembly.mp4",
+      "duration": 4.866666
+    }
+  }
+}

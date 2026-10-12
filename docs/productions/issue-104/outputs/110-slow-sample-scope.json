@@ -1,0 +1,22 @@
+{
+  "frames": [
+    0,
+    71,
+    84,
+    94,
+    104,
+    115,
+    145
+  ],
+  "roi": [
+    752,
+    55,
+    890,
+    166
+  ],
+  "width": 1920,
+  "height": 1080,
+  "scope": "原始Remotion无损PNG关键时点采样，不声称穷举逐帧",
+  "durationInFrames": 146,
+  "audioDuration": 4.848
+}

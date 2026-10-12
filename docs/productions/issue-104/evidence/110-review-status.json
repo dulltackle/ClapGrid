@@ -1,0 +1,52 @@
+{
+  "versions": [
+    "fh10-before-v2",
+    "fh10-slow-v3"
+  ],
+  "change": "仅motion.slow改变箭头移动时间；旁白/配音/字幕/总帧长/骨结构/放大图时序不变",
+  "technical": {
+    "status": "两版比较、独立恢复重渲染、角色映射、五类异常演练及三份修正版实际浏览器从头播放至ended均通过",
+    "scope": "当前4.848秒原声、146帧，两版PCM一致；0/71/84/94/104/115/145原始PNG差异仅预定箭头ROI；恢复后PCM及上述采样匹配原版；非逐帧穷举",
+    "evidence": [
+      "evidence/110-compare.json",
+      "evidence/110-restoration.json",
+      "evidence/110-interruption.json"
+    ],
+    "browserEvidence": [
+      "evidence/110-browser-fh10-before-v2.json",
+      "evidence/110-browser-fh10-slow-v3.json",
+      "evidence/110-browser-fh10-before-v2-restored.json"
+    ],
+    "browserScope": "960×540 WebM审阅副本4.918秒含编码补齐；原旁白4.848秒/正式MP4 146帧参数与全长解码另有证据；播放不扩大为人工判断"
+  },
+  "visual": {
+    "existingConfirmation": "#96旁白、#97视觉规则、#100原型画面；本次修改不扩大旧确认",
+    "currentReview": "待#112汇合箭头节奏与前后衔接复审"
+  },
+  "listening": {
+    "status": "待人工听审"
+  },
+  "fullFilm": {
+    "status": "待全片终审"
+  },
+  "reconnect": {
+    "status": "未接回项目，独立恢复不覆盖项目；如需接回由协调者另核对当前身份/文案/声音/实际有效配音"
+  },
+  "archivePolicy": "两个原档案封存后只读：恢复和异常模拟均用独立物理副本。收尾/播放报告作为外部补充证据保存，明确对应具体文件hash，不改原档案已保存文件或确认范围。",
+  "preservedHistoricalVersions": [
+    "fh10-before-v1",
+    "fh10-slow-v2"
+  ],
+  "materialRoles": {
+    "status": "修正版实际角色/输入/完成记录/完整文件校验通过；原封存旧卡误指由新检查明确拒绝",
+    "currentEvidence": "evidence/110-role-verification.json",
+    "scope": "仅角色说明修正，媒体、画面与音轨不变；旧渲染快照保留原样，不伪造重新渲染"
+  },
+  "currentProjectSelection": {
+    "source": "evidence/110-project-note-slow-v3.json",
+    "version": "fh10-slow-v3",
+    "assetId": "4f2c6388-eba2-4823-a813-be23f4d53808",
+    "segmentId": "d9b6c5b5-abe9-4a98-bd84-c7667eb44dce",
+    "scope": "实际新画面素材关联；独立before恢复仍未接回当前项目，画面/听审/节奏/全片确认仍待审"
+  }
+}

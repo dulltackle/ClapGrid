@@ -1,0 +1,881 @@
+{
+  "status": "passed",
+  "observedAt": "2026-10-12T07:35:24.323903+00:00",
+  "roiPredetermined": [
+    752,
+    55,
+    890,
+    166
+  ],
+  "sampleScope": "仅列出的原始无损Remotion PNG时点，不声称每帧",
+  "sampleFrames": [
+    {
+      "frame": 0,
+      "differenceBounds": null,
+      "outsideROIIdentical": true,
+      "beforeRGBSha256": "0c7ba6e55862a467bb03b171df07e95c15ec630f7a717fe90441f673f4846b23",
+      "slowRGBSha256": "0c7ba6e55862a467bb03b171df07e95c15ec630f7a717fe90441f673f4846b23"
+    },
+    {
+      "frame": 71,
+      "differenceBounds": null,
+      "outsideROIIdentical": true,
+      "beforeRGBSha256": "0c7ba6e55862a467bb03b171df07e95c15ec630f7a717fe90441f673f4846b23",
+      "slowRGBSha256": "0c7ba6e55862a467bb03b171df07e95c15ec630f7a717fe90441f673f4846b23"
+    },
+    {
+      "frame": 84,
+      "differenceBounds": [
+        761,
+        72,
+        880,
+        146
+      ],
+      "outsideROIIdentical": true,
+      "beforeRGBSha256": "7d5809a57c0d5aba7f6b6c76ed5ef7858fa6904253425ca7226ae7968f64adcc",
+      "slowRGBSha256": "40603289935bd036345ebdbd0526d36fe16d69bd7e4dc6f0707e77068c754f18"
+    },
+    {
+      "frame": 94,
+      "differenceBounds": [
+        761,
+        86,
+        880,
+        157
+      ],
+      "outsideROIIdentical": true,
+      "beforeRGBSha256": "4d0018e021c8ccfef35e50f6702ae6e5a7abfd639348f73ae351765c0c5400f1",
+      "slowRGBSha256": "8a962d96ef940e155445b7a0cc0433d8d2afe602dc18e15756b177a81e9ddb9e"
+    },
+    {
+      "frame": 104,
+      "differenceBounds": [
+        761,
+        96,
+        880,
+        157
+      ],
+      "outsideROIIdentical": true,
+      "beforeRGBSha256": "86bd9ddbf2f0c4ff4a6806ba0844d487dfe7aeb971c0172796510a39619a271c",
+      "slowRGBSha256": "459f0748111ee8cd4d0a536165fc3feda42cebfab587efbc5ac6f1b2844bb434"
+    },
+    {
+      "frame": 115,
+      "differenceBounds": null,
+      "outsideROIIdentical": true,
+      "beforeRGBSha256": "205f586599b5cbe2f887d255c6300c4a54a68616473b4c1170cf7c9d7718c2a9",
+      "slowRGBSha256": "205f586599b5cbe2f887d255c6300c4a54a68616473b4c1170cf7c9d7718c2a9"
+    },
+    {
+      "frame": 145,
+      "differenceBounds": null,
+      "outsideROIIdentical": true,
+      "beforeRGBSha256": "205f586599b5cbe2f887d255c6300c4a54a68616473b4c1170cf7c9d7718c2a9",
+      "slowRGBSha256": "205f586599b5cbe2f887d255c6300c4a54a68616473b4c1170cf7c9d7718c2a9"
+    }
+  ],
+  "decodedPCM": {
+    "before": {
+      "sha256": "f11a2c2493782e87118fff67f6e22823ef8bce19e0c5506ea0130b0691fa33de",
+      "bytes": 471040,
+      "sampleRate": 48000,
+      "channels": 1,
+      "sampleFormat": "s16le"
+    },
+    "slow": {
+      "sha256": "f11a2c2493782e87118fff67f6e22823ef8bce19e0c5506ea0130b0691fa33de",
+      "bytes": 471040,
+      "sampleRate": 48000,
+      "channels": 1,
+      "sampleFormat": "s16le"
+    }
+  },
+  "media": [
+    {
+      "path": "outputs/FH10-before-assembly.mp4",
+      "sha256": "4e5ab1c92ac2e4a5d7e2ce4f55bd12d710a0f4df09ed0ab42f075bda3e22ad81",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "width": 1920,
+            "height": 1080,
+            "coded_width": 1920,
+            "coded_height": 1080,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuvj420p",
+            "level": 40,
+            "color_range": "pc",
+            "color_space": "bt470bg",
+            "chroma_location": "center",
+            "field_order": "progressive",
+            "refs": 1,
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "30/1",
+            "avg_frame_rate": "30/1",
+            "time_base": "1/90000",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 438000,
+            "duration": "4.866667",
+            "bit_rate": "210636",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "146",
+            "extradata_size": 51,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "vendor_id": "[0][0][0][0]",
+              "encoder": "Lavc61.19.100 libx264"
+            },
+            "side_data_list": [
+              {
+                "side_data_type": "ICC Profile"
+              }
+            ]
+          }
+        ],
+        "format": {
+          "filename": "outputs/FH10-before-assembly.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "4.866667",
+          "size": "131270",
+          "bit_rate": "215786",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf61.7.100",
+            "comment": "Made with Remotion 4.0.421"
+          }
+        }
+      },
+      "decode": {
+        "exitCode": 0,
+        "stderr": ""
+      }
+    },
+    {
+      "path": "outputs/FH10-before-review.mp4",
+      "sha256": "92c134e17e4487a06df6ec6929ce799f5ad253d5bb4afba3f75221c512ad39a6",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "width": 1920,
+            "height": 1080,
+            "coded_width": 1920,
+            "coded_height": 1080,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuvj420p",
+            "level": 40,
+            "color_range": "pc",
+            "color_space": "bt470bg",
+            "chroma_location": "center",
+            "field_order": "progressive",
+            "refs": 1,
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "30/1",
+            "avg_frame_rate": "30/1",
+            "time_base": "1/90000",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 438000,
+            "duration": "4.866667",
+            "bit_rate": "242779",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "146",
+            "extradata_size": 51,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "vendor_id": "[0][0][0][0]"
+            },
+            "side_data_list": [
+              {
+                "side_data_type": "ICC Profile"
+              }
+            ]
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "codec_long_name": "AAC (Advanced Audio Coding)",
+            "profile": "LC",
+            "codec_type": "audio",
+            "codec_tag_string": "mp4a",
+            "codec_tag": "0x6134706d",
+            "sample_fmt": "fltp",
+            "sample_rate": "24000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "bits_per_sample": 0,
+            "initial_padding": 0,
+            "id": "0x2",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "time_base": "1/24000",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 116808,
+            "duration": "4.867000",
+            "bit_rate": "105457",
+            "nb_frames": "116",
+            "extradata_size": 5,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "SoundHandler",
+              "vendor_id": "[0][0][0][0]"
+            }
+          }
+        ],
+        "format": {
+          "filename": "outputs/FH10-before-review.mp4",
+          "nb_streams": 2,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "4.867000",
+          "size": "218257",
+          "bit_rate": "358754",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf62.3.100",
+            "comment": "Made with Remotion 4.0.421"
+          }
+        }
+      },
+      "decode": {
+        "exitCode": 0,
+        "stderr": ""
+      }
+    },
+    {
+      "path": "outputs/FH10-before-review.webm",
+      "sha256": "3c72a586f74a89440708505ec314a98efbd3d66709050e208d674de48b765140",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "vp8",
+            "codec_long_name": "On2 VP8",
+            "profile": "0",
+            "codec_type": "video",
+            "codec_tag_string": "[0][0][0][0]",
+            "codec_tag": "0x0000",
+            "width": 960,
+            "height": 540,
+            "coded_width": 960,
+            "coded_height": 540,
+            "has_b_frames": 0,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "color_range": "pc",
+            "color_space": "bt470bg",
+            "field_order": "progressive",
+            "refs": 1,
+            "r_frame_rate": "30/1",
+            "avg_frame_rate": "30/1",
+            "time_base": "1/1000",
+            "start_pts": 11,
+            "start_time": "0.011000",
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "ENCODER": "Lavc62.11.100 libvpx",
+              "HANDLER_NAME": "VideoHandler",
+              "VENDOR_ID": "[0][0][0][0]",
+              "DURATION": "00:00:04.877000000"
+            }
+          },
+          {
+            "index": 1,
+            "codec_name": "vorbis",
+            "codec_long_name": "Vorbis",
+            "codec_type": "audio",
+            "codec_tag_string": "[0][0][0][0]",
+            "codec_tag": "0x0000",
+            "sample_fmt": "fltp",
+            "sample_rate": "24000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "bits_per_sample": 0,
+            "initial_padding": 0,
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "time_base": "1/1000",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "extradata_size": 3383,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "ENCODER": "Lavc62.11.100 libvorbis",
+              "HANDLER_NAME": "SoundHandler",
+              "VENDOR_ID": "[0][0][0][0]",
+              "DURATION": "00:00:04.918000000"
+            }
+          }
+        ],
+        "format": {
+          "filename": "outputs/FH10-before-review.webm",
+          "nb_streams": 2,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "matroska,webm",
+          "format_long_name": "Matroska / WebM",
+          "start_time": "0.000000",
+          "duration": "4.918000",
+          "size": "285199",
+          "bit_rate": "463926",
+          "probe_score": 100,
+          "tags": {
+            "COMMENT": "Made with Remotion 4.0.421",
+            "MAJOR_BRAND": "isom",
+            "MINOR_VERSION": "512",
+            "COMPATIBLE_BRANDS": "isomiso2avc1mp41",
+            "ENCODER": "Lavf62.3.100"
+          }
+        }
+      },
+      "decode": {
+        "exitCode": 0,
+        "stderr": ""
+      }
+    },
+    {
+      "path": "outputs/FH10-slow-assembly.mp4",
+      "sha256": "ed17ff95a5964791e719d15aec3f28a774508084b2ad88545529445d1a6c5f69",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "width": 1920,
+            "height": 1080,
+            "coded_width": 1920,
+            "coded_height": 1080,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuvj420p",
+            "level": 40,
+            "color_range": "pc",
+            "color_space": "bt470bg",
+            "chroma_location": "center",
+            "field_order": "progressive",
+            "refs": 1,
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "30/1",
+            "avg_frame_rate": "30/1",
+            "time_base": "1/90000",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 438000,
+            "duration": "4.866667",
+            "bit_rate": "214204",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "146",
+            "extradata_size": 51,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "vendor_id": "[0][0][0][0]",
+              "encoder": "Lavc61.19.100 libx264"
+            },
+            "side_data_list": [
+              {
+                "side_data_type": "ICC Profile"
+              }
+            ]
+          }
+        ],
+        "format": {
+          "filename": "outputs/FH10-slow-assembly.mp4",
+          "nb_streams": 1,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "4.866667",
+          "size": "133441",
+          "bit_rate": "219355",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf61.7.100",
+            "comment": "Made with Remotion 4.0.421"
+          }
+        }
+      },
+      "decode": {
+        "exitCode": 0,
+        "stderr": ""
+      }
+    },
+    {
+      "path": "outputs/FH10-slow-review.mp4",
+      "sha256": "b0ff2d8a8b7a194a4d24ea6f9b5b43f47f9252f68855fc3ea5f507a974d2d9af",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "width": 1920,
+            "height": 1080,
+            "coded_width": 1920,
+            "coded_height": 1080,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuvj420p",
+            "level": 40,
+            "color_range": "pc",
+            "color_space": "bt470bg",
+            "chroma_location": "center",
+            "field_order": "progressive",
+            "refs": 1,
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "30/1",
+            "avg_frame_rate": "30/1",
+            "time_base": "1/90000",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 438000,
+            "duration": "4.866667",
+            "bit_rate": "245876",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "146",
+            "extradata_size": 51,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "VideoHandler",
+              "vendor_id": "[0][0][0][0]"
+            },
+            "side_data_list": [
+              {
+                "side_data_type": "ICC Profile"
+              }
+            ]
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "codec_long_name": "AAC (Advanced Audio Coding)",
+            "profile": "LC",
+            "codec_type": "audio",
+            "codec_tag_string": "mp4a",
+            "codec_tag": "0x6134706d",
+            "sample_fmt": "fltp",
+            "sample_rate": "24000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "bits_per_sample": 0,
+            "initial_padding": 0,
+            "id": "0x2",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "time_base": "1/24000",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 116808,
+            "duration": "4.867000",
+            "bit_rate": "105457",
+            "nb_frames": "116",
+            "extradata_size": 5,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "language": "und",
+              "handler_name": "SoundHandler",
+              "vendor_id": "[0][0][0][0]"
+            }
+          }
+        ],
+        "format": {
+          "filename": "outputs/FH10-slow-review.mp4",
+          "nb_streams": 2,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+          "format_long_name": "QuickTime / MOV",
+          "start_time": "0.000000",
+          "duration": "4.867000",
+          "size": "220141",
+          "bit_rate": "361850",
+          "probe_score": 100,
+          "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "encoder": "Lavf62.3.100",
+            "comment": "Made with Remotion 4.0.421"
+          }
+        }
+      },
+      "decode": {
+        "exitCode": 0,
+        "stderr": ""
+      }
+    },
+    {
+      "path": "outputs/FH10-slow-review.webm",
+      "sha256": "0054c918cef32991d0679472bc9e9ec5230557d4ca2776c9b739a2dd9f53b102",
+      "probe": {
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "vp8",
+            "codec_long_name": "On2 VP8",
+            "profile": "0",
+            "codec_type": "video",
+            "codec_tag_string": "[0][0][0][0]",
+            "codec_tag": "0x0000",
+            "width": 960,
+            "height": 540,
+            "coded_width": 960,
+            "coded_height": 540,
+            "has_b_frames": 0,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "color_range": "pc",
+            "color_space": "bt470bg",
+            "field_order": "progressive",
+            "refs": 1,
+            "r_frame_rate": "30/1",
+            "avg_frame_rate": "30/1",
+            "time_base": "1/1000",
+            "start_pts": 11,
+            "start_time": "0.011000",
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "ENCODER": "Lavc62.11.100 libvpx",
+              "HANDLER_NAME": "VideoHandler",
+              "VENDOR_ID": "[0][0][0][0]",
+              "DURATION": "00:00:04.877000000"
+            }
+          },
+          {
+            "index": 1,
+            "codec_name": "vorbis",
+            "codec_long_name": "Vorbis",
+            "codec_type": "audio",
+            "codec_tag_string": "[0][0][0][0]",
+            "codec_tag": "0x0000",
+            "sample_fmt": "fltp",
+            "sample_rate": "24000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "bits_per_sample": 0,
+            "initial_padding": 0,
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "time_base": "1/1000",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "extradata_size": 3383,
+            "disposition": {
+              "default": 1,
+              "dub": 0,
+              "original": 0,
+              "comment": 0,
+              "lyrics": 0,
+              "karaoke": 0,
+              "forced": 0,
+              "hearing_impaired": 0,
+              "visual_impaired": 0,
+              "clean_effects": 0,
+              "attached_pic": 0,
+              "timed_thumbnails": 0,
+              "non_diegetic": 0,
+              "captions": 0,
+              "descriptions": 0,
+              "metadata": 0,
+              "dependent": 0,
+              "still_image": 0,
+              "multilayer": 0
+            },
+            "tags": {
+              "ENCODER": "Lavc62.11.100 libvorbis",
+              "HANDLER_NAME": "SoundHandler",
+              "VENDOR_ID": "[0][0][0][0]",
+              "DURATION": "00:00:04.918000000"
+            }
+          }
+        ],
+        "format": {
+          "filename": "outputs/FH10-slow-review.webm",
+          "nb_streams": 2,
+          "nb_programs": 0,
+          "nb_stream_groups": 0,
+          "format_name": "matroska,webm",
+          "format_long_name": "Matroska / WebM",
+          "start_time": "0.000000",
+          "duration": "4.918000",
+          "size": "290580",
+          "bit_rate": "472679",
+          "probe_score": 100,
+          "tags": {
+            "COMMENT": "Made with Remotion 4.0.421",
+            "MAJOR_BRAND": "isom",
+            "MINOR_VERSION": "512",
+            "COMPATIBLE_BRANDS": "isomiso2avc1mp41",
+            "ENCODER": "Lavf62.3.100"
+          }
+        }
+      },
+      "decode": {
+        "exitCode": 0,
+        "stderr": ""
+      }
+    }
+  ],
+  "currentAudioDuration": 4.848,
+  "durationInFrames": 146,
+  "unchangedInputs": [
+    "稳定身份",
+    "确认旁白",
+    "原音频",
+    "声音输入",
+    "任务身份",
+    "完整字幕",
+    "总帧长",
+    "无关骨结构与放大图时序"
+  ],
+  "motionChange": "仅motion.slow令箭头移动更慢；版本id不渲染",
+  "sourceDirectory": "/home/forclaw/tmp/spec-104-ticket-110/docs/productions/issue-104"
+}

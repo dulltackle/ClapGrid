@@ -1,0 +1,506 @@
+{
+  "mergedCommit": "a53a69ba21d12ef67dbba7e6ab09cf901a768303",
+  "integrationTip": "d314191455fec6f99f20b283a958d09c9e0d303d",
+  "preSyncCommit": "0568a80d31c3134e8a8b268b46bdfe17f6aa7927",
+  "mergeConflictResolution": "无冲突，Git ort正常合并；无解决改动",
+  "group107CoverageCorrespondence": [
+    {
+      "file": "docs/productions/issue-104/cards/FH05.json",
+      "integrationBlob": "e23733ccf5b0bb6f45ad8522bd8c31f25f56b80e",
+      "mergedBlob": "e23733ccf5b0bb6f45ad8522bd8c31f25f56b80e",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/cards/FH06.json",
+      "integrationBlob": "3b877316fb365b509ead322fc85f5a4da6789246",
+      "mergedBlob": "3b877316fb365b509ead322fc85f5a4da6789246",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/cards/FH07.json",
+      "integrationBlob": "1cf235941bac6e959058c2ad460eb2fb66de6072",
+      "mergedBlob": "1cf235941bac6e959058c2ad460eb2fb66de6072",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/cards/FH08.json",
+      "integrationBlob": "40f8caf9f8f45f57191d7f6e0507c9ff4281f65b",
+      "mergedBlob": "40f8caf9f8f45f57191d7f6e0507c9ff4281f65b",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/cards/FH09.json",
+      "integrationBlob": "a61d0596ce50dad5275c856f6dbef2411bde6fba",
+      "mergedBlob": "a61d0596ce50dad5275c856f6dbef2411bde6fba",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/entry107.tsx",
+      "integrationBlob": "97c7616cf7e034353063a932aed75f1c15236778",
+      "mergedBlob": "97c7616cf7e034353063a932aed75f1c15236778",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/evidence/107-actual-speech.json",
+      "integrationBlob": "96c8f74123d3e145585ac5441c9b80a5fc70c0bf",
+      "mergedBlob": "96c8f74123d3e145585ac5441c9b80a5fc70c0bf",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/evidence/107-archive-manifest.json",
+      "integrationBlob": "3f2b11340898477fe62ba792423792dd3ebd5e30",
+      "mergedBlob": "3f2b11340898477fe62ba792423792dd3ebd5e30",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/evidence/107-audio-integrity.json",
+      "integrationBlob": "363a2a003349d3f9045b5d5613c3ab9eaa148fdf",
+      "mergedBlob": "363a2a003349d3f9045b5d5613c3ab9eaa148fdf",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/evidence/107-browser-playback.json",
+      "integrationBlob": "5ff57cbba4763a13c5ee293f2d3509f2fde5bda7",
+      "mergedBlob": "5ff57cbba4763a13c5ee293f2d3509f2fde5bda7",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/evidence/107-continuous-media-report.json",
+      "integrationBlob": "b540b1be5684d52e6c20fd2d50c4a5fd6666798c",
+      "mergedBlob": "b540b1be5684d52e6c20fd2d50c4a5fd6666798c",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/evidence/107-criterion-evidence.json",
+      "integrationBlob": "b0989259e0d73d572f125e8f9d17e5764d5fcdc1",
+      "mergedBlob": "b0989259e0d73d572f125e8f9d17e5764d5fcdc1",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/evidence/107-import-result.json",
+      "integrationBlob": "ce386d36f4006d6cc97d3b443470d1bd2b5783ee",
+      "mergedBlob": "ce386d36f4006d6cc97d3b443470d1bd2b5783ee",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/evidence/107-media-report.json",
+      "integrationBlob": "2064822778a3b4372ef392464fabad8808b74e9f",
+      "mergedBlob": "2064822778a3b4372ef392464fabad8808b74e9f",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/evidence/107-production-plan.json",
+      "integrationBlob": "08d54f73683eb46d688ac8507597315451e3c19e",
+      "mergedBlob": "08d54f73683eb46d688ac8507597315451e3c19e",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/evidence/107-project-link.json",
+      "integrationBlob": "fb7a293d0f118b990a63b7152d2f97f7d21c006c",
+      "mergedBlob": "fb7a293d0f118b990a63b7152d2f97f7d21c006c",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/evidence/107-restoration.json",
+      "integrationBlob": "a7148e7f48aadb1f038aad37a520aef207011fec",
+      "mergedBlob": "a7148e7f48aadb1f038aad37a520aef207011fec",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/evidence/107-source-archive-correspondence.json",
+      "integrationBlob": "64313193c12373540f51693832ee269deddef40d",
+      "mergedBlob": "64313193c12373540f51693832ee269deddef40d",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/evidence/107-source-identity.json",
+      "integrationBlob": "e411c96a640eb27449095611102c56d92662e16a",
+      "mergedBlob": "e411c96a640eb27449095611102c56d92662e16a",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/evidence/107-verification-record.json",
+      "integrationBlob": "e3a10f53f34bd78c47ebd21bfa74d5c9a1bb2569",
+      "mergedBlob": "e3a10f53f34bd78c47ebd21bfa74d5c9a1bb2569",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH05-assembly.mp4",
+      "integrationBlob": "8b8b09a151ab1cbe000a216fd04a533dc2efc34f",
+      "mergedBlob": "8b8b09a151ab1cbe000a216fd04a533dc2efc34f",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH05-assembly.png",
+      "integrationBlob": "0de25edadf5b8fccb0dd301914b75f9c10e33de2",
+      "mergedBlob": "0de25edadf5b8fccb0dd301914b75f9c10e33de2",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH05-render.json",
+      "integrationBlob": "d31b5e893b9e45af3f50328f7e145cc923601bee",
+      "mergedBlob": "d31b5e893b9e45af3f50328f7e145cc923601bee",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH05-review.mp4",
+      "integrationBlob": "09b88f350ff4340a8965f3369da1a95f52f4683a",
+      "mergedBlob": "09b88f350ff4340a8965f3369da1a95f52f4683a",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH05-review.png",
+      "integrationBlob": "3ce78c2a6a2f7f19e313ba95cc618bb28c9c353a",
+      "mergedBlob": "3ce78c2a6a2f7f19e313ba95cc618bb28c9c353a",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH05-review.webm",
+      "integrationBlob": "5e6c8f4331c3bd8f12067161cb1589127c0232a9",
+      "mergedBlob": "5e6c8f4331c3bd8f12067161cb1589127c0232a9",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH06-assembly.mp4",
+      "integrationBlob": "4e4cfbd0cce6fee20685e6c7b5c8ffd2c1155be4",
+      "mergedBlob": "4e4cfbd0cce6fee20685e6c7b5c8ffd2c1155be4",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH06-assembly.png",
+      "integrationBlob": "c4429269ac9c647dca10c45be597c6976f1d5b60",
+      "mergedBlob": "c4429269ac9c647dca10c45be597c6976f1d5b60",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH06-render.json",
+      "integrationBlob": "2fb8cd8c1278ec4c97d24e764d163973695ac5bc",
+      "mergedBlob": "2fb8cd8c1278ec4c97d24e764d163973695ac5bc",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH06-review.mp4",
+      "integrationBlob": "70bfaff1803b932b52b2eca454d379efe06581bf",
+      "mergedBlob": "70bfaff1803b932b52b2eca454d379efe06581bf",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH06-review.png",
+      "integrationBlob": "11eed46ec61b110f81590de0a7c2d42e8ce284a5",
+      "mergedBlob": "11eed46ec61b110f81590de0a7c2d42e8ce284a5",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH06-review.webm",
+      "integrationBlob": "b0f6189ee32b92e711e2cdcb19d196b02c1f36f0",
+      "mergedBlob": "b0f6189ee32b92e711e2cdcb19d196b02c1f36f0",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH07-assembly.mp4",
+      "integrationBlob": "997ea655180b110cb281db3d1210093a60e06f04",
+      "mergedBlob": "997ea655180b110cb281db3d1210093a60e06f04",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH07-assembly.png",
+      "integrationBlob": "3a471dc1834d62db7dc16a68fc4c3862a757accf",
+      "mergedBlob": "3a471dc1834d62db7dc16a68fc4c3862a757accf",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH07-render.json",
+      "integrationBlob": "08191b3f96e1adf2b4bbb17d1bb50c8c316ef80c",
+      "mergedBlob": "08191b3f96e1adf2b4bbb17d1bb50c8c316ef80c",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH07-review.mp4",
+      "integrationBlob": "2b61091a2cd53ee04d0f040f401f133d50138ef7",
+      "mergedBlob": "2b61091a2cd53ee04d0f040f401f133d50138ef7",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH07-review.png",
+      "integrationBlob": "f87c5eb915c137ab78659ab8dff6e2fb0c07e756",
+      "mergedBlob": "f87c5eb915c137ab78659ab8dff6e2fb0c07e756",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH07-review.webm",
+      "integrationBlob": "ac36acfe0738a3bc49c2eaa2a5323605192e24ff",
+      "mergedBlob": "ac36acfe0738a3bc49c2eaa2a5323605192e24ff",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH08-assembly.mp4",
+      "integrationBlob": "d87ae10e796054b687de83ee18457fca74c1d802",
+      "mergedBlob": "d87ae10e796054b687de83ee18457fca74c1d802",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH08-assembly.png",
+      "integrationBlob": "cd85a4fc2213e29afe981e27c712f4d6dc7237a6",
+      "mergedBlob": "cd85a4fc2213e29afe981e27c712f4d6dc7237a6",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH08-render.json",
+      "integrationBlob": "4d7fa80095acf0efdb232475e7add097b4edc43c",
+      "mergedBlob": "4d7fa80095acf0efdb232475e7add097b4edc43c",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH08-review.mp4",
+      "integrationBlob": "e6980773b5325e897bd243fd358b4e1772b28db9",
+      "mergedBlob": "e6980773b5325e897bd243fd358b4e1772b28db9",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH08-review.png",
+      "integrationBlob": "788f7c94262c992bbeddb33bbea12e7b93bd42c6",
+      "mergedBlob": "788f7c94262c992bbeddb33bbea12e7b93bd42c6",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH08-review.webm",
+      "integrationBlob": "264f474a94ad6b492d5fc22d1820928c5a0383b0",
+      "mergedBlob": "264f474a94ad6b492d5fc22d1820928c5a0383b0",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH09-assembly.mp4",
+      "integrationBlob": "ff3c601c4d70f2b6d368f8fdeeabb0e0c4bae647",
+      "mergedBlob": "ff3c601c4d70f2b6d368f8fdeeabb0e0c4bae647",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH09-assembly.png",
+      "integrationBlob": "a9af1b7d74390b5e9320362454e32016bafe4064",
+      "mergedBlob": "a9af1b7d74390b5e9320362454e32016bafe4064",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH09-render.json",
+      "integrationBlob": "d39fbf607edcc8d9ca1bdebebf585757a99ee669",
+      "mergedBlob": "d39fbf607edcc8d9ca1bdebebf585757a99ee669",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH09-review.mp4",
+      "integrationBlob": "8d70804c7cda3a3fd0f3260f65634427c908f39d",
+      "mergedBlob": "8d70804c7cda3a3fd0f3260f65634427c908f39d",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH09-review.png",
+      "integrationBlob": "93ee25fe1ba47c773f82b15e8b05521c0872bf28",
+      "mergedBlob": "93ee25fe1ba47c773f82b15e8b05521c0872bf28",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/FH09-review.webm",
+      "integrationBlob": "f5aa5aea3d49c19c0994ab6da906e39b41a876a4",
+      "mergedBlob": "f5aa5aea3d49c19c0994ab6da906e39b41a876a4",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/group107-review.mp4",
+      "integrationBlob": "ef572f08cee389d0bea6632cd58d7b56fe037c92",
+      "mergedBlob": "ef572f08cee389d0bea6632cd58d7b56fe037c92",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/outputs/group107-review.webm",
+      "integrationBlob": "2e94807c418585f3f2827b3d1835635036e01a8e",
+      "mergedBlob": "2e94807c418585f3f2827b3d1835635036e01a8e",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/public/audio/FH05.mp3",
+      "integrationBlob": "221cac58beed58416a75acc115566cccc62bab13",
+      "mergedBlob": "221cac58beed58416a75acc115566cccc62bab13",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/public/audio/FH06.mp3",
+      "integrationBlob": "423522bb2d61a473562492d9d1c0a2060730aecc",
+      "mergedBlob": "423522bb2d61a473562492d9d1c0a2060730aecc",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/public/audio/FH07.mp3",
+      "integrationBlob": "21df29f34748fd22068584ccefedb49840a0a189",
+      "mergedBlob": "21df29f34748fd22068584ccefedb49840a0a189",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/public/audio/FH08.mp3",
+      "integrationBlob": "b67f7202e3099d63e6c1a2140dd7a125b9ad9a11",
+      "mergedBlob": "b67f7202e3099d63e6c1a2140dd7a125b9ad9a11",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/public/audio/FH09.mp3",
+      "integrationBlob": "3aff2911d0b6010b3f8be8189dd087f6bbd0acbf",
+      "mergedBlob": "3aff2911d0b6010b3f8be8189dd087f6bbd0acbf",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/references/107-archive-manifest.json",
+      "integrationBlob": "1a90d02bbddd002187b8f3fa8e5c80cfff1118f0",
+      "mergedBlob": "1a90d02bbddd002187b8f3fa8e5c80cfff1118f0",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/references/107-fh05-blood-v01.png",
+      "integrationBlob": "f1be0ee3a8d1602950a34258abd1030efa0c59ce",
+      "mergedBlob": "f1be0ee3a8d1602950a34258abd1030efa0c59ce",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/references/107-fh06-bone-retained-v02.png",
+      "integrationBlob": "aaf97b333e04886e3408b1d70cf71d9a5c2735e2",
+      "mergedBlob": "aaf97b333e04886e3408b1d70cf71d9a5c2735e2",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/references/107-fh09-repair-v02.png",
+      "integrationBlob": "a7d89b6ceee3457ceae596a8617bca1ae3c7d2ea",
+      "mergedBlob": "a7d89b6ceee3457ceae596a8617bca1ae3c7d2ea",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/references/107-g-reference.png",
+      "integrationBlob": "b1d985fd0743357c8f6545b6a447ba0db7bb78c3",
+      "mergedBlob": "b1d985fd0743357c8f6545b6a447ba0db7bb78c3",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/references/107-j-reference.png",
+      "integrationBlob": "01210aec6bcffa8946af043477a6e54d4c1addde",
+      "mergedBlob": "01210aec6bcffa8946af043477a6e54d4c1addde",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/references/107-jg-warm-layered-v01.png",
+      "integrationBlob": "2afdcee7f66ab22baaad4a55854959527a8685c7",
+      "mergedBlob": "2afdcee7f66ab22baaad4a55854959527a8685c7",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/references/107-manifest.json",
+      "integrationBlob": "7f28739c335ce3ceb18805a6e63eec33a6839b4d",
+      "mergedBlob": "7f28739c335ce3ceb18805a6e63eec33a6839b4d",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/references/107-provenance.json",
+      "integrationBlob": "865ecd41f709d26cd7580caf08b4f26e30c2165e",
+      "mergedBlob": "865ecd41f709d26cd7580caf08b4f26e30c2165e",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/review107.html",
+      "integrationBlob": "84ae1e3bbc7aa661c8d15de2378c637e81cdb4ab",
+      "mergedBlob": "84ae1e3bbc7aa661c8d15de2378c637e81cdb4ab",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/src/group107.tsx",
+      "integrationBlob": "1ee7c8a3d35ba5cb5115600d54e4117ff760da52",
+      "mergedBlob": "1ee7c8a3d35ba5cb5115600d54e4117ff760da52",
+      "same": true
+    }
+  ],
+  "unchanged110RenderInputs": [
+    {
+      "file": "docs/productions/issue-104/src/FH10.tsx",
+      "preSyncBlob": "9b098a0f7f0b27182c117967a762d7636b037394",
+      "mergedBlob": "9b098a0f7f0b27182c117967a762d7636b037394",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/src/shared.tsx",
+      "preSyncBlob": "936220c10b25dc5c9d6d35c99de9762b28b2c727",
+      "mergedBlob": "936220c10b25dc5c9d6d35c99de9762b28b2c727",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/src/anatomy.tsx",
+      "preSyncBlob": "f13867ec2b042acbc66f158bcabdcbf379504aa0",
+      "mergedBlob": "f13867ec2b042acbc66f158bcabdcbf379504aa0",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/render.mjs",
+      "preSyncBlob": "2430580a6abcc5cf98fce31c5e5b2f51bf3fca45",
+      "mergedBlob": "2430580a6abcc5cf98fce31c5e5b2f51bf3fca45",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/public/fh10-narration.mp3",
+      "preSyncBlob": "474a97166d1ff53210b271f6e587b45ffaec3592",
+      "mergedBlob": "474a97166d1ff53210b271f6e587b45ffaec3592",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/public/fonts/noto-cjk-sc.otf",
+      "preSyncBlob": "f84bd651dc872e950825eaa5e273d92695d64b2a",
+      "mergedBlob": "f84bd651dc872e950825eaa5e273d92695d64b2a",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/package-lock.json",
+      "preSyncBlob": "86f64f3ca1acfef4f1027a33bcd3da01d4250745",
+      "mergedBlob": "86f64f3ca1acfef4f1027a33bcd3da01d4250745",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/entry110.tsx",
+      "preSyncBlob": "dc9ed6df7bb1bfb5b41c7eb4095847d0d3c911df",
+      "mergedBlob": "dc9ed6df7bb1bfb5b41c7eb4095847d0d3c911df",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/run110.mjs",
+      "preSyncBlob": "184fcfcbd430b14e76c0f2d0ee5c95bb45d7b7d9",
+      "mergedBlob": "184fcfcbd430b14e76c0f2d0ee5c95bb45d7b7d9",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/cards/FH10-before.json",
+      "preSyncBlob": "0f32fab4b29bf3b6a052fa1f1a5c4b33f19f00a4",
+      "mergedBlob": "0f32fab4b29bf3b6a052fa1f1a5c4b33f19f00a4",
+      "same": true
+    },
+    {
+      "file": "docs/productions/issue-104/cards/FH10-slow.json",
+      "preSyncBlob": "8cc4dcfc29010ee8948bc30293193503d7aa792a",
+      "mergedBlob": "8cc4dcfc29010ee8948bc30293193503d7aa792a",
+      "same": true
+    }
+  ],
+  "scope": "107新入口和其资产保持已审集成内容，FH10独立入口直接导入原FH10场景；共享渲染、几何、字体、配音及两版卡均未改变，无渲染来源失效",
+  "renderDecision": "没有相关源变更，无需重渲染",
+  "affectedVerification": {
+    "entry110Typecheck": {
+      "status": "passed",
+      "log": "/home/forclaw/tmp/implement-spec-104/110-sync-typecheck.log"
+    },
+    "correctedBeforeManifestInputCompletionRoles": {
+      "status": "passed",
+      "log": "/home/forclaw/tmp/implement-spec-104/110-sync-before-check.log"
+    },
+    "correctedSlowManifestInputCompletionRoles": {
+      "status": "passed",
+      "log": "/home/forclaw/tmp/implement-spec-104/110-sync-slow-check.log"
+    },
+    "restoredManifestInputCompletionRoles": {
+      "status": "passed",
+      "log": "/home/forclaw/tmp/implement-spec-104/110-sync-restore-check.log"
+    },
+    "testedSource": "a53a69ba21d12ef67dbba7e6ab09cf901a768303",
+    "notes": "受影响源/输入与同步前blob相同；无重渲染，无付费任务"
+  }
+}
