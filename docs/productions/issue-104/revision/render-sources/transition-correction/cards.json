@@ -1,0 +1,1008 @@
+[
+  {
+    "id": "FH01",
+    "segmentId": "2e5abb40-b111-42e9-b137-fb758abc9dd8",
+    "order": 1,
+    "text": "股骨头坏死，为什么可能让原本圆滑的关节面塌陷？",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "13843d1f-b8b0-4d89-bed1-d13302bb9a29",
+    "audio": "full-inputs/audio/FH01.mp3",
+    "audioDuration": 4.68,
+    "durationInFrames": 141,
+    "audioSha256": "db53258b3bbc180b7f56353eab473c820bd8e3b1e02731bd946373d95e069f1e",
+    "reviewVersion": "full-rough-v2",
+    "previousVersion": "full-rough-v1",
+    "revisionScope": [
+      "构图与转场",
+      "可见机制动作",
+      "统一柔和纸纹美术"
+    ],
+    "关键画面": "开场英雄画面与左侧问题文字",
+    "动作顺序": [
+      "近端股骨由右推近并轻旋转归正，问题下方线条描画",
+      "末尾停留供下一段衔接"
+    ],
+    "关联素材": {
+      "assembly": "revision/outputs/FH01-assembly.mp4",
+      "review": "revision/outputs/full-rough-v2.webm"
+    },
+    "审阅定位": {
+      "version": "full-rough-v2",
+      "startSeconds": 0.0,
+      "endSeconds": 4.68,
+      "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+    },
+    "确认范围": {
+      "旁白": "#96 v0.2 已确认且本次未改变",
+      "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+      "本次新画面": "待用户对full-rough-v2实际审阅，不继承v1确认",
+      "配音同步": "开发媒体核对通过，固定提交正式验收另记",
+      "发音和终审": "full-rough-v1已审但未通过，full-rough-v2待审"
+    },
+    "当前核对": "实际MCP当前15原任务/原声文案/声音/valid端点核对；正常语速、音频SHA和实测时长保持",
+    "当前核对证据": "revision/evidence/speech-before.json",
+    "本次待审": [
+      "新机制画面与温暖纸纹呈现",
+      "明显动作与全片转场、字幕和节奏",
+      "实际发音与明确full-rough-v2终审"
+    ],
+    "依据": [
+      "#96 v0.2已确认旁白与机制约束",
+      "#97静态视觉规则（当前新动画待复审）",
+      "#104制作/非必然性/原声和字幕边界",
+      "#112用户否决v1后的三个修订要求"
+    ],
+    "标注": [
+      "成人股骨头 · 机制示意",
+      "股骨头坏死",
+      "为什么可能塌陷？",
+      "从结构与支撑说起",
+      "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+    ],
+    "previousInputRecord": "full-inputs/current111.json"
+  },
+  {
+    "id": "FH02",
+    "segmentId": "1a778f97-e29b-4b5b-a314-7e0eafe8e3b0",
+    "order": 2,
+    "text": "先看这里：大腿骨顶端的球形部分，就是股骨头。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "eb4a4443-2792-449c-9c6b-f00bd9ec40ee",
+    "audio": "full-inputs/audio/FH02.mp3",
+    "audioDuration": 5.088,
+    "durationInFrames": 153,
+    "audioSha256": "c3c7ad692956a3a7c0b82e0f0453d8daef455d1bbfa9d7d7fff77e51f6c53ad9",
+    "reviewVersion": "full-rough-v2",
+    "previousVersion": "full-rough-v1",
+    "revisionScope": [
+      "构图与转场",
+      "可见机制动作",
+      "统一柔和纸纹美术"
+    ],
+    "关键画面": "全股骨定位与右侧圆形头部放大",
+    "动作顺序": [
+      "前14帧使用前段末画面纸边擦入，不重叠原声",
+      "动态圈选股骨头，局部放大画面移入并推近",
+      "末尾停留供下一段衔接"
+    ],
+    "关联素材": {
+      "assembly": "revision/outputs/FH02-assembly.mp4",
+      "review": "revision/outputs/full-rough-v2.webm"
+    },
+    "审阅定位": {
+      "version": "full-rough-v2",
+      "startSeconds": 4.68,
+      "endSeconds": 9.768,
+      "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+    },
+    "确认范围": {
+      "旁白": "#96 v0.2 已确认且本次未改变",
+      "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+      "本次新画面": "待用户对full-rough-v2实际审阅，不继承v1确认",
+      "配音同步": "开发媒体核对通过，固定提交正式验收另记",
+      "发音和终审": "full-rough-v1已审但未通过，full-rough-v2待审"
+    },
+    "当前核对": "实际MCP当前15原任务/原声文案/声音/valid端点核对；正常语速、音频SHA和实测时长保持",
+    "当前核对证据": "revision/evidence/speech-before.json",
+    "本次待审": [
+      "新机制画面与温暖纸纹呈现",
+      "明显动作与全片转场、字幕和节奏",
+      "实际发音与明确full-rough-v2终审"
+    ],
+    "依据": [
+      "#96 v0.2已确认旁白与机制约束",
+      "#97静态视觉规则（当前新动画待复审）",
+      "#104制作/非必然性/原声和字幕边界",
+      "#112用户否决v1后的三个修订要求"
+    ],
+    "标注": [
+      "成人股骨头 · 机制示意",
+      "股骨头在哪里？",
+      "大腿骨顶端的球形部分",
+      "股骨头",
+      "位置与比例为示意",
+      "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+    ],
+    "previousInputRecord": "full-inputs/current111.json"
+  },
+  {
+    "id": "FH03",
+    "segmentId": "429a80d1-2dac-4fd6-aeb3-c6609aea9c23",
+    "order": 3,
+    "text": "它表面覆盖软骨，下面是支撑关节面的骨组织。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "4072b836-991b-4be8-8af1-68bc50eacc04",
+    "audio": "full-inputs/audio/FH03.mp3",
+    "audioDuration": 4.68,
+    "durationInFrames": 141,
+    "audioSha256": "5e1840118c759e45b86f9d5654ee1d79813e71bde9cb6c87784eb87cf439a8f8",
+    "reviewVersion": "full-rough-v2",
+    "previousVersion": "full-rough-v1",
+    "revisionScope": [
+      "构图与转场",
+      "可见机制动作",
+      "统一柔和纸纹美术"
+    ],
+    "关键画面": "关节面大局部连续分层",
+    "动作顺序": [
+      "前14帧使用前段末画面纸边擦入，不重叠原声",
+      "镜头推近并移动，三条指示线依次描画到软骨、下骨层和真实骨梁",
+      "末尾停留供下一段衔接"
+    ],
+    "关联素材": {
+      "assembly": "revision/outputs/FH03-assembly.mp4",
+      "review": "revision/outputs/full-rough-v2.webm"
+    },
+    "审阅定位": {
+      "version": "full-rough-v2",
+      "startSeconds": 9.768,
+      "endSeconds": 14.448,
+      "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+    },
+    "确认范围": {
+      "旁白": "#96 v0.2 已确认且本次未改变",
+      "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+      "本次新画面": "待用户对full-rough-v2实际审阅，不继承v1确认",
+      "配音同步": "开发媒体核对通过，固定提交正式验收另记",
+      "发音和终审": "full-rough-v1已审但未通过，full-rough-v2待审"
+    },
+    "当前核对": "实际MCP当前15原任务/原声文案/声音/valid端点核对；正常语速、音频SHA和实测时长保持",
+    "当前核对证据": "revision/evidence/speech-before.json",
+    "本次待审": [
+      "新机制画面与温暖纸纹呈现",
+      "明显动作与全片转场、字幕和节奏",
+      "实际发音与明确full-rough-v2终审"
+    ],
+    "依据": [
+      "#96 v0.2已确认旁白与机制约束",
+      "#97静态视觉规则（当前新动画待复审）",
+      "#104制作/非必然性/原声和字幕边界",
+      "#112用户否决v1后的三个修订要求"
+    ],
+    "标注": [
+      "成人股骨头 · 机制示意",
+      "关节面的分层结构",
+      "软骨",
+      "软骨下骨层",
+      "内部骨小梁",
+      "颜色与厚度为示意",
+      "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+    ],
+    "previousInputRecord": "full-inputs/current111.json"
+  },
+  {
+    "id": "FH04",
+    "segmentId": "5582739e-611f-4996-8f5e-f25f819c9a1d",
+    "order": 4,
+    "text": "骨组织也是活的，需要血液不断送来氧气和营养。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "1880f2a2-043c-4a39-ab82-054c5a574226",
+    "audio": "full-inputs/audio/FH04.mp3",
+    "audioDuration": 4.44,
+    "durationInFrames": 134,
+    "audioSha256": "e3271c6dfe289fbf9ad31b16b84c9f15df253484d6fc31c89dfe3c58ab7a47c1",
+    "reviewVersion": "full-rough-v2",
+    "previousVersion": "full-rough-v1",
+    "revisionScope": [
+      "构图与转场",
+      "可见机制动作",
+      "统一柔和纸纹美术"
+    ],
+    "关键画面": "供血概览与骨组织大近景",
+    "动作顺序": [
+      "前14帧使用前段末画面纸边擦入，不重叠原声",
+      "概览到组织特写，少量供给分支显示连续流动",
+      "末尾停留供下一段衔接"
+    ],
+    "关联素材": {
+      "assembly": "revision/outputs/FH04-assembly.mp4",
+      "review": "revision/outputs/full-rough-v2.webm"
+    },
+    "审阅定位": {
+      "version": "full-rough-v2",
+      "startSeconds": 14.448,
+      "endSeconds": 18.888,
+      "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+    },
+    "确认范围": {
+      "旁白": "#96 v0.2 已确认且本次未改变",
+      "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+      "本次新画面": "待用户对full-rough-v2实际审阅，不继承v1确认",
+      "配音同步": "开发媒体核对通过，固定提交正式验收另记",
+      "发音和终审": "full-rough-v1已审但未通过，full-rough-v2待审"
+    },
+    "当前核对": "实际MCP当前15原任务/原声文案/声音/valid端点核对；正常语速、音频SHA和实测时长保持",
+    "当前核对证据": "revision/evidence/speech-before.json",
+    "本次待审": [
+      "新机制画面与温暖纸纹呈现",
+      "明显动作与全片转场、字幕和节奏",
+      "实际发音与明确full-rough-v2终审"
+    ],
+    "依据": [
+      "#96 v0.2已确认旁白与机制约束",
+      "#97静态视觉规则（当前新动画待复审）",
+      "#104制作/非必然性/原声和字幕边界",
+      "#112用户否决v1后的三个修订要求"
+    ],
+    "标注": [
+      "成人股骨头 · 机制示意",
+      "骨组织也需要供给",
+      "血液供给",
+      "氧气与营养",
+      "供血路径为机制概括",
+      "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+    ],
+    "previousInputRecord": "full-inputs/current111.json"
+  },
+  {
+    "id": "FH05",
+    "segmentId": "1e09a362-e6eb-4cf0-90bb-ce7f1d3b81c4",
+    "order": 5,
+    "text": "当局部血液供应受损，这里的骨组织就可能发生坏死。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "6658739d-4778-4f59-8ae6-a764ea8e36af",
+    "audio": "full-inputs/audio/FH05.mp3",
+    "audioDuration": 4.848,
+    "durationInFrames": 146,
+    "audioSha256": "fbba37fe233321b69d6cd6d3bf040186f9989c6eff96660829b75ec49579a3fb",
+    "reviewVersion": "full-rough-v2",
+    "previousVersion": "full-rough-v1",
+    "revisionScope": [
+      "构图与转场",
+      "可见机制动作",
+      "统一柔和纸纹美术"
+    ],
+    "关键画面": "局部供血与受损组织双焦点",
+    "动作顺序": [
+      "前14帧使用前段末画面纸边擦入，不重叠原声",
+      "一条细分支局部变淡虚线，组织镜头移近并示意细胞状态变化",
+      "末尾停留供下一段衔接"
+    ],
+    "关联素材": {
+      "assembly": "revision/outputs/FH05-assembly.mp4",
+      "review": "revision/outputs/full-rough-v2.webm"
+    },
+    "审阅定位": {
+      "version": "full-rough-v2",
+      "startSeconds": 18.888,
+      "endSeconds": 23.736,
+      "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+    },
+    "确认范围": {
+      "旁白": "#96 v0.2 已确认且本次未改变",
+      "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+      "本次新画面": "待用户对full-rough-v2实际审阅，不继承v1确认",
+      "配音同步": "开发媒体核对通过，固定提交正式验收另记",
+      "发音和终审": "full-rough-v1已审但未通过，full-rough-v2待审"
+    },
+    "当前核对": "实际MCP当前15原任务/原声文案/声音/valid端点核对；正常语速、音频SHA和实测时长保持",
+    "当前核对证据": "revision/evidence/speech-before.json",
+    "本次待审": [
+      "新机制画面与温暖纸纹呈现",
+      "明显动作与全片转场、字幕和节奏",
+      "实际发音与明确full-rough-v2终审"
+    ],
+    "依据": [
+      "#96 v0.2已确认旁白与机制约束",
+      "#97静态视觉规则（当前新动画待复审）",
+      "#104制作/非必然性/原声和字幕边界",
+      "#112用户否决v1后的三个修订要求"
+    ],
+    "标注": [
+      "成人股骨头 · 机制示意",
+      "局部血供受损",
+      "少量细分支，局部减弱",
+      "受损区域的骨组织",
+      "骨组织可能发生坏死",
+      "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+    ],
+    "previousInputRecord": "full-inputs/current111.json"
+  },
+  {
+    "id": "FH06",
+    "segmentId": "09985f81-72ee-43c5-bc56-0a48e78d7b0d",
+    "order": 6,
+    "text": "但细胞死亡，不等于原有的骨架马上消失。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "2ec5815c-42ad-4c0c-ba00-1ec664062a5f",
+    "audio": "full-inputs/audio/FH06.mp3",
+    "audioDuration": 3.864,
+    "durationInFrames": 116,
+    "audioSha256": "7a161bce7244f0a5c6e1f9460e490bd41eeeb2439fc427a456e82e9ab88bb3c2",
+    "reviewVersion": "full-rough-v2",
+    "previousVersion": "full-rough-v1",
+    "revisionScope": [
+      "构图与转场",
+      "可见机制动作",
+      "统一柔和纸纹美术"
+    ],
+    "关键画面": "骨组织及单个细胞放大",
+    "动作顺序": [
+      "前14帧使用前段末画面纸边擦入，不重叠原声",
+      "内部细胞标记变淡，镜头推近；细胞轮廓和全部骨梁保留",
+      "末尾停留供下一段衔接"
+    ],
+    "关联素材": {
+      "assembly": "revision/outputs/FH06-assembly.mp4",
+      "review": "revision/outputs/full-rough-v2.webm"
+    },
+    "审阅定位": {
+      "version": "full-rough-v2",
+      "startSeconds": 23.736,
+      "endSeconds": 27.6,
+      "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+    },
+    "确认范围": {
+      "旁白": "#96 v0.2 已确认且本次未改变",
+      "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+      "本次新画面": "待用户对full-rough-v2实际审阅，不继承v1确认",
+      "配音同步": "开发媒体核对通过，固定提交正式验收另记",
+      "发音和终审": "full-rough-v1已审但未通过，full-rough-v2待审"
+    },
+    "当前核对": "实际MCP当前15原任务/原声文案/声音/valid端点核对；正常语速、音频SHA和实测时长保持",
+    "当前核对证据": "revision/evidence/speech-before.json",
+    "本次待审": [
+      "新机制画面与温暖纸纹呈现",
+      "明显动作与全片转场、字幕和节奏",
+      "实际发音与明确full-rough-v2终审"
+    ],
+    "依据": [
+      "#96 v0.2已确认旁白与机制约束",
+      "#97静态视觉规则（当前新动画待复审）",
+      "#104制作/非必然性/原声和字幕边界",
+      "#112用户否决v1后的三个修订要求"
+    ],
+    "标注": [
+      "成人股骨头 · 机制示意",
+      "细胞状态改变，骨架仍在",
+      "细胞状态改变",
+      "局部放大示意",
+      "原有骨梁保留",
+      "细胞死亡，不等于骨架马上消失",
+      "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+    ],
+    "previousInputRecord": "full-inputs/current111.json"
+  },
+  {
+    "id": "FH07",
+    "segmentId": "5b18fddd-76d9-44f5-90e9-8663ff71e12c",
+    "order": 7,
+    "text": "此时，股骨头外形仍可能保持完整。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "83cc7d16-a2a0-4f43-a179-bbb884adcdc8",
+    "audio": "full-inputs/audio/FH07.mp3",
+    "audioDuration": 3.864,
+    "durationInFrames": 116,
+    "audioSha256": "ce878058ab7d6218265bd61bf243622a0fdb6ef212f7320c002e58c71788e5a6",
+    "reviewVersion": "full-rough-v2",
+    "previousVersion": "full-rough-v1",
+    "revisionScope": [
+      "构图与转场",
+      "可见机制动作",
+      "统一柔和纸纹美术"
+    ],
+    "关键画面": "从组织近景拉回仍完整的头部",
+    "动作顺序": [
+      "前14帧使用前段末画面纸边擦入，不重叠原声",
+      "拉回与轻旋转，保留原轮廓虚线和组织插图",
+      "末尾停留供下一段衔接"
+    ],
+    "关联素材": {
+      "assembly": "revision/outputs/FH07-assembly.mp4",
+      "review": "revision/outputs/full-rough-v2.webm"
+    },
+    "审阅定位": {
+      "version": "full-rough-v2",
+      "startSeconds": 27.6,
+      "endSeconds": 31.464,
+      "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+    },
+    "确认范围": {
+      "旁白": "#96 v0.2 已确认且本次未改变",
+      "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+      "本次新画面": "待用户对full-rough-v2实际审阅，不继承v1确认",
+      "配音同步": "开发媒体核对通过，固定提交正式验收另记",
+      "发音和终审": "full-rough-v1已审但未通过，full-rough-v2待审"
+    },
+    "当前核对": "实际MCP当前15原任务/原声文案/声音/valid端点核对；正常语速、音频SHA和实测时长保持",
+    "当前核对证据": "revision/evidence/speech-before.json",
+    "本次待审": [
+      "新机制画面与温暖纸纹呈现",
+      "明显动作与全片转场、字幕和节奏",
+      "实际发音与明确full-rough-v2终审"
+    ],
+    "依据": [
+      "#96 v0.2已确认旁白与机制约束",
+      "#97静态视觉规则（当前新动画待复审）",
+      "#104制作/非必然性/原声和字幕边界",
+      "#112用户否决v1后的三个修订要求"
+    ],
+    "标注": [
+      "成人股骨头 · 机制示意",
+      "外形仍可能完整",
+      "组织状态改变",
+      "原轮廓保留",
+      "外形完整，不等于已经痊愈",
+      "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+    ],
+    "previousInputRecord": "full-inputs/current111.json"
+  },
+  {
+    "id": "FH08",
+    "segmentId": "f27fcec6-b3b4-4048-9dd4-79eaa9cf6930",
+    "order": 8,
+    "text": "身体也会尝试修复受损区域。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "e59b50fd-4f54-4057-8612-611f4435ad4f",
+    "audio": "full-inputs/audio/FH08.mp3",
+    "audioDuration": 2.832,
+    "durationInFrames": 85,
+    "audioSha256": "6beac68c48d554178d66ee517d2115ffbc68fe895db5bbd91ae8417018950f52",
+    "reviewVersion": "full-rough-v2",
+    "previousVersion": "full-rough-v1",
+    "revisionScope": [
+      "构图与转场",
+      "可见机制动作",
+      "统一柔和纸纹美术"
+    ],
+    "关键画面": "不同局部的修复大近景",
+    "动作顺序": [
+      "前14帧使用前段末画面纸边擦入，不重叠原声",
+      "旧骨吸收和紫色新骨两个局部同时变化，整体骨架保留",
+      "末尾停留供下一段衔接"
+    ],
+    "关联素材": {
+      "assembly": "revision/outputs/FH08-assembly.mp4",
+      "review": "revision/outputs/full-rough-v2.webm"
+    },
+    "审阅定位": {
+      "version": "full-rough-v2",
+      "startSeconds": 31.464,
+      "endSeconds": 34.296,
+      "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+    },
+    "确认范围": {
+      "旁白": "#96 v0.2 已确认且本次未改变",
+      "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+      "本次新画面": "待用户对full-rough-v2实际审阅，不继承v1确认",
+      "配音同步": "开发媒体核对通过，固定提交正式验收另记",
+      "发音和终审": "full-rough-v1已审但未通过，full-rough-v2待审"
+    },
+    "当前核对": "实际MCP当前15原任务/原声文案/声音/valid端点核对；正常语速、音频SHA和实测时长保持",
+    "当前核对证据": "revision/evidence/speech-before.json",
+    "本次待审": [
+      "新机制画面与温暖纸纹呈现",
+      "明显动作与全片转场、字幕和节奏",
+      "实际发音与明确full-rough-v2终审"
+    ],
+    "依据": [
+      "#96 v0.2已确认旁白与机制约束",
+      "#97静态视觉规则（当前新动画待复审）",
+      "#104制作/非必然性/原声和字幕边界",
+      "#112用户否决v1后的三个修订要求"
+    ],
+    "标注": [
+      "成人股骨头 · 机制示意",
+      "身体尝试局部修复",
+      "旧骨吸收",
+      "新骨形成",
+      "旧骨吸收与新骨形成，发生在不同局部",
+      "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+    ],
+    "previousInputRecord": "full-inputs/current111.json"
+  },
+  {
+    "id": "FH09",
+    "segmentId": "9556199e-a633-4052-bb15-63f46f5a409c",
+    "order": 9,
+    "text": "修复涉及旧骨吸收和新骨形成，但不一定能恢复足够的支撑。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "aae43103-e516-42a1-8e8f-75cd0e5fd4a5",
+    "audio": "full-inputs/audio/FH09.mp3",
+    "audioDuration": 5.856,
+    "durationInFrames": 176,
+    "audioSha256": "28dd2b7bc33c56388501474cea7b5c57a461c30f3ef936b66042a87a853c4e99",
+    "reviewVersion": "full-rough-v2",
+    "previousVersion": "full-rough-v1",
+    "revisionScope": [
+      "构图与转场",
+      "可见机制动作",
+      "统一柔和纸纹美术"
+    ],
+    "关键画面": "转向另一构图的局部修复",
+    "动作顺序": [
+      "前14帧使用前段末画面纸边擦入，不重叠原声",
+      "移左、轻旋转并继续局部修复，标注支撑不一定恢复",
+      "末尾停留供下一段衔接"
+    ],
+    "关联素材": {
+      "assembly": "revision/outputs/FH09-assembly.mp4",
+      "review": "revision/outputs/full-rough-v2.webm"
+    },
+    "审阅定位": {
+      "version": "full-rough-v2",
+      "startSeconds": 34.296,
+      "endSeconds": 40.152,
+      "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+    },
+    "确认范围": {
+      "旁白": "#96 v0.2 已确认且本次未改变",
+      "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+      "本次新画面": "待用户对full-rough-v2实际审阅，不继承v1确认",
+      "配音同步": "开发媒体核对通过，固定提交正式验收另记",
+      "发音和终审": "full-rough-v1已审但未通过，full-rough-v2待审"
+    },
+    "当前核对": "实际MCP当前15原任务/原声文案/声音/valid端点核对；正常语速、音频SHA和实测时长保持",
+    "当前核对证据": "revision/evidence/speech-before.json",
+    "本次待审": [
+      "新机制画面与温暖纸纹呈现",
+      "明显动作与全片转场、字幕和节奏",
+      "实际发音与明确full-rough-v2终审"
+    ],
+    "依据": [
+      "#96 v0.2已确认旁白与机制约束",
+      "#97静态视觉规则（当前新动画待复审）",
+      "#104制作/非必然性/原声和字幕边界",
+      "#112用户否决v1后的三个修订要求"
+    ],
+    "标注": [
+      "成人股骨头 · 机制示意",
+      "修复不一定恢复足够支撑",
+      "新骨形成",
+      "仍是局部修复",
+      "支撑未必足够",
+      "尝试修复，不一定能恢复足够支撑",
+      "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+    ],
+    "previousInputRecord": "full-inputs/current111.json"
+  },
+  {
+    "id": "FH10",
+    "segmentId": "d9b6c5b5-abe9-4a98-bd84-c7667eb44dce",
+    "order": 10,
+    "text": "如果局部结构继续受损，承重时就可能出现细小骨折。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "13c0ba78-4e76-4c19-9a9b-b052dcfd9664",
+    "audio": "full-inputs/audio/FH10-slow.mp3",
+    "audioDuration": 4.848,
+    "durationInFrames": 146,
+    "audioSha256": "4f424a8dc949bee1250604d8c05749580967e90f00c842edbb60ed00f74ec951",
+    "reviewVersion": "full-rough-v2",
+    "previousVersion": "full-rough-v1",
+    "revisionScope": [
+      "构图与转场",
+      "可见机制动作",
+      "统一柔和纸纹美术"
+    ],
+    "关键画面": "关节面大截面与骨内既有裂隙放大",
+    "动作顺序": [
+      "前14帧使用前段末画面纸边擦入，不重叠原声",
+      "承重箭头可见位移，骨梁裂隙始终存在且不随一次动作产生",
+      "末尾停留供下一段衔接"
+    ],
+    "关联素材": {
+      "assembly": "revision/outputs/FH10-assembly.mp4",
+      "review": "revision/outputs/full-rough-v2.webm"
+    },
+    "审阅定位": {
+      "version": "full-rough-v2",
+      "startSeconds": 40.152,
+      "endSeconds": 45.0,
+      "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+    },
+    "确认范围": {
+      "旁白": "#96 v0.2 已确认且本次未改变",
+      "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+      "本次新画面": "待用户对full-rough-v2实际审阅，不继承v1确认",
+      "配音同步": "开发媒体核对通过，固定提交正式验收另记",
+      "发音和终审": "full-rough-v1已审但未通过，full-rough-v2待审"
+    },
+    "当前核对": "实际MCP当前15原任务/原声文案/声音/valid端点核对；正常语速、音频SHA和实测时长保持",
+    "当前核对证据": "revision/evidence/speech-before.json",
+    "本次待审": [
+      "新机制画面与温暖纸纹呈现",
+      "明显动作与全片转场、字幕和节奏",
+      "实际发音与明确full-rough-v2终审"
+    ],
+    "依据": [
+      "#96 v0.2已确认旁白与机制约束",
+      "#97静态视觉规则（当前新动画待复审）",
+      "#104制作/非必然性/原声和字幕边界",
+      "#112用户否决v1后的三个修订要求"
+    ],
+    "标注": [
+      "成人股骨头 · 机制示意",
+      "结构受损时，承重可能出现细小骨折",
+      "承重示意",
+      "骨组织内的既有裂隙",
+      "这是机制示意，并非每次承重都会发生骨折",
+      "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+    ],
+    "previousInputRecord": "full-inputs/current111.json"
+  },
+  {
+    "id": "FH11-FH12",
+    "segmentId": "e509e18d-edab-4700-8695-3df351c66a4e",
+    "order": 11,
+    "text": "损伤进一步发展，关节面下方的骨组织可能失去支撑，表面发生局部下陷。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "420d818b-a99c-4613-b9c3-fd601062ed33",
+    "audio": "full-inputs/audio/FH11-FH12.mp3",
+    "audioDuration": 6.816,
+    "durationInFrames": 205,
+    "audioSha256": "a3dd8a7b8a8f307d381d707f9b19d15fa39a1a65f5541fe79672b4dfb94465ca",
+    "reviewVersion": "full-rough-v2",
+    "previousVersion": "full-rough-v1",
+    "revisionScope": [
+      "构图与转场",
+      "可见机制动作",
+      "统一柔和纸纹美术"
+    ],
+    "关键画面": "关节面局部下陷大截面",
+    "动作顺序": [
+      "前14帧使用前段末画面纸边擦入，不重叠原声",
+      "软骨和下方骨层采用同一连续位移，虚线保留原輪廓",
+      "末尾停留供下一段衔接"
+    ],
+    "关联素材": {
+      "assembly": "revision/outputs/FH11-FH12-assembly.mp4",
+      "review": "revision/outputs/full-rough-v2.webm"
+    },
+    "审阅定位": {
+      "version": "full-rough-v2",
+      "startSeconds": 45.0,
+      "endSeconds": 51.816,
+      "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+    },
+    "确认范围": {
+      "旁白": "#96 v0.2 已确认且本次未改变",
+      "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+      "本次新画面": "待用户对full-rough-v2实际审阅，不继承v1确认",
+      "配音同步": "开发媒体核对通过，固定提交正式验收另记",
+      "发音和终审": "full-rough-v1已审但未通过，full-rough-v2待审"
+    },
+    "当前核对": "实际MCP当前15原任务/原声文案/声音/valid端点核对；正常语速、音频SHA和实测时长保持",
+    "当前核对证据": "revision/evidence/speech-before.json",
+    "本次待审": [
+      "新机制画面与温暖纸纹呈现",
+      "明显动作与全片转场、字幕和节奏",
+      "实际发音与明确full-rough-v2终审"
+    ],
+    "依据": [
+      "#96 v0.2已确认旁白与机制约束",
+      "#97静态视觉规则（当前新动画待复审）",
+      "#104制作/非必然性/原声和字幕边界",
+      "#112用户否决v1后的三个修订要求"
+    ],
+    "标注": [
+      "成人股骨头 · 机制示意",
+      "支撑失效后，表面可能局部下陷",
+      "原轮廓对照",
+      "软骨与下方骨层共同变化",
+      "仅局部连续下陷，不是所有人的必经阶段",
+      "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+    ],
+    "previousInputRecord": "full-inputs/current111.json"
+  },
+  {
+    "id": "FH13",
+    "segmentId": "e4416bfe-3823-49c7-a89d-99355c437679",
+    "order": 12,
+    "text": "不过，并不是每个坏死的股骨头都会塌陷。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "65e9f937-f960-4d3a-867d-02e904ab2951",
+    "audio": "full-inputs/audio/FH13.mp3",
+    "audioDuration": 4.056,
+    "durationInFrames": 122,
+    "audioSha256": "4e2f2a024ea4561394c11597e0855bc3fa0b05d53dd9c884eef38071fa75d595",
+    "reviewVersion": "full-rough-v2",
+    "previousVersion": "full-rough-v1",
+    "revisionScope": [
+      "构图与转场",
+      "可见机制动作",
+      "统一柔和纸纹美术"
+    ],
+    "关键画面": "不等比例的两种可能构图",
+    "动作顺序": [
+      "前14帧使用前段末画面纸边擦入，不重叠原声",
+      "保留完整头部，局部下陷例子移入；不画概率或必经箭头",
+      "末尾停留供下一段衔接"
+    ],
+    "关联素材": {
+      "assembly": "revision/outputs/FH13-assembly.mp4",
+      "review": "revision/outputs/full-rough-v2.webm"
+    },
+    "审阅定位": {
+      "version": "full-rough-v2",
+      "startSeconds": 51.816,
+      "endSeconds": 55.872,
+      "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+    },
+    "确认范围": {
+      "旁白": "#96 v0.2 已确认且本次未改变",
+      "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+      "本次新画面": "待用户对full-rough-v2实际审阅，不继承v1确认",
+      "配音同步": "开发媒体核对通过，固定提交正式验收另记",
+      "发音和终审": "full-rough-v1已审但未通过，full-rough-v2待审"
+    },
+    "当前核对": "实际MCP当前15原任务/原声文案/声音/valid端点核对；正常语速、音频SHA和实测时长保持",
+    "当前核对证据": "revision/evidence/speech-before.json",
+    "本次待审": [
+      "新机制画面与温暖纸纹呈现",
+      "明显动作与全片转场、字幕和节奏",
+      "实际发音与明确full-rough-v2终审"
+    ],
+    "依据": [
+      "#96 v0.2已确认旁白与机制约束",
+      "#97静态视觉规则（当前新动画待复审）",
+      "#104制作/非必然性/原声和字幕边界",
+      "#112用户否决v1后的三个修订要求"
+    ],
+    "标注": [
+      "成人股骨头 · 机制示意",
+      "不一定都会塌陷",
+      "仍可能保持完整",
+      "也可能局部下陷",
+      "图形大小不表示发生比例",
+      "保持完整不等于痊愈",
+      "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+    ],
+    "previousInputRecord": "full-inputs/current111.json"
+  },
+  {
+    "id": "FH14",
+    "segmentId": "95695858-1813-4d56-bd80-b310d5bd84b7",
+    "order": 13,
+    "text": "受损范围、位置等因素，都会影响进展。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "aef6e056-25fa-4a28-83a9-f1709316f654",
+    "audio": "full-inputs/audio/FH14.mp3",
+    "audioDuration": 3.864,
+    "durationInFrames": 116,
+    "audioSha256": "29d4ffa908f8baba2f5b0b426ae5b560ff7c45fc49f996dfe919eb098d906328",
+    "reviewVersion": "full-rough-v2",
+    "previousVersion": "full-rough-v1",
+    "revisionScope": [
+      "构图与转场",
+      "可见机制动作",
+      "统一柔和纸纹美术"
+    ],
+    "关键画面": "受损范围与位置的大局部",
+    "动作顺序": [
+      "前14帧使用前段末画面纸边擦入，不重叠原声",
+      "镜头平移，两个不同区域的边界强调，不引入分期或治疗",
+      "末尾停留供下一段衔接"
+    ],
+    "关联素材": {
+      "assembly": "revision/outputs/FH14-assembly.mp4",
+      "review": "revision/outputs/full-rough-v2.webm"
+    },
+    "审阅定位": {
+      "version": "full-rough-v2",
+      "startSeconds": 55.872,
+      "endSeconds": 59.736,
+      "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+    },
+    "确认范围": {
+      "旁白": "#96 v0.2 已确认且本次未改变",
+      "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+      "本次新画面": "待用户对full-rough-v2实际审阅，不继承v1确认",
+      "配音同步": "开发媒体核对通过，固定提交正式验收另记",
+      "发音和终审": "full-rough-v1已审但未通过，full-rough-v2待审"
+    },
+    "当前核对": "实际MCP当前15原任务/原声文案/声音/valid端点核对；正常语速、音频SHA和实测时长保持",
+    "当前核对证据": "revision/evidence/speech-before.json",
+    "本次待审": [
+      "新机制画面与温暖纸纹呈现",
+      "明显动作与全片转场、字幕和节奏",
+      "实际发音与明确full-rough-v2终审"
+    ],
+    "依据": [
+      "#96 v0.2已确认旁白与机制约束",
+      "#97静态视觉规则（当前新动画待复审）",
+      "#104制作/非必然性/原声和字幕边界",
+      "#112用户否决v1后的三个修订要求"
+    ],
+    "标注": [
+      "成人股骨头 · 机制示意",
+      "范围与位置，都影响进展",
+      "受损范围",
+      "位置",
+      "机制概括 · 不用于分期或诊断",
+      "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+    ],
+    "previousInputRecord": "full-inputs/current111.json"
+  },
+  {
+    "id": "FH15",
+    "segmentId": "d8c30c3e-1358-4777-8581-9592360642b9",
+    "order": 14,
+    "text": "所以，坏死说的是骨组织死亡。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "15ba7b87-612d-419a-b728-3571be936a7f",
+    "audio": "full-inputs/audio/FH15.mp3",
+    "audioDuration": 3.624,
+    "durationInFrames": 109,
+    "audioSha256": "8ec608958f54d283011849141c0b6387cffceaab902047ff95b72af344a453d2",
+    "reviewVersion": "full-rough-v2",
+    "previousVersion": "full-rough-v1",
+    "revisionScope": [
+      "构图与转场",
+      "可见机制动作",
+      "统一柔和纸纹美术"
+    ],
+    "关键画面": "坏死含义的组织大近景",
+    "动作顺序": [
+      "前14帧使用前段末画面纸边擦入，不重叠原声",
+      "细胞内部状态标记变化，保持骨梁，镜头推近",
+      "末尾停留供下一段衔接"
+    ],
+    "关联素材": {
+      "assembly": "revision/outputs/FH15-assembly.mp4",
+      "review": "revision/outputs/full-rough-v2.webm"
+    },
+    "审阅定位": {
+      "version": "full-rough-v2",
+      "startSeconds": 59.736,
+      "endSeconds": 63.36,
+      "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+    },
+    "确认范围": {
+      "旁白": "#96 v0.2 已确认且本次未改变",
+      "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+      "本次新画面": "待用户对full-rough-v2实际审阅，不继承v1确认",
+      "配音同步": "开发媒体核对通过，固定提交正式验收另记",
+      "发音和终审": "full-rough-v1已审但未通过，full-rough-v2待审"
+    },
+    "当前核对": "实际MCP当前15原任务/原声文案/声音/valid端点核对；正常语速、音频SHA和实测时长保持",
+    "当前核对证据": "revision/evidence/speech-before.json",
+    "本次待审": [
+      "新机制画面与温暖纸纹呈现",
+      "明显动作与全片转场、字幕和节奏",
+      "实际发音与明确full-rough-v2终审"
+    ],
+    "依据": [
+      "#96 v0.2已确认旁白与机制约束",
+      "#97静态视觉规则（当前新动画待复审）",
+      "#104制作/非必然性/原声和字幕边界",
+      "#112用户否决v1后的三个修订要求"
+    ],
+    "标注": [
+      "成人股骨头 · 机制示意",
+      "坏死：骨组织死亡",
+      "细胞状态改变",
+      "骨组织是活的，原有骨架不会马上消失",
+      "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+    ],
+    "previousInputRecord": "full-inputs/current111.json"
+  },
+  {
+    "id": "FH16",
+    "segmentId": "665a5773-57f1-4bfd-918a-680dd3eb3d41",
+    "order": 15,
+    "text": "塌陷说的是支撑结构失效后，外形发生了改变。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "8ab61b38-3aa1-45ea-aae1-6b8d2911486d",
+    "audio": "full-inputs/audio/FH16.mp3",
+    "audioDuration": 4.68,
+    "durationInFrames": 141,
+    "audioSha256": "82fa379ac721cc25539190b4ef341402b5a0522be208a595d388a00b1e981d27",
+    "reviewVersion": "full-rough-v2",
+    "previousVersion": "full-rough-v1",
+    "revisionScope": [
+      "构图与转场",
+      "可见机制动作",
+      "统一柔和纸纹美术"
+    ],
+    "关键画面": "组织状态与外形变化的概念对照",
+    "动作顺序": [
+      "前14帧使用前段末画面纸边擦入，不重叠原声",
+      "左侧组织骨架保留，右侧连续局部下陷并保留原轮廓",
+      "末尾停留供下一段衔接"
+    ],
+    "关联素材": {
+      "assembly": "revision/outputs/FH16-assembly.mp4",
+      "review": "revision/outputs/full-rough-v2.webm"
+    },
+    "审阅定位": {
+      "version": "full-rough-v2",
+      "startSeconds": 63.36,
+      "endSeconds": 68.04,
+      "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+    },
+    "确认范围": {
+      "旁白": "#96 v0.2 已确认且本次未改变",
+      "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+      "本次新画面": "待用户对full-rough-v2实际审阅，不继承v1确认",
+      "配音同步": "开发媒体核对通过，固定提交正式验收另记",
+      "发音和终审": "full-rough-v1已审但未通过，full-rough-v2待审"
+    },
+    "当前核对": "实际MCP当前15原任务/原声文案/声音/valid端点核对；正常语速、音频SHA和实测时长保持",
+    "当前核对证据": "revision/evidence/speech-before.json",
+    "本次待审": [
+      "新机制画面与温暖纸纹呈现",
+      "明显动作与全片转场、字幕和节奏",
+      "实际发音与明确full-rough-v2终审"
+    ],
+    "依据": [
+      "#96 v0.2已确认旁白与机制约束",
+      "#97静态视觉规则（当前新动画待复审）",
+      "#104制作/非必然性/原声和字幕边界",
+      "#112用户否决v1后的三个修订要求"
+    ],
+    "标注": [
+      "成人股骨头 · 机制示意",
+      "坏死与塌陷，说的是不同变化",
+      "坏死：骨组织死亡",
+      "塌陷：支撑失效后的外形改变",
+      "原轮廓",
+      "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+    ],
+    "previousInputRecord": "full-inputs/current111.json"
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "status": "reviewed-rejected",
+  "version": "full-rough-v1",
+  "source": "#104 Testing Decisions + #112.2/.7",
+  "items": [
+    "新画面医学表达及已确认风格",
+    "发音听审",
+    "完整字幕/连续性/节奏",
+    "FH10放慢与39–52秒前后衔接",
+    "对应完整版本明确终审"
+  ],
+  "push": "not-performed",
+  "closure": "not-performed",
+  "cleanup": "待全部验收及handoff",
+  "requestedAt": "2026-10-12T10:29:53.273168+00:00",
+  "question": "请从头观看并听审full-rough-v1，对新画面医学表达/风格、发音、完整字幕/衔接/节奏及39–52秒FH10前后作明确完整版本终审。",
+  "requestStatus": "accepted-pending-response",
+  "preview": "/home/forclaw/code/ClapGrid/docs/productions/issue-104/outputs/full-rough-v1.webm",
+  "browserPreview": "http://127.0.0.1:34715/full-rough-v1/review111.html",
+  "receivedAt": "2026-10-12T14:58:30.773157+00:00",
+  "userReply": "已完成审阅，但每幕动画不明显、各幕转场不足且始终同一股骨头构图导致疲劳，Remotion叠加动画不精致且不与素材风格一致",
+  "decision": "full-rough-v1终审未通过，不继承到后续修订"
+}

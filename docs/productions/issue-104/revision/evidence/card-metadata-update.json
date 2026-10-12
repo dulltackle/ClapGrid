@@ -1,0 +1,15 @@
+{
+  "scope": "仅制作卡说明/角色与版本/审阅范围更新，渲染所消费的id/旁白/配音/帧長字段均不变；不引入新医学含义或旁白修改",
+  "newAssemblyRole": "revision/outputs/<card>-assembly.mp4",
+  "newFullReviewRole": "revision/outputs/full-rough-v2.webm",
+  "retainedFields": [
+    "segmentId",
+    "text",
+    "voice",
+    "taskId",
+    "audio",
+    "audioDuration",
+    "durationInFrames",
+    "audioSha256"
+  ]
+}

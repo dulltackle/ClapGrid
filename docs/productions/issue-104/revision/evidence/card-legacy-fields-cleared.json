@@ -1,0 +1,100 @@
+{
+  "scope": "移除v1实际资产UUID/角色纠正/旧待核对/素材字段，当前唯一纯素材路径及新完整审阅时间窗按v2记录；旧版数据只保留于明确previous记录",
+  "cards": [
+    {
+      "id": "FH01",
+      "removedLegacyFields": [
+        "素材",
+        "确认来源",
+        "当前配音核对",
+        "实际关联"
+      ]
+    },
+    {
+      "id": "FH02",
+      "removedLegacyFields": [
+        "素材",
+        "确认来源",
+        "当前配音核对",
+        "实际关联"
+      ]
+    },
+    {
+      "id": "FH03",
+      "removedLegacyFields": [
+        "素材",
+        "确认来源",
+        "当前配音核对",
+        "实际关联"
+      ]
+    },
+    {
+      "id": "FH04",
+      "removedLegacyFields": [
+        "素材",
+        "确认来源",
+        "当前配音核对",
+        "实际关联"
+      ]
+    },
+    {
+      "id": "FH05",
+      "removedLegacyFields": []
+    },
+    {
+      "id": "FH06",
+      "removedLegacyFields": []
+    },
+    {
+      "id": "FH07",
+      "removedLegacyFields": []
+    },
+    {
+      "id": "FH08",
+      "removedLegacyFields": []
+    },
+    {
+      "id": "FH09",
+      "removedLegacyFields": []
+    },
+    {
+      "id": "FH10",
+      "removedLegacyFields": [
+        "roleCorrection"
+      ]
+    },
+    {
+      "id": "FH11-FH12",
+      "removedLegacyFields": [
+        "实际关联"
+      ]
+    },
+    {
+      "id": "FH13",
+      "removedLegacyFields": [
+        "actualAssetId"
+      ]
+    },
+    {
+      "id": "FH14",
+      "removedLegacyFields": [
+        "actualAssetId"
+      ]
+    },
+    {
+      "id": "FH15",
+      "removedLegacyFields": [
+        "actualAssetId",
+        "审阅版本",
+        "本次变化",
+        "当前素材状态"
+      ]
+    },
+    {
+      "id": "FH16",
+      "removedLegacyFields": [
+        "actualAssetId"
+      ]
+    }
+  ]
+}

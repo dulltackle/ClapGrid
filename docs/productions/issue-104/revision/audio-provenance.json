@@ -1,0 +1,82 @@
+{
+  "role": "Studio预览派生原速PCM，原MP3保留且真实ClapGrid导出仍用各段有效配音",
+  "originalTotalSamples48k": 3265920,
+  "originalAudioDuration": 68.04,
+  "records": [
+    {
+      "id": "FH01",
+      "originalSha256": "db53258b3bbc180b7f56353eab473c820bd8e3b1e02731bd946373d95e069f1e",
+      "decodedSamples48k": 224640
+    },
+    {
+      "id": "FH02",
+      "originalSha256": "c3c7ad692956a3a7c0b82e0f0453d8daef455d1bbfa9d7d7fff77e51f6c53ad9",
+      "decodedSamples48k": 244224
+    },
+    {
+      "id": "FH03",
+      "originalSha256": "5e1840118c759e45b86f9d5654ee1d79813e71bde9cb6c87784eb87cf439a8f8",
+      "decodedSamples48k": 224640
+    },
+    {
+      "id": "FH04",
+      "originalSha256": "e3271c6dfe289fbf9ad31b16b84c9f15df253484d6fc31c89dfe3c58ab7a47c1",
+      "decodedSamples48k": 213120
+    },
+    {
+      "id": "FH05",
+      "originalSha256": "fbba37fe233321b69d6cd6d3bf040186f9989c6eff96660829b75ec49579a3fb",
+      "decodedSamples48k": 232704
+    },
+    {
+      "id": "FH06",
+      "originalSha256": "7a161bce7244f0a5c6e1f9460e490bd41eeeb2439fc427a456e82e9ab88bb3c2",
+      "decodedSamples48k": 185472
+    },
+    {
+      "id": "FH07",
+      "originalSha256": "ce878058ab7d6218265bd61bf243622a0fdb6ef212f7320c002e58c71788e5a6",
+      "decodedSamples48k": 185472
+    },
+    {
+      "id": "FH08",
+      "originalSha256": "6beac68c48d554178d66ee517d2115ffbc68fe895db5bbd91ae8417018950f52",
+      "decodedSamples48k": 135936
+    },
+    {
+      "id": "FH09",
+      "originalSha256": "28dd2b7bc33c56388501474cea7b5c57a461c30f3ef936b66042a87a853c4e99",
+      "decodedSamples48k": 281088
+    },
+    {
+      "id": "FH10",
+      "originalSha256": "4f424a8dc949bee1250604d8c05749580967e90f00c842edbb60ed00f74ec951",
+      "decodedSamples48k": 232704
+    },
+    {
+      "id": "FH11-FH12",
+      "originalSha256": "a3dd8a7b8a8f307d381d707f9b19d15fa39a1a65f5541fe79672b4dfb94465ca",
+      "decodedSamples48k": 327168
+    },
+    {
+      "id": "FH13",
+      "originalSha256": "4e2f2a024ea4561394c11597e0855bc3fa0b05d53dd9c884eef38071fa75d595",
+      "decodedSamples48k": 194688
+    },
+    {
+      "id": "FH14",
+      "originalSha256": "29d4ffa908f8baba2f5b0b426ae5b560ff7c45fc49f996dfe919eb098d906328",
+      "decodedSamples48k": 185472
+    },
+    {
+      "id": "FH15",
+      "originalSha256": "8ec608958f54d283011849141c0b6387cffceaab902047ff95b72af344a453d2",
+      "decodedSamples48k": 173952
+    },
+    {
+      "id": "FH16",
+      "originalSha256": "82fa379ac721cc25539190b4ef341402b5a0522be208a595d388a00b1e981d27",
+      "decodedSamples48k": 224640
+    }
+  ]
+}

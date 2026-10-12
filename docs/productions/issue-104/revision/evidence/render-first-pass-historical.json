@@ -1,0 +1,472 @@
+{
+  "status": "complete",
+  "version": "full-rough-v2",
+  "sourceBefore": {
+    "art.tsx": "82940fdb23a79d7359f0c36f33753cbdaf20ac475e3b9fe7b342b28fe6730a37",
+    "intro.tsx": "51b41dcaac62d869f2b129a90ee4086f8811fbb567ba20e21610e8bd1e9e0ab1",
+    "mechanism.tsx": "4b4e7772562b49978f100a29e8c5896e64ff3c3883ee863556929f635e5fa5a6",
+    "outro.tsx": "2e2ad7605ff8540f42ca1b9fecd4e67bdf949f7a9c0ce7dc8c1e7608fbd6ed94",
+    "scene.tsx": "10b3d322ef26105bfcc619156af3c0fe60b0b60adc3076ab221d5254a18f07e7",
+    "entry.tsx": "ef91f04e9c0e5e8e3365f7f67b50d356c34d4e7f85b6c0c416f1b83d0fad2306",
+    "cards.json": "aa23a9182ad557f2fa6f77a6271bfcf0415c1feb855401eafa687c701d860dae",
+    "render.mjs": "7a67ae14f1f65eadef4025a40a05eaaa8313dd86a52a08df892c05dba6bfd512"
+  },
+  "sourceAfter": {
+    "art.tsx": "82940fdb23a79d7359f0c36f33753cbdaf20ac475e3b9fe7b342b28fe6730a37",
+    "intro.tsx": "51b41dcaac62d869f2b129a90ee4086f8811fbb567ba20e21610e8bd1e9e0ab1",
+    "mechanism.tsx": "4b4e7772562b49978f100a29e8c5896e64ff3c3883ee863556929f635e5fa5a6",
+    "outro.tsx": "2e2ad7605ff8540f42ca1b9fecd4e67bdf949f7a9c0ce7dc8c1e7608fbd6ed94",
+    "scene.tsx": "10b3d322ef26105bfcc619156af3c0fe60b0b60adc3076ab221d5254a18f07e7",
+    "entry.tsx": "ef91f04e9c0e5e8e3365f7f67b50d356c34d4e7f85b6c0c416f1b83d0fad2306",
+    "cards.json": "aa23a9182ad557f2fa6f77a6271bfcf0415c1feb855401eafa687c701d860dae",
+    "render.mjs": "7a67ae14f1f65eadef4025a40a05eaaa8313dd86a52a08df892c05dba6bfd512"
+  },
+  "records": [
+    {
+      "id": "FH01",
+      "segmentId": "2e5abb40-b111-42e9-b137-fb758abc9dd8",
+      "taskId": "13843d1f-b8b0-4d89-bed1-d13302bb9a29",
+      "originalAudioSha256": "db53258b3bbc180b7f56353eab473c820bd8e3b1e02731bd946373d95e069f1e",
+      "outputLocation": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH01-assembly.mp4",
+      "sha256": "b5069c33bfe8fb5d1a88f2d998a38f35964fb6e672a3a737d82d57456b15f191",
+      "durationInFrames": 141,
+      "frames": [
+        {
+          "frame": 49,
+          "portion": 0.35,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH01-35.png",
+          "sha256": "589d5c87a0794efa8e1aef235c78e123b9b739352589866f1e8dcf2893f1f297"
+        },
+        {
+          "frame": 100,
+          "portion": 0.72,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH01-72.png",
+          "sha256": "451b3ea8766c576f6d01e31405dba71e3478f8817d1a313e3000696c3378ad69"
+        },
+        {
+          "frame": 130,
+          "portion": 0.93,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH01-93.png",
+          "sha256": "451b3ea8766c576f6d01e31405dba71e3478f8817d1a313e3000696c3378ad69"
+        }
+      ]
+    },
+    {
+      "id": "FH02",
+      "segmentId": "1a778f97-e29b-4b5b-a314-7e0eafe8e3b0",
+      "taskId": "eb4a4443-2792-449c-9c6b-f00bd9ec40ee",
+      "originalAudioSha256": "c3c7ad692956a3a7c0b82e0f0453d8daef455d1bbfa9d7d7fff77e51f6c53ad9",
+      "outputLocation": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH02-assembly.mp4",
+      "sha256": "4bc0d7b47b501dd098213fe3e9502a35e7f25c69e25aefccf42717cd5dd41ad9",
+      "durationInFrames": 153,
+      "frames": [
+        {
+          "frame": 53,
+          "portion": 0.35,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH02-35.png",
+          "sha256": "4e45387ab5c532fe1cf7896d166a4d4cb257dddbf0848cc3cd197a6f7b7f7ff4"
+        },
+        {
+          "frame": 109,
+          "portion": 0.72,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH02-72.png",
+          "sha256": "8438d83c110ac44fbb993e1cd942c770511383618e3af42a52a4971cd9605828"
+        },
+        {
+          "frame": 141,
+          "portion": 0.93,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH02-93.png",
+          "sha256": "853435375fbb245bfd7f64c9c1bf49da36cfcbd99937511e8612a3e7811dc2fa"
+        }
+      ]
+    },
+    {
+      "id": "FH03",
+      "segmentId": "429a80d1-2dac-4fd6-aeb3-c6609aea9c23",
+      "taskId": "4072b836-991b-4be8-8af1-68bc50eacc04",
+      "originalAudioSha256": "5e1840118c759e45b86f9d5654ee1d79813e71bde9cb6c87784eb87cf439a8f8",
+      "outputLocation": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH03-assembly.mp4",
+      "sha256": "744a30b2cd15aef51b1b38d937b9c0cddf74c9b186e4de3370541dbd88884a49",
+      "durationInFrames": 141,
+      "frames": [
+        {
+          "frame": 49,
+          "portion": 0.35,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH03-35.png",
+          "sha256": "cf4483c4efe4d3cc8f86148509d4f86af65b2d6234e3f62c56684682d4790dc3"
+        },
+        {
+          "frame": 100,
+          "portion": 0.72,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH03-72.png",
+          "sha256": "35a4a061550a041195e27b8b379769c6770e97491b3dfa1f977e411c9991cab4"
+        },
+        {
+          "frame": 130,
+          "portion": 0.93,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH03-93.png",
+          "sha256": "09aa8fb6190d930c1b1ebe0c61130733081f6d973c9643dad932a8ce1bd94068"
+        }
+      ]
+    },
+    {
+      "id": "FH04",
+      "segmentId": "5582739e-611f-4996-8f5e-f25f819c9a1d",
+      "taskId": "1880f2a2-043c-4a39-ab82-054c5a574226",
+      "originalAudioSha256": "e3271c6dfe289fbf9ad31b16b84c9f15df253484d6fc31c89dfe3c58ab7a47c1",
+      "outputLocation": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH04-assembly.mp4",
+      "sha256": "050405d92cc84b61590db912b68e76d787852920132a23b30689cd027d4cf766",
+      "durationInFrames": 134,
+      "frames": [
+        {
+          "frame": 46,
+          "portion": 0.35,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH04-35.png",
+          "sha256": "ae6d2277dc537e0966f0b22aa761c1f717b3277575a5930b9de6731edc856275"
+        },
+        {
+          "frame": 95,
+          "portion": 0.72,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH04-72.png",
+          "sha256": "71132787f1c2737ae1fe7e705aac099c747c7f1b2e2be48b37c0703f44794d2f"
+        },
+        {
+          "frame": 123,
+          "portion": 0.93,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH04-93.png",
+          "sha256": "c6e60f5e7ca43c8cfea03bd5d1319f8f594630b637b937c0e032c5ce1cc2a82f"
+        }
+      ]
+    },
+    {
+      "id": "FH05",
+      "segmentId": "1e09a362-e6eb-4cf0-90bb-ce7f1d3b81c4",
+      "taskId": "6658739d-4778-4f59-8ae6-a764ea8e36af",
+      "originalAudioSha256": "fbba37fe233321b69d6cd6d3bf040186f9989c6eff96660829b75ec49579a3fb",
+      "outputLocation": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH05-assembly.mp4",
+      "sha256": "5f1fbe68c58e494234c0a37cca3683440b0b4fff22ddf6032d650d1fed94ea98",
+      "durationInFrames": 146,
+      "frames": [
+        {
+          "frame": 50,
+          "portion": 0.35,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH05-35.png",
+          "sha256": "ac312aa8a5f9e87d0dea0263a464d08b749ecb3631b76797c10ff99005b26281"
+        },
+        {
+          "frame": 104,
+          "portion": 0.72,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH05-72.png",
+          "sha256": "2d11b8b3fb4ac17091f533cb69be7d87664f8e02dfb2cf381b5ca5796a89a8e1"
+        },
+        {
+          "frame": 134,
+          "portion": 0.93,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH05-93.png",
+          "sha256": "82241699ed36d0c85d424e14abc3f843c8859621c6cf71c55893f76f10dfdee6"
+        }
+      ]
+    },
+    {
+      "id": "FH06",
+      "segmentId": "09985f81-72ee-43c5-bc56-0a48e78d7b0d",
+      "taskId": "2ec5815c-42ad-4c0c-ba00-1ec664062a5f",
+      "originalAudioSha256": "7a161bce7244f0a5c6e1f9460e490bd41eeeb2439fc427a456e82e9ab88bb3c2",
+      "outputLocation": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH06-assembly.mp4",
+      "sha256": "ebae3584ec3a395a88d86314d51f92e0b9d6bfa028d8692bec377ed038968388",
+      "durationInFrames": 116,
+      "frames": [
+        {
+          "frame": 40,
+          "portion": 0.35,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH06-35.png",
+          "sha256": "630c6c5c865e768dae7852c1ca085e0bf710e5ce6299be4ca380e0899de6c995"
+        },
+        {
+          "frame": 82,
+          "portion": 0.72,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH06-72.png",
+          "sha256": "6c2b67fefe8e5d7af00e50609fd2fdf61ece13c06a77a0997754817fc763bb71"
+        },
+        {
+          "frame": 106,
+          "portion": 0.93,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH06-93.png",
+          "sha256": "af9c6444c0f35ea058662a5e4665c5d68ee6fe57be2b21df97e7266e61f70d0f"
+        }
+      ]
+    },
+    {
+      "id": "FH07",
+      "segmentId": "5b18fddd-76d9-44f5-90e9-8663ff71e12c",
+      "taskId": "83cc7d16-a2a0-4f43-a179-bbb884adcdc8",
+      "originalAudioSha256": "ce878058ab7d6218265bd61bf243622a0fdb6ef212f7320c002e58c71788e5a6",
+      "outputLocation": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH07-assembly.mp4",
+      "sha256": "7fee9e93fe72b0568b8cc4d259fb9511bd713f972053b45020c602aff19097c4",
+      "durationInFrames": 116,
+      "frames": [
+        {
+          "frame": 40,
+          "portion": 0.35,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH07-35.png",
+          "sha256": "d950a8a267db85bf6d8013af738f6475f02499f785e0315adcf0b3ce15e595fc"
+        },
+        {
+          "frame": 82,
+          "portion": 0.72,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH07-72.png",
+          "sha256": "852a89d998ecad2c94abde48d55ade04fd928976caa86bcd2388e3c487524423"
+        },
+        {
+          "frame": 106,
+          "portion": 0.93,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH07-93.png",
+          "sha256": "7d2df0bc1c5533487af94385f633f5e8ba1b5636135fa9bd66d594e27ab23d2c"
+        }
+      ]
+    },
+    {
+      "id": "FH08",
+      "segmentId": "f27fcec6-b3b4-4048-9dd4-79eaa9cf6930",
+      "taskId": "e59b50fd-4f54-4057-8612-611f4435ad4f",
+      "originalAudioSha256": "6beac68c48d554178d66ee517d2115ffbc68fe895db5bbd91ae8417018950f52",
+      "outputLocation": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH08-assembly.mp4",
+      "sha256": "e45167834c16dfb2ba86f46fa31d7afae67539d612a64ccd807aa70f92492fd4",
+      "durationInFrames": 85,
+      "frames": [
+        {
+          "frame": 29,
+          "portion": 0.35,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH08-35.png",
+          "sha256": "db0e8609d0931ee47c88d8618ee103f76b4724748bd45c0c46ed5c1703d6811a"
+        },
+        {
+          "frame": 60,
+          "portion": 0.72,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH08-72.png",
+          "sha256": "d3f07c6820039bc82d8559db765da0f3bbd9d2d742177e3b24396df190f85f6e"
+        },
+        {
+          "frame": 78,
+          "portion": 0.93,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH08-93.png",
+          "sha256": "4fd8eab35690a4c0b689cd024fff841d31259bdee12be38e1c36cc48a472304b"
+        }
+      ]
+    },
+    {
+      "id": "FH09",
+      "segmentId": "9556199e-a633-4052-bb15-63f46f5a409c",
+      "taskId": "aae43103-e516-42a1-8e8f-75cd0e5fd4a5",
+      "originalAudioSha256": "28dd2b7bc33c56388501474cea7b5c57a461c30f3ef936b66042a87a853c4e99",
+      "outputLocation": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH09-assembly.mp4",
+      "sha256": "b0b35429ad805ffda5b6105dc18fcb6cc3811e3522881de17b48e3c751008ac7",
+      "durationInFrames": 176,
+      "frames": [
+        {
+          "frame": 61,
+          "portion": 0.35,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH09-35.png",
+          "sha256": "945f356d88e8b6c392f4d40e020818a7158e65bb31084815b13075e09f2edbe9"
+        },
+        {
+          "frame": 126,
+          "portion": 0.72,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH09-72.png",
+          "sha256": "ee48cd3fefad61c1f2e81fd6bfc9a3eca688d94e831acfbfd0c3f74a4a66a0b7"
+        },
+        {
+          "frame": 162,
+          "portion": 0.93,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH09-93.png",
+          "sha256": "3f491f8cade704cd61501139261fb1457b3100e24d072d3db1ee202e3eab89a5"
+        }
+      ]
+    },
+    {
+      "id": "FH10",
+      "segmentId": "d9b6c5b5-abe9-4a98-bd84-c7667eb44dce",
+      "taskId": "13c0ba78-4e76-4c19-9a9b-b052dcfd9664",
+      "originalAudioSha256": "4f424a8dc949bee1250604d8c05749580967e90f00c842edbb60ed00f74ec951",
+      "outputLocation": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH10-assembly.mp4",
+      "sha256": "931cd74a6a22b7e76d26ece0d53fbca61adb019bfda8f3d9811da7537c6e90f4",
+      "durationInFrames": 146,
+      "frames": [
+        {
+          "frame": 50,
+          "portion": 0.35,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH10-35.png",
+          "sha256": "c33b65fc50e623c213d314a3843bf690fed68548663e6de1033f083ded166998"
+        },
+        {
+          "frame": 104,
+          "portion": 0.72,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH10-72.png",
+          "sha256": "28f54b3ce95f4f7cef46f5a60c4e9990e8b5b69b65864f2a4244ef4799b4633b"
+        },
+        {
+          "frame": 134,
+          "portion": 0.93,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH10-93.png",
+          "sha256": "2c7093faa3b671848ad52f54ab8afc334a02a2cac060f6d0111ba46923556da4"
+        }
+      ]
+    },
+    {
+      "id": "FH11-FH12",
+      "segmentId": "e509e18d-edab-4700-8695-3df351c66a4e",
+      "taskId": "420d818b-a99c-4613-b9c3-fd601062ed33",
+      "originalAudioSha256": "a3dd8a7b8a8f307d381d707f9b19d15fa39a1a65f5541fe79672b4dfb94465ca",
+      "outputLocation": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH11-FH12-assembly.mp4",
+      "sha256": "f95d2ef72044670371ff3f6dba709ce8dc2a5ea01f640cb386ed4b4e8f13766f",
+      "durationInFrames": 205,
+      "frames": [
+        {
+          "frame": 71,
+          "portion": 0.35,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH11-FH12-35.png",
+          "sha256": "3bf48a3427e7f6dc5de8a7e29894791b958e8b41e2f3211dde965b129d41eda7"
+        },
+        {
+          "frame": 146,
+          "portion": 0.72,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH11-FH12-72.png",
+          "sha256": "317d1b26e1ce78f482331219a15c4122fd2a1063ae74fef66e3628e730dea4b6"
+        },
+        {
+          "frame": 189,
+          "portion": 0.93,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH11-FH12-93.png",
+          "sha256": "54de3dd855fd374e0a1af34675acababea53c2d1cb41eb9b3b1e7d32dab3b471"
+        }
+      ]
+    },
+    {
+      "id": "FH13",
+      "segmentId": "e4416bfe-3823-49c7-a89d-99355c437679",
+      "taskId": "65e9f937-f960-4d3a-867d-02e904ab2951",
+      "originalAudioSha256": "4e2f2a024ea4561394c11597e0855bc3fa0b05d53dd9c884eef38071fa75d595",
+      "outputLocation": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH13-assembly.mp4",
+      "sha256": "73614b41a750824a4670f72bf07a7b8a80d062c8c83c11e0bc89f864e21a2834",
+      "durationInFrames": 122,
+      "frames": [
+        {
+          "frame": 42,
+          "portion": 0.35,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH13-35.png",
+          "sha256": "8fd59cabbc94e8b76a3c2fc6b233452a8edc69d0c69a394f1f8a68a32b612029"
+        },
+        {
+          "frame": 87,
+          "portion": 0.72,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH13-72.png",
+          "sha256": "0019d20b827c86d3484d75137bbedc2a0812edf62e97f47b9076326001490c35"
+        },
+        {
+          "frame": 112,
+          "portion": 0.93,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH13-93.png",
+          "sha256": "0019d20b827c86d3484d75137bbedc2a0812edf62e97f47b9076326001490c35"
+        }
+      ]
+    },
+    {
+      "id": "FH14",
+      "segmentId": "95695858-1813-4d56-bd80-b310d5bd84b7",
+      "taskId": "aef6e056-25fa-4a28-83a9-f1709316f654",
+      "originalAudioSha256": "29d4ffa908f8baba2f5b0b426ae5b560ff7c45fc49f996dfe919eb098d906328",
+      "outputLocation": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH14-assembly.mp4",
+      "sha256": "a3579432e7855b0e869cbd2238d1044e1351f8b8eee4e653b6054227e13a9e62",
+      "durationInFrames": 116,
+      "frames": [
+        {
+          "frame": 40,
+          "portion": 0.35,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH14-35.png",
+          "sha256": "7de6f56e2f95daede8f15383970e26b89280f1e44cf37861e0da1ce76657f755"
+        },
+        {
+          "frame": 82,
+          "portion": 0.72,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH14-72.png",
+          "sha256": "22a6f18e511d134829949cbe7ebf078a2e2614749083eff0e80bfb11bcfb2f5a"
+        },
+        {
+          "frame": 106,
+          "portion": 0.93,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH14-93.png",
+          "sha256": "ee0d18c2c80a69feeae1ff5bdadc589f03a42b506b344d67b1618f72e837bfde"
+        }
+      ]
+    },
+    {
+      "id": "FH15",
+      "segmentId": "d8c30c3e-1358-4777-8581-9592360642b9",
+      "taskId": "15ba7b87-612d-419a-b728-3571be936a7f",
+      "originalAudioSha256": "8ec608958f54d283011849141c0b6387cffceaab902047ff95b72af344a453d2",
+      "outputLocation": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH15-assembly.mp4",
+      "sha256": "3dd22becb7cfbfc63dc2fec921f15c2a462da67750c49560f578d7c42c301ab7",
+      "durationInFrames": 109,
+      "frames": [
+        {
+          "frame": 37,
+          "portion": 0.35,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH15-35.png",
+          "sha256": "260eee65091eebdb85b557faba2ef89594e4a1331682f625db5fe96a8c505b8f"
+        },
+        {
+          "frame": 77,
+          "portion": 0.72,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH15-72.png",
+          "sha256": "ae50c6890d75717a9a76900472720a7b6edb03de94e835839322dfa76bd80e5a"
+        },
+        {
+          "frame": 100,
+          "portion": 0.93,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH15-93.png",
+          "sha256": "ae50c6890d75717a9a76900472720a7b6edb03de94e835839322dfa76bd80e5a"
+        }
+      ]
+    },
+    {
+      "id": "FH16",
+      "segmentId": "665a5773-57f1-4bfd-918a-680dd3eb3d41",
+      "taskId": "8ab61b38-3aa1-45ea-aae1-6b8d2911486d",
+      "originalAudioSha256": "82fa379ac721cc25539190b4ef341402b5a0522be208a595d388a00b1e981d27",
+      "outputLocation": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH16-assembly.mp4",
+      "sha256": "2857084e36c2aed76d4408eacadfc32c724584faf53e0648a69e4cfa7a9ae19e",
+      "durationInFrames": 141,
+      "frames": [
+        {
+          "frame": 49,
+          "portion": 0.35,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH16-35.png",
+          "sha256": "62e59e0a3e7a7fda4f0d7ed7a9f44408cba3c45e579dea2f85d734621e65edc2"
+        },
+        {
+          "frame": 100,
+          "portion": 0.72,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH16-72.png",
+          "sha256": "f16aa3a4662c6300a483ed504f8110696f2e2c626c470ea065d8ee31c78248be"
+        },
+        {
+          "frame": 130,
+          "portion": 0.93,
+          "path": "/home/forclaw/tmp/spec-104-revision-v2/docs/productions/issue-104/revision/outputs/FH16-93.png",
+          "sha256": "2f44a4cd8dff0b6f3fbb9e7d0252531063ddc221b3607c891d8473d7b6d2f642"
+        }
+      ]
+    }
+  ],
+  "browserExecutable": "/usr/bin/google-chrome",
+  "parameters": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "codec": "h264",
+    "crf": 18,
+    "muted": true,
+    "assemblyNarrationSubtitle": false
+  },
+  "scope": "15实际纯素材和每段3无损帧，实际ClapGrid全片导出和人审另做"
+}
