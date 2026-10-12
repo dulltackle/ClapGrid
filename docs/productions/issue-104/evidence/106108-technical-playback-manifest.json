@@ -1,0 +1,85 @@
+{
+  "version": "technical-playback106108-v1",
+  "createdAt": "2026-10-12T08:32:13.877108+00:00",
+  "previousVersion": null,
+  "change": "补归档协调者已实际完成的技术播放记录；媒体从既有完整独立档案按SHA复制，旧档案不变，无新渲染",
+  "archiveDirectory": "/home/forclaw/tmp/implement-spec-104/archives/technical-playback106108-v1",
+  "records": [
+    {
+      "record": "evidence/106-browser-continuous.json",
+      "media": "media/106-browser-continuous.webm",
+      "sha256": "e52724f99fbebe2e634379f325b92c6eb6ce5371e4ef2e87f78e4d2fc3c4ee73",
+      "originalVersion": "group106-v1",
+      "originalMedia": "outputs/group106-review.webm",
+      "originalManifestSha256": "328498934394723182b360b4e2bb315d3a310401cbb48c8d8e715d00fe294f0a",
+      "scope": "FH01–FH04连续技术播放，不代签用户新画面、发音听审或全片终审"
+    },
+    {
+      "record": "evidence/106-browser-archive.json",
+      "media": "media/106-browser-archive.webm",
+      "sha256": "8f8fb883ff1ee21ffbf4ba3ddc2d6f8b7947cdae4517ab1397f236b199800a57",
+      "originalVersion": "group106-v1",
+      "originalMedia": "outputs/group106-reproduced/FH03-review.webm",
+      "originalManifestSha256": "328498934394723182b360b4e2bb315d3a310401cbb48c8d8e715d00fe294f0a",
+      "scope": "独立恢复代表段完整技术播放，不代签人工发音听审/全片终审"
+    },
+    {
+      "record": "evidence/108-browser-working.json",
+      "media": "media/108-browser-working.webm",
+      "sha256": "e6d9cdd7748fb9cabaa77ce8f477b850533bfe0f1c8d699c2c3e4894040465e2",
+      "originalVersion": "group108-v1",
+      "originalMedia": "outputs/FH11-FH12-review.webm",
+      "originalManifestSha256": "3af6971076e983a49c157e479ac035448ec18b78dc2d474cde7b3fac2b039f52",
+      "scope": "工作树单段浏览器副本；不代表用户人工听审或新画面确认"
+    },
+    {
+      "record": "evidence/108-browser-archive.json",
+      "media": "media/108-browser-archive.webm",
+      "sha256": "7ad04d4644c7c728418997194cdeee91e5524715c3dc009fb29d57afbcbc1ba3",
+      "originalVersion": "group108-v1",
+      "originalMedia": "reproduced-outputs/FH11-FH12-review.webm",
+      "originalManifestSha256": "3af6971076e983a49c157e479ac035448ec18b78dc2d474cde7b3fac2b039f52",
+      "scope": "独立档案重渲染单段完整技术播放，不等于人工发音听审或用户新画面确认"
+    }
+  ],
+  "files": [
+    {
+      "path": "media/106-browser-continuous.webm",
+      "sha256": "e52724f99fbebe2e634379f325b92c6eb6ce5371e4ef2e87f78e4d2fc3c4ee73"
+    },
+    {
+      "path": "media/106-browser-archive.webm",
+      "sha256": "8f8fb883ff1ee21ffbf4ba3ddc2d6f8b7947cdae4517ab1397f236b199800a57"
+    },
+    {
+      "path": "media/108-browser-working.webm",
+      "sha256": "e6d9cdd7748fb9cabaa77ce8f477b850533bfe0f1c8d699c2c3e4894040465e2"
+    },
+    {
+      "path": "media/108-browser-archive.webm",
+      "sha256": "7ad04d4644c7c728418997194cdeee91e5524715c3dc009fb29d57afbcbc1ba3"
+    },
+    {
+      "path": "evidence/108-browser-working.json",
+      "sha256": "d826de55a1f31deecfad1efc49bdb5a8abf85f20e614609278178354360113a9"
+    },
+    {
+      "path": "evidence/106-browser-archive.json",
+      "sha256": "c3d7a78b733a8971a9bdaf0c609ad2b3aa055601a8b010d15b846f9e48cbabc0"
+    },
+    {
+      "path": "evidence/106-browser-continuous.json",
+      "sha256": "cdc030bae96534f31248192220c9a24e4bca4154bb88d8deaaa63808219797d8"
+    },
+    {
+      "path": "evidence/108-browser-archive.json",
+      "sha256": "7120bd8507faa275341c6bfe6ac553c3a8523732b0992b3dfd5c33344a6e75cc"
+    }
+  ],
+  "reviewStatus": {
+    "technicalPlayback": "实际播放记录具备，待独立复核",
+    "visual": "pending",
+    "pronunciation": "pending",
+    "fullReview": "pending"
+  }
+}
