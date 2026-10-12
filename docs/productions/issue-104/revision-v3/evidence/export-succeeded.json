@@ -1,0 +1,23 @@
+{
+  "observedAt": "2026-10-12T18:15:15Z",
+  "task": {
+    "id": "ecf1a366-7cd5-4989-ae4f-1e7b16cc32d8",
+    "createdAt": "2026-10-12T18:12:51.269Z",
+    "state": "succeeded",
+    "message": "导出成功",
+    "completed": 15,
+    "total": 15,
+    "issues": [],
+    "warnings": []
+  },
+  "output": {
+    "nativeMp4Path": "/home/forclaw/code/ClapGrid/clapgrid/exports/2026-10-12T18-12-51-269Z-ecf1a366-7cd5-4989-ae4f-1e7b16cc32d8.mp4",
+    "nativeWebmPath": "/home/forclaw/code/ClapGrid/clapgrid/media/ecf1a366-7cd5-4989-ae4f-1e7b16cc32d8.export.webm",
+    "mp4Path": "revision-v3/outputs/full-rough-v3.mp4",
+    "webmPath": "revision-v3/outputs/full-rough-v3.webm",
+    "mp4Sha256": "f9a9b1eb2ab8f1da4e2c880c73bd3e3ae765a49ad7b5052b3eadc57251c766f8",
+    "webmSha256": "9df45ad26377efdcff01432b2e18492efc6bb11e9429c822b662f88d98284edf"
+  },
+  "previewPathEvidence": "src/business/export-files.ts:15，实际task.id对应本机生成预览文件",
+  "role": "实际ClapGrid当前项目完整新导出，不是Remotion拼接或旧版替代"
+}

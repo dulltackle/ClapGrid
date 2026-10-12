@@ -1,0 +1,67 @@
+{
+  "id": "FH01",
+  "segmentId": "2e5abb40-b111-42e9-b137-fb758abc9dd8",
+  "order": 1,
+  "text": "股骨头坏死，为什么可能让原本圆滑的关节面塌陷？",
+  "voice": {
+    "speaker": "zh_female_vv_uranus_bigtts",
+    "speechRate": 0
+  },
+  "taskId": "13843d1f-b8b0-4d89-bed1-d13302bb9a29",
+  "audio": "full-inputs/audio/FH01.mp3",
+  "audioDuration": 4.68,
+  "durationInFrames": 141,
+  "audioSha256": "db53258b3bbc180b7f56353eab473c820bd8e3b1e02731bd946373d95e069f1e",
+  "reviewVersion": "full-rough-v3",
+  "previousVersion": "full-rough-v2",
+  "revisionScope": [
+    "统一生图水彩素材",
+    "真实骨层/骨梁上的机制状态与局部放大",
+    "镜头运动、连续下陷与全片转场"
+  ],
+  "关键画面": "开场英雄画面与左侧问题文字",
+  "动作顺序": [
+    "近端股骨由右推近并轻旋转归正，问题下方线条描画",
+    "末尾停留供下一段衔接"
+  ],
+  "关联素材": {
+    "assembly": "revision-v3/outputs/FH01-assembly.mp4",
+    "review": "revision-v3/outputs/full-rough-v3.webm"
+  },
+  "审阅定位": {
+    "version": "full-rough-v3",
+    "startSeconds": 0.0,
+    "endSeconds": 4.68,
+    "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+  },
+  "确认范围": {
+    "旁白": "#96 v0.2 已确认且本次未改变",
+    "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+    "本次新画面": "用户否决v2后重制，full-rough-v3实际完整终审待确认",
+    "配音同步": "本版技术执行结果另记，不能继承V2固定提交证据",
+    "发音和终审": "full-rough-v3待用户完整观看并听审"
+  },
+  "当前核对": "原文、稳定身份、vivi原速与原MP3继续保持；V3真实宿主采集另记",
+  "当前核对证据": "revision-v3/evidence/speech-before.json",
+  "本次待审": [
+    "新生图医学表达与一致风格",
+    "每幕明确动作、镜头变化和转场",
+    "完整字幕、发音、衔接、节奏及FH10前后"
+  ],
+  "依据": [
+    "#96 v0.2已确认旁白与机制约束",
+    "#97静态视觉规则（当前新动画待复审）",
+    "#104制作/非必然性/原声和字幕边界",
+    "#112用户否决v1后的三个修订要求",
+    "用户否决full-rough-v2：用生图提高股骨等素材质感并统一风格"
+  ],
+  "标注": [
+    "成人股骨头 · 机制示意",
+    "股骨头坏死",
+    "为什么可能塌陷？",
+    "从结构与支撑说起",
+    "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+  ],
+  "previousInputRecord": "revision/current-inputs.json",
+  "生图记录": "revision-v3/evidence/image-generation.json"
+}

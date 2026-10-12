@@ -1,0 +1,69 @@
+{
+  "id": "FH14",
+  "segmentId": "95695858-1813-4d56-bd80-b310d5bd84b7",
+  "order": 13,
+  "text": "受损范围、位置等因素，都会影响进展。",
+  "voice": {
+    "speaker": "zh_female_vv_uranus_bigtts",
+    "speechRate": 0
+  },
+  "taskId": "aef6e056-25fa-4a28-83a9-f1709316f654",
+  "audio": "full-inputs/audio/FH14.mp3",
+  "audioDuration": 3.864,
+  "durationInFrames": 116,
+  "audioSha256": "29d4ffa908f8baba2f5b0b426ae5b560ff7c45fc49f996dfe919eb098d906328",
+  "reviewVersion": "full-rough-v3",
+  "previousVersion": "full-rough-v2",
+  "revisionScope": [
+    "统一生图水彩素材",
+    "真实骨层/骨梁上的机制状态与局部放大",
+    "镜头运动、连续下陷与全片转场"
+  ],
+  "关键画面": "受损范围与位置的大局部",
+  "动作顺序": [
+    "前14帧使用前段末画面纸边擦入，不重叠原声",
+    "镜头平移，两个不同区域的边界强调，不引入分期或治疗",
+    "末尾停留供下一段衔接"
+  ],
+  "关联素材": {
+    "assembly": "revision-v3/outputs/FH14-assembly.mp4",
+    "review": "revision-v3/outputs/full-rough-v3.webm"
+  },
+  "审阅定位": {
+    "version": "full-rough-v3",
+    "startSeconds": 55.872,
+    "endSeconds": 59.736,
+    "scope": "完整成片对应本段时间窗，单段Studio仅为制作预览"
+  },
+  "确认范围": {
+    "旁白": "#96 v0.2 已确认且本次未改变",
+    "视觉规则": "#97 静态温暖分层规则仅作依据，新动画风格未获通过",
+    "本次新画面": "用户否决v2后重制，full-rough-v3实际完整终审待确认",
+    "配音同步": "本版技术执行结果另记，不能继承V2固定提交证据",
+    "发音和终审": "full-rough-v3待用户完整观看并听审"
+  },
+  "当前核对": "原文、稳定身份、vivi原速与原MP3继续保持；V3真实宿主采集另记",
+  "当前核对证据": "revision-v3/evidence/speech-before.json",
+  "本次待审": [
+    "新生图医学表达与一致风格",
+    "每幕明确动作、镜头变化和转场",
+    "完整字幕、发音、衔接、节奏及FH10前后"
+  ],
+  "依据": [
+    "#96 v0.2已确认旁白与机制约束",
+    "#97静态视觉规则（当前新动画待复审）",
+    "#104制作/非必然性/原声和字幕边界",
+    "#112用户否决v1后的三个修订要求",
+    "用户否决full-rough-v2：用生图提高股骨等素材质感并统一风格"
+  ],
+  "标注": [
+    "成人股骨头 · 机制示意",
+    "范围与位置，都影响进展",
+    "受损范围",
+    "位置",
+    "机制概括 · 不用于分期或诊断",
+    "机制示意 · 结构颜色与厚度为示意 · 不代表每个人的病程"
+  ],
+  "previousInputRecord": "revision/current-inputs.json",
+  "生图记录": "revision-v3/evidence/image-generation.json"
+}
