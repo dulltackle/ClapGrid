@@ -1,0 +1,37 @@
+{
+  "observedAt": "2026-10-12T06:55:48.518Z",
+  "source": "actual-browser",
+  "archive": "/home/forclaw/tmp/implement-spec-104/archives/fh10-v1",
+  "media": "outputs/FH10-review.webm",
+  "sha256": "b0ae368d68cf83edf0281463b619c1198a2cb882181fcfa1f811f1eb19675043",
+  "browser": "Codex In-app Browser",
+  "method": "在独立档案HTTP审阅页用CUA视频原生Space控件从0播放；未跳进度",
+  "initial": {
+    "currentTime": 0,
+    "duration": 4.918,
+    "paused": true,
+    "ended": false,
+    "muted": false,
+    "readyState": 4
+  },
+  "running": {
+    "currentTime": 0,
+    "paused": false,
+    "ended": false
+  },
+  "final": {
+    "currentTime": 4.918,
+    "duration": 4.918,
+    "paused": true,
+    "ended": true,
+    "muted": false,
+    "readyState": 4,
+    "error": null
+  },
+  "decode": {
+    "command": "python3 verify-media.py <archive>",
+    "exitCode": 0,
+    "status": "passed"
+  },
+  "scope": "仅证明独立档案当前重渲染浏览器副本从头到尾播放；非人工发音听审/用户画面确认/全片终审"
+}

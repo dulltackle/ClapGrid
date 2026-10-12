@@ -1,0 +1,47 @@
+{
+  "version": "fh10-v1",
+  "previousVersion": null,
+  "change": "当前有效配音重核对；原型转可编辑工程；装配与审阅分开；独立档案复现",
+  "visual": {
+    "status": "待审",
+    "existingConfirmation": "#100 仅原型画面表达已确认；本版不自动继承本次未检查部分"
+  },
+  "synchronization": {
+    "status": "技术核对通过",
+    "scope": "当前实际输入4.848秒；146帧；原速完整音频，无裁剪；装配无音轨，审阅有音轨；正式MP4与WebM全长无错误解码；工作树及档案重新渲染副本均实际浏览器从0播放至ended",
+    "limitations": [
+      "非逐字对齐",
+      "未执行人工听审",
+      "未执行全片终审"
+    ],
+    "playbackEvidence": [
+      "evidence/FH10-working-preview-playback.json",
+      "evidence/FH10-archive-browser-playback.json"
+    ]
+  },
+  "listening": {
+    "status": "待人工听审"
+  },
+  "fullFilm": {
+    "status": "待审，当前仅FH10"
+  },
+  "historicalRawEvidence": [
+    {
+      "path": "/home/forclaw/tmp/implement-spec-104/host-before.json",
+      "sha256": "c9de47f8ce691b74f99b8343787577fe443475bc0e004c4cea4fdf269f5d64c7"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-spec-104/speech-before.json",
+      "sha256": "f7b696fb9ead64a8b882fbf431be7c0e8e9140080c61d1336e267620f8e80ed9"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-spec-104/speech-mapped.json",
+      "sha256": "35e87de58985db99302757555cb8e06d51b3f3dce5e58dd9d12b6180137b981b"
+    }
+  ],
+  "currentEvidence": "evidence/FH10-current-collection.json",
+  "currentObservationRange": {
+    "startedAt": "2026-10-12T07:00:37.260Z",
+    "completedAt": "2026-10-12T07:00:38.400Z"
+  }
+}

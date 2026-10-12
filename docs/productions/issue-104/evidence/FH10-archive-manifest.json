@@ -1,0 +1,284 @@
+{
+  "version": "fh10-v1",
+  "previousVersion": null,
+  "change": "从当前配音建立可编辑基线及独立复现档案",
+  "createdAt": "2026-10-12T06:53:47.788873+00:00",
+  "segment": {
+    "id": "FH10",
+    "segmentId": "d9b6c5b5-abe9-4a98-bd84-c7667eb44dce",
+    "order": 10,
+    "text": "如果局部结构继续受损，承重时就可能出现细小骨折。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskId": "13c0ba78-4e76-4c19-9a9b-b052dcfd9664",
+    "audio": "public/fh10-narration.mp3",
+    "audioDuration": 4.848,
+    "durationInFrames": 146,
+    "motion": {
+      "slow": false
+    },
+    "依据": [
+      "#96 v0.2 已确认旁白",
+      "#97 温暖分层与裂隙位于骨组织规则",
+      "#100 FH10 动画原型视觉确认"
+    ],
+    "关键画面": "延续原型的近端股骨剖面，软骨连续、软骨下骨层及骨小梁保留；已有细小裂隙在骨组织内，放大图显示同一区域。",
+    "动作顺序": [
+      "先呈现既有受损结构及可能性标注",
+      "承重箭头按实测音频时长归一化缓慢移动并停留",
+      "既有裂隙的放大图淡入；不会随着一次承重出现新裂隙"
+    ],
+    "标注": [
+      "机制示意 · 非固定病程",
+      "承重示意",
+      "支撑受损时，可能发生",
+      "细小骨折",
+      "机制示意 · 不代表每个人的病程"
+    ],
+    "关联素材": {
+      "assembly": "outputs/FH10-assembly.mp4",
+      "review": "outputs/FH10-review.mp4"
+    },
+    "确认范围": {
+      "旁白": "https://github.com/dulltackle/ClapGrid/issues/96#issuecomment-6108628717",
+      "视觉规则": "https://github.com/dulltackle/ClapGrid/issues/97#issuecomment-6110063575",
+      "原型画面": "https://github.com/dulltackle/ClapGrid/issues/100#issuecomment-6116858790"
+    },
+    "当前核对": "本轮实际MCP采集范围2026-10-12T07:00:37.260Z–07:00:38.400Z，证据见evidence/FH10-current-collection.json及fresh-host/project/speech.json。现行片段、文字、声音、任务成功状态、有效配音和任务锁核对一致；FH10实际装配素材关联已确认。原声未重制，时长重新探测，旧无采集时间快照仅作历史参考。",
+    "本次待审": [
+      "当前渲染画面和字幕可读性",
+      "人工听审",
+      "全片终审（本工单不执行）"
+    ],
+    "当前核对证据": "evidence/FH10-current-collection.json"
+  },
+  "mapping": "segment-mapping.json",
+  "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "9f45b130a93bb0593c68f56d03bdf8438d7995f7d6916477ffbed5896ed43be6",
+      "bytes": 8
+    },
+    {
+      "path": "README.md",
+      "sha256": "5e2699ea3d3733c4c66f86d0b22bb2636ce8cd82185f1e680822faad5c619aba",
+      "bytes": 5995
+    },
+    {
+      "path": "cards/FH10.json",
+      "sha256": "0c42054d408263f76d382c0f2275d131a36a705c24866c81035b35164a8b12cc",
+      "bytes": 2180
+    },
+    {
+      "path": "dependency-resources-linux-x64.tgz",
+      "sha256": "91e77589e5af711a3e9c9ecf5c715ca2f0a965446d0501f48449c575c852775e",
+      "bytes": 49547076
+    },
+    {
+      "path": "evidence/FH10-archive-browser-playback.json",
+      "sha256": "bb2abadc97419604f9a25448d485020898006dec7a67f941c4354fc62dc15a1e",
+      "bytes": 1046
+    },
+    {
+      "path": "evidence/FH10-current-collection.json",
+      "sha256": "3b601829b99a7535805158aa1729b44f6ec2151e29a925e287926d1283f0fb21",
+      "bytes": 2881
+    },
+    {
+      "path": "evidence/FH10-media-report.json",
+      "sha256": "bb627158d108ad7b3794f7194e82e66fe275a693a86b0f61213f87d995e18769",
+      "bytes": 14698
+    },
+    {
+      "path": "evidence/FH10-reproduction.json",
+      "sha256": "123bf3f98dc5bfb55db882a3a001679bde8206403fee171c3ed7ac38355e7f47",
+      "bytes": 1428
+    },
+    {
+      "path": "evidence/FH10-review-status.json",
+      "sha256": "2d361eacabab7d8101643ac09b9ca61ae0ea055a90b82c495dbc12c5c1911167",
+      "bytes": 1715
+    },
+    {
+      "path": "evidence/FH10-visual-check.json",
+      "sha256": "b7c6da0ed337f071c35d371d980fa575a71dc43fd34f146b5eb909c15c83b494",
+      "bytes": 477
+    },
+    {
+      "path": "evidence/FH10-working-preview-playback.json",
+      "sha256": "c0329b68a4679d9da2d39061e1693c47cd3872cbe106e5e9157b003fa7597990",
+      "bytes": 1018
+    },
+    {
+      "path": "evidence/fresh-host.json",
+      "sha256": "d14318054041628e7088ebaf71346dbcd194d098219f77086ef516f09d3b194b",
+      "bytes": 905
+    },
+    {
+      "path": "evidence/fresh-project.json",
+      "sha256": "7dfef178613861d194f7ce88ce89b1867d1ac5697e46101e6191aa8010311b79",
+      "bytes": 6544
+    },
+    {
+      "path": "evidence/fresh-speech.json",
+      "sha256": "e3fe5109b59f528e0fd70fb27b0e15cd710891334b28c68e2287209edfbab0c9",
+      "bytes": 16228
+    },
+    {
+      "path": "evidence/host-before.json",
+      "sha256": "9ff8357797ae8d4a5058d8a45472d16e42fda6e2a2f06b00f43aea3c2fcd51f6",
+      "bytes": 12480
+    },
+    {
+      "path": "evidence/speech-before.json",
+      "sha256": "0255838ad1934956bfead1ca2b3581b7d372715b7e4447b983972b1a1d090360",
+      "bytes": 25731
+    },
+    {
+      "path": "evidence/speech-mapped.json",
+      "sha256": "944241d9cbaf69e3efcd1be1fa171ca2e2fc6f226ad896406825878ae92a590b",
+      "bytes": 15827
+    },
+    {
+      "path": "index.tsx",
+      "sha256": "b3dd1d07e95cfb19012be2304b811158ac803434db585a5697827e579d065179",
+      "bytes": 108
+    },
+    {
+      "path": "outputs/FH10-assembly.mp4",
+      "sha256": "5244e43abaaa022e91bbe786713cf4053f8b4b251255cdbde88a157958d18b49",
+      "bytes": 131136
+    },
+    {
+      "path": "outputs/FH10-assembly.png",
+      "sha256": "4677612251cc12b7225c43c9e1c5cff3fa65926b83dbe1906961ba66beae51ff",
+      "bytes": 435021
+    },
+    {
+      "path": "outputs/FH10-render.json",
+      "sha256": "f5a4565c44f04460489846bc8e288160f8d3ecca79fc4450ba917c5e1721f6e1",
+      "bytes": 3865
+    },
+    {
+      "path": "outputs/FH10-review.mp4",
+      "sha256": "292b8a1766e32c3242b8a9e7b3dcfc432c8792c0bfdb7298a79453a1e9207eca",
+      "bytes": 218151
+    },
+    {
+      "path": "outputs/FH10-review.png",
+      "sha256": "6f59f6e09f29636f5de0eda74d7d80174499091f9076dcdf1b5d8d4f052d659f",
+      "bytes": 462293
+    },
+    {
+      "path": "outputs/FH10-review.webm",
+      "sha256": "b0ae368d68cf83edf0281463b619c1198a2cb882181fcfa1f811f1eb19675043",
+      "bytes": 285930
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "b1a0ce3000fe089a4f8d28e3374c509f916e9a6ef18d7141544009fb03d9fffd",
+      "bytes": 92916
+    },
+    {
+      "path": "package.json",
+      "sha256": "22a547c9495ec6140df03b93a381c221ac5945823b4307787b64fccccfac9d7a",
+      "bytes": 462
+    },
+    {
+      "path": "public/fh10-narration.mp3",
+      "sha256": "4f424a8dc949bee1250604d8c05749580967e90f00c842edbb60ed00f74ec951",
+      "bytes": 38829
+    },
+    {
+      "path": "public/fonts/OFL-and-source.txt",
+      "sha256": "849f4ea9c214fa4ac3593b770c699f387534b11ce671264c1b10d85bdcb5997b",
+      "bytes": 14712
+    },
+    {
+      "path": "public/fonts/noto-cjk-sc.otf",
+      "sha256": "61610e9246dbdc6fbd71cc0cb649e3586734d3f965a625d9c7554eb3b02f6261",
+      "bytes": 13113740
+    },
+    {
+      "path": "references/fh10-reference.png",
+      "sha256": "810437229b496d6908d72f42bbb953212c2bf03187d8bea246fed21d8358d224",
+      "bytes": 1871064
+    },
+    {
+      "path": "references/fh10-static.png",
+      "sha256": "810437229b496d6908d72f42bbb953212c2bf03187d8bea246fed21d8358d224",
+      "bytes": 1871064
+    },
+    {
+      "path": "references/static-archive-manifest.json",
+      "sha256": "dbb9a15ad7ca38a72780c883f456775dab05b52cac3a38a766d725b7eae86517",
+      "bytes": 2299
+    },
+    {
+      "path": "references/static-manifest.json",
+      "sha256": "f5fabd21d94d9d691032a1414e2941049d4009d895ae62fb9ea9fca5f46d04a2",
+      "bytes": 6841
+    },
+    {
+      "path": "references/static-remaining-review.json",
+      "sha256": "290332d499a138f3aae60c65b0c0819158713b5be412306d157aa327ea101591",
+      "bytes": 9109
+    },
+    {
+      "path": "render.mjs",
+      "sha256": "bfe66df44c862bc6d836b97539eeb211b2e07a7927d357de1603e25369d138e3",
+      "bytes": 3178
+    },
+    {
+      "path": "review.html",
+      "sha256": "4e758c7bd574f903c609066476e74c7f92e752d6570c88d56408c369e00f1f1b",
+      "bytes": 1007
+    },
+    {
+      "path": "segment-mapping.json",
+      "sha256": "e31f73da6af1ff1c47c2f0ea059b60750b9bc1f4d51bc8519362035215951fff",
+      "bytes": 3199
+    },
+    {
+      "path": "src/FH10.tsx",
+      "sha256": "ff12dba21631ccb32d826fc5af863cb1159e5c60cf19a4f79754e8ed60789a46",
+      "bytes": 2787
+    },
+    {
+      "path": "src/anatomy.tsx",
+      "sha256": "69495c5356e7b7172064a73e2c5fdd31377d111029acb6377a415718d68159fe",
+      "bytes": 2505
+    },
+    {
+      "path": "src/shared.tsx",
+      "sha256": "96f9d0c8f41a9c172a5af3f8ddc7532daca3f1513c2f39582b85b598987eeb7b",
+      "bytes": 1956
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "fb60cf66e5c6e6c610fecb4bebf6f3f131baac16c79f65a6dbb50c78accd9d57",
+      "bytes": 268
+    },
+    {
+      "path": "verify-media.py",
+      "sha256": "9915096367cc05a00513c35f04bfb2cb2fb4d0b016591259ac60efb04d8a7db8",
+      "bytes": 1794
+    }
+  ],
+  "confirmationSources": {
+    "旁白": "https://github.com/dulltackle/ClapGrid/issues/96#issuecomment-6108628717",
+    "视觉规则": "https://github.com/dulltackle/ClapGrid/issues/97#issuecomment-6110063575",
+    "原型画面": "https://github.com/dulltackle/ClapGrid/issues/100#issuecomment-6116858790"
+  },
+  "reviewStatus": "evidence/FH10-review-status.json",
+  "archiveDirectory": "/home/forclaw/tmp/implement-spec-104/archives/fh10-v1",
+  "runtimeScope": "Linux x64; Node 22; Chrome /usr/bin/google-chrome; FFmpeg/ffprobe",
+  "notes": [
+    "实际文件已保存；node_modules完整副本在依赖资源压缩包内",
+    "清单不要求重渲染视频编码字节等于先前视频"
+  ],
+  "currentCollection": "evidence/FH10-current-collection.json",
+  "evidenceCorrection": "追加2026-10-12T07:00:37.260Z–07:00:38.400Z实际采集及历史参考标记；媒体不变，修改前证据保存在review-fix-105-evidence/originals"
+}

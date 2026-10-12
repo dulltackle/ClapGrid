@@ -1,0 +1,59 @@
+{
+  "source": "actual-host",
+  "timeMeaning": "startedAt/completedAt来自协调者本轮实际MCP调用记录；项目、任务或音频createdAt不是采集时间",
+  "records": [
+    {
+      "file": "evidence/fresh-host.json",
+      "sha256": "d14318054041628e7088ebaf71346dbcd194d098219f77086ef516f09d3b194b",
+      "source": "actual-host",
+      "startedAt": "2026-10-12T07:00:37.260Z",
+      "completedAt": "2026-10-12T07:00:37.533Z",
+      "scope": "实际宿主构建与目标工作空间",
+      "rawFile": "/home/forclaw/tmp/implement-spec-104/fresh-host.json",
+      "rawSha256": "d14318054041628e7088ebaf71346dbcd194d098219f77086ef516f09d3b194b"
+    },
+    {
+      "file": "evidence/fresh-project.json",
+      "sha256": "7dfef178613861d194f7ce88ce89b1867d1ac5697e46101e6191aa8010311b79",
+      "source": "actual-host",
+      "startedAt": "2026-10-12T07:00:37.260Z",
+      "completedAt": "2026-10-12T07:00:38.400Z",
+      "scope": "既有项目身份、15段完整顺序及FH10当前画面素材关联",
+      "rawFile": "/home/forclaw/tmp/implement-spec-104/fresh-project.json",
+      "rawSha256": "7dfef178613861d194f7ce88ce89b1867d1ac5697e46101e6191aa8010311b79"
+    },
+    {
+      "file": "evidence/fresh-speech.json",
+      "sha256": "e3fe5109b59f528e0fd70fb27b0e15cd710891334b28c68e2287209edfbab0c9",
+      "source": "actual-host",
+      "startedAt": "2026-10-12T07:00:37.260Z",
+      "completedAt": "2026-10-12T07:00:38.372Z",
+      "scope": "当前项目声音设置、FH10任务/输入/有效配音及任务锁",
+      "rawFile": "/home/forclaw/tmp/implement-spec-104/fresh-speech.json",
+      "rawSha256": "6496ca00f24157304a450b6b48d457e6c5873095cd760672c1ed46322d88f1a7"
+    }
+  ],
+  "verifiedCurrentState": {
+    "workspace": "/home/forclaw/code/ClapGrid",
+    "projectId": "cd43eb48-a982-4004-8bc1-989c6fba9b3a",
+    "segmentId": "d9b6c5b5-abe9-4a98-bd84-c7667eb44dce",
+    "segmentOrder": 10,
+    "taskId": "13c0ba78-4e76-4c19-9a9b-b052dcfd9664",
+    "text": "如果局部结构继续受损，承重时就可能出现细小骨折。",
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "taskState": "succeeded",
+    "audioValid": true,
+    "locked": false,
+    "audioArchiveFile": "public/fh10-narration.mp3",
+    "audioSha256": "4f424a8dc949bee1250604d8c05749580967e90f00c842edbb60ed00f74ec951",
+    "projectVideoAssetId": "e3d910cc-be98-42a7-b417-99c0c03b68e9",
+    "projectVideoStart": 0,
+    "mappedSegmentCount": 15
+  },
+  "scope": "本次采集时刻的宿主、项目与声音输入核对，旧无采集时间快照仅作历史参考；不扩展为持续有效状态、人工听审或全片终审",
+  "correction": "补真实采集证据并校正引用，不修改旁白、声音、动画参数或媒体",
+  "recoveryOriginals": "/home/forclaw/tmp/implement-spec-104/review-fix-105-evidence/originals"
+}

@@ -1,0 +1,39 @@
+{
+  "scope": "FH10当前基线与独立档案重新渲染，非历史原型验证",
+  "cwd": "/home/forclaw/tmp/implement-spec-104/archives/fh10-v1",
+  "commands": [
+    "npm ci --cache /home/forclaw/tmp/npm-production-cache",
+    "npm run typecheck",
+    "npm run render",
+    "python3 verify-media.py /home/forclaw/tmp/implement-spec-104/archives/fh10-v1"
+  ],
+  "logs": [
+    "/home/forclaw/tmp/implement-spec-104/fh10-archive-install.log",
+    "/home/forclaw/tmp/implement-spec-104/fh10-archive-typecheck.log",
+    "/home/forclaw/tmp/implement-spec-104/fh10-archive-render.log",
+    "/home/forclaw/tmp/implement-spec-104/fh10-archive-media.log"
+  ],
+  "redEvidence": "/home/forclaw/tmp/implement-spec-104/fh10-red.log",
+  "redResult": "缺少独立档案manifest.json，验证失败；随后建立档案实际渲染并验证",
+  "notRun": [
+    "人工听审",
+    "用户当前画面确认",
+    "全片终审"
+  ],
+  "dependencyResource": "dependency-resources-linux-x64.tgz",
+  "parameters": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "textureSeed": 17,
+    "audioSpeed": 1
+  },
+  "results": {
+    "dependencyInstall": "passed",
+    "typecheck": "passed",
+    "archiveRerender": "passed",
+    "fileChecksums": "passed",
+    "mediaFullDecode": "passed，MP4/WebM/原音频stderr为空",
+    "actualArchiveBrowserPlayback": "passed，当前档案重渲染WebM从0至ended，未静音、未跳进度"
+  }
+}

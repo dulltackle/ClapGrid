@@ -1,0 +1,30 @@
+{
+  "name": "host",
+  "source": "actual-host",
+  "startedAt": "2026-10-12T07:00:37.260Z",
+  "completedAt": "2026-10-12T07:00:37.533Z",
+  "response": {
+    "client": {
+      "name": "codex-mcp-client",
+      "version": "0.162.0-alpha.17.2"
+    },
+    "processDirectory": "/home/forclaw/.codex/plugins/cache/personal/clapgrid/0.1.0+git.907c064de1c5.3a610292288b",
+    "buildIdentity": {
+      "schemaVersion": 1,
+      "state": "known",
+      "version": "0.1.0+git.907c064de1c5.3a610292288b",
+      "source": {
+        "commit": "907c064de1c5449e2967e0b127776c794e605b73",
+        "state": "clean"
+      },
+      "contentFingerprint": "sha256:a23ffc9873c25a20b4c25c3832f33248c2b38f0565b57e710b3f876318547ab3"
+    },
+    "roots": {
+      "state": "unsupported",
+      "listChanged": false,
+      "changeNotifications": 0
+    },
+    "workspace": "/home/forclaw/code/ClapGrid",
+    "bindingReady": false
+  }
+}

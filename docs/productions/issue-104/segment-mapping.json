@@ -1,0 +1,101 @@
+{
+  "project": {
+    "id": "cd43eb48-a982-4004-8bc1-989c6fba9b3a",
+    "directory": "/home/forclaw/code/ClapGrid/clapgrid",
+    "createdAt": "2026-10-04T08:20:25.627Z"
+  },
+  "source": "#96 v0.2 最终确认",
+  "fh11fh12": "合并为一个连续口播片段，保留确认文本",
+  "segments": [
+    {
+      "card": "FH01",
+      "segmentId": "2e5abb40-b111-42e9-b137-fb758abc9dd8",
+      "order": 1,
+      "text": "股骨头坏死，为什么可能让原本圆滑的关节面塌陷？"
+    },
+    {
+      "card": "FH02",
+      "segmentId": "1a778f97-e29b-4b5b-a314-7e0eafe8e3b0",
+      "order": 2,
+      "text": "先看这里：大腿骨顶端的球形部分，就是股骨头。"
+    },
+    {
+      "card": "FH03",
+      "segmentId": "429a80d1-2dac-4fd6-aeb3-c6609aea9c23",
+      "order": 3,
+      "text": "它表面覆盖软骨，下面是支撑关节面的骨组织。"
+    },
+    {
+      "card": "FH04",
+      "segmentId": "5582739e-611f-4996-8f5e-f25f819c9a1d",
+      "order": 4,
+      "text": "骨组织也是活的，需要血液不断送来氧气和营养。"
+    },
+    {
+      "card": "FH05",
+      "segmentId": "1e09a362-e6eb-4cf0-90bb-ce7f1d3b81c4",
+      "order": 5,
+      "text": "当局部血液供应受损，这里的骨组织就可能发生坏死。"
+    },
+    {
+      "card": "FH06",
+      "segmentId": "09985f81-72ee-43c5-bc56-0a48e78d7b0d",
+      "order": 6,
+      "text": "但细胞死亡，不等于原有的骨架马上消失。"
+    },
+    {
+      "card": "FH07",
+      "segmentId": "5b18fddd-76d9-44f5-90e9-8663ff71e12c",
+      "order": 7,
+      "text": "此时，股骨头外形仍可能保持完整。"
+    },
+    {
+      "card": "FH08",
+      "segmentId": "f27fcec6-b3b4-4048-9dd4-79eaa9cf6930",
+      "order": 8,
+      "text": "身体也会尝试修复受损区域。"
+    },
+    {
+      "card": "FH09",
+      "segmentId": "9556199e-a633-4052-bb15-63f46f5a409c",
+      "order": 9,
+      "text": "修复涉及旧骨吸收和新骨形成，但不一定能恢复足够的支撑。"
+    },
+    {
+      "card": "FH10",
+      "segmentId": "d9b6c5b5-abe9-4a98-bd84-c7667eb44dce",
+      "order": 10,
+      "text": "如果局部结构继续受损，承重时就可能出现细小骨折。"
+    },
+    {
+      "card": "FH11–FH12",
+      "segmentId": "e509e18d-edab-4700-8695-3df351c66a4e",
+      "order": 11,
+      "text": "损伤进一步发展，关节面下方的骨组织可能失去支撑，表面发生局部下陷。"
+    },
+    {
+      "card": "FH13",
+      "segmentId": "e4416bfe-3823-49c7-a89d-99355c437679",
+      "order": 12,
+      "text": "不过，并不是每个坏死的股骨头都会塌陷。"
+    },
+    {
+      "card": "FH14",
+      "segmentId": "95695858-1813-4d56-bd80-b310d5bd84b7",
+      "order": 13,
+      "text": "受损范围、位置等因素，都会影响进展。"
+    },
+    {
+      "card": "FH15",
+      "segmentId": "d8c30c3e-1358-4777-8581-9592360642b9",
+      "order": 14,
+      "text": "所以，坏死说的是骨组织死亡。"
+    },
+    {
+      "card": "FH16",
+      "segmentId": "665a5773-57f1-4bfd-918a-680dd3eb3d41",
+      "order": 15,
+      "text": "塌陷说的是支撑结构失效后，外形发生了改变。"
+    }
+  ]
+}

@@ -1,0 +1,165 @@
+{
+  "name": "project",
+  "source": "actual-host",
+  "startedAt": "2026-10-12T07:00:37.260Z",
+  "completedAt": "2026-10-12T07:00:38.400Z",
+  "response": {
+    "buildIdentity": {
+      "schemaVersion": 1,
+      "state": "known",
+      "version": "0.1.0+git.907c064de1c5.3a610292288b",
+      "source": {
+        "commit": "907c064de1c5449e2967e0b127776c794e605b73",
+        "state": "clean"
+      },
+      "contentFingerprint": "sha256:a23ffc9873c25a20b4c25c3832f33248c2b38f0565b57e710b3f876318547ab3"
+    },
+    "idleStopSupported": true,
+    "application": "clapgrid",
+    "apiVersion": 1,
+    "instanceId": "646e600d-d631-47ba-91de-6212e3cb9504",
+    "pid": 28494,
+    "startedAt": "2026-10-12T02:50:17.107Z",
+    "snapshot": {
+      "project": {
+        "id": "cd43eb48-a982-4004-8bc1-989c6fba9b3a",
+        "directory": "/home/forclaw/code/ClapGrid/clapgrid",
+        "createdAt": "2026-10-04T08:20:25.627Z"
+      },
+      "storage": {
+        "database": "/home/forclaw/code/ClapGrid/clapgrid/clapgrid.sqlite",
+        "mediaDirectory": "/home/forclaw/code/ClapGrid/clapgrid/media"
+      },
+      "segments": [
+        {
+          "id": "2e5abb40-b111-42e9-b137-fb758abc9dd8",
+          "order": 1,
+          "text": "股骨头坏死，为什么可能让原本圆滑的关节面塌陷？",
+          "visualNote": "FH01 · #104 旁白v0.2；制作卡及动画待对应内容工单补齐。",
+          "video": null
+        },
+        {
+          "id": "1a778f97-e29b-4b5b-a314-7e0eafe8e3b0",
+          "order": 2,
+          "text": "先看这里：大腿骨顶端的球形部分，就是股骨头。",
+          "visualNote": "FH02 · #104 旁白v0.2；制作卡及动画待对应内容工单补齐。",
+          "video": null
+        },
+        {
+          "id": "429a80d1-2dac-4fd6-aeb3-c6609aea9c23",
+          "order": 3,
+          "text": "它表面覆盖软骨，下面是支撑关节面的骨组织。",
+          "visualNote": "FH03 · #104 旁白v0.2；制作卡及动画待对应内容工单补齐。",
+          "video": null
+        },
+        {
+          "id": "5582739e-611f-4996-8f5e-f25f819c9a1d",
+          "order": 4,
+          "text": "骨组织也是活的，需要血液不断送来氧气和营养。",
+          "visualNote": "FH04 · #104 旁白v0.2；制作卡及动画待对应内容工单补齐。",
+          "video": null
+        },
+        {
+          "id": "1e09a362-e6eb-4cf0-90bb-ce7f1d3b81c4",
+          "order": 5,
+          "text": "当局部血液供应受损，这里的骨组织就可能发生坏死。",
+          "visualNote": "FH05 · #104 旁白v0.2；制作卡及动画待对应内容工单补齐。",
+          "video": null
+        },
+        {
+          "id": "09985f81-72ee-43c5-bc56-0a48e78d7b0d",
+          "order": 6,
+          "text": "但细胞死亡，不等于原有的骨架马上消失。",
+          "visualNote": "FH06 · #104 旁白v0.2；制作卡及动画待对应内容工单补齐。",
+          "video": null
+        },
+        {
+          "id": "5b18fddd-76d9-44f5-90e9-8663ff71e12c",
+          "order": 7,
+          "text": "此时，股骨头外形仍可能保持完整。",
+          "visualNote": "FH07 · #104 旁白v0.2；制作卡及动画待对应内容工单补齐。",
+          "video": null
+        },
+        {
+          "id": "f27fcec6-b3b4-4048-9dd4-79eaa9cf6930",
+          "order": 8,
+          "text": "身体也会尝试修复受损区域。",
+          "visualNote": "FH08 · #104 旁白v0.2；制作卡及动画待对应内容工单补齐。",
+          "video": null
+        },
+        {
+          "id": "9556199e-a633-4052-bb15-63f46f5a409c",
+          "order": 9,
+          "text": "修复涉及旧骨吸收和新骨形成，但不一定能恢复足够的支撑。",
+          "visualNote": "FH09 · #104 旁白v0.2；制作卡及动画待对应内容工单补齐。",
+          "video": null
+        },
+        {
+          "id": "d9b6c5b5-abe9-4a98-bd84-c7667eb44dce",
+          "order": 10,
+          "text": "如果局部结构继续受损，承重时就可能出现细小骨折。",
+          "visualNote": "FH10 · 当前制作基线 fh10-v1：温暖分层可编辑SVG，平缓承重箭头、既有骨组织细小裂隙及局部放大；软骨连续。有效旁白原速完整保留，装配素材无音轨无旁白字幕。",
+          "video": {
+            "assetId": "e3d910cc-be98-42a7-b417-99c0c03b68e9",
+            "start": 0
+          }
+        },
+        {
+          "id": "e509e18d-edab-4700-8695-3df351c66a4e",
+          "order": 11,
+          "text": "损伤进一步发展，关节面下方的骨组织可能失去支撑，表面发生局部下陷。",
+          "visualNote": "FH11–FH12 · #104 旁白v0.2；制作卡及动画待对应内容工单补齐。",
+          "video": null
+        },
+        {
+          "id": "e4416bfe-3823-49c7-a89d-99355c437679",
+          "order": 12,
+          "text": "不过，并不是每个坏死的股骨头都会塌陷。",
+          "visualNote": "FH13 · #104 旁白v0.2；制作卡及动画待对应内容工单补齐。",
+          "video": null
+        },
+        {
+          "id": "95695858-1813-4d56-bd80-b310d5bd84b7",
+          "order": 13,
+          "text": "受损范围、位置等因素，都会影响进展。",
+          "visualNote": "FH14 · #104 旁白v0.2；制作卡及动画待对应内容工单补齐。",
+          "video": null
+        },
+        {
+          "id": "d8c30c3e-1358-4777-8581-9592360642b9",
+          "order": 14,
+          "text": "所以，坏死说的是骨组织死亡。",
+          "visualNote": "FH15 · #104 旁白v0.2；制作卡及动画待对应内容工单补齐。",
+          "video": null
+        },
+        {
+          "id": "665a5773-57f1-4bfd-918a-680dd3eb3d41",
+          "order": 15,
+          "text": "塌陷说的是支撑结构失效后，外形发生了改变。",
+          "visualNote": "FH16 · #104 旁白v0.2；制作卡及动画待对应内容工单补齐。",
+          "video": null
+        }
+      ],
+      "assets": [
+        {
+          "id": "211d2592-a56e-48f1-863c-d1e6562d6c09",
+          "name": "blue-grid.mp4",
+          "duration": 4
+        },
+        {
+          "id": "e3d910cc-be98-42a7-b417-99c0c03b68e9",
+          "name": "FH10-assembly.mp4",
+          "duration": 4.866666
+        }
+      ],
+      "exportSettings": {
+        "codec": "libx264",
+        "fps": 30,
+        "fontFamily": "Noto Sans CJK SC",
+        "fontSize": 48
+      }
+    },
+    "taskLocked": false,
+    "modification": null
+  }
+}
