@@ -1,0 +1,92 @@
+{
+  "version": "group106-v1",
+  "previousVersion": null,
+  "change": "新增FH01–FH04动画与制作卡，保持已确认旁白和稳定身份，开场完整结构不画裂隙或塌陷",
+  "priorConfirmed": [
+    "#96 v0.2旁白",
+    "#97温暖分层视觉规则与结构静态参考",
+    "#100可编辑SVG制作路线"
+  ],
+  "visual": {
+    "status": "待当前新动画审阅"
+  },
+  "technical": {
+    "status": "媒体与归档技术检查已通过，真实浏览器播放待协调者执行",
+    "scope": "当前4段原声实测、正式尺寸/帧率、原速完整音频、装配无音轨/旁白字幕、预览有音轨/字幕、全长解码stderr为空、静帧可读性；从独立档案实际重渲染FH03",
+    "limitations": [
+      "非逐字同步对齐",
+      "非人工听审",
+      "非全片终审"
+    ]
+  },
+  "listening": {
+    "status": "待人工听审"
+  },
+  "fullFilm": {
+    "status": "待全片终审，本组不作全片结论"
+  },
+  "testSeam": "按版本清单恢复并得到可播放成果；当前缺档案先失败，见外部106-red.log",
+  "renderEntry": "entry106.tsx",
+  "pointerTargets": {
+    "软骨": [
+      685,
+      200
+    ],
+    "软骨下骨层": [
+      680,
+      278
+    ],
+    "内部骨小梁": [
+      756.32,
+      391.2
+    ]
+  },
+  "pointerReasoning": "骨小梁端点是共享浅桃支撑路径M671 342 Q734 380 824 428的t=.6中心点；不是深珊瑚色骨髓间隙。",
+  "actualLink": {
+    "status": "passed",
+    "source": "evidence/106-project-link.json",
+    "scope": "当前真实项目4段素材关联、对应稳定身份和顺序，任务锁未占用"
+  },
+  "runtime": {
+    "node": "22.23.3",
+    "browser": "/usr/bin/google-chrome",
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "textureSeed": 17
+  },
+  "audio": [
+    {
+      "id": "FH01",
+      "segmentId": "2e5abb40-b111-42e9-b137-fb758abc9dd8",
+      "taskId": "13843d1f-b8b0-4d89-bed1-d13302bb9a29",
+      "sha256": "db53258b3bbc180b7f56353eab473c820bd8e3b1e02731bd946373d95e069f1e",
+      "duration": 4.68,
+      "frames": 141
+    },
+    {
+      "id": "FH02",
+      "segmentId": "1a778f97-e29b-4b5b-a314-7e0eafe8e3b0",
+      "taskId": "eb4a4443-2792-449c-9c6b-f00bd9ec40ee",
+      "sha256": "c3c7ad692956a3a7c0b82e0f0453d8daef455d1bbfa9d7d7fff77e51f6c53ad9",
+      "duration": 5.088,
+      "frames": 153
+    },
+    {
+      "id": "FH03",
+      "segmentId": "429a80d1-2dac-4fd6-aeb3-c6609aea9c23",
+      "taskId": "4072b836-991b-4be8-8af1-68bc50eacc04",
+      "sha256": "5e1840118c759e45b86f9d5654ee1d79813e71bde9cb6c87784eb87cf439a8f8",
+      "duration": 4.68,
+      "frames": 141
+    },
+    {
+      "id": "FH04",
+      "segmentId": "5582739e-611f-4996-8f5e-f25f819c9a1d",
+      "taskId": "1880f2a2-043c-4a39-ab82-054c5a574226",
+      "sha256": "e3271c6dfe289fbf9ad31b16b84c9f15df253484d6fc31c89dfe3c58ab7a47c1",
+      "duration": 4.44,
+      "frames": 134
+    }
+  ]
+}

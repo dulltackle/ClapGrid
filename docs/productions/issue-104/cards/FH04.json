@@ -1,0 +1,54 @@
+{
+  "id": "FH04",
+  "segmentId": "5582739e-611f-4996-8f5e-f25f819c9a1d",
+  "order": 4,
+  "text": "骨组织也是活的，需要血液不断送来氧气和营养。",
+  "audio": "public/audio/FH04.mp3",
+  "依据": [
+    "#96 最终v0.2确认旁白",
+    "#97 温暖分层与结构指示线规则",
+    "#100 Remotion可编辑SVG路线"
+  ],
+  "关键画面": "少量细线供血分支和移动短线表示血液持续供给，氧气与营养作为文字强调；不增添命名血管或病灶。",
+  "动作顺序": [
+    "保持完整骨结构",
+    "少量供血路径淡入",
+    "氧气与营养标签出现，细线移动示意输送"
+  ],
+  "标注": [
+    "血液供给",
+    "氧气与营养",
+    "供血路径为机制概括"
+  ],
+  "素材": {
+    "assembly": "outputs/FH04-assembly.mp4",
+    "review": "outputs/FH04-review.mp4"
+  },
+  "确认来源": {
+    "旁白": "https://github.com/dulltackle/ClapGrid/issues/96#issuecomment-6108628717",
+    "视觉规则": "https://github.com/dulltackle/ClapGrid/issues/97#issuecomment-6110063575"
+  },
+  "当前配音核对": {
+    "source": "evidence/106-actual-speech.json",
+    "startedAt": "2026-10-12T07:13:19.163Z",
+    "completedAt": "2026-10-12T07:13:19.927Z",
+    "result": "片段稳定身份、当前确认文案、声音输入、任务成功、valid及本地原音频一致；原速完整保留，未重复请求"
+  },
+  "voice": {
+    "speaker": "zh_female_vv_uranus_bigtts",
+    "speechRate": 0
+  },
+  "taskId": "1880f2a2-043c-4a39-ab82-054c5a574226",
+  "audioSha256": "e3271c6dfe289fbf9ad31b16b84c9f15df253484d6fc31c89dfe3c58ab7a47c1",
+  "audioDuration": 4.44,
+  "durationInFrames": 134,
+  "实际关联": {
+    "source": "evidence/106-project-link.json",
+    "startedAt": "2026-10-12T07:20:34.623Z",
+    "completedAt": "2026-10-12T07:20:36.003Z",
+    "assetId": "d585f69a-566b-48a7-a75b-060bf8f2d4b0",
+    "start": 0,
+    "assemblySha256": "05d1698c98af39d47dc7587f61acef4ae8d991f9194b0b53f4e973672b90f3e1",
+    "scope": "协调者实际MCP导入并关联本组工作树装配视频；档案另存代表段重渲染产物，不冒充重新关联"
+  }
+}

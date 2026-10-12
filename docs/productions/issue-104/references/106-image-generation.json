@@ -1,0 +1,57 @@
+{
+  "状态": "生成及迭代历史记录；最新资产状态以 ../archive-manifest.json 为准，决策详见事项最终结论评论。",
+  "工具": "内置 imagegen",
+  "已确认三类表达": "https://github.com/dulltackle/ClapGrid/issues/97#issuecomment-6109264995",
+  "资产": [
+    {
+      "key": "fh05-blood-v01",
+      "path": "/home/forclaw/.codex/generated_images/01a12ac4-ce50-77a0-b07e-c91dee51f32c/exec-f96a9e9e-6f3d-4ca0-b25b-bfbe46e2715f.png"
+    },
+    {
+      "key": "fh10-load-v01",
+      "path": "/home/forclaw/.codex/generated_images/01a12ac4-ce50-77a0-b07e-c91dee51f32c/exec-2e379afe-75d5-4268-bc58-99eef2056b6e.png"
+    },
+    {
+      "key": "fh13-outcomes-v02",
+      "path": "/home/forclaw/.codex/generated_images/01a12ac4-ce50-77a0-b07e-c91dee51f32c/exec-3f8e8c51-8890-461f-8b70-0fcd4ae78a53.png"
+    },
+    {
+      "key": "fh09-repair-v02",
+      "path": "/home/forclaw/.codex/generated_images/01a12ac4-ce50-77a0-b07e-c91dee51f32c/exec-765ef432-7d88-4895-a6bf-845048bcc3f8.png"
+    },
+    {
+      "key": "fh03-layers-v01",
+      "path": "/home/forclaw/.codex/generated_images/01a12ac4-ce50-77a0-b07e-c91dee51f32c/exec-b847d4d5-ff23-45b1-be95-4e6a21e23242.png"
+    }
+  ],
+  "提示词": [
+    {
+      "key": "fh05-blood-v01",
+      "ref": "jg-warm-layered-v01.png",
+      "prompt": "Create a single 16:9 storyboard frame matching the attached approved reference's flat warm layered medical illustration style for ADULT PATIENTS. Warm ivory paper, very subtle grain, muted teal cartilage, thin ivory subchondral band and peach/coral bone, broad organic trabecular supports. Keep SAME adult proximal femur viewpoint and proportions: round head upper left joining angled neck and shaft to right. No dense pores, no gore, no dramatic dark effects, no 3D. Anatomical structure must be legible, no unrelated decorations. Keep adequate margins and bottom 18% for exact subtitle in large dark sans serif. Small top-left header '机制示意 · 非固定病程'. This is a simplified explanation, not clinical imaging. Show ONE large intact femur. Within bone add a SMALL NUMBER of thin muted burgundy branching vessels running up along femoral neck to head. Bone and cartilage maintain intact shape and color. Only a modest upper-head region has FADED DASHED vessel twigs, transitioning from otherwise solid red-burgundy vessels; indicate weakened local supply, not a blood clot or one entire severed artery. NO blockage icon, no plug, no broken giant vessel. Direct label '局部供血受损' with leader ending on faded twigs. Small restrained legend bottom-left above subtitle: solid burgundy line '供血示意', dashed faint burgundy line '局部减弱'. Vessel branches are stylized, not named precise anatomical arteries. Bone structural supports remain clearly distinct from thin vessel lines. Subtitle exactly '当局部血液供应受损，这里的骨组织就可能发生坏死。'."
+    },
+    {
+      "key": "fh10-load-v01",
+      "ref": "jg-warm-layered-v01.png",
+      "prompt": "Create a single 16:9 storyboard frame matching the attached approved reference's flat warm layered medical illustration style for ADULT PATIENTS. Warm ivory paper, very subtle grain, muted teal cartilage, thin ivory subchondral band and peach/coral bone, broad organic trabecular supports. Keep SAME adult proximal femur viewpoint and proportions: round head upper left joining angled neck and shaft to right. No dense pores, no gore, no dramatic dark effects, no 3D. Anatomical structure must be legible, no unrelated decorations. Keep adequate margins and bottom 18% for exact subtitle in large dark sans serif. Small top-left header '机制示意 · 非固定病程'. This is a simplified explanation, not clinical imaging. Show intact round femoral head with only TWO very small delicate fracture lines in the BONE JUST UNDER the thin subchondral band at superior dome, no large crack through whole head and no collapsed contour. Cartilage stays smooth and continuous. Above dome draw two short thin straight neutral downward arrows representing load, no impact rays or large aggressive arrows. Label these arrows '承重示意'. One small circular magnification to left linked to tiny bone region clarifies a hairline break across a short peach trabecular support, not across cartilage, with label '细小骨折'. Short top-side annotation '支撑受损时，可能发生'. No walk ban, footsteps or acute impact. Subtitle exactly '如果局部结构继续受损，承重时就可能出现细小骨折。'."
+    },
+    {
+      "key": "fh13-outcomes-v01",
+      "ref": "jg-warm-layered-v01.png",
+      "prompt": "Create a single 16:9 storyboard frame matching the attached approved reference's flat warm layered medical illustration style for ADULT PATIENTS. Warm ivory paper, very subtle grain, muted teal cartilage, thin ivory subchondral band and peach/coral bone, broad organic trabecular supports. Keep SAME adult proximal femur viewpoint and proportions: round head upper left joining angled neck and shaft to right. No dense pores, no gore, no dramatic dark effects, no 3D. Anatomical structure must be legible, no unrelated decorations. Keep adequate margins and bottom 18% for exact subtitle in large dark sans serif. Small top-left header '机制示意 · 非固定病程'. This is a simplified explanation, not clinical imaging. Show ONE main large femoral head/neck with faint muted peach-gray local upper bone area indicating prior damage, completely preserved smooth cartilage and round contour. Place direct clear label '外形仍可保持完整'. Off to the far left, show a SMALLER inset drawing of same head with a small local dome dip and label '也可能发生局部塌陷'. These are ALTERNATIVE possibilities, not stages or before/after. No arrows between them, no equal split-screen, no percentages, no probability icons, no timeline. Small neutral text under inset '不表示发生比例'. The main complete shape remains dominant to correct idea that all heads collapse; do not use green check or promise recovery or cure. Subtitle exactly '不过，并不是每个坏死的股骨头都会塌陷。'."
+    },
+    {
+      "key": "fh09-repair-v02",
+      "ref": "keyframes/fh09-repair-v01.png",
+      "prompt": "Edit this existing approved storyboard with ONE targeted change only: change the short NEW BONE appositional patch pointed to by '新骨形成' inside the magnification circle from teal green to muted mauve-purple, clearly distinguishable from the teal cartilage cap. Keep shape, patch location, bone architecture, all text and subtitle exactly unchanged, all other colors, labels, arrows, paper texture and composition identical. No other changes. Maintain opaque background."
+    }
+  ],
+  "修正结局图": "Edit image 1 (alternative outcome comparison) with a precise correction: the SMALL left inset wrongly shows a detached/peeling teal cartilage flap. Replace the entire SMALL left inset anatomy with a scaled copy of image 2's anatomically continuous local depression, OMITTING image 2's dashed contour, labels and surrounding text. The small inset must show a shallow local dip where cartilage AND underlying bone dip TOGETHER, continuous and touching, absolutely NO detached cartilage, gap between cartilage and bone, flapping edge or peeling surface. Keep the large right intact femur, its grayish region, all text, subtitle, overall warm paper style and layout of image 1 unchanged. Image 2 is only reference for the inset's contour. All text must remain verbatim from image 1.",
+  "结构标注图": "Create one 16:9 static medical educational structure-introduction frame from this approved reference. Preserve exactly its warm paper-textured flat style, muted teal cartilage cap, ivory narrow band below it, peach and coral bone structure, anatomical viewpoint and continuous smooth outline. Remove original title; add small top-left '成人股骨头 · 结构示意'. Use three clear restrained dark teal labels with thin NON-CROSSING leader lines on left: '软骨' must point to the outer teal cap; '软骨下骨' must point to the thin ivory band immediately beneath the teal cap; '骨小梁' must point precisely to a LIGHT PEACH INTERNAL BRANCH within the femoral head, never to a dark coral gap. Use a large central/right subject and generous space on left for labels. Small quiet note above subtitle '颜色与厚度为示意'. Bottom 18% contains only exact subtitle in dark readable sans-serif: '它表面覆盖软骨，下面是支撑关节面的骨组织。'. No illness shading, no fracture, no blood vessels, no cells, no medical changes. Patient-facing respectful simple diagram. Ensure each pointer clearly lands within its correct colored region.",
+  "说明": [
+    "结局图使用 v02，v01 中软骨脱离表现已废弃。",
+    "修复图 v02 仅将新骨改为紫色，以区别青绿色软骨。",
+    "所有图仍为风格及表达原型，跨帧几何、文字位置需在可编辑动画素材中统一。",
+    "血管路径为供血机制概括，不代表具体命名血管或准确解剖走行。"
+  ]
+}

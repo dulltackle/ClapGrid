@@ -1,0 +1,52 @@
+{
+  "id": "FH02",
+  "segmentId": "1a778f97-e29b-4b5b-a314-7e0eafe8e3b0",
+  "order": 2,
+  "text": "先看这里：大腿骨顶端的球形部分，就是股骨头。",
+  "audio": "public/audio/FH02.mp3",
+  "依据": [
+    "#96 最终v0.2确认旁白",
+    "#97 温暖分层与结构指示线规则",
+    "#100 Remotion可编辑SVG路线"
+  ],
+  "关键画面": "复用相同近端股骨几何，以指示线和定位圈标出顶端球形区域。",
+  "动作顺序": [
+    "保持开场构图",
+    "定位圈和股骨头标签淡入，指示线指向头部区域"
+  ],
+  "标注": [
+    "股骨头",
+    "大腿骨顶端的球形部分"
+  ],
+  "素材": {
+    "assembly": "outputs/FH02-assembly.mp4",
+    "review": "outputs/FH02-review.mp4"
+  },
+  "确认来源": {
+    "旁白": "https://github.com/dulltackle/ClapGrid/issues/96#issuecomment-6108628717",
+    "视觉规则": "https://github.com/dulltackle/ClapGrid/issues/97#issuecomment-6110063575"
+  },
+  "当前配音核对": {
+    "source": "evidence/106-actual-speech.json",
+    "startedAt": "2026-10-12T07:13:19.163Z",
+    "completedAt": "2026-10-12T07:13:19.927Z",
+    "result": "片段稳定身份、当前确认文案、声音输入、任务成功、valid及本地原音频一致；原速完整保留，未重复请求"
+  },
+  "voice": {
+    "speaker": "zh_female_vv_uranus_bigtts",
+    "speechRate": 0
+  },
+  "taskId": "eb4a4443-2792-449c-9c6b-f00bd9ec40ee",
+  "audioSha256": "c3c7ad692956a3a7c0b82e0f0453d8daef455d1bbfa9d7d7fff77e51f6c53ad9",
+  "audioDuration": 5.088,
+  "durationInFrames": 153,
+  "实际关联": {
+    "source": "evidence/106-project-link.json",
+    "startedAt": "2026-10-12T07:20:34.623Z",
+    "completedAt": "2026-10-12T07:20:36.003Z",
+    "assetId": "419d908a-b11d-4f23-9321-6dd7c20c03e5",
+    "start": 0,
+    "assemblySha256": "68efee8a4639d430809248f3ad95c85bbe199d709a52bb44ce232f2ee420963f",
+    "scope": "协调者实际MCP导入并关联本组工作树装配视频；档案另存代表段重渲染产物，不冒充重新关联"
+  }
+}

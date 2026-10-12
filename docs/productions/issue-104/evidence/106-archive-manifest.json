@@ -1,0 +1,746 @@
+{
+  "version": "group106-v1",
+  "previousVersion": null,
+  "createdAt": "2026-10-12T07:24:29.361067+00:00",
+  "change": "新增FH01–FH04可编辑动画与制作卡、原速旁白配音审阅预览和无声装配；连续预览消除AAC额外补齐",
+  "archiveDirectory": "/home/forclaw/tmp/implement-spec-104/archives/group106-v1",
+  "segments": [
+    {
+      "id": "FH01",
+      "segmentId": "2e5abb40-b111-42e9-b137-fb758abc9dd8",
+      "order": 1,
+      "text": "股骨头坏死，为什么可能让原本圆滑的关节面塌陷？",
+      "audio": "public/audio/FH01.mp3",
+      "依据": [
+        "#96 最终v0.2确认旁白",
+        "#97 温暖分层与结构指示线规则",
+        "#100 Remotion可编辑SVG路线"
+      ],
+      "关键画面": "提出“为什么可能塌陷”的问题；保持完整骨结构，不在开头演成必然塌陷。",
+      "动作顺序": [
+        "温暖背景上的近端股骨剖面保持完整",
+        "提问文字轻柔出现，头部原轮廓提示定位，不播放病程箭头"
+      ],
+      "标注": [
+        "股骨头坏死",
+        "为什么可能塌陷？"
+      ],
+      "素材": {
+        "assembly": "outputs/FH01-assembly.mp4",
+        "review": "outputs/FH01-review.mp4"
+      },
+      "确认来源": {
+        "旁白": "https://github.com/dulltackle/ClapGrid/issues/96#issuecomment-6108628717",
+        "视觉规则": "https://github.com/dulltackle/ClapGrid/issues/97#issuecomment-6110063575"
+      },
+      "当前配音核对": {
+        "source": "evidence/106-actual-speech.json",
+        "startedAt": "2026-10-12T07:13:19.163Z",
+        "completedAt": "2026-10-12T07:13:19.927Z",
+        "result": "片段稳定身份、当前确认文案、声音输入、任务成功、valid及本地原音频一致；原速完整保留，未重复请求"
+      },
+      "voice": {
+        "speaker": "zh_female_vv_uranus_bigtts",
+        "speechRate": 0
+      },
+      "taskId": "13843d1f-b8b0-4d89-bed1-d13302bb9a29",
+      "audioSha256": "db53258b3bbc180b7f56353eab473c820bd8e3b1e02731bd946373d95e069f1e",
+      "audioDuration": 4.68,
+      "durationInFrames": 141,
+      "实际关联": {
+        "source": "evidence/106-project-link.json",
+        "startedAt": "2026-10-12T07:20:34.623Z",
+        "completedAt": "2026-10-12T07:20:36.003Z",
+        "assetId": "1ac9b829-cf76-4040-83e4-ee7a0beda82b",
+        "start": 0,
+        "assemblySha256": "220e3a0e448a9bae72c8ea067130c6ccefccc79b2215ec7feb3588cd9c31bba1",
+        "scope": "协调者实际MCP导入并关联本组工作树装配视频；档案另存代表段重渲染产物，不冒充重新关联"
+      }
+    },
+    {
+      "id": "FH02",
+      "segmentId": "1a778f97-e29b-4b5b-a314-7e0eafe8e3b0",
+      "order": 2,
+      "text": "先看这里：大腿骨顶端的球形部分，就是股骨头。",
+      "audio": "public/audio/FH02.mp3",
+      "依据": [
+        "#96 最终v0.2确认旁白",
+        "#97 温暖分层与结构指示线规则",
+        "#100 Remotion可编辑SVG路线"
+      ],
+      "关键画面": "复用相同近端股骨几何，以指示线和定位圈标出顶端球形区域。",
+      "动作顺序": [
+        "保持开场构图",
+        "定位圈和股骨头标签淡入，指示线指向头部区域"
+      ],
+      "标注": [
+        "股骨头",
+        "大腿骨顶端的球形部分"
+      ],
+      "素材": {
+        "assembly": "outputs/FH02-assembly.mp4",
+        "review": "outputs/FH02-review.mp4"
+      },
+      "确认来源": {
+        "旁白": "https://github.com/dulltackle/ClapGrid/issues/96#issuecomment-6108628717",
+        "视觉规则": "https://github.com/dulltackle/ClapGrid/issues/97#issuecomment-6110063575"
+      },
+      "当前配音核对": {
+        "source": "evidence/106-actual-speech.json",
+        "startedAt": "2026-10-12T07:13:19.163Z",
+        "completedAt": "2026-10-12T07:13:19.927Z",
+        "result": "片段稳定身份、当前确认文案、声音输入、任务成功、valid及本地原音频一致；原速完整保留，未重复请求"
+      },
+      "voice": {
+        "speaker": "zh_female_vv_uranus_bigtts",
+        "speechRate": 0
+      },
+      "taskId": "eb4a4443-2792-449c-9c6b-f00bd9ec40ee",
+      "audioSha256": "c3c7ad692956a3a7c0b82e0f0453d8daef455d1bbfa9d7d7fff77e51f6c53ad9",
+      "audioDuration": 5.088,
+      "durationInFrames": 153,
+      "实际关联": {
+        "source": "evidence/106-project-link.json",
+        "startedAt": "2026-10-12T07:20:34.623Z",
+        "completedAt": "2026-10-12T07:20:36.003Z",
+        "assetId": "419d908a-b11d-4f23-9321-6dd7c20c03e5",
+        "start": 0,
+        "assemblySha256": "68efee8a4639d430809248f3ad95c85bbe199d709a52bb44ce232f2ee420963f",
+        "scope": "协调者实际MCP导入并关联本组工作树装配视频；档案另存代表段重渲染产物，不冒充重新关联"
+      }
+    },
+    {
+      "id": "FH03",
+      "segmentId": "429a80d1-2dac-4fd6-aeb3-c6609aea9c23",
+      "order": 3,
+      "text": "它表面覆盖软骨，下面是支撑关节面的骨组织。",
+      "audio": "public/audio/FH03.mp3",
+      "依据": [
+        "#96 最终v0.2确认旁白",
+        "#97 温暖分层与结构指示线规则",
+        "#100 Remotion可编辑SVG路线"
+      ],
+      "关键画面": "区分青绿色软骨、浅色软骨下骨层与内部桃色骨小梁，指示线不指向骨髓间隙。",
+      "动作顺序": [
+        "结构几何和厚度不变",
+        "按音频比例依次淡入三条独立标签和不交叉指示线",
+        "颜色与厚度示意说明保留"
+      ],
+      "标注": [
+        "软骨",
+        "软骨下骨层",
+        "内部骨小梁",
+        "颜色与厚度为示意"
+      ],
+      "素材": {
+        "assembly": "outputs/FH03-assembly.mp4",
+        "review": "outputs/FH03-review.mp4"
+      },
+      "确认来源": {
+        "旁白": "https://github.com/dulltackle/ClapGrid/issues/96#issuecomment-6108628717",
+        "视觉规则": "https://github.com/dulltackle/ClapGrid/issues/97#issuecomment-6110063575"
+      },
+      "当前配音核对": {
+        "source": "evidence/106-actual-speech.json",
+        "startedAt": "2026-10-12T07:13:19.163Z",
+        "completedAt": "2026-10-12T07:13:19.927Z",
+        "result": "片段稳定身份、当前确认文案、声音输入、任务成功、valid及本地原音频一致；原速完整保留，未重复请求"
+      },
+      "voice": {
+        "speaker": "zh_female_vv_uranus_bigtts",
+        "speechRate": 0
+      },
+      "taskId": "4072b836-991b-4be8-8af1-68bc50eacc04",
+      "audioSha256": "5e1840118c759e45b86f9d5654ee1d79813e71bde9cb6c87784eb87cf439a8f8",
+      "audioDuration": 4.68,
+      "durationInFrames": 141,
+      "实际关联": {
+        "source": "evidence/106-project-link.json",
+        "startedAt": "2026-10-12T07:20:34.623Z",
+        "completedAt": "2026-10-12T07:20:36.003Z",
+        "assetId": "67b38864-3503-4e09-9252-8b16870426c6",
+        "start": 0,
+        "assemblySha256": "9e2d60b7aaff4212034b5efbc5dabfbc16acb3688b3ef93ce4e48d6504a3f112",
+        "scope": "协调者实际MCP导入并关联本组工作树装配视频；档案另存代表段重渲染产物，不冒充重新关联"
+      }
+    },
+    {
+      "id": "FH04",
+      "segmentId": "5582739e-611f-4996-8f5e-f25f819c9a1d",
+      "order": 4,
+      "text": "骨组织也是活的，需要血液不断送来氧气和营养。",
+      "audio": "public/audio/FH04.mp3",
+      "依据": [
+        "#96 最终v0.2确认旁白",
+        "#97 温暖分层与结构指示线规则",
+        "#100 Remotion可编辑SVG路线"
+      ],
+      "关键画面": "少量细线供血分支和移动短线表示血液持续供给，氧气与营养作为文字强调；不增添命名血管或病灶。",
+      "动作顺序": [
+        "保持完整骨结构",
+        "少量供血路径淡入",
+        "氧气与营养标签出现，细线移动示意输送"
+      ],
+      "标注": [
+        "血液供给",
+        "氧气与营养",
+        "供血路径为机制概括"
+      ],
+      "素材": {
+        "assembly": "outputs/FH04-assembly.mp4",
+        "review": "outputs/FH04-review.mp4"
+      },
+      "确认来源": {
+        "旁白": "https://github.com/dulltackle/ClapGrid/issues/96#issuecomment-6108628717",
+        "视觉规则": "https://github.com/dulltackle/ClapGrid/issues/97#issuecomment-6110063575"
+      },
+      "当前配音核对": {
+        "source": "evidence/106-actual-speech.json",
+        "startedAt": "2026-10-12T07:13:19.163Z",
+        "completedAt": "2026-10-12T07:13:19.927Z",
+        "result": "片段稳定身份、当前确认文案、声音输入、任务成功、valid及本地原音频一致；原速完整保留，未重复请求"
+      },
+      "voice": {
+        "speaker": "zh_female_vv_uranus_bigtts",
+        "speechRate": 0
+      },
+      "taskId": "1880f2a2-043c-4a39-ab82-054c5a574226",
+      "audioSha256": "e3271c6dfe289fbf9ad31b16b84c9f15df253484d6fc31c89dfe3c58ab7a47c1",
+      "audioDuration": 4.44,
+      "durationInFrames": 134,
+      "实际关联": {
+        "source": "evidence/106-project-link.json",
+        "startedAt": "2026-10-12T07:20:34.623Z",
+        "completedAt": "2026-10-12T07:20:36.003Z",
+        "assetId": "d585f69a-566b-48a7-a75b-060bf8f2d4b0",
+        "start": 0,
+        "assemblySha256": "05d1698c98af39d47dc7587f61acef4ae8d991f9194b0b53f4e973672b90f3e1",
+        "scope": "协调者实际MCP导入并关联本组工作树装配视频；档案另存代表段重渲染产物，不冒充重新关联"
+      }
+    }
+  ],
+  "parameters": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "textureSeed": 17,
+    "voice": {
+      "speaker": "zh_female_vv_uranus_bigtts",
+      "speechRate": 0
+    },
+    "audioSpeed": 1
+  },
+  "sourceIdentity": {
+    "entry106.tsx": "c25eee9a5b29f89b2ba73105e96bdac03ff1c38d275f7ffaccbf984dea213ce4",
+    "src/group106.tsx": "993ebd89176917824c52b7be9462ad6ae889d0e139cb27f47e6e0c7e5d706bfd",
+    "src/anatomy.tsx": "69495c5356e7b7172064a73e2c5fdd31377d111029acb6377a415718d68159fe",
+    "src/shared.tsx": "96f9d0c8f41a9c172a5af3f8ddc7532daca3f1513c2f39582b85b598987eeb7b",
+    "render.mjs": "bfe66df44c862bc6d836b97539eeb211b2e07a7927d357de1603e25369d138e3",
+    "package-lock.json": "b1a0ce3000fe089a4f8d28e3374c509f916e9a6ef18d7141544009fb03d9fffd",
+    "public/fonts/noto-cjk-sc.otf": "61610e9246dbdc6fbd71cc0cb649e3586734d3f965a625d9c7554eb3b02f6261",
+    "cards/FH03.json": "bbe7470176d291b628f501c096afb4382f895abb5148df2797fed3e28fa71dc9"
+  },
+  "confirmationSources": {
+    "旁白": "https://github.com/dulltackle/ClapGrid/issues/96#issuecomment-6108628717",
+    "视觉规则": "https://github.com/dulltackle/ClapGrid/issues/97#issuecomment-6110063575"
+  },
+  "currentVoice": "evidence/106-actual-speech.json",
+  "currentProjectLink": "evidence/106-project-link.json",
+  "reviewStatus": "evidence/106-review-status.json",
+  "reproduction": "evidence/106-archive-reproduction.json",
+  "testScope": "当前组4段完整档案与媒体行为；不扩展用户画面确认、人工听审、全片终审",
+  "redEvidence": "/home/forclaw/tmp/implement-spec-104/106-red.log",
+  "verificationCommand": "python3 evidence/106-verify-delivery.py /home/forclaw/tmp/implement-spec-104/archives/group106-v1",
+  "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "9f45b130a93bb0593c68f56d03bdf8438d7995f7d6916477ffbed5896ed43be6",
+      "bytes": 8
+    },
+    {
+      "path": "README.md",
+      "sha256": "5e2699ea3d3733c4c66f86d0b22bb2636ce8cd82185f1e680822faad5c619aba",
+      "bytes": 5995
+    },
+    {
+      "path": "cards/FH01.json",
+      "sha256": "af5ad487e852d4dd0e51fa7f987606406dc346d614ef9c772da94f154ebccd7b",
+      "bytes": 2089
+    },
+    {
+      "path": "cards/FH02.json",
+      "sha256": "c1c00f8302918ac374c79496ebd785f6a11c33d4f0ee9c84262ef21a903a6c8a",
+      "bytes": 2024
+    },
+    {
+      "path": "cards/FH03.json",
+      "sha256": "bbe7470176d291b628f501c096afb4382f895abb5148df2797fed3e28fa71dc9",
+      "bytes": 2131
+    },
+    {
+      "path": "cards/FH04.json",
+      "sha256": "de1a5d1f41d6e0c31da203687d2d46af6ffd5cd45403a50be864f15621b3886d",
+      "bytes": 2123
+    },
+    {
+      "path": "cards/FH10.json",
+      "sha256": "0c42054d408263f76d382c0f2275d131a36a705c24866c81035b35164a8b12cc",
+      "bytes": 2180
+    },
+    {
+      "path": "dependency-resources-linux-x64.tgz",
+      "sha256": "91e77589e5af711a3e9c9ecf5c715ca2f0a965446d0501f48449c575c852775e",
+      "bytes": 49547076
+    },
+    {
+      "path": "entry106.tsx",
+      "sha256": "c25eee9a5b29f89b2ba73105e96bdac03ff1c38d275f7ffaccbf984dea213ce4",
+      "bytes": 120
+    },
+    {
+      "path": "evidence/106-actual-speech.json",
+      "sha256": "ab2f7a0116f3432a42fa6ddb73e35d4b3561aa3650ae070ede80680772001e29",
+      "bytes": 4707
+    },
+    {
+      "path": "evidence/106-archive-reproduction.json",
+      "sha256": "8317e5205fb481ed8f2bef291857ca2214209c962ca126f1edd6928a5c31f8da",
+      "bytes": 13663
+    },
+    {
+      "path": "evidence/106-media-report.json",
+      "sha256": "285f224b185fd296a21796f8796c42d43e5f76c94c93562672f5f0229a06b5c3",
+      "bytes": 66989
+    },
+    {
+      "path": "evidence/106-production.md",
+      "sha256": "f538350951df6f4b6633ff7b37d9698e1346b213ea7dcc346d1734801e346fec",
+      "bytes": 4247
+    },
+    {
+      "path": "evidence/106-project-link.json",
+      "sha256": "b5c8435cf11cc9a917e3ae2a803162731812d9591f0a39686747bb3c80b693f7",
+      "bytes": 3156
+    },
+    {
+      "path": "evidence/106-render-group.py",
+      "sha256": "4f3c1f5b6286f1fac662c1cf565aa8fdeb4aba0b62f399a32bb6fc500cbd898e",
+      "bytes": 2533
+    },
+    {
+      "path": "evidence/106-review-status.json",
+      "sha256": "249f53a70af9caff98756931164cb2a2dde9234018a1b8bc38eceb32bda37b87",
+      "bytes": 2919
+    },
+    {
+      "path": "evidence/106-verify-delivery.py",
+      "sha256": "7e49032912b1ff4f5219c9ebab94e77d31c727d1d2d5d7f35e1653d42e10e88d",
+      "bytes": 2701
+    },
+    {
+      "path": "evidence/106-visual-check.json",
+      "sha256": "06dcd7f6ad68bf6b1a81b4562cc36da24ba72eb64f509a5d60f328d6db2de212",
+      "bytes": 1339
+    },
+    {
+      "path": "evidence/FH10-archive-browser-playback.json",
+      "sha256": "bb2abadc97419604f9a25448d485020898006dec7a67f941c4354fc62dc15a1e",
+      "bytes": 1046
+    },
+    {
+      "path": "evidence/FH10-archive-manifest.json",
+      "sha256": "71daa5d5f6e40169ed7d0c20bf87a4c0edb9aed89820fbfd38b183eecb25a035",
+      "bytes": 10180
+    },
+    {
+      "path": "evidence/FH10-current-collection.json",
+      "sha256": "3b601829b99a7535805158aa1729b44f6ec2151e29a925e287926d1283f0fb21",
+      "bytes": 2881
+    },
+    {
+      "path": "evidence/FH10-media-report.json",
+      "sha256": "7aeb7898e19152e4c733a9773108ac183c6f5caaba0ddafaae0fbb03e4741f71",
+      "bytes": 14753
+    },
+    {
+      "path": "evidence/FH10-reproduction.json",
+      "sha256": "123bf3f98dc5bfb55db882a3a001679bde8206403fee171c3ed7ac38355e7f47",
+      "bytes": 1428
+    },
+    {
+      "path": "evidence/FH10-review-status.json",
+      "sha256": "2d361eacabab7d8101643ac09b9ca61ae0ea055a90b82c495dbc12c5c1911167",
+      "bytes": 1715
+    },
+    {
+      "path": "evidence/FH10-visual-check.json",
+      "sha256": "b7c6da0ed337f071c35d371d980fa575a71dc43fd34f146b5eb909c15c83b494",
+      "bytes": 477
+    },
+    {
+      "path": "evidence/FH10-working-preview-playback.json",
+      "sha256": "c0329b68a4679d9da2d39061e1693c47cd3872cbe106e5e9157b003fa7597990",
+      "bytes": 1018
+    },
+    {
+      "path": "evidence/fresh-host.json",
+      "sha256": "d14318054041628e7088ebaf71346dbcd194d098219f77086ef516f09d3b194b",
+      "bytes": 905
+    },
+    {
+      "path": "evidence/fresh-project.json",
+      "sha256": "7dfef178613861d194f7ce88ce89b1867d1ac5697e46101e6191aa8010311b79",
+      "bytes": 6544
+    },
+    {
+      "path": "evidence/fresh-speech.json",
+      "sha256": "e3fe5109b59f528e0fd70fb27b0e15cd710891334b28c68e2287209edfbab0c9",
+      "bytes": 16228
+    },
+    {
+      "path": "evidence/host-before.json",
+      "sha256": "9ff8357797ae8d4a5058d8a45472d16e42fda6e2a2f06b00f43aea3c2fcd51f6",
+      "bytes": 12480
+    },
+    {
+      "path": "evidence/speech-before.json",
+      "sha256": "0255838ad1934956bfead1ca2b3581b7d372715b7e4447b983972b1a1d090360",
+      "bytes": 25731
+    },
+    {
+      "path": "evidence/speech-mapped.json",
+      "sha256": "944241d9cbaf69e3efcd1be1fa171ca2e2fc6f226ad896406825878ae92a590b",
+      "bytes": 15827
+    },
+    {
+      "path": "index.tsx",
+      "sha256": "b3dd1d07e95cfb19012be2304b811158ac803434db585a5697827e579d065179",
+      "bytes": 108
+    },
+    {
+      "path": "outputs/FH01-assembly.mp4",
+      "sha256": "220e3a0e448a9bae72c8ea067130c6ccefccc79b2215ec7feb3588cd9c31bba1",
+      "bytes": 116216
+    },
+    {
+      "path": "outputs/FH01-assembly.png",
+      "sha256": "e57728a28d7b2580442715559924209a3abbdad95f63231a0ae28d1b2c0cded1",
+      "bytes": 357156
+    },
+    {
+      "path": "outputs/FH01-render.json",
+      "sha256": "4ecacc662501a69b34effcaa56622fc8c415b481a6a05860dcf75aca64c6c033",
+      "bytes": 3623
+    },
+    {
+      "path": "outputs/FH01-review.mp4",
+      "sha256": "72c4c5c43b507cc4b5db4868bc40a7c39a09bbb22dfcc4077a422ddd7d9b7d49",
+      "bytes": 195265
+    },
+    {
+      "path": "outputs/FH01-review.png",
+      "sha256": "325a7b990e2c79dea64e037ee7588433c38f2b83e98af5d5f80033f5e8073902",
+      "bytes": 380486
+    },
+    {
+      "path": "outputs/FH01-review.webm",
+      "sha256": "73563dbf1b6edeb41a59942c1100d028b355efe505cc8ee5e4973ae6d06b8457",
+      "bytes": 228325
+    },
+    {
+      "path": "outputs/FH02-assembly.mp4",
+      "sha256": "68efee8a4639d430809248f3ad95c85bbe199d709a52bb44ce232f2ee420963f",
+      "bytes": 136880
+    },
+    {
+      "path": "outputs/FH02-assembly.png",
+      "sha256": "9d114c5ca482b3095d554c1595e5a9370d31da8515188adde74c1d5a710941f6",
+      "bytes": 363384
+    },
+    {
+      "path": "outputs/FH02-render.json",
+      "sha256": "0503c921b66a761dd484383627fcd8590166ae2d754e61866f2c7edee9dc7d4b",
+      "bytes": 3558
+    },
+    {
+      "path": "outputs/FH02-review.mp4",
+      "sha256": "1b94fa4a0d7320da576dd0a7f3e1c0e87cbc011b411f22744aeb0ddeb029b947",
+      "bytes": 224046
+    },
+    {
+      "path": "outputs/FH02-review.png",
+      "sha256": "51b1315a2b8c32331a8af7432bdb4f444b786c937c455b84965afd7ca6f36b8a",
+      "bytes": 387080
+    },
+    {
+      "path": "outputs/FH02-review.webm",
+      "sha256": "cc022be8b2e6cb6f69ca9189cd9ba04146596ec4db96061f052a4c5e64d643ff",
+      "bytes": 257768
+    },
+    {
+      "path": "outputs/FH03-assembly.mp4",
+      "sha256": "9e2d60b7aaff4212034b5efbc5dabfbc16acb3688b3ef93ce4e48d6504a3f112",
+      "bytes": 106967
+    },
+    {
+      "path": "outputs/FH03-assembly.png",
+      "sha256": "434ff1dac8ec59b2bb25df07f3700efe6c135422ea8db3db6962837d1436d006",
+      "bytes": 364634
+    },
+    {
+      "path": "outputs/FH03-render.json",
+      "sha256": "4f8086739d8819070b2d03b9827d1ee59951fa0cf7e0725fb866df911080acfc",
+      "bytes": 3671
+    },
+    {
+      "path": "outputs/FH03-review.mp4",
+      "sha256": "22eeeba7fc5c4c52dc805e89ce62f37bbf7a939d3d5f31f2f9dfdf406b45702a",
+      "bytes": 184650
+    },
+    {
+      "path": "outputs/FH03-review.png",
+      "sha256": "9bb3dd5e0bab981a189bfd64471f7edd3e21b58f5746bfad7cefb79b759ec972",
+      "bytes": 383416
+    },
+    {
+      "path": "outputs/FH03-review.webm",
+      "sha256": "f387b3c6f2bc3d53f19525705e0fb2c8b15ab5a267d7def38ba63284a04d3807",
+      "bytes": 228314
+    },
+    {
+      "path": "outputs/FH04-assembly.mp4",
+      "sha256": "05d1698c98af39d47dc7587f61acef4ae8d991f9194b0b53f4e973672b90f3e1",
+      "bytes": 149567
+    },
+    {
+      "path": "outputs/FH04-assembly.png",
+      "sha256": "f27894673f658a0d97c8f97a6312ca2832eac6e3a52058021e9032f4f73b7210",
+      "bytes": 364202
+    },
+    {
+      "path": "outputs/FH04-render.json",
+      "sha256": "07e18bee683882b3bdc9e22c5a804856cf78590cc8e239056024d00cddb4fef0",
+      "bytes": 3661
+    },
+    {
+      "path": "outputs/FH04-review.mp4",
+      "sha256": "7c22fb4c662ecd8ce194580d8176e3b34a28e625a4fcbe7519effd3f73e8688e",
+      "bytes": 227676
+    },
+    {
+      "path": "outputs/FH04-review.png",
+      "sha256": "ed3be5ccf66c6140dd842e9011ccfefce72234b2a72ec916a746198a6e522a1b",
+      "bytes": 387730
+    },
+    {
+      "path": "outputs/FH04-review.webm",
+      "sha256": "2cc2985a91c3b534597568975a25bcc91ea0237130faf2a89d30747c499ee553",
+      "bytes": 267027
+    },
+    {
+      "path": "outputs/FH10-assembly.mp4",
+      "sha256": "1bbc79af356bc86766159bc5edb21f807269136096b3321baa93ef81fe7ce82c",
+      "bytes": 131087
+    },
+    {
+      "path": "outputs/FH10-assembly.png",
+      "sha256": "4677612251cc12b7225c43c9e1c5cff3fa65926b83dbe1906961ba66beae51ff",
+      "bytes": 435021
+    },
+    {
+      "path": "outputs/FH10-render.json",
+      "sha256": "3a068e92190ddf3a79600a4f4b79948baea6fa5bd301fe83e7c55619d8dbe912",
+      "bytes": 3876
+    },
+    {
+      "path": "outputs/FH10-review.mp4",
+      "sha256": "0a51a7757fe12131e861a10e9d9b711135b8cf0b588987d0ead8eb62515e488a",
+      "bytes": 218339
+    },
+    {
+      "path": "outputs/FH10-review.png",
+      "sha256": "6f59f6e09f29636f5de0eda74d7d80174499091f9076dcdf1b5d8d4f052d659f",
+      "bytes": 462293
+    },
+    {
+      "path": "outputs/FH10-review.webm",
+      "sha256": "9f57df30ba1d31634c8e96009971f6263e6206617182e08270916b95e3076708",
+      "bytes": 285454
+    },
+    {
+      "path": "outputs/group106-reproduced/FH03-assembly.mp4",
+      "sha256": "9e2d60b7aaff4212034b5efbc5dabfbc16acb3688b3ef93ce4e48d6504a3f112",
+      "bytes": 106967
+    },
+    {
+      "path": "outputs/group106-reproduced/FH03-assembly.png",
+      "sha256": "434ff1dac8ec59b2bb25df07f3700efe6c135422ea8db3db6962837d1436d006",
+      "bytes": 364634
+    },
+    {
+      "path": "outputs/group106-reproduced/FH03-render.json",
+      "sha256": "b7080873c5e44a2a1028be66cdfb7bb29244badfc3eaab77526677ddb7c54c64",
+      "bytes": 4147
+    },
+    {
+      "path": "outputs/group106-reproduced/FH03-review.mp4",
+      "sha256": "22eeeba7fc5c4c52dc805e89ce62f37bbf7a939d3d5f31f2f9dfdf406b45702a",
+      "bytes": 184650
+    },
+    {
+      "path": "outputs/group106-reproduced/FH03-review.png",
+      "sha256": "9bb3dd5e0bab981a189bfd64471f7edd3e21b58f5746bfad7cefb79b759ec972",
+      "bytes": 383416
+    },
+    {
+      "path": "outputs/group106-reproduced/FH03-review.webm",
+      "sha256": "8f8fb883ff1ee21ffbf4ba3ddc2d6f8b7947cdae4517ab1397f236b199800a57",
+      "bytes": 228314
+    },
+    {
+      "path": "outputs/group106-review.mp4",
+      "sha256": "a7f24935d57a0d9d56d022406df359e4f842c6d2a05586d7b970ad62de16a63d",
+      "bytes": 767530
+    },
+    {
+      "path": "outputs/group106-review.webm",
+      "sha256": "e52724f99fbebe2e634379f325b92c6eb6ce5371e4ef2e87f78e4d2fc3c4ee73",
+      "bytes": 1060970
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "b1a0ce3000fe089a4f8d28e3374c509f916e9a6ef18d7141544009fb03d9fffd",
+      "bytes": 92916
+    },
+    {
+      "path": "package.json",
+      "sha256": "22a547c9495ec6140df03b93a381c221ac5945823b4307787b64fccccfac9d7a",
+      "bytes": 462
+    },
+    {
+      "path": "public/audio/FH01.mp3",
+      "sha256": "db53258b3bbc180b7f56353eab473c820bd8e3b1e02731bd946373d95e069f1e",
+      "bytes": 37485
+    },
+    {
+      "path": "public/audio/FH02.mp3",
+      "sha256": "c3c7ad692956a3a7c0b82e0f0453d8daef455d1bbfa9d7d7fff77e51f6c53ad9",
+      "bytes": 40749
+    },
+    {
+      "path": "public/audio/FH03.mp3",
+      "sha256": "5e1840118c759e45b86f9d5654ee1d79813e71bde9cb6c87784eb87cf439a8f8",
+      "bytes": 37485
+    },
+    {
+      "path": "public/audio/FH04.mp3",
+      "sha256": "e3271c6dfe289fbf9ad31b16b84c9f15df253484d6fc31c89dfe3c58ab7a47c1",
+      "bytes": 35565
+    },
+    {
+      "path": "public/fh10-narration.mp3",
+      "sha256": "4f424a8dc949bee1250604d8c05749580967e90f00c842edbb60ed00f74ec951",
+      "bytes": 38829
+    },
+    {
+      "path": "public/fonts/OFL-and-source.txt",
+      "sha256": "849f4ea9c214fa4ac3593b770c699f387534b11ce671264c1b10d85bdcb5997b",
+      "bytes": 14712
+    },
+    {
+      "path": "public/fonts/noto-cjk-sc.otf",
+      "sha256": "61610e9246dbdc6fbd71cc0cb649e3586734d3f965a625d9c7554eb3b02f6261",
+      "bytes": 13113740
+    },
+    {
+      "path": "references/106-image-generation.json",
+      "sha256": "290332d499a138f3aae60c65b0c0819158713b5be412306d157aa327ea101591",
+      "bytes": 9109
+    },
+    {
+      "path": "references/106-sources.json",
+      "sha256": "9f3b17e108084a7609ca81b415ee46392d83868bd1dc840de9b826496d4835a3",
+      "bytes": 582
+    },
+    {
+      "path": "references/106-structure-reference.png",
+      "sha256": "0161b5c32854326a77a33c29a73b34c64eec3e020bf5f34da09fa2aad49784bf",
+      "bytes": 1894266
+    },
+    {
+      "path": "references/fh10-reference.png",
+      "sha256": "810437229b496d6908d72f42bbb953212c2bf03187d8bea246fed21d8358d224",
+      "bytes": 1871064
+    },
+    {
+      "path": "references/fh10-static.png",
+      "sha256": "810437229b496d6908d72f42bbb953212c2bf03187d8bea246fed21d8358d224",
+      "bytes": 1871064
+    },
+    {
+      "path": "references/static-archive-manifest.json",
+      "sha256": "dbb9a15ad7ca38a72780c883f456775dab05b52cac3a38a766d725b7eae86517",
+      "bytes": 2299
+    },
+    {
+      "path": "references/static-manifest.json",
+      "sha256": "f5fabd21d94d9d691032a1414e2941049d4009d895ae62fb9ea9fca5f46d04a2",
+      "bytes": 6841
+    },
+    {
+      "path": "references/static-remaining-review.json",
+      "sha256": "290332d499a138f3aae60c65b0c0819158713b5be412306d157aa327ea101591",
+      "bytes": 9109
+    },
+    {
+      "path": "render.mjs",
+      "sha256": "bfe66df44c862bc6d836b97539eeb211b2e07a7927d357de1603e25369d138e3",
+      "bytes": 3178
+    },
+    {
+      "path": "review.html",
+      "sha256": "4e758c7bd574f903c609066476e74c7f92e752d6570c88d56408c369e00f1f1b",
+      "bytes": 1007
+    },
+    {
+      "path": "review106.html",
+      "sha256": "709a036bc30d8d2ce08cec96bcbea581c7653f8f0e0a14e60710b8d441bb015f",
+      "bytes": 1321
+    },
+    {
+      "path": "segment-mapping.json",
+      "sha256": "e31f73da6af1ff1c47c2f0ea059b60750b9bc1f4d51bc8519362035215951fff",
+      "bytes": 3199
+    },
+    {
+      "path": "src/FH10.tsx",
+      "sha256": "ff12dba21631ccb32d826fc5af863cb1159e5c60cf19a4f79754e8ed60789a46",
+      "bytes": 2787
+    },
+    {
+      "path": "src/anatomy.tsx",
+      "sha256": "69495c5356e7b7172064a73e2c5fdd31377d111029acb6377a415718d68159fe",
+      "bytes": 2505
+    },
+    {
+      "path": "src/group106.tsx",
+      "sha256": "993ebd89176917824c52b7be9462ad6ae889d0e139cb27f47e6e0c7e5d706bfd",
+      "bytes": 3404
+    },
+    {
+      "path": "src/shared.tsx",
+      "sha256": "96f9d0c8f41a9c172a5af3f8ddc7532daca3f1513c2f39582b85b598987eeb7b",
+      "bytes": 1956
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "fb60cf66e5c6e6c610fecb4bebf6f3f131baac16c79f65a6dbb50c78accd9d57",
+      "bytes": 268
+    },
+    {
+      "path": "verify-media.py",
+      "sha256": "9915096367cc05a00513c35f04bfb2cb2fb4d0b016591259ac60efb04d8a7db8",
+      "bytes": 1794
+    }
+  ]
+}
