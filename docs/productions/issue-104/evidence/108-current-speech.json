@@ -1,0 +1,42 @@
+{
+  "source": "actual-host",
+  "startedAt": "2026-10-12T07:13:19.163Z",
+  "completedAt": "2026-10-12T07:13:19.927Z",
+  "voice": {
+    "speaker": "zh_female_vv_uranus_bigtts",
+    "speechRate": 0
+  },
+  "task": {
+    "id": "420d818b-a99c-4613-b9c3-fd601062ed33",
+    "requestId": "a097dcdd-49ff-41df-950e-99f8891184d1",
+    "segmentId": "e509e18d-edab-4700-8695-3df351c66a4e",
+    "input": {
+      "text": "损伤进一步发展，关节面下方的骨组织可能失去支撑，表面发生局部下陷。",
+      "voice": {
+        "speaker": "zh_female_vv_uranus_bigtts",
+        "speechRate": 0
+      }
+    },
+    "state": "succeeded",
+    "message": "生成成功",
+    "createdAt": "2026-10-12T07:11:34.556Z",
+    "succeededAt": "2026-10-12T07:11:47.602Z"
+  },
+  "audio": {
+    "localCopy": "public/audio/FH11-FH12.mp3",
+    "duration": 6.816
+  },
+  "currentAudio": {
+    "taskId": "420d818b-a99c-4613-b9c3-fd601062ed33",
+    "segmentId": "e509e18d-edab-4700-8695-3df351c66a4e",
+    "input": {
+      "text": "损伤进一步发展，关节面下方的骨组织可能失去支撑，表面发生局部下陷。",
+      "voice": {
+        "speaker": "zh_female_vv_uranus_bigtts",
+        "speechRate": 0
+      }
+    },
+    "createdAt": "2026-10-12T07:11:47.602Z",
+    "valid": true
+  }
+}

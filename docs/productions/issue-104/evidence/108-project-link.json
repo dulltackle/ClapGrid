@@ -1,0 +1,50 @@
+{
+  "source": "actual-host",
+  "startedAt": "2026-10-12T07:20:34.623Z",
+  "completedAt": "2026-10-12T07:20:36.189Z",
+  "scope": {
+    "group": 108,
+    "segmentIds": [
+      "e509e18d-edab-4700-8695-3df351c66a4e"
+    ]
+  },
+  "response": {
+    "buildIdentity": {
+      "schemaVersion": 1,
+      "state": "known",
+      "version": "0.1.0+git.907c064de1c5.3a610292288b",
+      "source": {
+        "commit": "907c064de1c5449e2967e0b127776c794e605b73",
+        "state": "clean"
+      },
+      "contentFingerprint": "sha256:a23ffc9873c25a20b4c25c3832f33248c2b38f0565b57e710b3f876318547ab3"
+    },
+    "instanceId": "646e600d-d631-47ba-91de-6212e3cb9504",
+    "project": {
+      "id": "cd43eb48-a982-4004-8bc1-989c6fba9b3a",
+      "directory": "/home/forclaw/code/ClapGrid/clapgrid",
+      "createdAt": "2026-10-04T08:20:25.627Z"
+    },
+    "segments": [
+      {
+        "id": "e509e18d-edab-4700-8695-3df351c66a4e",
+        "order": 11,
+        "text": "损伤进一步发展，关节面下方的骨组织可能失去支撑，表面发生局部下陷。",
+        "visualNote": "FH11–FH12 · #104 旁白v0.2；制作卡及动画待对应内容工单补齐。",
+        "video": {
+          "assetId": "55edf651-f4f1-45c1-9ae4-d7fde232b035",
+          "start": 0
+        }
+      }
+    ],
+    "assets": [
+      {
+        "id": "55edf651-f4f1-45c1-9ae4-d7fde232b035",
+        "name": "FH11-FH12-assembly.mp4",
+        "duration": 6.833333
+      }
+    ],
+    "taskLocked": false,
+    "modification": null
+  }
+}
