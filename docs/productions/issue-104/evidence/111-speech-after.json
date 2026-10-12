@@ -1,0 +1,447 @@
+{
+  "observedAt": "2026-10-12T09:20:39.346Z",
+  "voice": {
+    "speaker": "zh_female_vv_uranus_bigtts",
+    "speechRate": 0
+  },
+  "locked": false,
+  "tasks": [
+    {
+      "id": "13c0ba78-4e76-4c19-9a9b-b052dcfd9664",
+      "requestId": "3b98b2f1-cdb7-4b3a-b4a3-e620297ab88b",
+      "segmentId": "d9b6c5b5-abe9-4a98-bd84-c7667eb44dce",
+      "input": {
+        "text": "如果局部结构继续受损，承重时就可能出现细小骨折。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "state": "succeeded",
+      "message": "生成成功",
+      "createdAt": "2026-10-12T03:32:01.086Z",
+      "succeededAt": "2026-10-12T03:32:02.623Z"
+    },
+    {
+      "id": "13843d1f-b8b0-4d89-bed1-d13302bb9a29",
+      "requestId": "b05e6b70-7e94-40af-bef3-d139f75b5045",
+      "segmentId": "2e5abb40-b111-42e9-b137-fb758abc9dd8",
+      "input": {
+        "text": "股骨头坏死，为什么可能让原本圆滑的关节面塌陷？",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "state": "succeeded",
+      "message": "生成成功",
+      "createdAt": "2026-10-12T07:11:34.555Z",
+      "succeededAt": "2026-10-12T07:11:36.151Z"
+    },
+    {
+      "id": "eb4a4443-2792-449c-9c6b-f00bd9ec40ee",
+      "requestId": "3861b95e-fbbf-43f3-b172-a58fde94629f",
+      "segmentId": "1a778f97-e29b-4b5b-a314-7e0eafe8e3b0",
+      "input": {
+        "text": "先看这里：大腿骨顶端的球形部分，就是股骨头。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "state": "succeeded",
+      "message": "生成成功",
+      "createdAt": "2026-10-12T07:11:34.556Z",
+      "succeededAt": "2026-10-12T07:11:37.530Z"
+    },
+    {
+      "id": "4072b836-991b-4be8-8af1-68bc50eacc04",
+      "requestId": "d9d42aeb-d736-4eea-81e4-543182d823a3",
+      "segmentId": "429a80d1-2dac-4fd6-aeb3-c6609aea9c23",
+      "input": {
+        "text": "它表面覆盖软骨，下面是支撑关节面的骨组织。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "state": "succeeded",
+      "message": "生成成功",
+      "createdAt": "2026-10-12T07:11:34.556Z",
+      "succeededAt": "2026-10-12T07:11:38.751Z"
+    },
+    {
+      "id": "1880f2a2-043c-4a39-ab82-054c5a574226",
+      "requestId": "eb1ef4f9-c8b6-4719-b919-fcb5fbffd9cc",
+      "segmentId": "5582739e-611f-4996-8f5e-f25f819c9a1d",
+      "input": {
+        "text": "骨组织也是活的，需要血液不断送来氧气和营养。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "state": "succeeded",
+      "message": "生成成功",
+      "createdAt": "2026-10-12T07:11:34.556Z",
+      "succeededAt": "2026-10-12T07:11:39.931Z"
+    },
+    {
+      "id": "6658739d-4778-4f59-8ae6-a764ea8e36af",
+      "requestId": "216c195c-9ae7-486d-9fb4-92c9efea9483",
+      "segmentId": "1e09a362-e6eb-4cf0-90bb-ce7f1d3b81c4",
+      "input": {
+        "text": "当局部血液供应受损，这里的骨组织就可能发生坏死。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "state": "succeeded",
+      "message": "生成成功",
+      "createdAt": "2026-10-12T07:11:34.556Z",
+      "succeededAt": "2026-10-12T07:11:41.233Z"
+    },
+    {
+      "id": "2ec5815c-42ad-4c0c-ba00-1ec664062a5f",
+      "requestId": "bfc4e0c2-f19c-4813-b914-b12089e44b6f",
+      "segmentId": "09985f81-72ee-43c5-bc56-0a48e78d7b0d",
+      "input": {
+        "text": "但细胞死亡，不等于原有的骨架马上消失。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "state": "succeeded",
+      "message": "生成成功",
+      "createdAt": "2026-10-12T07:11:34.556Z",
+      "succeededAt": "2026-10-12T07:11:42.281Z"
+    },
+    {
+      "id": "83cc7d16-a2a0-4f43-a179-bbb884adcdc8",
+      "requestId": "b9478871-5d10-4499-980e-cf07c7a244d2",
+      "segmentId": "5b18fddd-76d9-44f5-90e9-8663ff71e12c",
+      "input": {
+        "text": "此时，股骨头外形仍可能保持完整。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "state": "succeeded",
+      "message": "生成成功",
+      "createdAt": "2026-10-12T07:11:34.556Z",
+      "succeededAt": "2026-10-12T07:11:43.588Z"
+    },
+    {
+      "id": "e59b50fd-4f54-4057-8612-611f4435ad4f",
+      "requestId": "73fa2da3-cfff-4d37-83b2-cfa968206b29",
+      "segmentId": "f27fcec6-b3b4-4048-9dd4-79eaa9cf6930",
+      "input": {
+        "text": "身体也会尝试修复受损区域。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "state": "succeeded",
+      "message": "生成成功",
+      "createdAt": "2026-10-12T07:11:34.556Z",
+      "succeededAt": "2026-10-12T07:11:44.491Z"
+    },
+    {
+      "id": "aae43103-e516-42a1-8e8f-75cd0e5fd4a5",
+      "requestId": "dd378eae-42a8-44cc-8298-c05d934c10b1",
+      "segmentId": "9556199e-a633-4052-bb15-63f46f5a409c",
+      "input": {
+        "text": "修复涉及旧骨吸收和新骨形成，但不一定能恢复足够的支撑。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "state": "succeeded",
+      "message": "生成成功",
+      "createdAt": "2026-10-12T07:11:34.556Z",
+      "succeededAt": "2026-10-12T07:11:46.031Z"
+    },
+    {
+      "id": "420d818b-a99c-4613-b9c3-fd601062ed33",
+      "requestId": "a097dcdd-49ff-41df-950e-99f8891184d1",
+      "segmentId": "e509e18d-edab-4700-8695-3df351c66a4e",
+      "input": {
+        "text": "损伤进一步发展，关节面下方的骨组织可能失去支撑，表面发生局部下陷。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "state": "succeeded",
+      "message": "生成成功",
+      "createdAt": "2026-10-12T07:11:34.556Z",
+      "succeededAt": "2026-10-12T07:11:47.602Z"
+    },
+    {
+      "id": "65e9f937-f960-4d3a-867d-02e904ab2951",
+      "requestId": "22fe75e1-c3b8-4067-bda3-79301e74736b",
+      "segmentId": "e4416bfe-3823-49c7-a89d-99355c437679",
+      "input": {
+        "text": "不过，并不是每个坏死的股骨头都会塌陷。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "state": "succeeded",
+      "message": "生成成功",
+      "createdAt": "2026-10-12T07:11:34.556Z",
+      "succeededAt": "2026-10-12T07:11:48.691Z"
+    },
+    {
+      "id": "aef6e056-25fa-4a28-83a9-f1709316f654",
+      "requestId": "f1dc2b3c-bdbe-499c-a9f7-207b2ffd74d5",
+      "segmentId": "95695858-1813-4d56-bd80-b310d5bd84b7",
+      "input": {
+        "text": "受损范围、位置等因素，都会影响进展。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "state": "succeeded",
+      "message": "生成成功",
+      "createdAt": "2026-10-12T07:11:34.556Z",
+      "succeededAt": "2026-10-12T07:11:49.701Z"
+    },
+    {
+      "id": "15ba7b87-612d-419a-b728-3571be936a7f",
+      "requestId": "a6da34b9-32e1-45cb-94ba-cd0154b68d5f",
+      "segmentId": "d8c30c3e-1358-4777-8581-9592360642b9",
+      "input": {
+        "text": "所以，坏死说的是骨组织死亡。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "state": "succeeded",
+      "message": "生成成功",
+      "createdAt": "2026-10-12T07:11:34.556Z",
+      "succeededAt": "2026-10-12T07:11:50.801Z"
+    },
+    {
+      "id": "8ab61b38-3aa1-45ea-aae1-6b8d2911486d",
+      "requestId": "a4bf46b1-4613-4375-854f-2fdbcd631818",
+      "segmentId": "665a5773-57f1-4bfd-918a-680dd3eb3d41",
+      "input": {
+        "text": "塌陷说的是支撑结构失效后，外形发生了改变。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "state": "succeeded",
+      "message": "生成成功",
+      "createdAt": "2026-10-12T07:11:34.556Z",
+      "succeededAt": "2026-10-12T07:11:51.871Z"
+    }
+  ],
+  "audio": [
+    {
+      "taskId": "13c0ba78-4e76-4c19-9a9b-b052dcfd9664",
+      "segmentId": "d9b6c5b5-abe9-4a98-bd84-c7667eb44dce",
+      "input": {
+        "text": "如果局部结构继续受损，承重时就可能出现细小骨折。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "createdAt": "2026-10-12T03:32:02.623Z",
+      "valid": true
+    },
+    {
+      "taskId": "13843d1f-b8b0-4d89-bed1-d13302bb9a29",
+      "segmentId": "2e5abb40-b111-42e9-b137-fb758abc9dd8",
+      "input": {
+        "text": "股骨头坏死，为什么可能让原本圆滑的关节面塌陷？",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "createdAt": "2026-10-12T07:11:36.151Z",
+      "valid": true
+    },
+    {
+      "taskId": "eb4a4443-2792-449c-9c6b-f00bd9ec40ee",
+      "segmentId": "1a778f97-e29b-4b5b-a314-7e0eafe8e3b0",
+      "input": {
+        "text": "先看这里：大腿骨顶端的球形部分，就是股骨头。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "createdAt": "2026-10-12T07:11:37.530Z",
+      "valid": true
+    },
+    {
+      "taskId": "4072b836-991b-4be8-8af1-68bc50eacc04",
+      "segmentId": "429a80d1-2dac-4fd6-aeb3-c6609aea9c23",
+      "input": {
+        "text": "它表面覆盖软骨，下面是支撑关节面的骨组织。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "createdAt": "2026-10-12T07:11:38.751Z",
+      "valid": true
+    },
+    {
+      "taskId": "1880f2a2-043c-4a39-ab82-054c5a574226",
+      "segmentId": "5582739e-611f-4996-8f5e-f25f819c9a1d",
+      "input": {
+        "text": "骨组织也是活的，需要血液不断送来氧气和营养。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "createdAt": "2026-10-12T07:11:39.931Z",
+      "valid": true
+    },
+    {
+      "taskId": "6658739d-4778-4f59-8ae6-a764ea8e36af",
+      "segmentId": "1e09a362-e6eb-4cf0-90bb-ce7f1d3b81c4",
+      "input": {
+        "text": "当局部血液供应受损，这里的骨组织就可能发生坏死。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "createdAt": "2026-10-12T07:11:41.233Z",
+      "valid": true
+    },
+    {
+      "taskId": "2ec5815c-42ad-4c0c-ba00-1ec664062a5f",
+      "segmentId": "09985f81-72ee-43c5-bc56-0a48e78d7b0d",
+      "input": {
+        "text": "但细胞死亡，不等于原有的骨架马上消失。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "createdAt": "2026-10-12T07:11:42.281Z",
+      "valid": true
+    },
+    {
+      "taskId": "83cc7d16-a2a0-4f43-a179-bbb884adcdc8",
+      "segmentId": "5b18fddd-76d9-44f5-90e9-8663ff71e12c",
+      "input": {
+        "text": "此时，股骨头外形仍可能保持完整。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "createdAt": "2026-10-12T07:11:43.588Z",
+      "valid": true
+    },
+    {
+      "taskId": "e59b50fd-4f54-4057-8612-611f4435ad4f",
+      "segmentId": "f27fcec6-b3b4-4048-9dd4-79eaa9cf6930",
+      "input": {
+        "text": "身体也会尝试修复受损区域。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "createdAt": "2026-10-12T07:11:44.491Z",
+      "valid": true
+    },
+    {
+      "taskId": "aae43103-e516-42a1-8e8f-75cd0e5fd4a5",
+      "segmentId": "9556199e-a633-4052-bb15-63f46f5a409c",
+      "input": {
+        "text": "修复涉及旧骨吸收和新骨形成，但不一定能恢复足够的支撑。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "createdAt": "2026-10-12T07:11:46.031Z",
+      "valid": true
+    },
+    {
+      "taskId": "420d818b-a99c-4613-b9c3-fd601062ed33",
+      "segmentId": "e509e18d-edab-4700-8695-3df351c66a4e",
+      "input": {
+        "text": "损伤进一步发展，关节面下方的骨组织可能失去支撑，表面发生局部下陷。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "createdAt": "2026-10-12T07:11:47.602Z",
+      "valid": true
+    },
+    {
+      "taskId": "65e9f937-f960-4d3a-867d-02e904ab2951",
+      "segmentId": "e4416bfe-3823-49c7-a89d-99355c437679",
+      "input": {
+        "text": "不过，并不是每个坏死的股骨头都会塌陷。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "createdAt": "2026-10-12T07:11:48.691Z",
+      "valid": true
+    },
+    {
+      "taskId": "aef6e056-25fa-4a28-83a9-f1709316f654",
+      "segmentId": "95695858-1813-4d56-bd80-b310d5bd84b7",
+      "input": {
+        "text": "受损范围、位置等因素，都会影响进展。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "createdAt": "2026-10-12T07:11:49.701Z",
+      "valid": true
+    },
+    {
+      "taskId": "15ba7b87-612d-419a-b728-3571be936a7f",
+      "segmentId": "d8c30c3e-1358-4777-8581-9592360642b9",
+      "input": {
+        "text": "所以，坏死说的是骨组织死亡。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "createdAt": "2026-10-12T07:11:50.801Z",
+      "valid": true
+    },
+    {
+      "taskId": "8ab61b38-3aa1-45ea-aae1-6b8d2911486d",
+      "segmentId": "665a5773-57f1-4bfd-918a-680dd3eb3d41",
+      "input": {
+        "text": "塌陷说的是支撑结构失效后，外形发生了改变。",
+        "voice": {
+          "speaker": "zh_female_vv_uranus_bigtts",
+          "speechRate": 0
+        }
+      },
+      "createdAt": "2026-10-12T07:11:51.871Z",
+      "valid": true
+    }
+  ]
+}

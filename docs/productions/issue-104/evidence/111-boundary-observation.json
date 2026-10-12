@@ -1,0 +1,52 @@
+{
+  "observedAt": "2026-10-12T09:41:52.702849+00:00",
+  "observer": "/root",
+  "version": "full-rough-v1",
+  "scope": "首末帧、FH09→FH10与FH10→FH11–FH12两处边界邻帧，6张实际已view图；其他24边界采样不在本次视查范围，非逐帧/人工医学与节奏终审",
+  "samples": [
+    {
+      "label": "first",
+      "frame": 0,
+      "timeSeconds": 0.0,
+      "path": "evidence/111-boundaries/first.png",
+      "sha256": "ace93ba3397fab384deab241cd9be8afbf4a23f740def347d76ca27c4f748897"
+    },
+    {
+      "label": "last",
+      "frame": 2040,
+      "timeSeconds": 68.0,
+      "path": "evidence/111-boundaries/last.png",
+      "sha256": "a32f577623f5b650d5e42acdfbf537d0817df2ef9de2615124ac8757ac2f6e00"
+    },
+    {
+      "label": "FH10-before",
+      "frame": 1204,
+      "timeSeconds": 40.13333333333333,
+      "path": "evidence/111-boundaries/FH10-before.png",
+      "sha256": "df1a7c3278a77535b9c17a30377e8fd7ce8027180fab3303c48e341a9155d0c8"
+    },
+    {
+      "label": "FH10-after",
+      "frame": 1205,
+      "timeSeconds": 40.166666666666664,
+      "path": "evidence/111-boundaries/FH10-after.png",
+      "sha256": "00fb1d84112a4a474e2bf61aeea694a5385db149ba3d123550e25a0ac616ac75"
+    },
+    {
+      "label": "FH11-FH12-before",
+      "frame": 1349,
+      "timeSeconds": 44.96666666666667,
+      "path": "evidence/111-boundaries/FH11-FH12-before.png",
+      "sha256": "0e90cd3a09d96f04041c40bef8763ada8edd1c4264d80663066321b790594cef"
+    },
+    {
+      "label": "FH11-FH12-after",
+      "frame": 1350,
+      "timeSeconds": 45.0,
+      "path": "evidence/111-boundaries/FH11-FH12-after.png",
+      "sha256": "5541ce024f1d2a2fc85be147fec2a865a859c70b5e922f94dcbacefa7726de5c"
+    }
+  ],
+  "technicalObservation": "首帧画面与完整开场字幕存在；末帧保留结尾完整字幕及概念对照；两处边界切换到对应旁白字幕，骨结构主视图位置保持，未见残留重复字幕或黑屏。",
+  "humanStatus": "医学表达、风格、发音及完整节奏仍pending"
+}

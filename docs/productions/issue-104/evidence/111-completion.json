@@ -1,0 +1,51 @@
+{
+  "version": "full-rough-v1",
+  "status": "development-evidence-passed-human-review-pending",
+  "taskId": "2846fb35-8435-4043-b0d7-e7aa9f5a2b75",
+  "originalAudioTotalSeconds": 68.04,
+  "videoDurationSeconds": 68.033333,
+  "previewContainerSeconds": 68.056,
+  "audioVideoDifferenceSeconds": 0.006667,
+  "explanation": "视频帧数2041/30；不足一帧差异，原声全部3265920样本保留，AAC解码额外640尾样本不是裁切；不为90秒预算改速",
+  "scope": "真任务成功+15输入/字体资源/来源对应+全长解码/黑帧+全原声累计PCM与句尾span+实际技术播放+15单帧观察及6个首末/指定边界帧实查；非正式验收或人工终审",
+  "snapshotScope": "导出前后端点采样一致、同实例、15音频仍valid；不称持续监测",
+  "previousArchives": "既有fh10/group106/group107/group108/group109等档案原样保留",
+  "independentArchive": "full-rough-v1",
+  "criteria": [
+    {
+      "number": 1,
+      "status": "development-evidence-passed",
+      "evidence": "full-inputs/current111.json; segment-mapping.json"
+    },
+    {
+      "number": 2,
+      "status": "development-evidence-passed",
+      "evidence": "evidence/111-host-before.json; evidence/111-speech-before.json; evidence/111-after-state-correspondence.json"
+    },
+    {
+      "number": 3,
+      "status": "development-evidence-passed",
+      "evidence": "evidence/111-source-contract.json; full-inputs/assets/; render.mjs; src/shared.tsx"
+    },
+    {
+      "number": 4,
+      "status": "development-evidence-passed",
+      "evidence": "evidence/111-export-succeeded.json; evidence/111-settings-before.json; full-inputs/resources/resources111.json"
+    },
+    {
+      "number": 5,
+      "status": "development-evidence-passed",
+      "evidence": "evidence/111-verification.json; evidence/111-browser-full-playback.json; evidence/111-frame-samples.json; evidence/111-boundaries.json; evidence/111-boundary-observation.json"
+    },
+    {
+      "number": 6,
+      "status": "development-evidence-passed",
+      "evidence": "manifest.json（独立档案）; full-inputs/current111.json; references/; public/"
+    },
+    {
+      "number": 7,
+      "status": "separate-status-recorded-human-pending",
+      "evidence": "review111.html; evidence/111-review-status.json"
+    }
+  ]
+}

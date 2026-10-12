@@ -1,0 +1,13 @@
+{
+  "observedAt": "2026-10-12T09:06:26.083Z",
+  "task": {
+    "id": "2846fb35-8435-4043-b0d7-e7aa9f5a2b75",
+    "createdAt": "2026-10-12T09:06:26.073Z",
+    "state": "accepted",
+    "message": "已受理，尚未完成",
+    "completed": 0,
+    "total": 15,
+    "issues": [],
+    "warnings": []
+  }
+}

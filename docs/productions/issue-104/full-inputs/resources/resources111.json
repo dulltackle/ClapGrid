@@ -1,0 +1,29 @@
+{
+  "resources": [
+    {
+      "path": "full-inputs/resources/fonts/NotoSansCJK-Regular.ttc",
+      "source": "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+      "role": "实际ClapGrid ASS 字体",
+      "sha256": "b76b0433203017ca80401b2ee0dd69350349871c4b19d504c34dbdd80541690a"
+    },
+    {
+      "path": "full-inputs/resources/fonts/noto-cjk-copyright",
+      "source": "/usr/share/doc/fonts-noto-cjk/copyright",
+      "role": "系统字体授权",
+      "sha256": "849f4ea9c214fa4ac3593b770c699f387534b11ce671264c1b10d85bdcb5997b"
+    },
+    {
+      "path": "full-inputs/resources/dependency-resources-linux-x64.tgz",
+      "source": "/home/forclaw/tmp/implement-spec-104/archives/fh10-v1/dependency-resources-linux-x64.tgz",
+      "role": "锁定动画依赖包",
+      "sha256": "91e77589e5af711a3e9c9ecf5c715ca2f0a965446d0501f48449c575c852775e"
+    }
+  ],
+  "fcMatchCommand": "fc-match 'Noto Sans CJK SC' -f '%{file}|%{family}|%{style}\\n'",
+  "fcMatchActualOutput": "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc|Noto Sans CJK SC|Regular\n",
+  "animationFont": {
+    "path": "public/fonts/noto-cjk-sc.otf",
+    "sha256": "61610e9246dbdc6fbd71cc0cb649e3586734d3f965a625d9c7554eb3b02f6261",
+    "role": "Remotion FontFace，区别于真实全片ASS的TTC"
+  }
+}

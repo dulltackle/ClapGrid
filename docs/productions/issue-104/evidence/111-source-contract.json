@@ -1,0 +1,78 @@
+{
+  "scope": "纯画面装配的已审源与真实关联字节；源码结构标注不包含旁白烧录字幕，独立阅读核对；无字幕流不足以证明无烧录字幕",
+  "files": [
+    {
+      "path": "entry106.tsx",
+      "sha256": "c25eee9a5b29f89b2ba73105e96bdac03ff1c38d275f7ffaccbf984dea213ce4"
+    },
+    {
+      "path": "entry107.tsx",
+      "sha256": "fe7b24836abf384ca3d88e31edf4f47dee729b82643cf8544f737cdc0a42c245"
+    },
+    {
+      "path": "entry108.tsx",
+      "sha256": "c12349fb0e43befcfa8603a4ae35795bb995c6add3846802bc24e496d3ac4ba5"
+    },
+    {
+      "path": "entry109.tsx",
+      "sha256": "c86344a5f6bcbdb10b7a21d80efdf9d23b2a0f95a7d89f14c89260fcbd610736"
+    },
+    {
+      "path": "entry110.tsx",
+      "sha256": "b3dd1d07e95cfb19012be2304b811158ac803434db585a5697827e579d065179"
+    },
+    {
+      "path": "src/FH10.tsx",
+      "sha256": "ff12dba21631ccb32d826fc5af863cb1159e5c60cf19a4f79754e8ed60789a46"
+    },
+    {
+      "path": "src/anatomy.tsx",
+      "sha256": "69495c5356e7b7172064a73e2c5fdd31377d111029acb6377a415718d68159fe"
+    },
+    {
+      "path": "src/group106.tsx",
+      "sha256": "993ebd89176917824c52b7be9462ad6ae889d0e139cb27f47e6e0c7e5d706bfd"
+    },
+    {
+      "path": "src/group107.tsx",
+      "sha256": "84cc50e8379b5eacd07b05265c09d03849cd5ce02db14923b7c688231b89a3ae"
+    },
+    {
+      "path": "src/group108.tsx",
+      "sha256": "0c0977e03f1d5e1cfec352ecc3825cca88eaeb6943c4477b7629ce53f628dbe1"
+    },
+    {
+      "path": "src/group109.tsx",
+      "sha256": "8f42d54547496978a0ecf0634ace93600fc394aafe428e44bc17edc2389838b6"
+    },
+    {
+      "path": "src/shared.tsx",
+      "sha256": "96f9d0c8f41a9c172a5af3f8ddc7532daca3f1513c2f39582b85b598987eeb7b"
+    },
+    {
+      "path": "render.mjs",
+      "sha256": "bfe66df44c862bc6d836b97539eeb211b2e07a7927d357de1603e25369d138e3"
+    },
+    {
+      "path": "package.json",
+      "sha256": "22a547c9495ec6140df03b93a381c221ac5945823b4307787b64fccccfac9d7a"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "b1a0ce3000fe089a4f8d28e3374c509f916e9a6ef18d7141544009fb03d9fffd"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "fb60cf66e5c6e6c610fecb4bebf6f3f131baac16c79f65a6dbb50c78accd9d57"
+    },
+    {
+      "path": "index.tsx",
+      "sha256": "b3dd1d07e95cfb19012be2304b811158ac803434db585a5697827e579d065179"
+    }
+  ],
+  "inspection": {
+    "assembly": "render.mjs inputProps.preview=false、renderMedia muted=true；TextLayer preview=false返回null；所有关联素材字节等于已审装配",
+    "review": "preview=true画面另存，原声另在review mux；真实全片由ClapGrid任务而非Remotion合成",
+    "actualHostExporter": "宿主build907c064；协调者核对export-render.ts/export-files.ts到baseline1c654无变更；一次端点与任务采样不等于持续监控"
+  }
+}

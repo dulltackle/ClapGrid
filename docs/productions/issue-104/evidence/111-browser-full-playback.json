@@ -1,0 +1,38 @@
+{
+  "source": "actual-browser",
+  "version": "full-rough-v1",
+  "media": "outputs/full-rough-v1.webm",
+  "sha256": "36edc695cb51d2132cabfc129d1709e8bdb60048aba63a7e7ae73b6090357829",
+  "taskId": "2846fb35-8435-4043-b0d7-e7aa9f5a2b75",
+  "scope": "真实ClapGrid全片导出副本完整技术播放，不代签用户医学/风格/发音听审/字幕连续性和节奏终审",
+  "initial": {
+    "observedAt": "2026-10-12T09:10:44.153Z",
+    "currentTime": 0,
+    "duration": 68.056,
+    "paused": true,
+    "ended": false,
+    "muted": false,
+    "playbackRate": 1,
+    "error": null,
+    "readyState": 4
+  },
+  "running": {
+    "observedAt": "2026-10-12T09:10:55.211Z",
+    "currentTime": 0.017694,
+    "paused": false,
+    "ended": false,
+    "playbackRate": 1
+  },
+  "final": {
+    "observedAt": "2026-10-12T09:13:38.211Z",
+    "currentTime": 68.056,
+    "duration": 68.056,
+    "paused": true,
+    "ended": true,
+    "muted": false,
+    "playbackRate": 1,
+    "error": null,
+    "readyState": 4
+  },
+  "method": "CUA HTML原生Space从0至ended，未seek/变速/静音；观察副本与实际导出WebM SHA匹配"
+}
