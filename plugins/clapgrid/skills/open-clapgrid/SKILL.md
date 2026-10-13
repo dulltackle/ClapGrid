@@ -7,6 +7,12 @@ description: 打开当前本地工作空间固定项目的 ClapGrid 口播片段
 
 插件根目录为本技能目录的 `../..`；先解析绝对路径。全程中文沟通。
 
+## 制作、局部修改与审阅
+
+开始制作、局部修改或审阅时，先读取实际宿主工作空间根目录的 `video.md`，沿用当前项目的整体观感、参考与关键做法。缺少文档时，在 ClapGrid 源码目录运行 `node scripts/production.mjs init --project <宿主工作空间绝对路径>`，从[公共模板](https://github.com/dulltackle/ClapGrid/blob/main/docs/templates/video.md)初始化独立副本；引用检查使用同一入口的 `refs` 命令。制作命令的路径参数只定位当前项目文件，项目仍按既有工作空间归属规则识别。
+
+需要深入设计动作、比较关系或制作卡时按需读取[通用制作指南 #102](https://github.com/dulltackle/ClapGrid/issues/102)；[视觉参考 #103](https://github.com/dulltackle/ClapGrid/issues/103)供项目选用。动态样片确认范围与完整成片审阅要求以当前项目 `video.md` 为准。
+
 ## 日常快速重开
 
 用户明确要求迁入旧项目时，先走下方完整流程的迁入步骤。其他打开请求首先调用实际宿主的 `clapgrid_prepare_panel`，无需先执行 shell 检查或读取 Linux 准备流程。
