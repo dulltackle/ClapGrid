@@ -41,7 +41,7 @@ node scripts/production.mjs check --project '/路径/中文 项目' --manifest p
 }
 ```
 
-清单与制作卡的源文件和配音映射必须一致。`typecheck` 指向项目的 TypeScript 配置，使用仓库锁定的编译器执行 `--noEmit --allowJs --checkJs --listFiles`，检查制作源文件确实进入编译范围，并为 JavaScript 制作源开启类型检查；Remotion 等项目依赖仍由项目自己的锁定依赖安装提供。仓库中的命令模块另由 `tsconfig.production.json` 做严格 `checkJs` 类型检查。
+清单与制作卡的源文件和配音映射必须一致。`typecheck` 指向项目的 TypeScript 配置，使用仓库锁定的编译器执行 `--noEmit --allowJs --checkJs --noCheck false --listFiles`，检查制作源文件确实进入编译范围，并为 JavaScript 制作源开启类型检查；项目配置不能用 `noCheck` 绕过检查。Remotion 等项目依赖仍由项目自己的锁定依赖安装提供。仓库中的命令模块另由 `tsconfig.production.json` 做严格 `checkJs` 类型检查。
 
 ## 媒体检查范围
 
@@ -58,3 +58,13 @@ node scripts/production.mjs check --project '/路径/中文 项目' --manifest p
 指定的报告路径不能覆盖已有项目输入；发生写入失败时尝试将失败结果另存至项目日志目录，原输入保持不变。若备用报告也无法保存，终端明确报告失败并退出非零。
 
 真实小型媒体回归位于 `tests/production.test.ts`，通过现有 `npm test` 运行；制作命令类型检查接入现有 `npm run typecheck`。`npm run check` 的既有 typecheck/test/build 阶段包含这两项，CI 仍安装媒体工具并通过 `npm run verify -- --revision <提交>` 执行完整正式验收，沿用原始日志和固定提交身份，不建立第二套全套执行器。开发定向回归不能替代指定提交的独立检出、`npm ci` 和完整检查。参见 [检查与正式验收](agents/verification.md)。
+
+## 制作与交付导航
+
+开始制作、局部修改或审阅时先读当前工作空间的 `video.md`，缺少时用 `init` 初始化，已有内容始终保留。用 `refs` 核对参考引用；公共长篇方法按项目需要读取。
+
+批量制作前，先展示代表性动态样片并运行 [`sample`](production-sample.md)，把样片、采用方案、内容身份、用户来源和确认范围对应起来。`batchAllowed` 仅表示对应视觉方向门槛，不表示其它画面、发音、领域判断或完整成片终审已通过；项目既有终审仍需完成。受控测试不会获得实际批量许可。
+
+修改输入后，通过 [`impact`](production-impact.md) 列出直接和间接受影响输出及原因；依赖或渲染参数基线缺失时补齐记录或扩大核对范围。重制后运行 `check` 并核对实际片段及相邻边界，再用 [`evidence`](production-evidence.md) 重新判断对应证据。未变内容与范围可显式复用，旧通过不能替代新否决或新内容审阅。
+
+局部重制只更新受影响画面，最终继续使用既有 ClapGrid 全片导出。有效配音输入、实际素材关联和完整导出需要真实宿主观察，离线回归与文件检查分别记录。交付包通过 [`pack` 与 `verify-package`](production-package.md) 从实际清单生成、顺序校验及恢复核对，历史记录原样保留；包完整不代表人工要求已经通过。
