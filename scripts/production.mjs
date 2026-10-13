@@ -27,6 +27,8 @@ export async function main(argv) {
   }
   if (options.output) options.output = resolve(options.project || process.cwd(), options.output);
   if (options.archive) options.archive = resolve(options.project || process.cwd(), options.archive);
+  // 默认交付路径也必须在执行前参与报告覆盖保护。
+  if (command === 'pack' && !options.output) options.output = resolve(options.project || process.cwd(), 'delivery.tar.gz');
   if (!options.report) options.report = resolve(options.project || process.cwd(), 'logs/production', `${startedAt.replaceAll(':', '-')}-${process.pid}.json`);
   try {
     if (parseError) throw new Error(parseError);

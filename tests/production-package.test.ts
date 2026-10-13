@@ -1,0 +1,209 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+
+const cli = resolve('scripts/production.mjs');
+const hash = (data: string | Buffer) => createHash('sha256').update(data).digest('hex');
+function fixture() {
+  const project = mkdtempSync(join(tmpdir(), 'clapgrid-归档 项目-'));
+  const contents: Record<string, string | Buffer> = {
+    'src.ts': 'export const scene = 1;\n', '配音.wav': Buffer.alloc(1027, 21),
+    '装配.mp4': Buffer.alloc(2181, 32), '审阅.mp4': Buffer.alloc(3311, 43),
+    'card.json': JSON.stringify({ segments: [{ id: 'A', source: 'src.ts', audio: '配音.wav' }] }),
+    'tsconfig.json': '{}', '历史待审.json': '{"status":"pending"}',
+    '用户确认.json': '{"source":"controlled-test","status":"approved"}',
+  };
+  for (const [name, bytes] of Object.entries(contents)) writeFileSync(join(project, name), bytes);
+  const manifest = {
+    schemaVersion: 1, project: { width: 64, height: 64, fps: 10 }, typecheck: 'tsconfig.json',
+    segments: [{ id: 'A', card: 'card.json', source: 'src.ts', audio: '配音.wav', frames: 6, assembly: '装配.mp4', review: '审阅.mp4' }],
+    files: Object.entries(contents).map(([path, data]) => ({ path, sha256: hash(data), category: path === '历史待审.json' ? 'history' : path === '用户确认.json' ? 'user' : path === 'tsconfig.json' ? 'technical' : 'production' })),
+  };
+  writeFileSync(join(project, 'production.json'), JSON.stringify(manifest, null, 2));
+  return { project, contents, manifest, save: () => writeFileSync(join(project, 'production.json'), JSON.stringify(manifest, null, 2)) };
+}
+function run(project: string, command: string, args: string[] = []) {
+  const report = join(project, `report-${command}.json`);
+  const result = spawnSync(process.execPath, [cli, command, '--project', project, '--report', report, ...args], { encoding: 'utf8' });
+  assert.equal(result.error, undefined);
+  assert.ok(existsSync(report), result.stderr + result.stdout);
+  return { ...result, report: JSON.parse(readFileSync(report, 'utf8')) };
+}
+function inspect(archive: string) {
+  const result = spawnSync('python3', ['-c', 'import tarfile,sys,json,base64\nwith tarfile.open(sys.argv[1]) as t: print(json.dumps({m.name:base64.b64encode(t.extractfile(m).read()).decode() for m in t}))', archive], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  return JSON.parse(result.stdout) as Record<string, string>;
+}
+function rewrite(archive: string, mode: string) {
+  const code = `import tarfile,sys,io,os
+p,mode=sys.argv[1:]
+with tarfile.open(p) as t: members=[(m,t.extractfile(m).read()) for m in t]
+with tarfile.open(p+'.modified','w:gz') as t:
+ for m,data in members:
+  if mode=='missing' and m.name=='src.ts':continue
+  if mode=='digest' and m.name=='src.ts':data=b'wrong';m.size=len(data)
+  if mode=='manifest' and m.name=='production.json':data=data+b' ';m.size=len(data)
+  t.addfile(m,io.BytesIO(data))
+ if mode=='extra':
+  m=tarfile.TarInfo('unexpected.txt');m.size=1;t.addfile(m,io.BytesIO(b'x'))
+ if mode=='duplicate':
+  m,data=next((m,d) for m,d in members if m.name=='src.ts');t.addfile(m,io.BytesIO(data))
+os.replace(p+'.modified',p)
+`;
+  const result = spawnSync('python3', ['-c', code, archive, mode], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+}
+
+test('真实入口从清单生成完整归档，清单自身及不同大小成员字节准确，历史与人工记录原样保留', t => {
+  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  const result = run(f.project, 'pack');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.equal(result.report.status, 'passed');
+  const archive = join(f.project, 'delivery.tar.gz');
+  const members = inspect(archive);
+  assert.deepEqual(Object.keys(members).sort(), [...Object.keys(f.contents), 'production.json', '.clapgrid-package.json'].sort());
+  for (const [name, bytes] of Object.entries(f.contents)) {
+    assert.equal(members[name], Buffer.from(bytes).toString('base64'));
+    assert.deepEqual(readFileSync(join(f.project, name)), Buffer.from(bytes));
+  }
+  assert.equal(members['production.json'], readFileSync(join(f.project, 'production.json')).toString('base64'));
+  const index = JSON.parse(Buffer.from(members['.clapgrid-package.json']!, 'base64').toString());
+  assert.equal(index.manifest.sha256, hash(readFileSync(join(f.project, 'production.json'))));
+  assert.equal(index.files.length, Object.keys(f.contents).length);
+  assert.ok(index.files.some((x: { category: string }) => x.category === 'history'));
+  const verified = run(f.project, 'verify-package', ['--archive', archive]);
+  assert.equal(verified.status, 0, verified.stdout);
+  assert.equal(verified.report.details.order.length, Object.keys(members).length);
+});
+
+test('输出路径不得覆盖制作成员或清单，失败保留原输入', t => {
+  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  for (const name of ['src.ts', 'production.json']) {
+    const before = readFileSync(join(f.project, name));
+    const result = run(f.project, 'pack', ['--output', name]);
+    assert.equal(result.status, 1, result.stdout);
+    assert.equal(result.report.status, 'failed');
+    assert.deepEqual(readFileSync(join(f.project, name)), before);
+  }
+});
+
+test('重复成员和清单自引用被拒绝，不覆盖已有有效交付包', t => {
+  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  assert.equal(run(f.project, 'pack').status, 0);
+  const previous = readFileSync(join(f.project, 'delivery.tar.gz'));
+  f.manifest.files.push({ ...f.manifest.files[0]! }); f.save();
+  let result = run(f.project, 'pack');
+  assert.equal(result.status, 1, result.stdout);
+  assert.match(JSON.stringify(result.report), /重复/);
+  assert.deepEqual(readFileSync(join(f.project, 'delivery.tar.gz')), previous);
+  f.manifest.files.pop();
+  f.manifest.files.push({ path: 'production.json', sha256: hash(readFileSync(join(f.project, 'production.json'))), category: 'production' }); f.save();
+  result = run(f.project, 'pack');
+  assert.equal(result.status, 1);
+  assert.match(JSON.stringify(result.report), /清单自身|自引用/);
+  assert.deepEqual(readFileSync(join(f.project, 'delivery.tar.gz')), previous);
+});
+
+for (const mode of ['missing', 'extra', 'duplicate', 'digest', 'manifest', 'gzip-crc', 'truncated']) {
+  test(`真实归档拒绝 ${mode} 并保留完整失败报告与输入`, t => {
+    const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+    assert.equal(run(f.project, 'pack').status, 0);
+    const archive = join(f.project, 'delivery.tar.gz');
+    if (mode === 'gzip-crc') {
+      const data = readFileSync(archive); data[data.length - 8]! ^= 255; writeFileSync(archive, data);
+    } else if (mode === 'truncated') {
+      const data = readFileSync(archive); writeFileSync(archive, data.subarray(0, data.length - 9));
+    } else rewrite(archive, mode);
+    const result = run(f.project, 'verify-package', ['--archive', archive]);
+    assert.equal(result.status, 1, result.stdout);
+    assert.equal(result.report.status, 'failed');
+    assert.ok(result.report.checks.some((x: { status: string }) => x.status === 'failed'));
+    assert.ok(result.stdout.length < 1300);
+    for (const [path, bytes] of Object.entries(f.contents)) assert.deepEqual(readFileSync(join(f.project, path)), Buffer.from(bytes));
+  });
+}
+
+test('输入缺失或内容变化时不发布半成品，原有效包字节保持', t => {
+  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  assert.equal(run(f.project, 'pack').status, 0);
+  const previous = readFileSync(join(f.project, 'delivery.tar.gz'));
+  writeFileSync(join(f.project, 'src.ts'), 'changed');
+  const changed = run(f.project, 'pack');
+  assert.equal(changed.status, 1); assert.match(JSON.stringify(changed.report), /src.ts/);
+  assert.deepEqual(readFileSync(join(f.project, 'delivery.tar.gz')), previous);
+  rmSync(join(f.project, 'src.ts'));
+  const missing = run(f.project, 'pack');
+  assert.equal(missing.status, 1); assert.match(JSON.stringify(missing.report), /src.ts/);
+  assert.deepEqual(readFileSync(join(f.project, 'delivery.tar.gz')), previous);
+});
+
+for (const mode of ['escape', 'absolute', 'empty', 'omitted-source', 'invalid-category']) {
+  test(`清单 ${mode} 不能发布为完整制作交付包`, t => {
+    const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+    const outside = mkdtempSync(join(tmpdir(), 'clapgrid-outside-'));
+    t.after(() => rmSync(outside, { recursive: true, force: true }));
+    writeFileSync(join(outside, 'outside.txt'), 'outside');
+    if (mode === 'escape') f.manifest.files.push({ path: '../' + outside.split('/').at(-1) + '/outside.txt', sha256: hash('outside'), category: 'production' });
+    if (mode === 'absolute') f.manifest.files.push({ path: join(outside, 'outside.txt'), sha256: hash('outside'), category: 'production' });
+    if (mode === 'empty') f.manifest.files.length = 0;
+    if (mode === 'omitted-source') f.manifest.files = f.manifest.files.filter(x => x.path !== 'src.ts');
+    if (mode === 'invalid-category') f.manifest.files[0]!.category = 'undecided';
+    f.save();
+    const result = run(f.project, 'pack');
+    assert.equal(result.status, 1, result.stdout);
+    assert.equal(result.report.status, 'failed');
+    assert.equal(existsSync(join(f.project, 'delivery.tar.gz')), false);
+  });
+}
+
+test('发布失败保留可定位候选与已有有效包，独立恢复后全部成员可再核对', t => {
+  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  assert.equal(run(f.project, 'pack').status, 0);
+  const archive = join(f.project, 'delivery.tar.gz');
+  const previous = readFileSync(archive);
+  mkdirSync(join(f.project, '拒绝发布'));
+  const failed = run(f.project, 'pack', ['--output', '拒绝发布']);
+  assert.equal(failed.status, 1);
+  assert.match(JSON.stringify(failed.report), /候选包/);
+  assert.ok(readdirSync(f.project).some(x => x.startsWith('.拒绝发布.candidate-')));
+  assert.deepEqual(readFileSync(archive), previous);
+  const restored = mkdtempSync(join(tmpdir(), 'clapgrid-restore-'));
+  t.after(() => rmSync(restored, { recursive: true, force: true }));
+  const result = spawnSync('python3', ['-c', "import tarfile,sys\nwith tarfile.open(sys.argv[1]) as t:t.extractall(sys.argv[2],filter='data')", archive, restored], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  const verified = run(restored, 'verify-package', ['--archive', archive]);
+  assert.equal(verified.status, 0, verified.stdout);
+  for (const [path, data] of Object.entries(f.contents)) assert.deepEqual(readFileSync(join(restored, path)), Buffer.from(data));
+});
+
+test('清单不能使用工具索引保留名，原清单保持且不发布错误包', t => {
+  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  const original = readFileSync(join(f.project, 'production.json'));
+  writeFileSync(join(f.project, '.clapgrid-package.json'), original);
+  const result = run(f.project, 'pack', ['--manifest', '.clapgrid-package.json']);
+  assert.equal(result.status, 1, result.stdout);
+  assert.match(JSON.stringify(result.report), /保留/);
+  assert.deepEqual(readFileSync(join(f.project, '.clapgrid-package.json')), original);
+  assert.equal(existsSync(join(f.project, 'delivery.tar.gz')), false);
+});
+
+test('报告指向默认交付路径时提前拒绝，失败保留旧包并另存报告', t => {
+  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  assert.equal(run(f.project, 'pack').status, 0);
+  const archive = join(f.project, 'delivery.tar.gz');
+  const previous = readFileSync(archive);
+  // 让本次候选与旧包不同，才能发现“退出失败但先发布”的问题。
+  writeFileSync(join(f.project, 'src.ts'), 'export const scene = 2;');
+  f.manifest.files.find(x => x.path === 'src.ts')!.sha256 = hash('export const scene = 2;'); f.save();
+  const result = spawnSync(process.execPath, [cli, 'pack', '--project', f.project, '--report', archive], { encoding: 'utf8' });
+  assert.equal(result.status, 1, result.stdout);
+  assert.deepEqual(readFileSync(archive), previous);
+  assert.match(result.stdout, /完整报告/);
+  const logs = readdirSync(join(f.project, 'logs/production'));
+  const report = JSON.parse(readFileSync(join(f.project, 'logs/production', logs[0]!), 'utf8'));
+  assert.equal(report.status, 'failed');
+});
