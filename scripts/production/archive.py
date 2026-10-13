@@ -126,12 +126,22 @@ def entries(root, manifest_path):
     return members, index_bytes, manifest_name
 
 
+class StrictTarInfo(tarfile.TarInfo):
+    @classmethod
+    def fromtarfile(cls, archive):
+        try:
+            return super().fromtarfile(archive)
+        except (tarfile.InvalidHeaderError, tarfile.TruncatedHeaderError, tarfile.EmptyHeaderError) as error:
+            # TarFile.next 在非首块可能吞掉这些错误，不能容错为通过。
+            raise ValueError('归档文件头损坏或结束块缺失：' + str(error)) from error
+
+
 def verify(archive, members):
     seen = set()
     order = []
     # tarfile 的顺序模式避免按无序名字反复解压；外层 gzip 读到 EOF 核对 CRC。
     with archive.open('rb') as compressed, gzip.GzipFile(fileobj=compressed, mode='rb') as decoded:
-        with tarfile.open(fileobj=decoded, mode='r|', ignore_zeros=True) as package:
+        with tarfile.open(fileobj=decoded, mode='r|', tarinfo=StrictTarInfo) as package:
             for member in package:
                 name = member.name
                 if name in seen:
@@ -148,6 +158,14 @@ def verify(archive, members):
                     raise ValueError(f'归档成员内容摘要或大小不符：{name}')
                 seen.add(name)
                 order.append(name)
+            padding = 0
+            # 从 tar 的流读取，连同预读缓冲一起检查，不能直接跳到 gzip。
+            while tail := package.fileobj.read(CHUNK):
+                padding += len(tail)
+                if any(tail):
+                    raise ValueError('归档结束块后存在非零数据或额外成员')
+            if padding < tarfile.BLOCKSIZE:
+                raise ValueError('归档缺少第二个结束零块')
         while decoded.read(CHUNK):
             pass
     missing = set(members) - seen

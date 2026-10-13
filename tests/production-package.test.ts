@@ -109,12 +109,27 @@ test('重复成员和清单自引用被拒绝，不覆盖已有有效交付包',
   assert.deepEqual(readFileSync(join(f.project, 'delivery.tar.gz')), previous);
 });
 
-for (const mode of ['missing', 'extra', 'duplicate', 'digest', 'manifest', 'gzip-crc', 'truncated']) {
+for (const mode of ['missing', 'extra', 'duplicate', 'digest', 'manifest', 'gzip-crc', 'truncated', 'invalid-header', 'nonzero-tail', 'bad-header-at-end', 'missing-end-blocks', 'single-end-block']) {
   test(`真实归档拒绝 ${mode} 并保留完整失败报告与输入`, t => {
     const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
     assert.equal(run(f.project, 'pack').status, 0);
     const archive = join(f.project, 'delivery.tar.gz');
-    if (mode === 'gzip-crc') {
+    if (['invalid-header', 'nonzero-tail', 'bad-header-at-end', 'missing-end-blocks', 'single-end-block'].includes(mode)) {
+      const code = `import gzip,sys,tarfile
+from pathlib import Path
+p=Path(sys.argv[1]);mode=sys.argv[2];data=gzip.decompress(p.read_bytes());garbage=b'x'*512
+with tarfile.open(p) as t:
+ last=t.getmembers()[-1];end=last.offset_data+((last.size+511)//512)*512
+if mode=='invalid-header':data=garbage+data
+elif mode=='nonzero-tail':data=data+garbage
+elif mode=='bad-header-at-end':data=data[:end]+garbage+data[end:]
+elif mode=='missing-end-blocks':data=data[:end]
+else:data=data[:end]+bytes(512)
+p.write_bytes(gzip.compress(data))
+`;
+      const changed = spawnSync('python3', ['-c', code, archive, mode], { encoding: 'utf8' });
+      assert.equal(changed.status, 0, changed.stderr);
+    } else if (mode === 'gzip-crc') {
       const data = readFileSync(archive); data[data.length - 8]! ^= 255; writeFileSync(archive, data);
     } else if (mode === 'truncated') {
       const data = readFileSync(archive); writeFileSync(archive, data.subarray(0, data.length - 9));
