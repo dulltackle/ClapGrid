@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "tsx src/service/main.ts --dev",
     "build": "tsc -p tsconfig.build.json && vite build",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.production.json",
     "test": "tsx --test --test-concurrency=1 tests/*.test.ts",
     "start": "node dist/service/main.js",
     "runtime": "node dist/runtime.js",
@@ -21,7 +21,8 @@
     "review:check": "node scripts/check-review-links.mjs",
     "plugin:update": "node scripts/update-plugin.mjs",
     "plugin:verify": "node scripts/diagnose-identity.mjs --require-current",
-    "diagnose:identity": "node scripts/diagnose-identity.mjs"
+    "diagnose:identity": "node scripts/diagnose-identity.mjs",
+    "production": "node scripts/production.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.1",

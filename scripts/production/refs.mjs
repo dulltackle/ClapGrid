@@ -1,27 +1,32 @@
 import { readFile, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
+/** @param {string} text */
 function inlineReferences(text) {
   const references = [];
+  /** @type {string|undefined} */
   let fence;
   const lines = text.split('\n').map(line => {
     const marker = line.match(/^\s{0,3}(`{3,}|~{3,})/);
-    if (marker) {
-      if (!fence) fence = marker[1];
-      else if (marker[1][0] === fence[0] && marker[1].length >= fence.length && /^\s*$/.test(line.slice(marker[0].length))) fence = undefined;
+    const delimiter = marker?.[1];
+    if (marker && delimiter) {
+      if (!fence) fence = delimiter;
+      else if (delimiter[0] === fence[0] && delimiter.length >= fence.length && /^\s*$/.test(line.slice(marker[0].length))) fence = undefined;
       return '';
     }
     return fence ? '' : line.replace(/(`+).*?\1/g, match => ' '.repeat(match.length));
   });
   const definitions = new Map();
+  /** @param {string} value */
   const label = value => value.trim().replace(/\s+/g, ' ').toLowerCase();
   for (const line of lines) {
     const definition = line.match(/^\s{0,3}\[([^\]]+)\]:\s*(?:<([^>]+)>|(\S+))/);
-    if (definition && !definitions.has(label(definition[1]))) definitions.set(label(definition[1]), definition[2] ?? definition[3]);
+    if (definition && !definitions.has(label(definition[1] ?? ''))) definitions.set(label(definition[1] ?? ''), definition[2] ?? definition[3]);
   }
   for (const [index, line] of lines.entries()) {
     if (/^\s{0,3}\[[^\]]+\]:/.test(line)) continue;
     // 标签可包含嵌套方括号；逐层寻找结尾，避免只扫描最内层而遗漏目标。
+    /** @param {number} start */
     const closingBracket = start => {
       let depth = 1;
       for (let end = start + 1; end < line.length; end++) {
@@ -62,7 +67,7 @@ function inlineReferences(text) {
       } else {
         let depth = 0;
         while (cursor < line.length) {
-          const char = line[cursor];
+          const char = line[cursor] ?? '';
           if (char === '\\' && cursor + 1 < line.length) { reference += line[cursor + 1]; cursor += 2; continue; }
           if (char === '(') depth++;
           if (char === ')') { if (!depth) break; depth--; }
@@ -79,12 +84,15 @@ function inlineReferences(text) {
   return references;
 }
 
+/** @param {{project:string}} options @returns {Promise<import('./common.mjs').CommandResult>} */
 export default async function refs({ project }) {
   const document = join(project, 'video.md');
   const text = await readFile(document, 'utf8');
+  /** @type {import('./common.mjs').Check[]} */
   const checks = [];
   for (const [index, item] of inlineReferences(text).entries()) {
-    const check = { id: `reference-${index + 1}`, status: 'passed', path: document, line: item.line, reference: item.reference };
+    /** @type {import('./common.mjs').Check & {resolved?:string,kind?:string}} */
+    const check = { id: `reference-${index + 1}`, status: 'passed', path: document, line: item.line, reference: item.reference, message: '' };
     try {
       if (item.error) throw new Error(item.error);
       if (!item.reference) throw new Error('引用地址为空。');
@@ -97,19 +105,19 @@ export default async function refs({ project }) {
         check.message = 'HTTP 地址合法；未请求远端，不证明文件存在或可访问。';
       } else {
         if (/^[a-z][a-z0-9+.-]*:/i.test(item.reference)) throw new Error('引用协议不支持；使用本地路径或 HTTP(S) 地址。');
-        const path = decodeURIComponent(item.reference.split(/[?#]/)[0]);
+        const path = decodeURIComponent(item.reference.split(/[?#]/)[0] ?? '');
         if (!path) throw new Error('本地引用需要文件路径。');
         check.resolved = resolve(project, path);
         let information;
         try { information = await stat(check.resolved); } catch (error) {
-          if (error.code === 'ENOENT') throw new Error(`本地引用不存在：${check.resolved}`);
+          if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') throw new Error(`本地引用不存在：${check.resolved}`);
           throw error;
         }
         if (!information.isFile()) throw new Error(`本地引用不是文件：${check.resolved}`);
         check.kind = 'local-file';
         check.message = '本地引用已解析为文件。';
       }
-    } catch (error) { check.status = 'failed'; check.message = error.message; }
+    } catch (error) { check.status = 'failed'; check.message = error instanceof Error ? error.message : String(error); }
     checks.push(check);
   }
   if (!checks.length) checks.push({ id: 'references', status: 'passed', path: document, message: '文档未包含需检查的引用。' });

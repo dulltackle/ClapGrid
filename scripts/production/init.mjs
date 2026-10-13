@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const template = fileURLToPath(new URL('../../docs/templates/video.md', import.meta.url));
 
+/** @param {{project:string}} options @returns {Promise<import('./common.mjs').CommandResult>} */
 export default async function init({ project }) {
   const document = join(project, 'video.md');
   if (!(await stat(project)).isDirectory()) throw new Error(`项目根目录不是目录：${project}`);
@@ -12,7 +13,7 @@ export default async function init({ project }) {
     await writeFile(document, await readFile(template, 'utf8'), { flag: 'wx' });
     created = true;
   } catch (error) {
-    if (error.code !== 'EEXIST') throw error;
+    if (!error || typeof error !== 'object' || !('code' in error) || error.code !== 'EEXIST') throw error;
     if (!(await stat(document)).isFile()) throw new Error(`已有制作约定不是文件：${document}`);
   }
   return {
