@@ -13,6 +13,8 @@ description: 打开当前本地工作空间固定项目的 ClapGrid 口播片段
 
 需要深入设计动作、比较关系或制作卡时按需读取[通用制作指南 #102](https://github.com/dulltackle/ClapGrid/issues/102)；[视觉参考 #103](https://github.com/dulltackle/ClapGrid/issues/103)供项目选用。动态样片确认范围与完整成片审阅要求以当前项目 `video.md` 为准。
 
+批量制作前，先展示能代表本项目素材、主要动作及转场的动态样片，取得真实用户视觉方向确认，并记录样片、采用方案的内容身份、原用户来源和范围。运行统一入口的 `sample` 命令，只有 `batchAllowed: true` 才按该方案与范围批量制作；待审、否决、错误版本与受控测试保持未许可。样片与方案的内容、范围未变时显式复用确认，实质变化后重新展示受影响范围。样片确认不替代其他画面、领域判断、发音听审或完整成片终审。记录格式按需读取[样片接入说明](https://github.com/dulltackle/ClapGrid/blob/main/docs/production-sample.md)。
+
 ## 日常快速重开
 
 用户明确要求迁入旧项目时，先走下方完整流程的迁入步骤。其他打开请求首先调用实际宿主的 `clapgrid_prepare_panel`，无需先执行 shell 检查或读取 Linux 准备流程。

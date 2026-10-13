@@ -1,0 +1,128 @@
+import assert from 'node:assert/strict';
+import { test, type TestContext } from 'node:test';
+import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+
+const entry = fileURLToPath(new URL('../scripts/production.mjs', import.meta.url));
+type RecordEntry = { id: string; requirement: string; criterion: string; kind: string; reviewVersion: string; artifact: { path: string; sha256: string }; scope: string[]; status: string; source: string;
+  provenance: { actor: string; record: string; observedAt: string }; reuseOf?: string };
+function fixture(t: TestContext) {
+  const project = mkdtempSync(join(tmpdir(), '样片 中文 项目 '));
+  t.after(() => rmSync(project, { recursive: true, force: true }));
+  const media = spawnSync('ffmpeg', ['-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i', 'color=c=ivory:s=64x48:r=10:d=0.3', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', join(project, '动态样片.mp4')], { encoding: 'utf8' });
+  assert.equal(media.status, 0, media.stderr);
+  writeFileSync(join(project, '视觉方案.json'), '{"整体观感":"简洁图形","关键做法":"对象移动保持标签与身份"}\n');
+  const asset = (path: string) => ({ path, sha256: createHash('sha256').update(readFileSync(join(project, path))).digest('hex') });
+  const scope = ['visual:materials', 'visual:motion', 'visual:transition'];
+  const sample = { id: 'sample-1', mode: 'controlled-test', reviewVersion: 'direction-1', video: asset('动态样片.mp4'), plan: asset('视觉方案.json'), scope,
+    representative: { materials: ['A'], motions: ['A-move'], transitions: ['A-to-B'] }, confirmation: { requirement: 'direction', videoCriterion: 'video', planCriterion: 'plan' } };
+  const evidence = { schemaVersion: 1, reviewVersion: 'direction-1', requirements: [{ id: 'direction', text: '样片所示视觉方向确认', classifiedBy: { source: 'human', identity: '受控测试作者' },
+    required: [{ id: 'video', kind: 'user', artifact: sample.video.path, scope }, { id: 'plan', kind: 'user', artifact: sample.plan.path, scope }] }], records: [] as RecordEntry[] };
+  const save = () => {
+    writeFileSync(join(project, 'production.json'), JSON.stringify({ schemaVersion: 1, project: { width: 64, height: 48, fps: 10 }, typecheck: 'tsconfig.json',
+      segments: [{ id: 'A', card: 'card.json', source: 'source.ts', audio: 'audio.wav', frames: 3, assembly: 'assembly.mp4', review: 'review.mp4' }], evidence: '审阅.json', sample }));
+    writeFileSync(join(project, '审阅.json'), JSON.stringify(evidence));
+  };
+  const confirm = (source = 'controlled-test', status = 'passed') => {
+    evidence.records = [['video', sample.video], ['plan', sample.plan]].map(([criterion, artifact]) => ({ id: `${criterion}-1`, requirement: 'direction', criterion: criterion as string, kind: 'user', reviewVersion: 'direction-1', artifact: artifact as { path: string; sha256: string }, scope: [...scope], status, source,
+      provenance: { actor: '受控模拟声明者（非实际用户确认）', record: '受控测试模拟发言，不能作为真实确认', observedAt: '2026-10-13T00:00:00Z' } }));
+  };
+  const run = () => {
+    const result = spawnSync(process.execPath, [entry, 'sample', '--project', project, '--report', join(project, '结果.json')], { encoding: 'utf8' });
+    return { ...result, report: JSON.parse(readFileSync(join(project, '结果.json'), 'utf8')) };
+  };
+  save();
+  return { project, sample, evidence, confirm, save, run, asset };
+}
+
+test('真实动态样片与视觉方案未取得用户确认时禁止批量并保留终审边界', t => {
+  const f = fixture(t); const result = f.run();
+  assert.equal(result.status, 1);
+  assert.equal(result.report.status, 'pending', result.stdout);
+  assert.equal(result.report.details.batchAllowed, false);
+  assert.deepEqual(result.report.details.excluded, ['其他画面', '领域准确性', '发音听审', '完整成片终审']);
+});
+
+test('受控确认完整时只演练对应机制，即使模拟真实来源也不授予实际批量许可', t => {
+  const f = fixture(t);
+  for (const source of ['controlled-test', 'user-confirmation']) {
+    f.confirm(source); f.save();
+    const result = f.run();
+    assert.equal(result.status, 1, result.stdout);
+    assert.equal(result.report.status, 'pending');
+    assert.equal(result.report.details.mechanicalEvidenceComplete, true);
+    assert.equal(result.report.details.batchAllowed, false);
+    assert.equal(result.report.details.confirmations.length, 2);
+  }
+  f.sample.mode = 'actual-project'; f.confirm(); f.save();
+  assert.equal(f.run().report.details.batchAllowed, false);
+});
+
+test('方案和范围不变可复用样片确认，普通文档备注不使产物确认失效', t => {
+  const f = fixture(t); f.confirm();
+  const originals = f.evidence.records;
+  f.sample.reviewVersion = f.evidence.reviewVersion = 'direction-2';
+  f.evidence.records = [...originals, ...originals.map(record => ({ ...record, id: `${record.id}-reuse`, reviewVersion: 'direction-2', reuseOf: record.id }))];
+  f.save();
+  writeFileSync(join(f.project, 'video.md'), '普通制作备注更新，不改视觉方案。');
+  const result = f.run();
+  assert.equal(result.report.details.mechanicalEvidenceComplete, true, result.stdout);
+  assert.equal(result.report.details.batchAllowed, false);
+  assert.deepEqual(result.report.details.confirmations.map((item: { reusedFrom: string[] }) => item.reusedFrom), [['video-1'], ['plan-1']]);
+});
+
+for (const scenario of ['否决', '错误版本', '方案变化', '范围变化', '其他确认来源', '技术证据替代用户', '范围越界', '损坏视频']) test(`真实样片入口在${scenario}时保持未允许批量`, t => {
+  const f = fixture(t); f.confirm();
+  if (scenario === '否决') f.evidence.records[0]!.status = 'denied';
+  if (scenario === '错误版本') f.evidence.reviewVersion = 'other-review';
+  if (scenario === '方案变化') { writeFileSync(join(f.project, f.sample.plan.path), '{"整体观感":"新方案"}'); f.sample.plan = f.asset(f.sample.plan.path); }
+  if (scenario === '范围变化') f.sample.scope = [...f.sample.scope, 'visual:new-boundary'];
+  if (scenario === '其他确认来源') f.evidence.records[1]!.provenance.record = '另一份受控模拟用户发言';
+  if (scenario === '技术证据替代用户') { for (const criterion of f.evidence.requirements[0]!.required) criterion.kind = 'ran'; for (const record of f.evidence.records) record.kind = 'ran'; }
+  if (scenario === '范围越界') f.sample.scope = ['domain:accuracy'];
+  if (scenario === '损坏视频') { writeFileSync(join(f.project, f.sample.video.path), '损坏媒体'); f.sample.video = f.asset(f.sample.video.path); }
+  f.save();
+  const before = readFileSync(join(f.project, '审阅.json'));
+  const result = f.run();
+  assert.equal(result.status, 1, result.stdout);
+  assert.equal(result.report.status, 'failed');
+  assert.equal(result.report.details.batchAllowed, false);
+  assert.deepEqual(readFileSync(join(f.project, '审阅.json')), before);
+});
+
+test('其它终审要求待审时不扩张样片确认，也不撤销其有效视觉范围', t => {
+  const f = fixture(t); f.confirm();
+  f.evidence.requirements.push({ id: 'final-film', text: '完整成片终审', classifiedBy: { source: 'human', identity: '受控测试作者' }, required: [{ id: 'final', kind: 'user', artifact: '未制作全片.mp4', scope: ['final-film'] }] });
+  f.save();
+  const result = f.run();
+  assert.equal(result.report.details.mechanicalEvidenceComplete, true, result.stdout);
+  assert.equal(result.report.details.batchAllowed, false);
+  assert.deepEqual(result.report.details.excluded, ['其他画面', '领域准确性', '发音听审', '完整成片终审']);
+  assert.ok(result.report.checks.every((check: { id: string }) => !check.id.startsWith('final-film:')));
+});
+
+test('局部损坏的视频即使工具宽容退出零也不能冒记完整解码通过', t => {
+  const f = fixture(t);
+  const path = join(f.project, f.sample.video.path);
+  const encode = spawnSync('ffmpeg', ['-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i', 'testsrc2=s=64x48:r=10:d=1', '-c:v', 'libx264', '-g', '10', '-bf', '0', '-pix_fmt', 'yuv420p', path], { encoding: 'utf8' });
+  assert.equal(encode.status, 0, encode.stderr);
+  const packets = spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_packets', '-show_entries', 'packet=pos,size', '-of', 'json', path], { encoding: 'utf8' });
+  assert.equal(packets.status, 0, packets.stderr);
+  const packet = JSON.parse(packets.stdout).packets[4];
+  const bytes = readFileSync(path);
+  bytes.fill(0, Number(packet.pos), Number(packet.pos) + Number(packet.size));
+  writeFileSync(path, bytes);
+  f.sample.video = f.asset(f.sample.video.path); f.confirm(); f.save();
+  const before = readFileSync(join(f.project, '审阅.json'));
+  const result = f.run();
+  assert.equal(result.status, 1, result.stdout);
+  assert.equal(result.report.status, 'failed');
+  assert.equal(result.report.details.batchAllowed, false);
+  assert.notEqual(result.report.details.mechanicalEvidenceComplete, true);
+  assert.ok(!result.report.checks.some((check: { id: string; status: string }) => check.id === 'sample-video' && check.status === 'passed'));
+  assert.deepEqual(readFileSync(join(f.project, '审阅.json')), before);
+});
