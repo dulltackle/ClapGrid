@@ -104,10 +104,15 @@ export function SegmentDetails({ controller, segment, segments, busy, disabled, 
     });
     return () => cancelAnimationFrame(frame);
   }, [controller.focusRequest, busy, disabled]);
+  // 点击进入忙态前补记实际焦点，避免控件禁用失焦后丢失后备身份。
+  const rememberClickedFocus = () => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && controller.panel.current?.contains(active)) focusedControl.current = active;
+  };
   const index = segments.findIndex(item => item.id === controller.id);
   const go = (offset: number) => { const next = segments[index + offset]; if (next) controller.navigate({ id: next.id }); };
   return <>
-    <aside ref={controller.panel} tabIndex={-1} onFocusCapture={event => { focusedControl.current = event.target as HTMLElement; }} onBlurCapture={event => { if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) focusedControl.current = null; }} aria-label="口播片段详情" onKeyDown={event => {
+    <aside ref={controller.panel} tabIndex={-1} onFocusCapture={event => { focusedControl.current = event.target as HTMLElement; }} onClickCapture={rememberClickedFocus} onBlurCapture={event => { if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) focusedControl.current = null; }} aria-label="口播片段详情" onKeyDown={event => {
       if (event.key === 'Escape' && !event.nativeEvent.isComposing && !controller.pending) { event.preventDefault(); controller.navigate(null); }
     }} className={`absolute right-0 top-12 bottom-0 z-20 flex w-[450px] max-w-full flex-col gap-5 overflow-y-auto border-l border-solid border-input bg-background p-5 shadow-xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:duration-0 ${visible ? 'translate-x-0' : 'translate-x-full'}`}>
       <div className="flex shrink-0 items-center justify-between gap-2"><h2 className="m-0 text-lg font-semibold">{segment ? `片段 ${segment.order}` : '片段已删除'}</h2><div className="flex gap-1">

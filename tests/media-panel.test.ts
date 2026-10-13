@@ -40,6 +40,7 @@ const script = String.raw`
       await window.browserInput({ screenshot: 'material-detail' });
       await click(button('更改', dialog()));
       check(dialog()?.getAttribute('aria-label') === '关联视频', '从详情进入既有编辑');
+      check(dialog().contains(document.activeElement), '更改入口禁用后焦点进入关联弹窗');
       await key('Escape');
       check(dialog()?.getAttribute('aria-label') === '口播片段详情' && dialog().contains(document.activeElement), '取消编辑回到详情');
       await key('Escape');
