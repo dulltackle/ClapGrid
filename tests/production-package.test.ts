@@ -270,3 +270,42 @@ for (const field of ['assets', 'lastFrame', 'transitions']) {
     assert.match(result.stdout, /拒绝覆盖/);
   });
 }
+
+for (const omitted of ['当前技术产物.json', '当前证明原件.json']) {
+  test(`当前审阅引用的 ${omitted} 必须入包，独立恢复后证据仍可核对`, t => {
+    const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+    const artifact = '当前技术产物.json'; const proof = '当前证明原件.json';
+    const data = '隔离归档及证据机械核对产物';
+    const evidence = { schemaVersion: 1, reviewVersion: 'current-review',
+      requirements: [{ id: 'R', classifiedBy: { source: 'human', identity: '隔离受控回归配置' }, required: [{ id: 'mechanical', kind: 'ran', artifact, scope: ['A'] }] }],
+      records: [{ id: 'E', requirement: 'R', criterion: 'mechanical', kind: 'ran', reviewVersion: 'current-review', artifact: { path: artifact, sha256: hash(data) }, scope: ['A'], status: 'passed', source: 'controlled-test', provenance: { actor: '受控测试', record: proof, observedAt: '2026-10-13T00:00:00Z' } }],
+    };
+    for (const [path, bytes] of [[artifact, data], [proof, '受控测试原件，不是真实用户/宿主确认'], ['证据.json', JSON.stringify(evidence)]]) {
+      writeFileSync(join(f.project, path!), bytes!);
+      f.manifest.files.push({ path: path!, sha256: hash(bytes!), category: 'technical' });
+    }
+    Object.assign(f.manifest, { evidence: '证据.json' }); f.save();
+    assert.equal(run(f.project, 'evidence').status, 0);
+    assert.equal(run(f.project, 'pack').status, 0);
+    const archive = join(f.project, 'delivery.tar.gz'); const previous = readFileSync(archive);
+    f.manifest.files = f.manifest.files.filter(x => x.path !== omitted); f.save();
+    const failed = run(f.project, 'pack');
+    assert.equal(failed.status, 1, failed.stdout);
+    assert.match(JSON.stringify(failed.report), /遗漏/);
+    assert.deepEqual(readFileSync(archive), previous);
+    const restored = mkdtempSync(join(tmpdir(), 'clapgrid-proof-restore-')); t.after(() => rmSync(restored, { recursive: true, force: true }));
+    const unpack = spawnSync('python3', ['-c', "import tarfile,sys\nwith tarfile.open(sys.argv[1]) as t:t.extractall(sys.argv[2],filter='data')", archive, restored], { encoding: 'utf8' });
+    assert.equal(unpack.status, 0, unpack.stderr);
+    assert.equal(run(restored, 'evidence').status, 0);
+  });
+}
+
+test('打包保留待审及历史记录，不强求尚未生成或历史失效的原件', t => {
+  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  const evidence = { schemaVersion: 1, reviewVersion: 'current', requirements: [{ id: 'future', required: [{ id: 'pending', artifact: '未制作样片.mp4' }] }],
+    records: [{ reviewVersion: 'old', artifact: { path: '旧版已失效.mp4' }, provenance: { record: '旧版记录.txt' } }, { reviewVersion: 'current', provenance: { record: 'https://example.invalid/user-review' } }] };
+  const bytes = JSON.stringify(evidence); writeFileSync(join(f.project, '待审历史.json'), bytes);
+  f.manifest.files.push({ path: '待审历史.json', sha256: hash(bytes), category: 'history' }); Object.assign(f.manifest, { evidence: '待审历史.json' }); f.save();
+  const result = run(f.project, 'pack'); assert.equal(result.status, 0, result.stdout);
+  assert.equal(inspect(join(f.project, 'delivery.tar.gz'))['待审历史.json'], Buffer.from(bytes).toString('base64'));
+});
