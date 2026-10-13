@@ -1,5 +1,5 @@
 import { readFile, realpath, stat } from 'node:fs/promises';
-import { resolve, relative, isAbsolute } from 'node:path';
+import { resolve, relative, isAbsolute, sep } from 'node:path';
 import { productionSchema } from './schema.mjs';
 
 /** @typedef {{project:string, manifest:string, report:string, args:string[],output?:string,archive?:string}} CommandOptions */
@@ -10,7 +10,7 @@ import { productionSchema } from './schema.mjs';
 /** @param {string} root @param {string} file */
 function within(root, file) {
   const location = relative(root, file);
-  return location !== '..' && !location.startsWith('../') && !isAbsolute(location);
+  return location !== '..' && !location.startsWith(`..${sep}`) && !isAbsolute(location);
 }
 /** 项目引用仅允许普通文件，符号链接的最终目标也必须属于项目。
  * @param {string} project @param {string} input */
