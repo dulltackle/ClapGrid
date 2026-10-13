@@ -207,3 +207,52 @@ test('报告指向默认交付路径时提前拒绝，失败保留旧包并另�
   const report = JSON.parse(readFileSync(join(f.project, 'logs/production', logs[0]!), 'utf8'));
   assert.equal(report.status, 'failed');
 });
+
+for (const [field, declarations] of [
+  ['assets', { assets: ['新增素材.png'] }],
+  ['lastFrame', { lastFrame: '新增素材.png' }],
+  ['transitions', { transitions: ['新增素材.png'] }],
+  ['sample-video', { video: { path: '新增素材.png' }, plan: { path: '历史待审.json' } }],
+  ['sample-plan', { video: { path: '审阅.mp4' }, plan: { path: '新增素材.png' } }],
+] as const) {
+  test(`打包必须保留已声明 ${field}，不能以依赖图缺省跳过`, t => {
+    const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+    const bytes = Buffer.from('归档成员字节，不声明为有效媒体');
+    writeFileSync(join(f.project, '新增素材.png'), bytes);
+    f.manifest.files.push({ path: '新增素材.png', sha256: hash(bytes), category: 'production' });
+    if (field.startsWith('sample-')) Object.assign(f.manifest, { sample: declarations });
+    else Object.assign(f.manifest.segments[0]!, declarations);
+    f.save();
+    assert.equal(run(f.project, 'pack').status, 0);
+    const archive = join(f.project, 'delivery.tar.gz');
+    const previous = readFileSync(archive);
+    f.manifest.files = f.manifest.files.filter(x => x.path !== '新增素材.png'); f.save();
+    const result = run(f.project, 'pack');
+    assert.equal(result.status, 1, result.stdout);
+    assert.match(JSON.stringify(result.report), /遗漏.*新增素材/);
+    assert.deepEqual(readFileSync(archive), previous);
+  });
+}
+
+for (const target of ['existing-directory', 'non-report-file', 'file-parent']) {
+  test(`报告目标 ${target} 在发布前拒绝，旧有效包及报告原件保持`, t => {
+    const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+    assert.equal(run(f.project, 'pack').status, 0);
+    const archive = join(f.project, 'delivery.tar.gz');
+    const previous = readFileSync(archive);
+    writeFileSync(join(f.project, 'src.ts'), 'export const scene = 3;');
+    f.manifest.files.find(x => x.path === 'src.ts')!.sha256 = hash('export const scene = 3;'); f.save();
+    const targetPath = join(f.project, '报告目标');
+    if (target === 'existing-directory') mkdirSync(targetPath);
+    else writeFileSync(targetPath, '这不是制作报告');
+    const requested = target === 'file-parent' ? join(targetPath, '报告.json') : targetPath;
+    const result = spawnSync(process.execPath, [cli, 'pack', '--project', f.project, '--report', requested], { encoding: 'utf8' });
+    assert.equal(result.status, 1, result.stdout);
+    assert.deepEqual(readFileSync(archive), previous);
+    if (target !== 'existing-directory') assert.equal(readFileSync(targetPath, 'utf8'), '这不是制作报告');
+    assert.match(result.stdout, /完整报告/);
+    const logs = readdirSync(join(f.project, 'logs/production'));
+    const report = JSON.parse(readFileSync(join(f.project, 'logs/production', logs[0]!), 'utf8'));
+    assert.equal(report.status, 'failed');
+  });
+}

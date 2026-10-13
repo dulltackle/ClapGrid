@@ -1,4 +1,5 @@
-import { mkdir, writeFile, readFile, realpath } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, realpath, stat, access } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import { resolve, dirname, basename, relative } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { statusOf, failure, resolveProjectFile } from './production/common.mjs';
@@ -12,6 +13,24 @@ async function canonicalPath(path) {
     const parent = dirname(path);
     return parent === path ? path : resolve(await canonicalPath(parent), basename(path));
   }
+}
+
+/** 在命令产生输出前拒绝可预先识别的报告写入错误。
+ * @param {string} target */
+async function prepareReport(target) {
+  let info;
+  try { info = await stat(target); }
+  catch (error) {
+    if (!(error instanceof Error) || !('code' in error) || String(error.code) !== 'ENOENT') throw error;
+  }
+  if (info) {
+    if (!info.isFile()) throw new Error('报告路径不是普通文件');
+    const previous = JSON.parse(await readFile(target, 'utf8'));
+    if (previous.report !== target || previous.schemaVersion !== 1 || !previous.startedAt || !Array.isArray(previous.checks)) throw new Error('报告路径指向已有项目输入，拒绝覆盖');
+    await access(target, constants.W_OK);
+  }
+  await mkdir(dirname(target), { recursive: true });
+  await access(dirname(target), constants.W_OK);
 }
 
 /** @param {string[]} argv */
@@ -96,6 +115,13 @@ export async function main(argv) {
       options.report = resolve(options.project, 'logs/production', `failure-${startedAt.replaceAll(':', '-')}-${process.pid}.json`);
       exclusiveReport = true;
       throw new Error(`报告路径属于项目输入或输出，拒绝覆盖：${requested}`);
+    }
+    try { await prepareReport(options.report); }
+    catch (error) {
+      const requested = options.report;
+      options.report = resolve(options.project, 'logs/production', `failure-${startedAt.replaceAll(':', '-')}-${process.pid}.json`);
+      exclusiveReport = true;
+      throw new Error(`报告无法写入，命令尚未执行 ${requested}：${String(error)}`);
     }
     if (!['init', 'refs', 'check', 'evidence', 'sample', 'impact', 'pack', 'verify-package'].includes(command)) throw new Error('命令必须是 init、refs、check、evidence、sample、impact、pack 或 verify-package');
     const module = await import(`./production/${command}.mjs`);

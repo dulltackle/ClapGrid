@@ -60,6 +60,14 @@ def entries(root, manifest_path):
     required = {manifest['typecheck']}
     for segment in manifest['segments']:
         required.update(segment[key] for key in ['card', 'source', 'audio', 'assembly', 'review'])
+        required.update(segment.get('assets', []))
+        required.update(segment.get('transitions', []))
+        if segment.get('lastFrame'):
+            required.add(segment['lastFrame'])
+    sample = manifest.get('sample', {})
+    for role in ['video', 'plan']:
+        if sample.get(role, {}).get('path'):
+            required.add(sample[role]['path'])
     if isinstance(manifest.get('evidence'), str):
         required.add(manifest['evidence'])
     if (root / 'video.md').exists():
