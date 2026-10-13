@@ -4,6 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
+import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const cli = resolve('scripts/production.mjs');
@@ -278,7 +279,7 @@ for (const omitted of ['当前技术产物.json', '当前证明原件.json']) {
     const data = '隔离归档及证据机械核对产物';
     const evidence = { schemaVersion: 1, reviewVersion: 'current-review',
       requirements: [{ id: 'R', classifiedBy: { source: 'human', identity: '隔离受控回归配置' }, required: [{ id: 'mechanical', kind: 'ran', artifact, scope: ['A'] }] }],
-      records: [{ id: 'E', requirement: 'R', criterion: 'mechanical', kind: 'ran', reviewVersion: 'current-review', artifact: { path: artifact, sha256: hash(data) }, scope: ['A'], status: 'passed', source: 'controlled-test', provenance: { actor: '受控测试', record: proof, observedAt: '2026-10-13T00:00:00Z' } }],
+      records: [{ id: 'E', requirement: 'R', criterion: 'mechanical', kind: 'ran', reviewVersion: 'current-review', artifact: { path: artifact, sha256: hash(data) }, scope: ['A'], status: 'passed', source: 'controlled-test', provenance: { actor: '受控测试', record: omitted === '当前证明原件.json' ? pathToFileURL(join(f.project, proof)).href : proof, observedAt: '2026-10-13T00:00:00Z' } }],
     };
     for (const [path, bytes] of [[artifact, data], [proof, '受控测试原件，不是真实用户/宿主确认'], ['证据.json', JSON.stringify(evidence)]]) {
       writeFileSync(join(f.project, path!), bytes!);

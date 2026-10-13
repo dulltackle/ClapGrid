@@ -1,6 +1,6 @@
 import { mkdir, writeFile, readFile, realpath, stat, access } from 'node:fs/promises';
 import { constants } from 'node:fs';
-import { resolve, dirname, basename, relative } from 'node:path';
+import { resolve, dirname, basename, relative, isAbsolute } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { statusOf, failure, resolveProjectFile } from './production/common.mjs';
 
@@ -91,7 +91,7 @@ export async function main(argv) {
         if (key === 'provenance' && item && typeof item === 'object' && 'record' in item && typeof item.record === 'string') {
           try {
             const pointer = item.record.startsWith('file:') ? fileURLToPath(item.record) : item.record;
-            if (!/^[a-z][a-z0-9+.-]*:/i.test(pointer)) {
+            if (isAbsolute(pointer) || !/^[a-z][a-z0-9+.-]*:/i.test(pointer)) {
               const candidate = resolve(options.project, pointer);
               const actual = await resolveProjectFile(options.project, relative(options.project, candidate));
               protectedPaths.add(candidate);

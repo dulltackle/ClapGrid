@@ -9,7 +9,8 @@ import re
 import sys
 import tarfile
 import tempfile
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 CHUNK = 1024 * 1024
 INDEX = '.clapgrid-package.json'
@@ -32,7 +33,7 @@ def existing_evidence_file(root, reference):
     if parsed.scheme == 'file':
         if parsed.netloc not in {'', 'localhost'}:
             return None
-        reference = unquote(parsed.path)
+        reference = url2pathname(parsed.path)
     elif parsed.scheme and not Path(reference).is_absolute():
         return None
     candidate = Path(os.path.abspath(root / reference))
