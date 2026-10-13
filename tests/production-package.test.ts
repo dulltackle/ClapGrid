@@ -256,3 +256,17 @@ for (const target of ['existing-directory', 'non-report-file', 'file-parent']) {
     assert.equal(report.status, 'failed');
   });
 }
+
+for (const field of ['assets', 'lastFrame', 'transitions']) {
+  test(`声明的 ${field} 即使是旧报告JSON也不能被新报告覆盖`, t => {
+    const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+    const artifact = join(f.project, '关联技术原件.json');
+    const bytes = JSON.stringify({ schemaVersion: 1, report: artifact, startedAt: '2026-10-13T00:00:00Z', checks: [] });
+    writeFileSync(artifact, bytes);
+    Object.assign(f.manifest.segments[0]!, { [field]: field === 'lastFrame' ? '关联技术原件.json' : ['关联技术原件.json'] }); f.save();
+    const result = spawnSync(process.execPath, [cli, 'impact', '--project', f.project, '--report', artifact], { encoding: 'utf8' });
+    assert.equal(result.status, 1);
+    assert.equal(readFileSync(artifact, 'utf8'), bytes);
+    assert.match(result.stdout, /拒绝覆盖/);
+  });
+}

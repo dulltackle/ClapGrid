@@ -75,9 +75,12 @@ export async function main(argv) {
     const collectPaths = (value, evidenceOnly = false) => {
       if (!value || typeof value !== 'object') return;
       for (const [key, item] of Object.entries(value)) {
-        const pathKeys = evidenceOnly ? ['path', 'artifact'] : ['path', 'card', 'source', 'audio', 'assembly', 'review', 'typecheck', 'evidence'];
+        const pathKeys = evidenceOnly ? ['path', 'artifact'] : ['path', 'card', 'source', 'audio', 'assembly', 'review', 'typecheck', 'evidence', 'lastFrame'];
         if (typeof item === 'string' && pathKeys.includes(key)) protectedPaths.add(resolve(options.project, item));
-        else if (typeof item === 'object') collectPaths(item, evidenceOnly);
+        else if (!evidenceOnly && ['assets', 'transitions'].includes(key) && Array.isArray(item)) {
+          for (const path of item) if (typeof path === 'string') protectedPaths.add(resolve(options.project, path));
+          collectPaths(item, evidenceOnly);
+        } else if (typeof item === 'object') collectPaths(item, evidenceOnly);
       }
     };
     /** 仅将能定位为项目内普通文件的证明指针加入保护；不认证其声明内容。
