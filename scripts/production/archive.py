@@ -9,8 +9,6 @@ import re
 import sys
 import tarfile
 import tempfile
-from urllib.parse import urlparse
-from urllib.request import url2pathname
 
 CHUNK = 1024 * 1024
 INDEX = '.clapgrid-package.json'
@@ -25,44 +23,7 @@ def digest(stream):
     return value.hexdigest(), size
 
 
-def existing_evidence_file(root, reference):
-    """仅收集当前记录可定位的项目内原件，不判定审阅结论。"""
-    if not isinstance(reference, str) or not reference:
-        return None
-    parsed = urlparse(reference)
-    if parsed.scheme == 'file':
-        if parsed.netloc not in {'', 'localhost'}:
-            return None
-        reference = url2pathname(parsed.path)
-    elif parsed.scheme and not Path(reference).is_absolute():
-        return None
-    candidate = Path(os.path.abspath(root / reference))
-    resolved = candidate.resolve()
-    if not candidate.is_relative_to(root) or not resolved.is_relative_to(root) or not resolved.is_file():
-        return None
-    if candidate.is_symlink():
-        raise ValueError('当前证据原件不能以符号链接归档：' + reference)
-    return candidate.relative_to(root).as_posix()
-
-
-def current_evidence_files(root, evidence_path):
-    source = (root / evidence_path).resolve()
-    if not source.is_relative_to(root) or not source.is_file():
-        raise ValueError('证据文件不是项目内普通文件：' + evidence_path)
-    evidence = json.loads(source.read_bytes())
-    references = []
-    for requirement in evidence.get('requirements', []):
-        for criterion in requirement.get('required', []):
-            references.append(criterion.get('artifact'))
-    for record in evidence.get('records', []):
-        if record.get('reviewVersion') != evidence.get('reviewVersion'):
-            continue
-        references.append(record.get('artifact', {}).get('path'))
-        references.append(record.get('provenance', {}).get('record'))
-    return {path for reference in references if (path := existing_evidence_file(root, reference))}
-
-
-def entries(root, manifest_path):
+def entries(root, manifest_path, required_references):
     raw = manifest_path.read_bytes()
     manifest = json.loads(raw)
     files = manifest['files']
@@ -96,26 +57,7 @@ def entries(root, manifest_path):
             raise ValueError(f'制作成员摘要不符：{path}')
         members[path] = {'sha256': sha, 'size': size}
         index_files.append({**entry, 'size': size})
-    required = {manifest['typecheck']}
-    for segment in manifest['segments']:
-        required.update(segment[key] for key in ['card', 'source', 'audio', 'assembly', 'review'])
-        required.update(segment.get('assets', []))
-        required.update(segment.get('transitions', []))
-        if segment.get('lastFrame'):
-            required.add(segment['lastFrame'])
-    sample = manifest.get('sample', {})
-    for role in ['video', 'plan']:
-        if sample.get(role, {}).get('path'):
-            required.add(sample[role]['path'])
-    if isinstance(manifest.get('evidence'), str):
-        required.add(manifest['evidence'])
-        required.update(current_evidence_files(root, manifest['evidence']))
-    if (root / 'video.md').exists():
-        required.add('video.md')
-    for node in manifest.get('dependencies', {}).get('nodes', []):
-        if node.get('path'):
-            required.add(node['path'])
-    missing_sources = required - set(members)
+    missing_sources = set(required_references) - set(members)
     if missing_sources:
         raise ValueError('清单遗漏制作输入、素材或审阅记录：' + ', '.join(sorted(missing_sources)))
     manifest_entry = {'path': manifest_name, 'sha256': hashlib.sha256(raw).hexdigest(), 'size': len(raw)}
@@ -203,7 +145,7 @@ def main():
     try:
         root = Path(options['project']).resolve()
         manifest_path = (root / options['manifest']).resolve()
-        members, index_bytes, manifest_name = entries(root, manifest_path)
+        members, index_bytes, manifest_name = entries(root, manifest_path, options['requiredReferences'])
         if command == 'pack':
             details = pack(root, manifest_path, Path(options.get('output') or root / 'delivery.tar.gz'), members, index_bytes, manifest_name)
         else:
