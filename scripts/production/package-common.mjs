@@ -2,10 +2,12 @@ import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { readManifest, failure } from './common.mjs';
 import { projectFileReferences } from './project-file-references.mjs';
+import { verifyPackage } from './archive.mjs';
 
 /** @param {'pack'|'verify-package'} command @param {import('./common.mjs').CommandOptions} options
  * @returns {Promise<import('./common.mjs').CommandResult>} */
 export async function archiveCommand(command, options) {
+  if (command === 'verify-package') return verifyPackage(options);
   const { manifest } = await readManifest(options);
   const requiredReferences = [...await projectFileReferences(options, 'archive-required', manifest)];
   return new Promise(resolve => {
