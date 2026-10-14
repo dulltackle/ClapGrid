@@ -1,4 +1,4 @@
-import { mkdir, writeFile, readFile, realpath, stat, access } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, realpath, readlink, stat, access } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { resolve, dirname, basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -12,6 +12,13 @@ async function canonicalPath(path) {
   catch (error) {
     if (!(error instanceof Error) || !('code' in error) || !['ENOENT', 'ENOTDIR'].includes(String(error.code))) throw error;
     const parent = dirname(path);
+    // realpath 无法解析尚未生成的目标；已有符号链接仍须按其目标保护。
+    let link;
+    try { link = await readlink(path); }
+    catch (linkError) {
+      if (!(linkError instanceof Error) || !('code' in linkError) || !['ENOENT', 'ENOTDIR', 'EINVAL'].includes(String(linkError.code))) throw linkError;
+    }
+    if (link !== undefined) return canonicalPath(resolve(parent, link));
     return parent === path ? path : resolve(await canonicalPath(parent), basename(path));
   }
 }
@@ -67,7 +74,23 @@ export async function main(argv) {
   const reportConflicts = async target => {
     if (protectedPaths.has(target)) return true;
     const canonical = await canonicalPath(target);
-    return (await Promise.all([...protectedPaths].map(canonicalPath))).includes(canonical);
+    if ((await Promise.all([...protectedPaths].map(canonicalPath))).includes(canonical)) return true;
+    // 硬链接具有不同的真实路径；已有报告还须按实际文件身份保护输入原件。
+    let targetInfo;
+    try { targetInfo = await stat(target, { bigint: true }); }
+    catch (error) {
+      if (error instanceof Error && 'code' in error && ['ENOENT', 'ENOTDIR'].includes(String(error.code))) return false;
+      throw error;
+    }
+    for (const path of protectedPaths) {
+      try {
+        const info = await stat(path, { bigint: true });
+        if (info.dev === targetInfo.dev && info.ino === targetInfo.ino) return true;
+      } catch (error) {
+        if (!(error instanceof Error) || !('code' in error) || !['ENOENT', 'ENOTDIR'].includes(String(error.code))) throw error;
+      }
+    }
+    return false;
   };
   try {
     if (parseError) throw new Error(parseError);
