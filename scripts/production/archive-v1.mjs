@@ -1,19 +1,47 @@
 /** 旧 v1 索引的字节约定属于归档 module，领域调用方仅使用普通投影。
  * @typedef {{kind:'integer', value:bigint}|{kind:'float', value:number}} Numeric
- * @typedef {null|boolean|string|Numeric|Value[]|Map<string,Value>} Value
+ * @typedef {{kind:'string', value:string, points:number[]}} PythonString
+ * @typedef {string|PythonString} Key
+ * @typedef {null|boolean|string|PythonString|Numeric|Value[]|Map<Key,Value>} Value
  */
+import { decodePythonJsonBytes } from './python-json-bytes.mjs';
 
 /** 合法 JSON 的无损有序读取：重复键覆盖值而不移动首次插入位置。
  * @param {Buffer} raw @returns {Value} */
 export function parseV1(raw) {
-  const source = new TextDecoder('utf-8', { fatal: true }).decode(raw);
+  const { text: source, surrogates } = decodePythonJsonBytes(raw);
+  /** 同码点的非法键仍按首次位置覆盖；代理对码点不能与实际 scalar 合并。
+   * @type {Map<string,PythonString>} */
+  const keys = new Map();
   let cursor = 0;
   const whitespace = () => { while (/[\x20\t\r\n]/.test(source[cursor] ?? '\0')) cursor++; };
+  /** @returns {Key} */
   function string() {
     const start = cursor++;
     while (cursor < source.length) {
       const char = source[cursor++];
-      if (char === '"') return /** @type {string} */ (JSON.parse(source.slice(start, cursor)));
+      if (char === '"') {
+        // Native 解析只检查 JSON 语法；Python 字符串身份由原码点与转义来源确定。
+        const parsed = /** @type {string} */ (JSON.parse(source.slice(start, cursor)));
+        const points = [];
+        for (let index = start + 1; index < cursor - 1; ) {
+          let point;
+          if (source[index] === '\\') {
+            if (source[index + 1] === 'u') {
+              point = parseInt(source.slice(index + 2,index + 6),16); index += 6;
+              if (point >= 0xd800 && point <= 0xdbff && source.slice(index,index + 2) === '\\u') {
+                const low = parseInt(source.slice(index + 2,index + 6),16);
+                if (low >= 0xdc00 && low <= 0xdfff) { point = 0x10000 + (point - 0xd800) * 1024 + low - 0xdc00; index += 6; }
+              }
+            } else { point = JSON.parse('"' + source.slice(index,index + 2) + '"').codePointAt(0); index += 2; }
+          } else {
+            point = surrogates.get(index) ?? source.codePointAt(index) ?? 0;
+            index += point > 0xffff ? 2 : 1;
+          }
+          points.push(point);
+        }
+        return points.some(point => point >= 0xd800 && point <= 0xdfff) ? {kind:'string',value:parsed,points} : parsed;
+      }
       if (char === '\\') cursor++;
     }
     throw new Error('制作清单字符串未结束');
@@ -25,12 +53,18 @@ export function parseV1(raw) {
     if (first === '"') return string();
     if (first === '{') {
       cursor++; whitespace();
-      /** @type {Map<string, Value>} */ const result = new Map();
+      /** @type {Map<Key, Value>} */ const result = new Map();
       if (source[cursor] === '}') { cursor++; return result; }
       while (true) {
         whitespace();
         if (source[cursor] !== '"') throw new Error('制作清单对象键必须是字符串');
-        const key = string(); whitespace();
+        let key = string(); whitespace();
+        if (typeof key !== 'string') {
+          const identity = JSON.stringify(key.points);
+          const previous = keys.get(identity);
+          if (previous) key = previous;
+          else keys.set(identity,key);
+        }
         if (source[cursor++] !== ':') throw new Error('制作清单对象缺少冒号');
         result.set(key, value()); whitespace();
         const separator = source[cursor++];
@@ -65,13 +99,18 @@ export function parseV1(raw) {
 /** 领域投影只用于引用用途与 schema；索引始终由原有序树生成。
  * @param {Value} value @returns {any} */
 export function projectV1(value) {
-  if (value instanceof Map) return Object.fromEntries([...value].map(([key, item]) => [key, projectV1(item)]));
+  if (value instanceof Map) return Object.fromEntries([...value].map(([key, item]) => [projectV1(key), projectV1(item)]));
   if (Array.isArray(value)) return value.map(projectV1);
-  if (value && typeof value === 'object') return Number(value.value);
+  if (value && typeof value === 'object') {
+    // 非 scalar 字符串无法成为 OS 路径；带 NUL 的独立投影阻止与同形合法路径混淆。
+    // 未选中的扩展字段不编码；原 AST 仍保留每个字符串的 Python 码点。
+    if (value.kind === 'string') return '\0python-surrogate:' + JSON.stringify(value.points);
+    return Number(value.value);
+  }
   return value;
 }
 
-/** @param {Value} value @returns {Map<string,Value>} */
+/** @param {Value} value @returns {Map<Key,Value>} */
 export function v1Object(value) {
   if (!(value instanceof Map)) throw new Error('制作清单需要对象记录');
   return value;
@@ -100,9 +139,10 @@ function floatText(value) {
   return (negative ? '-' : '') + result;
 }
 
-/** @param {string} value */
+/** @param {Key} value */
 function quote(value) {
-  // 旧 ensure_ascii=False 后 UTF-8 编码拒绝孤立 surrogate；不可用替代字符改变身份。
+  // 旧 ensure_ascii=False 后 UTF-8 编码拒绝所有 surrogate 码点，包括 raw 的相邻高低代理。
+  if (typeof value !== 'string') throw new Error('v1 索引包含无法 UTF-8 编码的 surrogate 码点');
   if (/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(value)) throw new Error('v1 索引包含无法 UTF-8 编码的孤立 surrogate');
   return JSON.stringify(value);
 }
@@ -119,7 +159,7 @@ export function dumpV1(value) {
     }
     if (Array.isArray(item)) return item.length ? '[\n' + item.map(value => child + dump(value, depth + 1)).join(',\n') + '\n' + pad + ']' : '[]';
     if (typeof item === 'string') return quote(item);
-    if (item && typeof item === 'object') return item.kind === 'integer' ? item.value.toString() : floatText(item.value);
+    if (item && typeof item === 'object') return item.kind === 'string' ? quote(item) : item.kind === 'integer' ? item.value.toString() : floatText(item.value);
     return JSON.stringify(item);
   }
   return Buffer.from(dump(value, 0) + '\n');

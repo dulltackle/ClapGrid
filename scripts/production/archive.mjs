@@ -77,8 +77,10 @@ async function prepareArchive(options) {
   const manifestName = relative(root, manifestPath).split(sep).join('/');
   if (manifestName === INDEX) throw new Error(`清单自身不能使用归档索引保留路径：${INDEX}`);
   const raw = await readFile(manifestPath);
+  // 旧统一入口先按 Native UTF-8 验证 schema；字节兼容层不能扩大 BOM/UTF16 等入口范围。
+  productionSchema.parse(JSON.parse(raw.toString('utf8')));
   const ordered = v1Object(parseV1(raw));
-  const manifest = productionSchema.parse(projectV1(ordered));
+  const manifest = projectV1(ordered);
   const files = ordered.get('files');
   if (!Array.isArray(files) || !files.length) throw new Error('files 必须为非空制作成员清单');
   /** @type {Map<string,Identity>} */ const members = new Map();

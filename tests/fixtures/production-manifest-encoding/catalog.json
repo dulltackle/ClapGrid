@@ -1,0 +1,2225 @@
+{
+  "source": {
+    "commit": "cd8b4df863541e596c0690e4368e5d1ba3216281",
+    "entry": "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+    "archiveSha256": "f691d1d2825b3e0f049aa2c40cf2143310242748d086a7ead929a2688a6316b4",
+    "generatorSha256": "ef907fe0eafc5c3a8f0416f80b46d71c98d6d3ee7ac5390bdf441d2f281163fa"
+  },
+  "cases": [
+    {
+      "name": "unused-lone",
+      "success": true,
+      "manifestSha256": "286fd4aa1033b6f47bf238f48eafb2bd44af78d21a1560a0c31c229c215cd429",
+      "versions": [
+        {
+          "python": "Python 3.14.4",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-lone-3.14-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 0,
+              "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-lone-3.14-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/legacy-3.14.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "members": 10,
+                  "publication": "published",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:03.305Z",
+                "finishedAt": "2026-10-14T08:14:03.370Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-lone-3.14-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-lone-3.14-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 0,
+              "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-lone-3.14-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/legacy-3.14.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "publication": "verified",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:03.441Z",
+                "finishedAt": "2026-10-14T08:14:03.500Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-lone-3.14-verify-package.json"
+              }
+            }
+          ],
+          "archive": "legacy-3.14.tar.gz",
+          "archiveSha256": "eee0b863e8948cb7a52ceb8a06b57552df48e166ae4e7432aa89935737038e39",
+          "indexSha256": "50801fb3c042a355e2b8a4d1bdc5f414227f18329a64bc6ab5def71f4aa28289"
+        },
+        {
+          "python": "Python 3.12.13",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-lone-3.12-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 0,
+              "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-lone-3.12-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/legacy-3.12.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "members": 10,
+                  "publication": "published",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:03.584Z",
+                "finishedAt": "2026-10-14T08:14:03.646Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-lone-3.12-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-lone-3.12-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 0,
+              "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-lone-3.12-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/legacy-3.12.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "publication": "verified",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-lone/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:03.718Z",
+                "finishedAt": "2026-10-14T08:14:03.777Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-lone-3.12-verify-package.json"
+              }
+            }
+          ],
+          "archive": "legacy-3.12.tar.gz",
+          "archiveSha256": "94646e6673af286a77dc0042076b025b94d825ecf6c7e0170ac30935ea9ba296",
+          "indexSha256": "50801fb3c042a355e2b8a4d1bdc5f414227f18329a64bc6ab5def71f4aa28289"
+        }
+      ]
+    },
+    {
+      "name": "unused-pair",
+      "success": true,
+      "manifestSha256": "c4e04f7f0c33c7a752d54ee7de07c180cb005d59590ab71af5dc21ec009eed7a",
+      "versions": [
+        {
+          "python": "Python 3.14.4",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-3.14-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 0,
+              "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-3.14-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/legacy-3.14.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "members": 10,
+                  "publication": "published",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:03.854Z",
+                "finishedAt": "2026-10-14T08:14:03.919Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-3.14-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-3.14-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 0,
+              "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-3.14-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/legacy-3.14.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "publication": "verified",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:03.991Z",
+                "finishedAt": "2026-10-14T08:14:04.052Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-3.14-verify-package.json"
+              }
+            }
+          ],
+          "archive": "legacy-3.14.tar.gz",
+          "archiveSha256": "b44636c01bee5cbd61380da4bb84bdbf05c5aa76d6180e640b85f29b3afae831",
+          "indexSha256": "81b44b0f5620e194b620acc32fde56252886a8423528c3c908eab7ddf013d0c2"
+        },
+        {
+          "python": "Python 3.12.13",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-3.12-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 0,
+              "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-3.12-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/legacy-3.12.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "members": 10,
+                  "publication": "published",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:04.126Z",
+                "finishedAt": "2026-10-14T08:14:04.187Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-3.12-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-3.12-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 0,
+              "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-3.12-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/legacy-3.12.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "publication": "verified",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:04.261Z",
+                "finishedAt": "2026-10-14T08:14:04.318Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-3.12-verify-package.json"
+              }
+            }
+          ],
+          "archive": "legacy-3.12.tar.gz",
+          "archiveSha256": "1ddc5c4e3ee469c4b70795a00547dd8b1991fffc4912dee1a7172fde985b36ca",
+          "indexSha256": "81b44b0f5620e194b620acc32fde56252886a8423528c3c908eab7ddf013d0c2"
+        }
+      ]
+    },
+    {
+      "name": "overwritten-size-lone",
+      "success": true,
+      "manifestSha256": "fc2a1c298705c8e21f32df29610e9b0597ecd92aebb01c39185f5f1c34518289",
+      "versions": [
+        {
+          "python": "Python 3.14.4",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-lone-3.14-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 0,
+              "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-lone-3.14-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/legacy-3.14.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "members": 10,
+                  "publication": "published",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:04.394Z",
+                "finishedAt": "2026-10-14T08:14:04.458Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-lone-3.14-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-lone-3.14-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 0,
+              "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-lone-3.14-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/legacy-3.14.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "publication": "verified",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:04.532Z",
+                "finishedAt": "2026-10-14T08:14:04.593Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-lone-3.14-verify-package.json"
+              }
+            }
+          ],
+          "archive": "legacy-3.14.tar.gz",
+          "archiveSha256": "4ff65a4500d6c0467b4eaffdd1a00c79cc4f3773667e078e41c1a21cdd2e7b42",
+          "indexSha256": "2a1e9510526568ebd157dd489ce8722e275686a6c8c37e6b05bdba337a3cbfb5"
+        },
+        {
+          "python": "Python 3.12.13",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-lone-3.12-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 0,
+              "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-lone-3.12-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/legacy-3.12.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "members": 10,
+                  "publication": "published",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:04.667Z",
+                "finishedAt": "2026-10-14T08:14:04.729Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-lone-3.12-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-lone-3.12-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 0,
+              "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-lone-3.12-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/legacy-3.12.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "publication": "verified",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-lone/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:04.800Z",
+                "finishedAt": "2026-10-14T08:14:04.859Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-lone-3.12-verify-package.json"
+              }
+            }
+          ],
+          "archive": "legacy-3.12.tar.gz",
+          "archiveSha256": "8029e18b8265d010d7cd78cc2c0b8c9a6e061b3b3e0be642a04cb5f881de9a7d",
+          "indexSha256": "2a1e9510526568ebd157dd489ce8722e275686a6c8c37e6b05bdba337a3cbfb5"
+        }
+      ]
+    },
+    {
+      "name": "overwritten-size-pair",
+      "success": true,
+      "manifestSha256": "f01006bc66b2b11e0ad541ce659de8facad4db3ddce3e7bf22693026bf7d4626",
+      "versions": [
+        {
+          "python": "Python 3.14.4",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-pair-3.14-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 0,
+              "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-pair-3.14-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/legacy-3.14.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "members": 10,
+                  "publication": "published",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:04.936Z",
+                "finishedAt": "2026-10-14T08:14:04.999Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-pair-3.14-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-pair-3.14-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 0,
+              "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-pair-3.14-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/legacy-3.14.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "publication": "verified",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:05.072Z",
+                "finishedAt": "2026-10-14T08:14:05.132Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-pair-3.14-verify-package.json"
+              }
+            }
+          ],
+          "archive": "legacy-3.14.tar.gz",
+          "archiveSha256": "1ad377b31840752a54d94fed2f7e6d3d0c2ec6175a52a859b394659f034b414e",
+          "indexSha256": "069a24ae9274377959ac3582ae5122ffb87fba9961e0f63cb229b57cd3be5c60"
+        },
+        {
+          "python": "Python 3.12.13",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-pair-3.12-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 0,
+              "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-pair-3.12-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/legacy-3.12.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "members": 10,
+                  "publication": "published",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:05.207Z",
+                "finishedAt": "2026-10-14T08:14:05.268Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-pair-3.12-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-pair-3.12-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 0,
+              "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-pair-3.12-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/legacy-3.12.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "publication": "verified",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/overwritten-size-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:05.341Z",
+                "finishedAt": "2026-10-14T08:14:05.399Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/overwritten-size-pair-3.12-verify-package.json"
+              }
+            }
+          ],
+          "archive": "legacy-3.12.tar.gz",
+          "archiveSha256": "dd3347c32b67476a52e57a003246a21bca39d245602041d720fa149a9176a8f5",
+          "indexSha256": "069a24ae9274377959ac3582ae5122ffb87fba9961e0f63cb229b57cd3be5c60"
+        }
+      ]
+    },
+    {
+      "name": "unused-pair-selected-scalar",
+      "success": true,
+      "manifestSha256": "c4e04f7f0c33c7a752d54ee7de07c180cb005d59590ab71af5dc21ec009eed7a",
+      "versions": [
+        {
+          "python": "Python 3.14.4",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-selected-scalar-3.14-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 0,
+              "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-selected-scalar-3.14-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/legacy-3.14.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "members": 10,
+                  "publication": "published",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:05.474Z",
+                "finishedAt": "2026-10-14T08:14:05.538Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-selected-scalar-3.14-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-selected-scalar-3.14-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 0,
+              "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-selected-scalar-3.14-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/legacy-3.14.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "publication": "verified",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:05.611Z",
+                "finishedAt": "2026-10-14T08:14:05.672Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-selected-scalar-3.14-verify-package.json"
+              }
+            }
+          ],
+          "archive": "legacy-3.14.tar.gz",
+          "archiveSha256": "b42517fee0e6f0169e7b18a1e6fe3f8f156600ecd525b5e473fbc6bedcb20f83",
+          "indexSha256": "81b44b0f5620e194b620acc32fde56252886a8423528c3c908eab7ddf013d0c2"
+        },
+        {
+          "python": "Python 3.12.13",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-selected-scalar-3.12-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 0,
+              "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-selected-scalar-3.12-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/legacy-3.12.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "members": 10,
+                  "publication": "published",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:05.747Z",
+                "finishedAt": "2026-10-14T08:14:05.810Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-selected-scalar-3.12-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-selected-scalar-3.12-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 0,
+              "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-selected-scalar-3.12-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/legacy-3.12.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "publication": "verified",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/unused-pair-selected-scalar/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:05.882Z",
+                "finishedAt": "2026-10-14T08:14:05.942Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/unused-pair-selected-scalar-3.12-verify-package.json"
+              }
+            }
+          ],
+          "archive": "legacy-3.12.tar.gz",
+          "archiveSha256": "02240a99651ff0e9ea02854fdfffb758804bd13d974b8154a03fcb35d868956a",
+          "indexSha256": "81b44b0f5620e194b620acc32fde56252886a8423528c3c908eab7ddf013d0c2"
+        }
+      ]
+    },
+    {
+      "name": "escaped-pair",
+      "success": true,
+      "manifestSha256": "f1f52431115fe6e5acbb77f55870f44f7aca4244fad1d277c2e65fd4345f9f4d",
+      "versions": [
+        {
+          "python": "Python 3.14.4",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/escaped-pair-3.14-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 0,
+              "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/escaped-pair-3.14-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/legacy-3.14.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "members": 10,
+                  "publication": "published",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:06.020Z",
+                "finishedAt": "2026-10-14T08:14:06.084Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/escaped-pair-3.14-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/escaped-pair-3.14-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 0,
+              "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/escaped-pair-3.14-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/legacy-3.14.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "publication": "verified",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:06.155Z",
+                "finishedAt": "2026-10-14T08:14:06.216Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/escaped-pair-3.14-verify-package.json"
+              }
+            }
+          ],
+          "archive": "legacy-3.14.tar.gz",
+          "archiveSha256": "5972eee3ede164df7f4c3ae8134522aac62d5eff8f1842ac3ea28b50410a6b87",
+          "indexSha256": "eebfbf2744035a657e5d953e60c7b33b7947ab7311a737dd4c341dab80132ae4"
+        },
+        {
+          "python": "Python 3.12.13",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/escaped-pair-3.12-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 0,
+              "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/escaped-pair-3.12-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/legacy-3.12.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "members": 10,
+                  "publication": "published",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:06.289Z",
+                "finishedAt": "2026-10-14T08:14:06.351Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/escaped-pair-3.12-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/escaped-pair-3.12-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 0,
+              "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/escaped-pair-3.12-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/legacy-3.12.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "publication": "verified",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/escaped-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:06.424Z",
+                "finishedAt": "2026-10-14T08:14:06.482Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/escaped-pair-3.12-verify-package.json"
+              }
+            }
+          ],
+          "archive": "legacy-3.12.tar.gz",
+          "archiveSha256": "64a4f4cacf7a4dfed3d47677b673caa4ea644dce6f76ec50c5b9657ecc2b1ff0",
+          "indexSha256": "eebfbf2744035a657e5d953e60c7b33b7947ab7311a737dd4c341dab80132ae4"
+        }
+      ]
+    },
+    {
+      "name": "duplicate-invalid-overwritten",
+      "success": true,
+      "manifestSha256": "3907a0c716642b1e666527c93e0df1fe2ba219e84ce8ba9a13d99a82fac7ec2d",
+      "versions": [
+        {
+          "python": "Python 3.14.4",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/duplicate-invalid-overwritten-3.14-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 0,
+              "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/duplicate-invalid-overwritten-3.14-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/legacy-3.14.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "members": 10,
+                  "publication": "published",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:06.558Z",
+                "finishedAt": "2026-10-14T08:14:06.621Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/duplicate-invalid-overwritten-3.14-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/duplicate-invalid-overwritten-3.14-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 0,
+              "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/duplicate-invalid-overwritten-3.14-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/legacy-3.14.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "publication": "verified",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:06.694Z",
+                "finishedAt": "2026-10-14T08:14:06.754Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/duplicate-invalid-overwritten-3.14-verify-package.json"
+              }
+            }
+          ],
+          "archive": "legacy-3.14.tar.gz",
+          "archiveSha256": "d9712586958e381b4e9cbe6a2e06f6ae061ed8c12b19953e1106bbc464af2437",
+          "indexSha256": "144a38325e2a87626d363c1331bdc3c31b2b142b66dda658b3abc32c6d1bf7dc"
+        },
+        {
+          "python": "Python 3.12.13",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/duplicate-invalid-overwritten-3.12-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 0,
+              "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/duplicate-invalid-overwritten-3.12-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/legacy-3.12.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "members": 10,
+                  "publication": "published",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:06.830Z",
+                "finishedAt": "2026-10-14T08:14:06.892Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/duplicate-invalid-overwritten-3.12-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/duplicate-invalid-overwritten-3.12-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 0,
+              "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/duplicate-invalid-overwritten-3.12-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "passed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "passed",
+                    "message": "全部归档成员按顺序校验完成"
+                  }
+                ],
+                "details": {
+                  "archive": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/legacy-3.12.tar.gz",
+                  "order": [
+                    ".clapgrid-package.json",
+                    "src.ts",
+                    "card.json",
+                    "audio.wav",
+                    "assembly.mp4",
+                    "review.mp4",
+                    "tsconfig.json",
+                    "empty.bin",
+                    "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                    "production.json"
+                  ],
+                  "publication": "verified",
+                  "scope": "归档文件完整性；不判定人工确认"
+                },
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/duplicate-invalid-overwritten/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:06.967Z",
+                "finishedAt": "2026-10-14T08:14:07.024Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/duplicate-invalid-overwritten-3.12-verify-package.json"
+              }
+            }
+          ],
+          "archive": "legacy-3.12.tar.gz",
+          "archiveSha256": "2b0bfe9d85bf8e0e8a55ee8b08cf78ead00ed02785132bbafdf1b6a357149bbc",
+          "indexSha256": "144a38325e2a87626d363c1331bdc3c31b2b142b66dda658b3abc32c6d1bf7dc"
+        }
+      ]
+    },
+    {
+      "name": "selected-lone",
+      "success": false,
+      "manifestSha256": "56de2ecacc4800860552756d8d1e128b6f80b0f00bd2ad1666f460cfee8d8546",
+      "versions": [
+        {
+          "python": "Python 3.14.4",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-lone/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-lone-3.14-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-lone/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 1,
+              "stdout": "pack：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode character '\\ud800' in position 327: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-lone-3.14-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode character '\\ud800' in position 327: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-lone/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:07.100Z",
+                "finishedAt": "2026-10-14T08:14:07.159Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-lone-3.14-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-lone/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-lone-3.14-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-lone/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 1,
+              "stdout": "verify-package：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode character '\\ud800' in position 327: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-lone-3.14-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode character '\\ud800' in position 327: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-lone/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:07.231Z",
+                "finishedAt": "2026-10-14T08:14:07.291Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-lone-3.14-verify-package.json"
+              }
+            }
+          ]
+        },
+        {
+          "python": "Python 3.12.13",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-lone/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-lone-3.12-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-lone/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 1,
+              "stdout": "pack：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode character '\\ud800' in position 327: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-lone-3.12-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode character '\\ud800' in position 327: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-lone/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:07.365Z",
+                "finishedAt": "2026-10-14T08:14:07.421Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-lone-3.12-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-lone/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-lone-3.12-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-lone/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 1,
+              "stdout": "verify-package：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode character '\\ud800' in position 327: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-lone-3.12-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode character '\\ud800' in position 327: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-lone/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:07.496Z",
+                "finishedAt": "2026-10-14T08:14:07.552Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-lone-3.12-verify-package.json"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "selected-pair",
+      "success": false,
+      "manifestSha256": "62d182979abf745c8eefc3520a3a530d313d4c4b671c8b01aee6fe94924acfc0",
+      "versions": [
+        {
+          "python": "Python 3.14.4",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-3.14-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 1,
+              "stdout": "pack：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode characters in position 327-328: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-3.14-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode characters in position 327-328: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:07.629Z",
+                "finishedAt": "2026-10-14T08:14:07.689Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-3.14-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-3.14-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 1,
+              "stdout": "verify-package：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode characters in position 327-328: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-3.14-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode characters in position 327-328: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:07.760Z",
+                "finishedAt": "2026-10-14T08:14:07.819Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-3.14-verify-package.json"
+              }
+            }
+          ]
+        },
+        {
+          "python": "Python 3.12.13",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-3.12-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 1,
+              "stdout": "pack：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode characters in position 327-328: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-3.12-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode characters in position 327-328: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:07.894Z",
+                "finishedAt": "2026-10-14T08:14:07.953Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-3.12-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-3.12-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 1,
+              "stdout": "verify-package：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode characters in position 327-328: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-3.12-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode characters in position 327-328: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:08.025Z",
+                "finishedAt": "2026-10-14T08:14:08.083Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-3.12-verify-package.json"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "selected-pair-key",
+      "success": false,
+      "manifestSha256": "3467de1674c23e880cb7edd9f51c7a280f0b72c519579714b041c50cfa189121",
+      "versions": [
+        {
+          "python": "Python 3.14.4",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair-key/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-key-3.14-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair-key/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 1,
+              "stdout": "pack：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode characters in position 318-319: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-key-3.14-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode characters in position 318-319: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair-key/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:08.159Z",
+                "finishedAt": "2026-10-14T08:14:08.218Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-key-3.14-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair-key/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-key-3.14-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair-key/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 1,
+              "stdout": "verify-package：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode characters in position 318-319: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-key-3.14-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode characters in position 318-319: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair-key/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:08.291Z",
+                "finishedAt": "2026-10-14T08:14:08.352Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-key-3.14-verify-package.json"
+              }
+            }
+          ]
+        },
+        {
+          "python": "Python 3.12.13",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair-key/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-key-3.12-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair-key/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 1,
+              "stdout": "pack：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode characters in position 318-319: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-key-3.12-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode characters in position 318-319: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair-key/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:08.426Z",
+                "finishedAt": "2026-10-14T08:14:08.483Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-key-3.12-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair-key/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-key-3.12-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair-key/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 1,
+              "stdout": "verify-package：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode characters in position 318-319: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-key-3.12-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode characters in position 318-319: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-pair-key/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:08.555Z",
+                "finishedAt": "2026-10-14T08:14:08.612Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-pair-key-3.12-verify-package.json"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "selected-mixed-pair",
+      "success": false,
+      "manifestSha256": "371ba2b6970f9f32c592e6a40bc473b4565126650466a66d0e0b75c8519bec18",
+      "versions": [
+        {
+          "python": "Python 3.14.4",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-mixed-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-mixed-pair-3.14-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-mixed-pair/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 1,
+              "stdout": "pack：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode characters in position 327-328: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-mixed-pair-3.14-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode characters in position 327-328: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-mixed-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:08.688Z",
+                "finishedAt": "2026-10-14T08:14:08.747Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-mixed-pair-3.14-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-mixed-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-mixed-pair-3.14-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-mixed-pair/legacy-3.14.tar.gz"
+              ],
+              "PATH": "/usr/bin",
+              "exit": 1,
+              "stdout": "verify-package：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode characters in position 327-328: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-mixed-pair-3.14-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode characters in position 327-328: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-mixed-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:08.818Z",
+                "finishedAt": "2026-10-14T08:14:08.877Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-mixed-pair-3.14-verify-package.json"
+              }
+            }
+          ]
+        },
+        {
+          "python": "Python 3.12.13",
+          "results": [
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "pack",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-mixed-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-mixed-pair-3.12-pack.json",
+                "--output",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-mixed-pair/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 1,
+              "stdout": "pack：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode characters in position 327-328: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-mixed-pair-3.12-pack.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "pack",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode characters in position 327-328: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-mixed-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:08.951Z",
+                "finishedAt": "2026-10-14T08:14:09.011Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-mixed-pair-3.12-pack.json"
+              }
+            },
+            {
+              "argv": [
+                "/usr/bin/node",
+                "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+                "verify-package",
+                "--project",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-mixed-pair/project",
+                "--report",
+                "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-mixed-pair-3.12-verify-package.json",
+                "--archive",
+                "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-mixed-pair/legacy-3.12.tar.gz"
+              ],
+              "PATH": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin",
+              "exit": 1,
+              "stdout": "verify-package：failed；检查 1 项；1 项失败或未完成\narchive：'utf-8' codec can't encode characters in position 327-328: surrogates not allowed\n完整报告：/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-mixed-pair-3.12-verify-package.json\n",
+              "stderr": "",
+              "report": {
+                "schemaVersion": 1,
+                "command": "verify-package",
+                "status": "failed",
+                "checks": [
+                  {
+                    "id": "archive",
+                    "status": "failed",
+                    "message": "'utf-8' codec can't encode characters in position 327-328: surrogates not allowed"
+                  }
+                ],
+                "project": "/home/forclaw/tmp/clapgrid-122-manifest-encoding-fix/tests/fixtures/production-manifest-encoding/selected-mixed-pair/project",
+                "manifest": "production.json",
+                "startedAt": "2026-10-14T08:14:09.083Z",
+                "finishedAt": "2026-10-14T08:14:09.140Z",
+                "report": "/home/forclaw/tmp/clapgrid-spec-122/manifest-fixture-generation/selected-mixed-pair-3.12-verify-package.json"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
