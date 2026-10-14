@@ -1,27 +1,9 @@
-import { mkdir, writeFile, readFile, realpath, readlink, stat, access } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, realpath, stat, access } from 'node:fs/promises';
 import { constants } from 'node:fs';
-import { resolve, dirname, basename } from 'node:path';
+import { resolve, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { statusOf, failure } from './production/common.mjs';
+import { statusOf, failure, canonicalFilePath } from './production/common.mjs';
 import { projectFileReferences } from './production/project-file-references.mjs';
-
-/** 已有文件及父目录按真实路径比较；尚未生成的输出保留其路径末段。
- * @param {string} path @returns {Promise<string>} */
-async function canonicalPath(path) {
-  try { return await realpath(path); }
-  catch (error) {
-    if (!(error instanceof Error) || !('code' in error) || !['ENOENT', 'ENOTDIR'].includes(String(error.code))) throw error;
-    const parent = dirname(path);
-    // realpath 无法解析尚未生成的目标；已有符号链接仍须按其目标保护。
-    let link;
-    try { link = await readlink(path); }
-    catch (linkError) {
-      if (!(linkError instanceof Error) || !('code' in linkError) || !['ENOENT', 'ENOTDIR', 'EINVAL'].includes(String(linkError.code))) throw linkError;
-    }
-    if (link !== undefined) return canonicalPath(resolve(parent, link));
-    return parent === path ? path : resolve(await canonicalPath(parent), basename(path));
-  }
-}
 
 /** 在命令产生输出前拒绝可预先识别的报告写入错误。
  * @param {string} target */
@@ -73,8 +55,8 @@ export async function main(argv) {
   /** @param {string} target */
   const reportConflicts = async target => {
     if (protectedPaths.has(target)) return true;
-    const canonical = await canonicalPath(target);
-    if ((await Promise.all([...protectedPaths].map(canonicalPath))).includes(canonical)) return true;
+    const canonical = await canonicalFilePath(target);
+    if ((await Promise.all([...protectedPaths].map(canonicalFilePath))).includes(canonical)) return true;
     // 硬链接具有不同的真实路径；已有报告还须按实际文件身份保护输入原件。
     let targetInfo;
     try { targetInfo = await stat(target, { bigint: true }); }

@@ -1,12 +1,13 @@
-import { open, lstat, realpath, stat, readFile } from 'node:fs/promises';
+import { open, lstat, realpath, stat, readFile, mkdir, rename } from 'node:fs/promises';
 import { constants, createReadStream } from 'node:fs';
-import { resolve, relative, isAbsolute, sep, posix } from 'node:path';
-import { createHash } from 'node:crypto';
+import { resolve, relative, isAbsolute, sep, posix, dirname, basename, join } from 'node:path';
+import { createHash, randomUUID } from 'node:crypto';
+import { createGzip } from 'node:zlib';
 import { createRequire } from 'node:module';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { productionSchema } from './schema.mjs';
-import { failure, resolveProjectFile } from './common.mjs';
+import { failure, resolveProjectFile, canonicalFilePath } from './common.mjs';
 import { projectFileReferences } from './project-file-references.mjs';
 import { parseV1, projectV1, v1Object, v1Integer, dumpV1 } from './archive-v1.mjs';
 import { decodeArchiveGzip, strictArchiveTar } from './archive-streams.mjs';
@@ -154,5 +155,106 @@ export async function verifyPackage(options) {
     return { command, status: 'passed', checks: [{ id: 'archive', status: 'passed', message: '全部归档成员按顺序校验完成' }], details: { archive: options.archive, order, publication: 'verified', scope: '归档文件完整性；不判定人工确认' } };
   } catch (error) {
     return { command, status: 'failed', checks: [failure('archive', error instanceof Error ? error.message : String(error))] };
+  }
+}
+
+/** 比较真实路径及已有 inode 别名；输入读取与发布各自重新检查，保护不成为文件锁。
+ * @param {ArchivePlan} plan @param {string} output */
+async function protectOutput(plan, output) {
+  const actual = await canonicalFilePath(output);
+  let outputInfo;
+  try { outputInfo = await stat(output); }
+  catch (error) {
+    if (!error || typeof error !== 'object' || !('code' in error) || !['ENOENT', 'ENOTDIR'].includes(String(error.code))) throw error;
+  }
+  for (const name of plan.members.keys()) {
+    const source = join(plan.root, name);
+    if (actual === await canonicalFilePath(source)) throw new Error(`输出路径指向制作输入或清单，拒绝覆盖：${output}`);
+    if (outputInfo) {
+      let sourceInfo;
+      try { sourceInfo = await stat(source); }
+      catch (error) {
+        if (name === INDEX && error && typeof error === 'object' && 'code' in error && String(error.code) === 'ENOENT') continue;
+        throw error;
+      }
+      if (outputInfo.dev === sourceInfo.dev && outputInfo.ino === sourceInfo.ino) throw new Error(`输出路径是制作输入或清单的文件别名，拒绝覆盖：${output}`);
+    }
+  }
+}
+
+/** 每次读取都打开实际源文件，并把本次字节与准备阶段的声明身份核对。
+ * @param {ArchivePlan} plan @param {string} name @param {Identity} expected @param {any} encoder */
+async function writeMember(plan, name, expected, encoder) {
+  const source = await openMember(plan.root, name);
+  try {
+    if (source.before.size !== expected.size) throw new Error(`制作成员读取前大小变化：${name}`);
+    async function* checkedBytes() {
+      const hash = createHash('sha256');
+      let size = 0;
+      for await (const bytes of source.handle.createReadStream({ autoClose: false, highWaterMark: CHUNK })) {
+        hash.update(bytes); size += bytes.length; yield bytes;
+      }
+      if (!sameFile(source.before, await source.handle.stat()) || !sameFile(source.before, await lstat(source.path)) || !within(plan.root, await realpath(source.path))) throw new Error(`制作成员读取期间状态变化：${name}`);
+      if (size !== expected.size || hash.digest('hex') !== expected.sha256) throw new Error(`制作成员读取时内容身份变化：${name}`);
+    }
+    // 归档完整性契约保留成员字节；使用固定的标准头时间，不让库的整数时间截断影响格式。
+    const sink = encoder.entry({ name, type: 'file', size: expected.size, mode: source.before.mode & 0o7777, mtime: new Date(0) });
+    await pipeline(Readable.from(checkedBytes()), sink);
+  } finally { await source.handle.close(); }
+}
+
+/** @param {ArchivePlan} plan @param {import('node:fs/promises').FileHandle} candidate */
+async function buildArchive(plan, candidate) {
+  const encoder = tar.pack();
+  const destination = candidate.createWriteStream({ autoClose: false, highWaterMark: CHUNK });
+  const pump = pipeline(encoder, createGzip(), destination).then(() => ({ error: undefined }), error => ({ error }));
+  try {
+    await pipeline(Readable.from([plan.indexBytes]), encoder.entry({ name: INDEX, type: 'file', size: plan.indexBytes.length, mtime: new Date(0) }));
+    for (const [name, content] of plan.members) if (name !== INDEX) await writeMember(plan, name, content, encoder);
+    encoder.finalize();
+    const result = await pump;
+    if (result.error) throw result.error;
+  } catch (error) {
+    encoder.destroy(error instanceof Error ? error : new Error(String(error)));
+    destination.destroy();
+    const result = await pump;
+    // 压缩或磁盘写入错误优先保留实际原因；它可能先取消正在写入的成员。
+    throw result.error ?? error;
+  } finally {
+    // autoClose:false 的正常 finish 仍保留 FileHandle 引用；先关闭写流再关闭句柄。
+    if (!destination.closed) {
+      const closed = new Promise(resolve => destination.once('close', () => resolve(undefined)));
+      destination.destroy();
+      await closed;
+    }
+  }
+}
+
+/** 排他候选→完整写入及关闭→严格全流自验→同目录 rename；失败不构成项目事务。
+ * @param {import('./common.mjs').CommandOptions} options @returns {Promise<import('./common.mjs').CommandResult>} */
+export async function packPackage(options) {
+  const command = 'pack';
+  /** @type {string|undefined} */ let candidatePath;
+  try {
+    const plan = await prepareArchive(options);
+    const output = resolve(options.output ?? join(plan.root, 'delivery.tar.gz'));
+    await protectOutput(plan, output);
+    await mkdir(dirname(output), { recursive: true });
+    const directory = await realpath(dirname(output));
+    const target = join(directory, basename(output));
+    await protectOutput(plan, target);
+    const name = join(directory, '.' + basename(output) + '.candidate-' + randomUUID());
+    const candidate = await open(name, 'wx', 0o600);
+    candidatePath = name; // 只有实际排他创建成功后才报告可定位候选。
+    try { await buildArchive(plan, candidate); }
+    finally { await candidate.close(); }
+    const order = await verifyArchive(candidatePath, plan.members);
+    await protectOutput(plan, target);
+    await rename(candidatePath, target);
+    return { command, status: 'passed', checks: [{ id: 'archive', status: 'passed', message: '全部归档成员按顺序校验完成' }], details: { archive: output, order, members: order.length, publication: 'published', scope: '归档文件完整性；不判定人工确认' } };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    const message = candidatePath ? `${reason}；候选包：${candidatePath}；原交付包保持` : reason;
+    return { command, status: 'failed', checks: [failure('archive', message)], details: { publication: 'not-published', ...(candidatePath ? { candidate: candidatePath } : {}) } };
   }
 }

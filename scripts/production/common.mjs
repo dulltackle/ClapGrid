@@ -1,5 +1,5 @@
-import { readFile, realpath, stat } from 'node:fs/promises';
-import { resolve, relative, isAbsolute, sep } from 'node:path';
+import { readFile, realpath, readlink, stat } from 'node:fs/promises';
+import { resolve, relative, isAbsolute, sep, dirname, basename } from 'node:path';
 import { productionSchema } from './schema.mjs';
 
 /** @typedef {{project:string, manifest:string, report:string, args:string[],output?:string,archive?:string}} CommandOptions */
@@ -11,6 +11,22 @@ import { productionSchema } from './schema.mjs';
 function within(root, file) {
   const location = relative(root, file);
   return location !== '..' && !location.startsWith(`..${sep}`) && !isAbsolute(location);
+}
+/** 报告与归档输出共用真实路径身份，包括尚未生成目标的符号链接和父目录别名。
+ * @param {string} path @returns {Promise<string>} */
+export async function canonicalFilePath(path) {
+  try { return await realpath(path); }
+  catch (error) {
+    if (!(error instanceof Error) || !('code' in error) || !['ENOENT', 'ENOTDIR'].includes(String(error.code))) throw error;
+    const parent = dirname(path);
+    let link;
+    try { link = await readlink(path); }
+    catch (linkError) {
+      if (!(linkError instanceof Error) || !('code' in linkError) || !['ENOENT', 'ENOTDIR', 'EINVAL'].includes(String(linkError.code))) throw linkError;
+    }
+    if (link !== undefined) return canonicalFilePath(resolve(parent, link));
+    return parent === path ? path : resolve(await canonicalFilePath(parent), basename(path));
+  }
 }
 /** 项目引用仅允许普通文件，符号链接的最终目标也必须属于项目。
  * @param {string} project @param {string} input */
