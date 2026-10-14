@@ -1,0 +1,221 @@
+"""按清单生成交付包并顺序校验；机械归档结果不代替人工确认。"""
+import gzip
+import hashlib
+import io
+import json
+import os
+from pathlib import Path, PurePosixPath
+import re
+import sys
+import tarfile
+import tempfile
+from urllib.parse import urlparse
+from urllib.request import url2pathname
+
+CHUNK = 1024 * 1024
+INDEX = '.clapgrid-package.json'
+
+
+def digest(stream):
+    value = hashlib.sha256()
+    size = 0
+    while data := stream.read(CHUNK):
+        value.update(data)
+        size += len(data)
+    return value.hexdigest(), size
+
+
+def existing_evidence_file(root, reference):
+    """仅收集当前记录可定位的项目内原件，不判定审阅结论。"""
+    if not isinstance(reference, str) or not reference:
+        return None
+    parsed = urlparse(reference)
+    if parsed.scheme == 'file':
+        if parsed.netloc not in {'', 'localhost'}:
+            return None
+        reference = url2pathname(parsed.path)
+    elif parsed.scheme and not Path(reference).is_absolute():
+        return None
+    candidate = Path(os.path.abspath(root / reference))
+    resolved = candidate.resolve()
+    if not candidate.is_relative_to(root) or not resolved.is_relative_to(root) or not resolved.is_file():
+        return None
+    if candidate.is_symlink():
+        raise ValueError('当前证据原件不能以符号链接归档：' + reference)
+    return candidate.relative_to(root).as_posix()
+
+
+def current_evidence_files(root, evidence_path):
+    source = (root / evidence_path).resolve()
+    if not source.is_relative_to(root) or not source.is_file():
+        raise ValueError('证据文件不是项目内普通文件：' + evidence_path)
+    evidence = json.loads(source.read_bytes())
+    references = []
+    for requirement in evidence.get('requirements', []):
+        for criterion in requirement.get('required', []):
+            references.append(criterion.get('artifact'))
+    for record in evidence.get('records', []):
+        if record.get('reviewVersion') != evidence.get('reviewVersion'):
+            continue
+        references.append(record.get('artifact', {}).get('path'))
+        references.append(record.get('provenance', {}).get('record'))
+    return {path for reference in references if (path := existing_evidence_file(root, reference))}
+
+
+def entries(root, manifest_path):
+    raw = manifest_path.read_bytes()
+    manifest = json.loads(raw)
+    files = manifest['files']
+    if not isinstance(files, list) or not files:
+        raise ValueError('files 必须为非空制作成员清单')
+    manifest_name = manifest_path.relative_to(root).as_posix()
+    if manifest_name == INDEX:
+        raise ValueError('清单自身不能使用归档索引保留路径：' + INDEX)
+    members = {}
+    index_files = []
+    for entry in files:
+        path = entry['path']
+        if not isinstance(path, str) or not path or '\\' in path or '\x00' in path or PurePosixPath(path).is_absolute() or '..' in PurePosixPath(path).parts or str(PurePosixPath(path)) != path:
+            raise ValueError(f'制作成员必须是规范项目相对路径：{path}')
+        resolved = (root / path).resolve()
+        if not resolved.is_relative_to(root) or (root / path).is_symlink() or not resolved.is_file():
+            raise ValueError(f'制作成员不是项目内普通文件：{path}')
+        if entry.get('category') not in {'production', 'technical', 'user', 'history'}:
+            raise ValueError(f'制作成员缺少明确分类：{path}')
+        if not isinstance(entry.get('sha256'), str) or not re.fullmatch('[0-9a-f]{64}', entry['sha256']):
+            raise ValueError(f'制作成员缺少 SHA-256 内容身份：{path}')
+        if path == manifest_name:
+            raise ValueError('清单自身不能列入 files，避免自引用摘要')
+        if path == INDEX:
+            raise ValueError('制作成员占用归档索引保留路径：' + INDEX)
+        if path in members:
+            raise ValueError(f'清单重复成员：{path}')
+        with (root / path).open('rb') as source:
+            sha, size = digest(source)
+        if sha != entry['sha256']:
+            raise ValueError(f'制作成员摘要不符：{path}')
+        members[path] = {'sha256': sha, 'size': size}
+        index_files.append({**entry, 'size': size})
+    required = {manifest['typecheck']}
+    for segment in manifest['segments']:
+        required.update(segment[key] for key in ['card', 'source', 'audio', 'assembly', 'review'])
+        required.update(segment.get('assets', []))
+        required.update(segment.get('transitions', []))
+        if segment.get('lastFrame'):
+            required.add(segment['lastFrame'])
+    sample = manifest.get('sample', {})
+    for role in ['video', 'plan']:
+        if sample.get(role, {}).get('path'):
+            required.add(sample[role]['path'])
+    if isinstance(manifest.get('evidence'), str):
+        required.add(manifest['evidence'])
+        required.update(current_evidence_files(root, manifest['evidence']))
+    if (root / 'video.md').exists():
+        required.add('video.md')
+    for node in manifest.get('dependencies', {}).get('nodes', []):
+        if node.get('path'):
+            required.add(node['path'])
+    missing_sources = required - set(members)
+    if missing_sources:
+        raise ValueError('清单遗漏制作输入、素材或审阅记录：' + ', '.join(sorted(missing_sources)))
+    manifest_entry = {'path': manifest_name, 'sha256': hashlib.sha256(raw).hexdigest(), 'size': len(raw)}
+    index = {'schemaVersion': 1, 'manifest': manifest_entry, 'files': index_files}
+    index_bytes = (json.dumps(index, ensure_ascii=False, indent=2) + '\n').encode()
+    members[manifest_name] = {'sha256': manifest_entry['sha256'], 'size': len(raw)}
+    members[INDEX] = {'sha256': hashlib.sha256(index_bytes).hexdigest(), 'size': len(index_bytes)}
+    return members, index_bytes, manifest_name
+
+
+class StrictTarInfo(tarfile.TarInfo):
+    @classmethod
+    def fromtarfile(cls, archive):
+        try:
+            return super().fromtarfile(archive)
+        except (tarfile.InvalidHeaderError, tarfile.TruncatedHeaderError, tarfile.EmptyHeaderError) as error:
+            # TarFile.next 在非首块可能吞掉这些错误，不能容错为通过。
+            raise ValueError('归档文件头损坏或结束块缺失：' + str(error)) from error
+
+
+def verify(archive, members):
+    seen = set()
+    order = []
+    # tarfile 的顺序模式避免按无序名字反复解压；外层 gzip 读到 EOF 核对 CRC。
+    with archive.open('rb') as compressed, gzip.GzipFile(fileobj=compressed, mode='rb') as decoded:
+        with tarfile.open(fileobj=decoded, mode='r|', tarinfo=StrictTarInfo) as package:
+            for member in package:
+                name = member.name
+                if name in seen:
+                    raise ValueError(f'归档重复成员：{name}')
+                if name not in members:
+                    raise ValueError(f'归档额外成员：{name}')
+                if not member.isfile():
+                    raise ValueError(f'归档成员不是普通文件：{name}')
+                stream = package.extractfile(member)
+                if stream is None:
+                    raise ValueError(f'归档成员无法读取：{name}')
+                sha, size = digest(stream)
+                if members[name] != {'sha256': sha, 'size': size}:
+                    raise ValueError(f'归档成员内容摘要或大小不符：{name}')
+                seen.add(name)
+                order.append(name)
+            padding = 0
+            # 从 tar 的流读取，连同预读缓冲一起检查，不能直接跳到 gzip。
+            while tail := package.fileobj.read(CHUNK):
+                padding += len(tail)
+                if any(tail):
+                    raise ValueError('归档结束块后存在非零数据或额外成员')
+            if padding < tarfile.BLOCKSIZE:
+                raise ValueError('归档缺少第二个结束零块')
+        while decoded.read(CHUNK):
+            pass
+    missing = set(members) - seen
+    if missing:
+        raise ValueError('归档缺失成员：' + ', '.join(sorted(missing)))
+    return order
+
+
+def pack(root, manifest_path, output, members, index_bytes, manifest_name):
+    if output.resolve() in {(root / name).resolve() for name in members}:
+        raise ValueError(f'输出路径指向制作输入或清单，拒绝覆盖：{output}')
+    output.parent.mkdir(parents=True, exist_ok=True)
+    fd, candidate_name = tempfile.mkstemp(prefix='.' + output.name + '.candidate-', dir=output.parent)
+    os.close(fd)
+    candidate = Path(candidate_name)
+    try:
+        with tarfile.open(candidate, 'w:gz', format=tarfile.PAX_FORMAT) as package:
+            index = tarfile.TarInfo(INDEX)
+            index.size = len(index_bytes)
+            package.addfile(index, io.BytesIO(index_bytes))
+            for name in members:
+                if name == INDEX:
+                    continue
+                package.add(root / name, arcname=name, recursive=False)
+        order = verify(candidate, members)
+        os.replace(candidate, output)
+        return {'archive': str(output), 'order': order, 'members': len(order), 'publication': 'published', 'scope': '归档文件完整性；不判定人工确认'}
+    except Exception as error:
+        raise ValueError(f'{error}；候选包：{candidate}；原交付包保持') from error
+
+
+def main():
+    options = json.load(sys.stdin)
+    command = options['command']
+    try:
+        root = Path(options['project']).resolve()
+        manifest_path = (root / options['manifest']).resolve()
+        members, index_bytes, manifest_name = entries(root, manifest_path)
+        if command == 'pack':
+            details = pack(root, manifest_path, Path(options.get('output') or root / 'delivery.tar.gz'), members, index_bytes, manifest_name)
+        else:
+            if not options.get('archive'):
+                raise ValueError('verify-package 必须指定 --archive')
+            archive = Path(options['archive'])
+            details = {'archive': str(archive), 'order': verify(archive, members), 'publication': 'verified', 'scope': '归档文件完整性；不判定人工确认'}
+        result = {'command': command, 'status': 'passed', 'checks': [{'id': 'archive', 'status': 'passed', 'message': '全部归档成员按顺序校验完成'}], 'details': details}
+    except Exception as error:
+        result = {'command': command, 'status': 'failed', 'checks': [{'id': 'archive', 'status': 'failed', 'message': str(error)}]}
+    print(json.dumps(result, ensure_ascii=False))
+
+
+if __name__ == '__main__':
+    main()
