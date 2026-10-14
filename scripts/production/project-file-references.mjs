@@ -94,6 +94,258 @@ async function protectProofs(value, project, paths) {
   }
 }
 
+/** JS 字符串投影以外保留 Python 码点身份；不暴露到调用方或改写原件。
+ * @type {WeakMap<object, Map<string, number[]>>} */
+const stringCodePoints = new WeakMap();
+/** @type {WeakMap<object, Map<string, string>>} */
+const dictionaryKeys = new WeakMap();
+
+/** @param {string} text @param {number} index @param {Map<string, number>} tags @param {string} prefix */
+function taggedPoint(text, index, tags, prefix) {
+  if (!text.startsWith(prefix, index)) return;
+  const token = text.slice(index, index + prefix.length + 6);
+  const point = tags.get(token);
+  return point === undefined ? undefined : { point, length: token.length };
+}
+
+/** Native 已验证语法；这里只恢复字符串码点，JSON 的转义 surrogate pair 按旧 parser 合并。
+ * @param {string} source @param {Map<string, number>} tags @param {string} prefix */
+function sourceStringPoints(source, tags, prefix) {
+  const points = [];
+  for (let index = 1; index < source.length - 1;) {
+    const tagged = taggedPoint(source, index, tags, prefix);
+    if (tagged) { points.push(tagged.point); index += tagged.length; continue; }
+    if (source[index] === '\\') {
+      if (source[index + 1] === 'u') {
+        const high = Number.parseInt(source.slice(index + 2, index + 6), 16);
+        const low = source.slice(index + 6, index + 8) === '\\u' ? Number.parseInt(source.slice(index + 8, index + 12), 16) : -1;
+        if (high >= 0xd800 && high <= 0xdbff && low >= 0xdc00 && low <= 0xdfff) { points.push(0x10000 + (high - 0xd800) * 1024 + low - 0xdc00); index += 12; }
+        else { points.push(high); index += 6; }
+      } else { points.push(JSON.parse('"' + source.slice(index, index + 2) + '"').codePointAt(0)); index += 2; }
+    } else {
+      const point = source.codePointAt(index) ?? 0;
+      points.push(point); index += point > 0xffff ? 2 : 1;
+    }
+  }
+  return points;
+}
+
+/** 已解析的 key 仍含私有原字节标记；其余码点按普通 JS Unicode 投影读取。
+ * @param {string} text @param {Map<string, number>} tags @param {string} prefix */
+function projectedKeyPoints(text, tags, prefix) {
+  const points = [];
+  for (let index = 0; index < text.length;) {
+    const tagged = taggedPoint(text, index, tags, prefix);
+    if (tagged) { points.push(tagged.point); index += tagged.length; }
+    else { const point = text.codePointAt(index) ?? 0; points.push(point); index += point > 0xffff ? 2 : 1; }
+  }
+  return points;
+}
+
+/** 仅扩展旧 Python JSON 的三个数值常量；字符串、其它语法仍交由原生严格 JSON 解析。
+ * 数字占位原始词形保证不出现在输入中；context.source 区分真实零与占位，不改变 NaN 的领域意义。
+ * @param {string} text @param {Map<number, number>} rawSurrogates */
+function parseEvidenceJson(text, rawSurrogates) {
+  // 标记不能碰撞原始或 JSON 转义后的字符串/key；仅在私有解析文本中存在。
+  const originals = (text.match(/"(?:[^"\\]|\\[\s\S])*"/g) ?? []).map(source => JSON.parse(source));
+  let prefix = '__clapgrid_raw_surrogate_';
+  while (originals.some(value => value.includes(prefix))) prefix += '_';
+  const tags = new Map();
+  const taggedText = [];
+  let rest = 0;
+  for (const [offset, point] of rawSurrogates) {
+    const token = `${prefix}${point.toString(16)}__`;
+    tags.set(token, point); taggedText.push(text.slice(rest, offset), token); rest = offset + 1;
+  }
+  taggedText.push(text.slice(rest)); text = taggedText.join('');
+  /** @type {Map<string, number>} */
+  const markers = new Map();
+  /** @type {Map<number, string>} */
+  const tokens = new Map();
+  let sequence = 0;
+  /** @param {number} value */
+  const marker = value => {
+    const existing = tokens.get(value);
+    if (existing !== undefined) return existing;
+    let source;
+    do { source = `0e+${sequence++}`; } while (text.includes(source) || markers.has(source));
+    markers.set(source, value);
+    tokens.set(value, source);
+    return source;
+  };
+  let quoted = false, escaped = false;
+  const parts = [];
+  for (let index = 0; index < text.length; index++) {
+    const char = text[index];
+    if (quoted) {
+      parts.push(char);
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === '"') quoted = false;
+      continue;
+    }
+    if (char === '"') { quoted = true; parts.push(char); continue; }
+    const token = ['-Infinity', 'Infinity', 'NaN'].find(token => text.startsWith(token, index));
+    if (token && (index === 0 || /[ \t\r\n\[,:]/.test(text[index - 1] ?? '')) && (index + token.length === text.length || /[ \t\r\n\]},]/.test(text[index + token.length] ?? ''))) {
+      parts.push(marker(token === 'NaN' ? NaN : token === 'Infinity' ? Infinity : -Infinity));
+      index += token.length - 1;
+    } else parts.push(char);
+  }
+  /** @this {object} @param {string} key @param {any} value @param {{source?:string}} [context] */
+  function revive(key, value, context) {
+    if (typeof value === 'number') {
+      if (!context?.source) throw new Error('证据常量解析需要支持 JSON source context 的 Node');
+      if (markers.has(context.source)) return markers.get(context.source);
+      if (!Number.isSafeInteger(value) && /^-?(?:0|[1-9][0-9]*)$/.test(context.source)) return BigInt(context.source);
+    }
+    if (typeof value === 'string') {
+      if (!context?.source) throw new Error('证据字符串身份需要 JSON source context');
+      const points = sourceStringPoints(context.source, tags, prefix);
+      const fields = stringCodePoints.get(this) ?? new Map();
+      fields.set(key, points); stringCodePoints.set(this, fields);
+      return points.map(point => String.fromCodePoint(point)).join('');
+    }
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const keys = new Map();
+      for (const name of Object.keys(value)) keys.set(JSON.stringify(projectedKeyPoints(name, tags, prefix)), name);
+      dictionaryKeys.set(value, keys);
+    }
+    return value;
+  }
+  // 在 Native 折叠重复键以前统一 Python 相同的键身份，否则首插入顺序会误选最后覆盖值。
+  // 独立 surrogate 使用私有标记，仍与合法 pair 形成的非 BMP 标量保持不同身份。
+  const normalized = parts.join('').replace(/"(?:[^"\\]|\\[\s\S])*"/g, (source, offset, full) => {
+    if (!/^\s*:/.test(full.slice(offset + source.length))) return source;
+    const points = sourceStringPoints(source, tags, prefix);
+    const name = points.map(point => {
+      if (point < 0xd800 || point > 0xdfff) return String.fromCodePoint(point);
+      const token = `${prefix}${point.toString(16)}__`;
+      tags.set(token, point);
+      return token;
+    }).join('');
+    return JSON.stringify(name);
+  });
+  return JSON.parse(normalized, revive);
+}
+
+/** 旧 json.loads 的 surrogatepass 保留编码代理字符；其它 UTF-8 错误仍严格拒绝。
+ * @param {Buffer} raw */
+function decodeEvidenceUtf8(raw) {
+  const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
+  /** @type {Map<number, number>} */
+  const surrogates = new Map();
+  try { return { text: decoder.decode(raw), surrogates }; }
+  catch {
+    const parts = [];
+    let start = 0, length = 0;
+    for (let index = 0; index + 2 < raw.length; index++) {
+      const second = raw[index + 1] ?? 0, third = raw[index + 2] ?? 0;
+      if (raw[index] === 0xed && second >= 0xa0 && second <= 0xbf && third >= 0x80 && third <= 0xbf) {
+        const preceding = decoder.decode(raw.subarray(start, index));
+        const point = 0xd000 | (second & 0x3f) << 6 | third & 0x3f;
+        parts.push(preceding); length += preceding.length; surrogates.set(length, point);
+        parts.push(String.fromCharCode(point)); length++; index += 2; start = index + 1;
+      }
+    }
+    parts.push(decoder.decode(raw.subarray(start)));
+    return { text: parts.join(''), surrogates };
+  }
+}
+
+/** 原 json.loads 审阅版本的值比较：数字与 bool、缺省与 null、容器结构保持旧含义。
+ * NaN 标量不相等；容器中的 NaN 词元来自旧解析器共享常量，按同一对象比较。
+ * @param {unknown} left @param {unknown} right @param {boolean} [nested] @param {number[]} [leftPoints] @param {number[]} [rightPoints] @returns {boolean} */
+function sameReviewVersion(left, right, nested = false, leftPoints, rightPoints) {
+  left = left ?? null;
+  right = right ?? null;
+  /** @param {unknown} value */
+  const numeric = value => typeof value === 'boolean' ? Number(value) : typeof value === 'number' || typeof value === 'bigint' ? value : undefined;
+  const a = numeric(left), b = numeric(right);
+  if (a !== undefined && b !== undefined) {
+    if (typeof a === 'number' && Number.isNaN(a)) return nested && typeof b === 'number' && Number.isNaN(b);
+    if (typeof b === 'number' && Number.isNaN(b)) return false;
+    if (typeof a === typeof b) return a === b;
+    const integer = typeof a === 'bigint' ? a : b;
+    const floating = typeof a === 'number' ? a : b;
+    return typeof integer === 'bigint' && typeof floating === 'number' && Number.isFinite(floating) && Number.isInteger(floating) && BigInt(floating) === integer;
+  }
+  if (typeof left === 'string' && typeof right === 'string') {
+    const x = leftPoints ?? [...left].map(char => char.codePointAt(0));
+    const y = rightPoints ?? [...right].map(char => char.codePointAt(0));
+    return x.length === y.length && x.every((point, index) => point === y[index]);
+  }
+  if (left === right) return true;
+  if (Array.isArray(left) && Array.isArray(right)) return left.length === right.length && left.every((value, index) => sameReviewVersion(value, right[index], true, stringCodePoints.get(left)?.get(String(index)), stringCodePoints.get(right)?.get(String(index))));
+  if (left && right && typeof left === 'object' && typeof right === 'object' && !Array.isArray(left) && !Array.isArray(right)) {
+    const x = /** @type {Record<string, unknown>} */ (left);
+    const y = /** @type {Record<string, unknown>} */ (right);
+    const keys = dictionaryKeys.get(x) ?? new Map(Object.keys(x).map(key => [JSON.stringify([...key].map(char => char.codePointAt(0))), key]));
+    const other = dictionaryKeys.get(y) ?? new Map(Object.keys(y).map(key => [JSON.stringify([...key].map(char => char.codePointAt(0))), key]));
+    return keys.size === other.size && [...keys].every(([identity, key]) => {
+      const target = other.get(identity);
+      return target !== undefined && sameReviewVersion(x[key], y[target], true, stringCodePoints.get(x)?.get(key), stringCodePoints.get(y)?.get(target));
+    });
+  }
+  return false;
+}
+
+/** 读取旧归档能消费的证据原字节，仅生成领域投影，不改写原件。
+ * @param {Buffer} raw @param {string} path */
+function parseEvidenceBytes(raw, path) {
+  try {
+    // 与旧 Python json.detect_encoding 一致：UTF-32 BOM 必须先于 UTF-16；无 BOM 根据零字节位置判别。
+    let width = 1, little = true, offset = 0;
+    if (raw.subarray(0, 4).equals(Buffer.from([0, 0, 0xfe, 0xff]))) { width = 4; little = false; offset = 4; }
+    else if (raw.subarray(0, 4).equals(Buffer.from([0xff, 0xfe, 0, 0]))) { width = 4; offset = 4; }
+    else if (raw.subarray(0, 2).equals(Buffer.from([0xfe, 0xff]))) { width = 2; little = false; offset = 2; }
+    else if (raw.subarray(0, 2).equals(Buffer.from([0xff, 0xfe]))) { width = 2; offset = 2; }
+    else if (raw.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf]))) offset = 3;
+    else if (raw.length >= 4) {
+      if (!raw[0]) { width = raw[1] ? 2 : 4; little = false; }
+      else if (!raw[1]) width = raw[2] || raw[3] ? 2 : 4;
+    } else if (raw.length === 2) {
+      if (!raw[0]) { width = 2; little = false; }
+      else if (!raw[1]) width = 2;
+    }
+    const body = raw.subarray(offset);
+    let decoded;
+    if (width === 1) decoded = decodeEvidenceUtf8(body);
+    else {
+      if (body.length % width) throw new Error(`UTF-${width * 8} 代码单元被截断`);
+      const units = [];
+      /** @type {Map<number, number>} */
+      const surrogates = new Map();
+      let length = 0;
+      for (let index = 0; index < body.length; index += width) {
+        let point = width === 2 ? (little ? body.readUInt16LE(index) : body.readUInt16BE(index)) : (little ? body.readUInt32LE(index) : body.readUInt32BE(index));
+        if (width === 2 && point >= 0xd800 && point <= 0xdbff && index + 2 < body.length) {
+          const low = little ? body.readUInt16LE(index + 2) : body.readUInt16BE(index + 2);
+          if (low >= 0xdc00 && low <= 0xdfff) { point = 0x10000 + (point - 0xd800) * 1024 + low - 0xdc00; index += 2; }
+        }
+        if (point >= 0xd800 && point <= 0xdfff) surrogates.set(length, point);
+        const unit = String.fromCodePoint(point); units.push(unit); length += unit.length;
+      }
+      decoded = { text: units.join(''), surrogates };
+    }
+    return parseEvidenceJson(decoded.text, decoded.surrogates);
+  } catch (error) {
+    throw new Error(`证据文件编码或 JSON 无效：${path}：${String(error)}`);
+  }
+}
+
+/** 报告同时保护旧 Native UTF-8 replacement 与严格兼容投影；归档只采用严格解释。
+ * @param {string} path @param {'report-protection'|'archive-required'} purpose */
+async function readEvidenceJson(path, purpose) {
+  const raw = await readFile(path);
+  if (purpose === 'archive-required') return [parseEvidenceBytes(raw, path)];
+  const projections = [];
+  try { projections.push(JSON.parse(raw.toString('utf8'))); } catch {}
+  try { projections.push(parseEvidenceBytes(raw, path)); } catch (error) {
+    if (!projections.length) throw error;
+  }
+  return projections;
+}
+
 /** 按用途解释项目文件引用。报告用途容忍可读的不合格记录；归档用途仅返回作者必须声明的成员名称。
  * 引用解释不保证后续磁盘状态，实际写报告及读成员仍须重新核对。
  * 可传入已解析的领域投影，让归档的无损清单读取拥有原始字节和数字表示。
@@ -110,9 +362,10 @@ export async function projectFileReferences(options, purpose, input) {
       if (typeof manifest.evidence === 'string') {
         try {
           const source = await resolveProjectFile(options.project, manifest.evidence);
-          const evidence = JSON.parse(await readFile(source, 'utf8'));
-          await protectPaths(evidence, options.project, paths, true);
-          await protectProofs(evidence, options.project, paths);
+          for (const evidence of await readEvidenceJson(source, 'report-protection')) {
+            await protectPaths(evidence, options.project, paths, true);
+            await protectProofs(evidence, options.project, paths);
+          }
         } catch { /* 所属命令校验缺失或无效记录；能读取的关联路径提前保护。 */ }
       }
     } catch { /* 清单解析失败仍保护清单、文档及交付目标。 */ }
@@ -148,7 +401,8 @@ export async function projectFileReferences(options, purpose, input) {
     const source = resolve(root, manifest.evidence);
     const actual = await realpath(source);
     if (!within(root, actual) || !(await stat(actual)).isFile()) throw new Error(`证据文件不是项目内普通文件：${manifest.evidence}`);
-    const evidence = object(JSON.parse(await readFile(actual, 'utf8')));
+    const [projection] = await readEvidenceJson(actual, 'archive-required');
+    const evidence = object(projection);
     const references = [];
     for (const value of list(evidence.requirements === undefined ? [] : evidence.requirements)) {
       const requirement = object(value);
@@ -156,7 +410,7 @@ export async function projectFileReferences(options, purpose, input) {
     }
     for (const value of list(evidence.records === undefined ? [] : evidence.records)) {
       const record = object(value);
-      if (record.reviewVersion !== evidence.reviewVersion) continue;
+      if (!sameReviewVersion(record.reviewVersion, evidence.reviewVersion, false, stringCodePoints.get(record)?.get('reviewVersion'), stringCodePoints.get(evidence)?.get('reviewVersion'))) continue;
       references.push(object(record.artifact === undefined ? {} : record.artifact).path, object(record.provenance === undefined ? {} : record.provenance).record);
     }
     for (const reference of references) {
