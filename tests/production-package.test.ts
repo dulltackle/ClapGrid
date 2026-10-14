@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { inspect, rewrite, corruptRawPackage, restorePackage } from './helpers/production-package.js';
 
 const cli = resolve('scripts/production.mjs');
 const hash = (data: string | Buffer) => createHash('sha256').update(data).digest('hex');
@@ -34,38 +35,13 @@ function run(project: string, command: string, args: string[] = []) {
   assert.ok(existsSync(report), result.stderr + result.stdout);
   return { ...result, report: JSON.parse(readFileSync(report, 'utf8')) };
 }
-function inspect(archive: string) {
-  const result = spawnSync('python3', ['-c', 'import tarfile,sys,json,base64\nwith tarfile.open(sys.argv[1]) as t: print(json.dumps({m.name:base64.b64encode(t.extractfile(m).read()).decode() for m in t}))', archive], { encoding: 'utf8' });
-  assert.equal(result.status, 0, result.stderr);
-  return JSON.parse(result.stdout) as Record<string, string>;
-}
-function rewrite(archive: string, mode: string) {
-  const code = `import tarfile,sys,io,os
-p,mode=sys.argv[1:]
-with tarfile.open(p) as t: members=[(m,t.extractfile(m).read()) for m in t]
-with tarfile.open(p+'.modified','w:gz') as t:
- for m,data in members:
-  if mode=='missing' and m.name=='src.ts':continue
-  if mode=='digest' and m.name=='src.ts':data=b'wrong';m.size=len(data)
-  if mode=='manifest' and m.name=='production.json':data=data+b' ';m.size=len(data)
-  t.addfile(m,io.BytesIO(data))
- if mode=='extra':
-  m=tarfile.TarInfo('unexpected.txt');m.size=1;t.addfile(m,io.BytesIO(b'x'))
- if mode=='duplicate':
-  m,data=next((m,d) for m,d in members if m.name=='src.ts');t.addfile(m,io.BytesIO(data))
-os.replace(p+'.modified',p)
-`;
-  const result = spawnSync('python3', ['-c', code, archive, mode], { encoding: 'utf8' });
-  assert.equal(result.status, 0, result.stderr);
-}
-
-test('真实入口从清单生成完整归档，清单自身及不同大小成员字节准确，历史与人工记录原样保留', t => {
+test('真实入口从清单生成完整归档，清单自身及不同大小成员字节准确，历史与人工记录原样保留', async t => {
   const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
   const result = run(f.project, 'pack');
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.equal(result.report.status, 'passed');
   const archive = join(f.project, 'delivery.tar.gz');
-  const members = inspect(archive);
+  const members = await inspect(archive);
   assert.deepEqual(Object.keys(members).sort(), [...Object.keys(f.contents), 'production.json', '.clapgrid-package.json'].sort());
   for (const [name, bytes] of Object.entries(f.contents)) {
     assert.equal(members[name], Buffer.from(bytes).toString('base64'));
@@ -110,30 +86,17 @@ test('重复成员和清单自引用被拒绝，不覆盖已有有效交付包',
 });
 
 for (const mode of ['missing', 'extra', 'duplicate', 'digest', 'manifest', 'gzip-crc', 'truncated', 'invalid-header', 'nonzero-tail', 'bad-header-at-end', 'missing-end-blocks', 'single-end-block']) {
-  test(`真实归档拒绝 ${mode} 并保留完整失败报告与输入`, t => {
+  test(`真实归档拒绝 ${mode} 并保留完整失败报告与输入`, async t => {
     const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
     assert.equal(run(f.project, 'pack').status, 0);
     const archive = join(f.project, 'delivery.tar.gz');
     if (['invalid-header', 'nonzero-tail', 'bad-header-at-end', 'missing-end-blocks', 'single-end-block'].includes(mode)) {
-      const code = `import gzip,sys,tarfile
-from pathlib import Path
-p=Path(sys.argv[1]);mode=sys.argv[2];data=gzip.decompress(p.read_bytes());garbage=b'x'*512
-with tarfile.open(p) as t:
- last=t.getmembers()[-1];end=last.offset_data+((last.size+511)//512)*512
-if mode=='invalid-header':data=garbage+data
-elif mode=='nonzero-tail':data=data+garbage
-elif mode=='bad-header-at-end':data=data[:end]+garbage+data[end:]
-elif mode=='missing-end-blocks':data=data[:end]
-else:data=data[:end]+bytes(512)
-p.write_bytes(gzip.compress(data))
-`;
-      const changed = spawnSync('python3', ['-c', code, archive, mode], { encoding: 'utf8' });
-      assert.equal(changed.status, 0, changed.stderr);
+      corruptRawPackage(archive, mode);
     } else if (mode === 'gzip-crc') {
       const data = readFileSync(archive); data[data.length - 8]! ^= 255; writeFileSync(archive, data);
     } else if (mode === 'truncated') {
       const data = readFileSync(archive); writeFileSync(archive, data.subarray(0, data.length - 9));
-    } else rewrite(archive, mode);
+    } else await rewrite(archive, mode);
     const result = run(f.project, 'verify-package', ['--archive', archive]);
     assert.equal(result.status, 1, result.stdout);
     assert.equal(result.report.status, 'failed');
@@ -176,7 +139,7 @@ for (const mode of ['escape', 'absolute', 'empty', 'omitted-source', 'invalid-ca
   });
 }
 
-test('发布失败保留可定位候选与已有有效包，独立恢复后全部成员可再核对', t => {
+test('发布失败保留可定位候选与已有有效包，独立恢复后全部成员可再核对', async t => {
   const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
   assert.equal(run(f.project, 'pack').status, 0);
   const archive = join(f.project, 'delivery.tar.gz');
@@ -189,8 +152,9 @@ test('发布失败保留可定位候选与已有有效包，独立恢复后全�
   assert.deepEqual(readFileSync(archive), previous);
   const restored = mkdtempSync(join(tmpdir(), 'clapgrid-restore-'));
   t.after(() => rmSync(restored, { recursive: true, force: true }));
-  const result = spawnSync('python3', ['-c', "import tarfile,sys\nwith tarfile.open(sys.argv[1]) as t:t.extractall(sys.argv[2],filter='data')", archive, restored], { encoding: 'utf8' });
-  assert.equal(result.status, 0, result.stderr);
+  const restoredMembers = await restorePackage(archive, restored);
+  for (const member of restoredMembers) assert.deepEqual(readFileSync(join(restored, member.header.name)), member.body);
+  assert.deepEqual(readFileSync(join(restored, 'production.json')), readFileSync(join(f.project, 'production.json')));
   const verified = run(restored, 'verify-package', ['--archive', archive]);
   assert.equal(verified.status, 0, verified.stdout);
   for (const [path, data] of Object.entries(f.contents)) assert.deepEqual(readFileSync(join(restored, path)), Buffer.from(data));
@@ -288,7 +252,7 @@ for (const field of ['assets', 'lastFrame', 'transitions']) {
 }
 
 for (const omitted of ['当前技术产物.json', '当前证明原件.json']) {
-  test(`当前审阅引用的 ${omitted} 必须入包，独立恢复后证据仍可核对`, t => {
+  test(`当前审阅引用的 ${omitted} 必须入包，独立恢复后证据仍可核对`, async t => {
     const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
     const artifact = '当前技术产物.json'; const proof = '当前证明原件.json';
     const data = '隔离归档及证据机械核对产物';
@@ -301,7 +265,8 @@ for (const omitted of ['当前技术产物.json', '当前证明原件.json']) {
       f.manifest.files.push({ path: path!, sha256: hash(bytes!), category: 'technical' });
     }
     Object.assign(f.manifest, { evidence: '证据.json' }); f.save();
-    assert.equal(run(f.project, 'evidence').status, 0);
+    const originalEvidence = run(f.project, 'evidence');
+    assert.equal(originalEvidence.status, 0);
     assert.equal(run(f.project, 'pack').status, 0);
     const archive = join(f.project, 'delivery.tar.gz'); const previous = readFileSync(archive);
     f.manifest.files = f.manifest.files.filter(x => x.path !== omitted); f.save();
@@ -310,18 +275,25 @@ for (const omitted of ['当前技术产物.json', '当前证明原件.json']) {
     assert.match(JSON.stringify(failed.report), /遗漏/);
     assert.deepEqual(readFileSync(archive), previous);
     const restored = mkdtempSync(join(tmpdir(), 'clapgrid-proof-restore-')); t.after(() => rmSync(restored, { recursive: true, force: true }));
-    const unpack = spawnSync('python3', ['-c', "import tarfile,sys\nwith tarfile.open(sys.argv[1]) as t:t.extractall(sys.argv[2],filter='data')", archive, restored], { encoding: 'utf8' });
-    assert.equal(unpack.status, 0, unpack.stderr);
+    const restoredMembers = await restorePackage(archive, restored);
+    for (const member of restoredMembers) assert.deepEqual(readFileSync(join(restored, member.header.name)), member.body);
+    assert.equal(readFileSync(join(restored, '证据.json'), 'utf8'), JSON.stringify(evidence));
+    assert.equal(readFileSync(join(restored, proof), 'utf8'), '受控测试原件，不是真实用户/宿主确认');
+    const verified = run(restored, 'verify-package', ['--archive', archive]);
+    assert.equal(verified.status, 0, verified.stdout);
+    const restoredEvidence = run(restored, 'evidence');
+    assert.equal(restoredEvidence.report.details.requirements[0].writeBackAllowed, false);
+    assert.deepEqual(restoredEvidence.report.details.requirements, originalEvidence.report.details.requirements);
     assert.equal(run(restored, 'evidence').status, 0);
   });
 }
 
-test('打包保留待审及历史记录，不强求尚未生成或历史失效的原件', t => {
+test('打包保留待审及历史记录，不强求尚未生成或历史失效的原件', async t => {
   const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
   const evidence = { schemaVersion: 1, reviewVersion: 'current', requirements: [{ id: 'future', required: [{ id: 'pending', artifact: '未制作样片.mp4' }] }],
     records: [{ reviewVersion: 'old', artifact: { path: '旧版已失效.mp4' }, provenance: { record: '旧版记录.txt' } }, { reviewVersion: 'current', provenance: { record: 'https://example.invalid/user-review' } }] };
   const bytes = JSON.stringify(evidence); writeFileSync(join(f.project, '待审历史.json'), bytes);
   f.manifest.files.push({ path: '待审历史.json', sha256: hash(bytes), category: 'history' }); Object.assign(f.manifest, { evidence: '待审历史.json' }); f.save();
   const result = run(f.project, 'pack'); assert.equal(result.status, 0, result.stdout);
-  assert.equal(inspect(join(f.project, 'delivery.tar.gz'))['待审历史.json'], Buffer.from(bytes).toString('base64'));
+  assert.equal((await inspect(join(f.project, 'delivery.tar.gz')))['待审历史.json'], Buffer.from(bytes).toString('base64'));
 });
