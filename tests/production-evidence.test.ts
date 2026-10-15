@@ -81,10 +81,13 @@ const incomplete: { name: string; change: (record: ReturnType<typeof fixture>['e
   { name: '错误审阅版本', change: record => { record.reviewVersion = 'review-old'; }, expected: 'failed' },
   { name: '错误范围', change: record => { record.scope = ['B']; }, expected: 'failed' },
   { name: '错误类型', change: record => { record.kind = 'reviewed'; }, expected: 'failed' },
+  { name: '错误来源', change: record => { record.source = 'execution'; }, expected: 'failed' },
+  { name: '错误产物路径', change: record => { record.artifact = { ...record.artifact, path: '其他产物.txt' }; }, expected: 'failed' },
   { name: '错误内容身份', change: record => { record.artifact = { ...record.artifact, sha256: '0'.repeat(64) }; }, expected: 'failed' },
 ];
 for (const scenario of incomplete) test(`真实入口将${scenario.name}定位到子项，整条不得回写`, t => {
   const f = fixture(t);
+  writeFileSync(join(f.project, '其他产物.txt'), '已审阅内容');
   const record = { ...f.evidence.records[0]!, id: 'E2', criterion: 'visual', kind: 'user' };
   scenario.change(record); f.evidence.records.push(record); f.save();
   const result = f.run();
@@ -104,7 +107,10 @@ test('内容与范围不变可显式复用旧版本，记录文字变化不会�
   f.save();
   const first = f.run();
   assert.equal(first.status, 0, first.stdout);
-  assert.deepEqual(first.report.checks.find((c: { id: string }) => c.id === 'R1:visual').reusedFrom, ['original-user']);
+  const proof = first.report.checks.find((c: { id: string }) => c.id === 'R1:visual');
+  assert.deepEqual(proof.reusedFrom, ['original-user']);
+  assert.deepEqual(proof.provenance, original.provenance);
+  assert.equal(proof.source, original.source);
   f.evidence.requirements[0]!.text += '（补充记录说明）';
   f.save();
   const second = f.run();
@@ -120,10 +126,12 @@ test('复用原记录的否决、变更范围与循环关联均不能被新版�
   const f = fixture(t);
   const original = { ...f.evidence.records[0]!, id: 'old-user', criterion: 'visual', kind: 'user', reviewVersion: 'review-1' };
   f.evidence.records.push(original, { ...original, id: 'new-user', reviewVersion: 'review-2', reuseOf: original.id });
-  for (const invalidation of ['denied', 'scope', 'cycle']) {
+  for (const invalidation of ['denied', 'scope', 'cycle', 'identity', 'provenance']) {
     original.status = invalidation === 'denied' ? 'denied' : 'passed';
     original.scope = invalidation === 'scope' ? ['B'] : ['A'];
     original.reuseOf = invalidation === 'cycle' ? 'new-user' : undefined;
+    original.requirement = invalidation === 'identity' ? 'other-requirement' : 'R1';
+    original.provenance = { ...original.provenance, observedAt: invalidation === 'provenance' ? '2026-10-12T00:00:00Z' : '2026-10-13T00:00:00Z' };
     f.save();
     const result = f.run();
     assert.equal(result.status, 1, result.stdout);
@@ -147,9 +155,9 @@ test('显式复用也不能绕过同一内容与范围的新否决或待审结�
   const f = fixture(t);
   const original = { ...f.evidence.records[0]!, id: 'old-pass', criterion: 'visual', kind: 'user', reviewVersion: 'review-1' };
   const newer = { ...original, id: 'newer-decision', reviewVersion: 'review-1-followup', status: 'denied',
-    provenance: { ...original.provenance, record: '受控测试后续结论', observedAt: '2026-10-13T01:00:00Z' } };
+    provenance: { ...original.provenance, actor: '另一位受控模拟审阅者', record: '受控测试后续结论', observedAt: '2026-10-13T01:00:00Z' } };
   f.evidence.records.push(original, newer, { ...original, id: 'reused-pass', reviewVersion: 'review-2', reuseOf: original.id });
-  for (const status of ['denied', 'pending']) {
+  for (const status of ['denied', 'pending', 'failed', 'skipped']) {
     newer.status = status; f.save();
     const result = f.run();
     assert.equal(result.status, 1, result.stdout);
@@ -203,4 +211,47 @@ for (const collision of ['产物直接路径', '产物别名到真实文件', '�
   assert.match(result.stdout, /拒绝覆盖/);
   assert.equal(readFileSync(join(f.project, realFile), 'utf8'), previous);
   assert.deepEqual(readFileSync(join(f.project, '审阅记录.json')), before);
+});
+
+
+test('公开业务结果按要求和子项身份分别定位，报告转换保留碰撞检查标识', async t => {
+  const f = fixture(t);
+  const base = f.evidence.records[0]!;
+  f.evidence.requirements = [
+    { ...f.evidence.requirements[0]!, id: 'R:part', required: [{ id: 'visual', kind: 'user', artifact: '产物.txt', scope: ['A'] }] },
+    { ...f.evidence.requirements[0]!, id: 'R', required: [{ id: 'part:visual', kind: 'user', artifact: '产物.txt', scope: ['A'] }] },
+  ];
+  f.evidence.records = [
+    { ...base, id: 'E1', requirement: 'R:part', criterion: 'visual', kind: 'user' },
+    { ...base, id: 'E2', requirement: 'R', criterion: 'part:visual', kind: 'user', status: 'pending' },
+  ];
+  f.save();
+  const api = await import(new URL('../scripts/production/evidence.mjs', import.meta.url).href);
+  const result = await api.evaluateEvidence({ project: f.project, manifest: 'production.json', report: '', args: [] });
+  assert.equal(result.requirements[0]?.criteria[0]?.id, 'visual');
+  assert.equal(result.requirements[1]?.criteria[0]?.id, 'part:visual');
+  assert.equal(result.requirements[0]?.criteria[0]?.status, 'passed');
+  assert.equal(result.requirements[1]?.criteria[0]?.status, 'pending');
+  assert.equal(result.requirements[0]?.criteria[0]?.evidence?.id, 'E1');
+  assert.equal(result.requirements[1]?.criteria[0]?.evidence?.id, 'E2');
+  const report = api.evidenceReport(result);
+  assert.deepEqual(report.checks.map((check: { id: string }) => check.id), ['R:part:visual', 'R:part:visual']);
+  const cli = f.run();
+  assert.equal(cli.status, 1);
+  assert.deepEqual(cli.report.checks, report.checks);
+  assert.deepEqual(cli.report.details, report.details);
+});
+
+
+test('真实来源的新否决不污染受控历史分组的机械判断', t => {
+  const f = fixture(t);
+  f.evidence.requirements[0]!.required.shift();
+  const current = { ...f.evidence.records[0]!, id: 'controlled-current', criterion: 'visual', kind: 'user' };
+  const realDenial = { ...current, id: 'real-denial', source: 'user-confirmation', status: 'denied', reviewVersion: 'other-review',
+    provenance: { actor: '隔离机制测试模拟真实声明者', record: '模拟否决，非实际审阅', observedAt: '2026-10-13T01:00:00Z' } };
+  f.evidence.records = [current, realDenial]; f.save();
+  const result = f.run();
+  assert.equal(result.status, 0, result.stdout);
+  assert.equal(result.report.details.requirements[0].controlledTest, true);
+  assert.equal(result.report.details.requirements[0].writeBackAllowed, false);
 });

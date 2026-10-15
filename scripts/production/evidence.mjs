@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { readManifest, resolveProjectFile, failure, statusOf } from './common.mjs';
+import { readManifest, resolveProjectFile, statusOf } from './common.mjs';
 
 const identity = z.string().min(1);
 const scope = z.array(identity).min(1).refine(values => new Set(values).size === values.length, '审阅范围不能重复');
@@ -22,6 +22,17 @@ const recordSchema = z.object({
 });
 const evidenceSchema = z.object({ schemaVersion: z.literal(1), reviewVersion: identity, requirements: z.array(requirementSchema).min(1), records: z.array(recordSchema) });
 
+/** @typedef {z.infer<typeof recordSchema>} EvidenceRecord */
+/** @typedef {z.infer<typeof requirementSchema>} EvidenceRequirement */
+/** @typedef {{path:string,evidenceId:string,kind:EvidenceRecord['kind'],scope:string[],source:EvidenceRecord['source'],provenance:EvidenceRecord['provenance'],reusedFrom:string[]}} EvidenceProof */
+/** 子项的声明、所选记录和机械核对结论分别保留；proof 仅在完整对应核对后提供。
+ * @typedef {{id:string,requirementId:string,kind:EvidenceRecord['kind'],artifact:string,scope:string[],status:import('./common.mjs').Status,message:string,path?:string,evidence?:EvidenceRecord,proof?:EvidenceProof}} EvidenceCriterionResult */
+/** @typedef {{id:string,text?:string,classifiedBy:EvidenceRequirement['classifiedBy'],criteria:EvidenceCriterionResult[],status:import('./common.mjs').Status,earned:boolean,controlledTest:boolean,writeBackAllowed:boolean,evidenceIds:string[]}} EvidenceRequirementResult */
+/** @typedef {{status:import('./common.mjs').Status,document?:string,reviewVersion?:string,requirements:EvidenceRequirementResult[],inputError?:{message:string,path?:string}}} EvidenceResult */
+
+export { evidenceReport } from './evidence-report.mjs';
+import { evidenceReport } from './evidence-report.mjs';
+
 /** @param {z.infer<typeof kind>} evidenceKind @param {z.infer<typeof recordSchema>['source']} source */
 function matchingSource(evidenceKind, source) {
   const expected = { ran: ['execution', 'actual-host'], reviewed: ['independent-review'], user: ['user-confirmation'] };
@@ -40,8 +51,9 @@ async function digest(path) {
   return hash.digest('hex');
 }
 
-/** @param {import('./common.mjs').CommandOptions} options @returns {Promise<import('./common.mjs').CommandResult>} */
-export default async function evidence(options) {
+/** 只读核对证据的公开业务入口，不包含依赖传播或展示检查标识。
+ * @param {import('./common.mjs').CommandOptions} options @returns {Promise<EvidenceResult>} */
+export async function evaluateEvidence(options) {
   let document;
   try {
     const { manifest } = await readManifest(options);
@@ -51,27 +63,29 @@ export default async function evidence(options) {
     const requirementIds = input.requirements.map(value => value.id);
     const recordIds = input.records.map(value => value.id);
     if (new Set(requirementIds).size !== requirementIds.length || new Set(recordIds).size !== recordIds.length) throw new Error('要求或证据记录的稳定 ID 重复。');
-    /** @type {import('./common.mjs').Check[]} */
-    const checks = [];
+    /** @type {EvidenceRequirementResult[]} */
     const requirements = [];
     for (const requirement of input.requirements) {
       if (new Set(requirement.required.map(value => value.id)).size !== requirement.required.length) throw new Error(`要求 ${requirement.id} 的子项 ID 重复。`);
-      /** @type {import('./common.mjs').Check[]} */
-      const requiredChecks = [];
+      /** @type {EvidenceCriterionResult[]} */
+      const criteria = [];
       /** @type {string[]} */
       const evidenceIds = [];
       let controlledTest = false;
       for (const criterion of requirement.required) {
-        const id = `${requirement.id}:${criterion.id}`;
+        /** @type {EvidenceCriterionResult} */
+        const result = { ...criterion, requirementId: requirement.id, status: 'pending', path: document, message: '缺少对应证据，仍需执行或审阅。' };
+        criteria.push(result);
         const records = input.records.filter(record => record.requirement === requirement.id && record.criterion === criterion.id);
         const candidates = records.filter(record => record.reviewVersion === input.reviewVersion);
         if (!candidates.length) {
-          requiredChecks.push({ id, status: records.length ? 'failed' : 'pending', path: document, message: records.length ? '证据属于其他审阅版本，不能自动继承通过。' : '缺少对应证据，仍需执行或审阅。' });
+          if (records.length) Object.assign(result, { status: 'failed', message: '证据属于其他审阅版本，不能自动继承通过。' });
           continue;
         }
-        if (candidates.length !== 1) { requiredChecks.push(failure(id, '当前审阅版本有多个证据记录，需明确唯一对应记录。', document)); continue; }
+        if (candidates.length !== 1) { Object.assign(result, { status: 'failed', message: '当前审阅版本有多个证据记录，需明确唯一对应记录。' }); continue; }
         const record = candidates[0];
         if (!record) continue;
+        result.evidence = record;
         evidenceIds.push(record.id);
         controlledTest ||= record.source === 'controlled-test';
         try {
@@ -106,18 +120,22 @@ export default async function evidence(options) {
           }
           /** @type {import('./common.mjs').Status} */
           const status = record.status === 'denied' ? 'failed' : record.status;
-          requiredChecks.push({ id, status, path: artifact, evidenceId: record.id, kind: record.kind, scope: record.scope, source: record.source, provenance: record.provenance, reusedFrom,
+          Object.assign(result, { status, path: artifact,
             message: status === 'passed' ? '产物内容、审阅版本与范围对应；结论取自证据记录声明。' : `证据结论为 ${record.status}，该子项未通过。` });
-        } catch (error) { requiredChecks.push(failure(id, error instanceof Error ? error.message : String(error), document)); }
+          result.proof = { path: artifact, evidenceId: record.id, kind: record.kind, scope: record.scope, source: record.source, provenance: record.provenance, reusedFrom };
+        } catch (error) { Object.assign(result, { status: 'failed', message: error instanceof Error ? error.message : String(error) }); }
       }
-      const status = statusOf(requiredChecks);
-      requirements.push({ id: requirement.id, text: requirement.text, classifiedBy: requirement.classifiedBy, status, earned: status === 'passed', controlledTest,
+      const status = statusOf(criteria);
+      requirements.push({ id: requirement.id, text: requirement.text, classifiedBy: requirement.classifiedBy, criteria, status, earned: status === 'passed', controlledTest,
         writeBackAllowed: status === 'passed' && !controlledTest, evidenceIds });
-      checks.push(...requiredChecks);
     }
-    return { command: 'evidence', status: statusOf(checks), checks,
-      details: { document, reviewVersion: input.reviewVersion, requirements, scope: '仅核对声明的分类、结论与实际内容/版本/范围对应；不自动判断审美或证明声明者权限，不改写原始记录或事项。' } };
+    return { status: statusOf(requirements), document, reviewVersion: input.reviewVersion, requirements };
   } catch (error) {
-    return { command: 'evidence', status: 'failed', checks: [failure('evidence-input', error instanceof Error ? error.message : String(error), document)] };
+    return { status: 'failed', requirements: [], inputError: { message: error instanceof Error ? error.message : String(error), path: document } };
   }
+}
+
+/** @param {import('./common.mjs').CommandOptions} options @returns {Promise<import('./common.mjs').CommandResult>} */
+export default async function evidence(options) {
+  return evidenceReport(await evaluateEvidence(options));
 }
