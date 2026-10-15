@@ -256,3 +256,79 @@ const pendingReturnScript = pendingCancelScript
   .replace("await input({click:'.search-trigger'}); await input({key:'b'});\nconst search=document.querySelector('[aria-label=\"查找文案\"]'); check(document.activeElement===search,'用户已转向查找');", "check(document.activeElement.closest('[row-id]')?.getAttribute('row-id')==='a','取消先返回原片段');")
   .replace("check(document.activeElement===search && search.value==='b','迟到响应不抢用户新焦点');", "check(document.activeElement.closest('[row-id]')?.getAttribute('row-id')==='b','迟到删除移除当前焦点后恢复相邻片段');");
 test('等待响应取消后留在原片段，迟到删除仍恢复相邻行', {skip:chrome?false:'需要 Chrome',timeout:40000},t=>checkInteractiveBrowser(t,pendingReturnScript,fixture));
+
+const cancelledReturnScript = script.slice(0, script.indexOf('\n(async () =>')) + String.raw`
+(async () => { try {
+state.status.snapshot.segments=Array.from({length:70},(_,i)=>({id:'s'+i,order:i+1,text:'片段 '+i,visualNote:'说明 '+i,video:null}));
+await action(()=>createRoot(document.getElementById('root')).render(<App/>));
+await right('s0'); await input({key:'ArrowDown'}); await input({key:'Enter'});
+const vertical=document.querySelector('.ag-body-vertical-scroll-viewport');
+const horizontal=document.querySelector('.ag-body-horizontal-scroll-viewport');
+state.status.snapshot.segments.push(state.status.snapshot.segments.shift());state.status.snapshot.segments.forEach((s,i)=>s.order=i+1);
+await action(()=>[...timers.values()].forEach(cb=>cb()));
+vertical.scrollTop=4000; horizontal.scrollLeft=1000; await action(()=>{});
+check(!document.querySelector('[row-id="s0"] [col-id="text"]'),'真实虚拟滚动已卸载原入口');
+const nativeFrame=window.requestAnimationFrame, nativeCancel=window.cancelAnimationFrame;
+const frames=new Map(); let next=0;
+window.requestAnimationFrame=cb=>{ const id=--next; frames.set(id,cb); return id; };
+window.cancelAnimationFrame=id=>{if(id<0)frames.delete(id);else nativeCancel(id);};
+await input({key:'Escape'}); check(!dialog(),'业务已关闭确认');
+await input({pointer:{type:'mousePressed',x:5,y:5}}); await input({pointer:{type:'mouseReleased',x:5,y:5}});
+const scroll=vertical.scrollTop;
+window.requestAnimationFrame=nativeFrame;window.cancelAnimationFrame=nativeCancel;
+await action(()=>{const batch=[...frames.values()];frames.clear();for(const cb of batch)cb(performance.now());});
+check(!document.activeElement.closest('[row-id]') && vertical.scrollTop===scroll,'关闭后的新空白点击永久取消旧返回及准备滚动');
+check(!state.batchRequests,'取消确认不能提交删除');
+document.getElementById('result').dataset.state='passed';
+}catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
+`;
+test('删除确认延迟返回被真实空白点击永久取消', {timeout:40000},t=>{assert.ok(chrome);return checkInteractiveBrowser(t,cancelledReturnScript,fixture,420,420);});
+
+const detailsReturnScript = script.slice(0, script.indexOf('\n(async () =>')) + String.raw`
+(async () => { try {
+state.status.snapshot.segments=['a','b','c'].map((id,i)=>({id,order:i+1,text:id,visualNote:'说明',video:null}));
+await action(()=>createRoot(document.getElementById('root')).render(<App/>));
+await input({click:'[row-id="b"] [data-row-details]',button:'right'});
+const vertical=document.querySelector('.ag-body-vertical-scroll-viewport'), scroll=vertical.scrollTop;
+let enteredTable=false;
+const observe=event=>{if(event.target.closest('[row-id]'))enteredTable=true;};
+document.addEventListener('focusin',observe);
+await input({key:'ArrowDown'}); await input({key:'Enter'});
+check(dialog()?.contains(document.activeElement) && !enteredTable && vertical.scrollTop===scroll,'菜单向确认交接时不先返回或滚动表格');
+document.removeEventListener('focusin',observe);
+await input({click:'[role="alertdialog"] button'});
+check(document.activeElement===document.querySelector('[row-id="b"] [data-row-details]'),'鼠标取消返回原详情入口');
+await input({key:'ArrowDown'}); check(document.activeElement.closest('[row-id]')?.getAttribute('row-id')==='c','详情入口返回后真实方向键从原片段继续');
+await right('a'); await input({key:'Escape'});
+check(document.activeElement.closest('[row-id]')?.getAttribute('row-id')==='a' && document.activeElement.getAttribute('col-id')==='text','菜单直接关闭保留原列');
+await input({key:'ArrowDown'});check(document.activeElement.closest('[row-id]')?.getAttribute('row-id')==='b','菜单直接关闭后仍可使用表格键盘');
+check(!state.batchRequests,'交接和取消不发送删除');
+document.getElementById('result').dataset.state='passed';
+}catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
+`;
+test('菜单与删除确认交接保留详情入口和真实表格键盘', {timeout:40000},t=>{assert.ok(chrome);return checkInteractiveBrowser(t,detailsReturnScript,fixture);});
+
+const lateDeleteScript = script.slice(0, script.indexOf('\n(async () =>')).replace('import { state }','import { state, deferred }') + String.raw`
+(async () => { try {
+state.status.snapshot.segments=Array.from({length:50},(_,i)=>({id:'s'+i,order:i+1,text:'保留 '+i,video:null}));
+await action(()=>createRoot(document.getElementById('root')).render(<App/>));
+await right('s0');await input({key:'ArrowDown'});await input({key:'Enter'});
+state.saveGate=deferred();await input({click:'[role="alertdialog"] [data-delete-confirm]'});
+await input({key:'Escape'});await input({click:'[row-id="s0"] input[type="checkbox"]'});await input({click:'[row-id="s1"] input[type="checkbox"]'});
+await input({click:'.search-trigger'});await input({key:'保'});
+const search=document.querySelector('[aria-label="查找文案"]'), vertical=document.querySelector('.ag-body-vertical-scroll-viewport');
+await input({pointer:{type:'mouseWheel',x:100,y:260,deltaY:600}});
+const selected=state.selectionRequests.at(-1).join(),scroll=vertical.scrollTop;
+await action(()=>state.saveGate.resolve());state.saveGate=null;
+check(document.activeElement===search && search.value==='保' && vertical.scrollTop===scroll,'迟到删除结果保留新焦点、查找和手动滚动');
+check(state.selectionRequests.at(-1).join()===selected && selected==='s1','迟到结果保留用户新选择：'+JSON.stringify({selected,actual:state.selectionRequests.at(-1)}));
+check(!dialog() && !menu() && !document.querySelector('aside'),'迟到结果不打开或替换面板');
+check(state.batchRequests.length===1 && !state.status.snapshot.segments.some(s=>s.id==='s0'),'有效删除只执行一次且保留实际数据结果');
+document.getElementById('result').dataset.state='passed';
+}catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
+`;
+for(const failure of [false,true])test('迟到删除'+(failure?'失败':'成功')+'保留用户的新界面状态',{timeout:40000},t=>{
+  assert.ok(chrome);
+  const boundary=failure?fixture.replace('if (state.saveGate) await state.saveGate.promise;\n    return result;\n  }\n  export async function submitExport','if (state.saveGate) await state.saveGate.promise; throw Error("删除结果不可确认");\n    return result;\n  }\n  export async function submitExport'):fixture;
+  return checkInteractiveBrowser(t,lateDeleteScript,boundary);
+});

@@ -113,6 +113,16 @@ const script = String.raw`
       await key('Tab'); await key('Tab', true); check(dialog().contains(document.activeElement), '视频控件保持浮层焦点');
       await click(button('关闭预览'));
       check(document.activeElement === cell(rowId, '0'), '关闭预览回到画面素材单元格');
+      await click(cell(rowId, '0').querySelector('button'));
+      await act(async () => {
+        button('关闭预览').click();
+        await window.browserInput({ pointer: { type: 'mousePressed', x: 5, y: 5 } });
+        await window.browserInput({ pointer: { type: 'mouseReleased', x: 5, y: 5 } });
+        await settle();
+      });
+      await settle();
+      check(!document.activeElement.closest('[row-id]'), '关闭后清理尚未完成时点击空白，旧返回不得重新聚焦表格');
+
       horizontal.scrollLeft = 520; await settle();
       const listen = [...cell(rowId, '1').querySelectorAll('button')].find(node => node.getAttribute('aria-label') === '试听');
       await click(listen); check(!dialog() && document.querySelector('main > audio'), '切换至单元格配音试听');

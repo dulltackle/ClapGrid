@@ -1,56 +1,70 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button, Textarea, AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription } from '@/components/ui/index.js';
 import type { Segment, ServiceStatus } from '../shared/contracts.js';
+import type { FocusIntent, FocusReturn, segmentFocusCoordinator } from './dialog-focus.js';
 import type { ProjectEditing } from './project-editing.js';
 
 export type SegmentTextField = 'text' | 'visualNote';
 export type SegmentIntent = { id: string; inline?: boolean; field?: SegmentTextField; focusText?: boolean } | null;
 
 /** 详情草稿持有现有编辑租约；导航意图按稳定身份保存，提交成功后才继续。 */
-export function useSegmentDetails({ editing, status, accept, save, failed, inline, stopInline, restore }: {
+export function useSegmentDetails({ editing, status, accept, save, failed, inline, stopInline, focus }: {
   editing: ProjectEditing; status: ServiceStatus | undefined; accept: (status: ServiceStatus) => void;
   save: (id: string, fields: { text: string; visualNote: string }) => Promise<boolean>; failed: (error: Error) => void;
-  inline: (id: string, field: SegmentTextField) => Promise<void>; stopInline: () => void; restore: () => void;
+  inline: (id: string, field: SegmentTextField) => Promise<void>; stopInline: () => void; focus: ReturnType<typeof segmentFocusCoordinator>;
 }) {
   const [id, setId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ id: string; base: string; text: string; baseVisualNote: string; visualNote: string } | null>(null);
-  const [focusRequest, setFocusRequest] = useState<'text' | 'panel' | null>(null);
-  const [pending, setPending] = useState<{ intent: SegmentIntent } | null>(null);
+  const [focusRequest, setFocusRequest] = useState<{ target: 'text' | 'panel'; intent: FocusIntent } | null>(null);
+  const [pending, setPending] = useState<{ intent: SegmentIntent; origin?: FocusReturn } | null>(null);
   const text = useRef<HTMLTextAreaElement>(null);
   const visualNote = useRef<HTMLTextAreaElement>(null);
   const activeField = useRef<SegmentTextField>('text');
   const panel = useRef<HTMLElement>(null);
   const sequence = useRef(0);
+  const returnSource = useRef<FocusReturn | undefined>(undefined);
   const current = useRef(status); current.current = status;
+  const pendingSource = useRef(pending?.origin); pendingSource.current = pending?.origin;
+  useEffect(() => () => { sequence.current++; returnSource.current?.cancel(); pendingSource.current?.cancel(); }, []);
   const dirty = !!draft && (draft.text !== draft.base || draft.visualNote !== draft.baseVisualNote);
   const idle = () => new Promise<void>(resolve => {
     const check = () => { const state = editing.getState(); if (!state.busy && !state.editing) { unsubscribe(); resolve(); } };
     const unsubscribe = editing.subscribe(check); check();
   });
-  const execute = async (intent: SegmentIntent) => {
+  const execute = async (intent: SegmentIntent, origin?: FocusReturn, requested = focus.intent()) => {
     const version = ++sequence.current;
     if (draft) { await editing.cancel('segments'); setDraft(null); }
     else { stopInline(); await idle(); }
-    if (version !== sequence.current) return;
-    if (!intent) { setId(null); requestAnimationFrame(() => { if (document.activeElement === document.body || panel.current?.contains(document.activeElement)) restore(); }); return; }
-    if (!current.current?.snapshot.segments.some(segment => segment.id === intent.id)) { failed(new Error('口播片段已删除，请选择其他片段。')); return; }
+    if (version !== sequence.current || !requested.valid()) { origin?.cancel(); return; }
+    if (!intent) {
+      const restore = returnSource.current;
+      returnSource.current = undefined;
+      if (restore) focus.close(restore, () => { setId(null); restore(); });
+      else setId(null);
+      return;
+    }
+    if (!current.current?.snapshot.segments.some(segment => segment.id === intent.id)) { origin?.cancel(); failed(new Error('口播片段已删除，请选择其他片段。')); return; }
     if (!intent.inline || id) setId(intent.id);
+    // 只有业务导航真正提交后才替换来源；内部浏览沿用本次抽屉的起点。
+    if (origin) { returnSource.current?.cancel(); returnSource.current = origin; }
     if (intent.inline) await inline(intent.id, intent.field ?? 'text');
-    else setFocusRequest(intent.focusText ? 'text' : 'panel');
+    else setFocusRequest({ target: intent.focusText ? 'text' : 'panel', intent: requested });
   };
-  const navigate = (intent: SegmentIntent) => {
-    if (editing.getState().busy && (draft || !intent?.inline)) return;
-    if (dirty) { setPending({ intent }); return; }
-    void execute(intent);
+  const navigate = (intent: SegmentIntent, origin?: FocusReturn, requested = focus.intent()) => {
+    if (!requested.valid()) { origin?.cancel(); return; }
+    if (editing.getState().busy && (draft || !intent?.inline)) { origin?.cancel(); return; }
+    if (dirty) { pending?.origin?.cancel(); setPending({ intent, origin }); return; }
+    void execute(intent, origin, requested);
   };
   const begin = (field: SegmentTextField = 'text') => {
     activeField.current = field;
     if (!id || draft || editing.getState().editing || editing.getState().busy) return;
     const requested = sequence.current;
+    const focusIntent = focus.intent();
     const input = field === 'text' ? text : visualNote;
     const origin = input.current;
     let acquired = false;
-    const stillRequested = () => requested === sequence.current && (document.activeElement === origin || document.activeElement === panel.current);
+    const stillRequested = () => requested === sequence.current && focusIntent.valid() && (document.activeElement === origin || document.activeElement === panel.current);
     void editing.begin('segments', next => {
       if (!stillRequested()) { void editing.cancel('segments'); return; }
       const segment = next.snapshot.segments.find(item => item.id === id);
@@ -77,9 +91,22 @@ export function useSegmentDetails({ editing, status, accept, save, failed, inlin
   return { id, draft, dirty, pending, text, visualNote, panel, navigate, begin, focusRequest, consumeFocus: () => setFocusRequest(null),
     change: (value: string, field: SegmentTextField = 'text') => setDraft(previous => previous && ({ ...previous, [field]: value })),
     commit,
-    continueEditing: () => { setPending(null); requestAnimationFrame(() => (activeField.current === 'text' ? text : visualNote).current?.focus()); },
-    discard: async () => { const intent = pending?.intent ?? null; setPending(null); await execute(intent); },
-    saveAndContinue: async () => { const intent = pending?.intent ?? null; if (await commit()) { setPending(null); await execute(intent); } },
+    continueEditing: () => {
+      pending?.origin?.cancel();
+      const field = (activeField.current === 'text' ? text : visualNote).current;
+      const restore = field ? focus.capture(field) : undefined;
+      if (restore) focus.close(restore, () => { setPending(null); restore(); });
+      else setPending(null);
+    },
+    discard: async () => {
+      const intent = pending?.intent ?? null; const origin = pending?.origin;
+      setPending(null); await execute(intent, origin);
+    },
+    saveAndContinue: async () => {
+      const intent = pending?.intent ?? null; const origin = pending?.origin;
+      const requested = focus.intent();
+      if (await commit()) { setPending(null); await execute(intent, origin, requested); }
+    },
   };
 }
 
@@ -99,7 +126,8 @@ export function SegmentDetails({ controller, segment, segments, busy, disabled, 
     if (!controller.focusRequest || busy) return;
     const request = controller.focusRequest;
     const frame = requestAnimationFrame(() => {
-      const target = request === 'text' ? controller.text.current : controller.panel.current;
+      if (!request.intent.valid()) { controller.consumeFocus(); return; }
+      const target = request.target === 'text' ? controller.text.current : controller.panel.current;
       if (target && !target.matches(':disabled')) { controller.consumeFocus(); target.focus({ preventScroll: true }); }
     });
     return () => cancelAnimationFrame(frame);
