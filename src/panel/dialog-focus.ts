@@ -8,7 +8,7 @@ type Destination = { id: string; column?: string; details?: boolean };
 type Origin = Partial<Destination> & { index: number; trigger?: HTMLElement; parent?: HTMLElement };
 export type FocusIntent = { valid: () => boolean };
 export type FocusReturn = (() => void) & { cancel: () => void };
-type ReturnOptions = { fallback?: 'segment' | 'menu'; intent?: FocusIntent };
+type ReturnOptions = { fallback?: 'segment' | 'menu' };
 
 const layers = () => [...document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"], [role="alertdialog"][aria-modal="true"]')]
   .filter(layer => layer.dataset.state !== 'closed' && available(layer));
@@ -31,13 +31,15 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
   const listen = () => {
     // 不观察控件 focus/blur 和普通 scroll：卸载、轮询、恢复自身也会产生这些事件。
     const events = ['pointerdown', 'keydown', 'beforeinput', 'input', 'wheel', 'touchmove'] as const;
-    for (const event of events) document.addEventListener(event, cancelPending, true);
+    // Escape 可能被业务忙态拒绝；只有实际允许的关闭才在 close 中使旧意图失效。
+    const interaction = (event: Event) => { if (!(event instanceof KeyboardEvent && event.key === 'Escape')) cancelPending(); };
+    for (const event of events) document.addEventListener(event, interaction, true);
     window.addEventListener('blur', cancelPending);
     window.addEventListener('pagehide', cancelPending);
     document.addEventListener('visibilitychange', cancelPending);
     return () => {
       cancelPending();
-      for (const event of events) document.removeEventListener(event, cancelPending, true);
+      for (const event of events) document.removeEventListener(event, interaction, true);
       window.removeEventListener('blur', cancelPending);
       window.removeEventListener('pagehide', cancelPending);
       document.removeEventListener('visibilitychange', cancelPending);
@@ -50,7 +52,7 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
     const restore = (() => {
       if (ended) return;
       ended = true;
-      if ((closingIntent && !closingIntent.valid()) || (options.intent && !options.intent.valid())) return;
+      if (closingIntent && !closingIntent.valid()) return;
       pending?.();
       const current = epoch;
       const closingFocus = document.activeElement;
@@ -59,7 +61,7 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
       const finish = () => { finished = true; if (frame) cancelAnimationFrame(frame); if (pending === finish) pending = undefined; };
       pending = finish;
       stop = finish;
-      const valid = () => !finished && epoch === current && (!options.intent || options.intent.valid());
+      const valid = () => !finished && epoch === current;
       const pageFallback = () => {
         for (const candidate of options.fallback === 'menu' ? [fallback.more] : [fallback.search, fallback.table, fallback.more]) {
           if (focus(candidate())) break;
@@ -132,7 +134,11 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
       // 让关闭、Portal 清理及虚拟行提交先完成；任何新操作都能在滚动发生前取消。
       frame = requestAnimationFrame(() => attempt(2));
     }) as FocusReturn;
-    preparations.set(restore, () => { closingIntent ??= intent(); });
+    preparations.set(restore, () => {
+      if (ended || closingIntent) return;
+      cancelPending();
+      closingIntent = intent();
+    });
     restore.cancel = () => { ended = true; stop?.(); };
     return restore;
   };

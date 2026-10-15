@@ -123,7 +123,7 @@ export function App() {
   const activeMatch = searchOpen && currentMatch && matchedIds.includes(currentMatch) ? currentMatch : null;
   const searchLayout = useRef({ activeMatch, rowHeight: searchRowHeight });
   searchLayout.current = { activeMatch, rowHeight: searchRowHeight };
-  const closeSearch = () => { setSearchOpen(false); setCurrentMatch(null); requestAnimationFrame(() => tableFallback.current?.focus()); };
+  const closeSearch = () => { focusReturns.cancelPending(); setSearchOpen(false); setCurrentMatch(null); requestAnimationFrame(() => tableFallback.current?.focus()); };
   const locate = (needle: string, direction: -1 | 1, restart = false) => {
     const api = grid.current;
     if (!api || api.getEditingCells().length) return;
@@ -157,7 +157,7 @@ export function App() {
     observer.observe(element); return () => observer.disconnect();
   }, []);
   useEffect(() => { grid.current?.resetRowHeights(); }, [activeMatch, searchRowHeight]);
-  const returnFocus = useRef({ settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, material: () => {}, detail: () => {} });
+  const returnFocus = useRef({ settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, detail: () => {} });
   const [focusReturns] = useState(() => segmentFocusCoordinator(() => grid.current, {
     search: () => searchInput.current, table: () => tableFallback.current, more: () => moreButton.current,
   }));
@@ -224,7 +224,7 @@ export function App() {
     action.apply(() => { setStatus(next); setError(''); setSaveState('saved'); });
   }, cause => failed(new Error(`保存失败：${cause.message}`)));
   const segmentDetail = useSegmentDetails({ editing, status, accept: setStatus, failed, inline: startEdit,
-    stopInline: () => grid.current?.stopEditing(), restore: () => returnFocus.current.material(),
+    stopInline: () => grid.current?.stopEditing(), focus: focusReturns,
     save: async (id, fields) => {
       let saved = false;
       await editing.save('segments', { acquire: true }, async (token, action) => {
@@ -255,11 +255,7 @@ export function App() {
     }, cause => failed(new Error(`新增失败：${cause.message}`)));
     if (created) {
       const id = created;
-      returnFocus.current.material = () => {
-        const api = grid.current; const row = api?.getRowNode(id);
-        if (row?.rowIndex != null) { api!.ensureIndexVisible(row.rowIndex, 'middle'); api!.ensureColumnVisible('text'); api!.setFocusedCell(row.rowIndex, 'text'); }
-      };
-      segmentDetail.navigate({ id, focusText: true });
+      segmentDetail.navigate({ id, focusText: true }, focusReturns.captureSegment({ id, column: 'text' }));
     }
   };
   const organize = (batch: Batch) => editing.save('segments', { acquire: true }, async (token, action) => {
@@ -614,7 +610,7 @@ export function App() {
       overlayLoadingTemplate="<span>正在连接本地服务…</span>"
       noRowsOverlayComponent={EmptyProject}
       noRowsOverlayComponentParams={{ message: error ? '暂时无法读取口播片段' : '暂无口播片段' }} /></AgGridProvider>
-      <SegmentRowDetails element={gridElement} segments={reorderPreview ?? status?.snapshot.segments ?? []} onOpen={(id, trigger) => { rememberOrigin(trigger, 'material'); segmentDetail.navigate({ id }); }} />
+      <SegmentRowDetails element={gridElement} segments={reorderPreview ?? status?.snapshot.segments ?? []} onOpen={(id, trigger) => { segmentDetail.navigate({ id }, focusReturns.capture(trigger)); }} />
     </div>
     </ContextMenuTrigger>
     {rowMenu && <RowMenu onCloseAutoFocus={event => {
