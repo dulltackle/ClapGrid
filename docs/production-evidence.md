@@ -42,7 +42,7 @@
 }
 ```
 
-`records` 是声明过的执行或审阅结论，记录 ID 唯一；每个当前版本子项必须唯一对应一份记录。`status` 可为 `passed`、`pending`、`failed`、`skipped`、`denied`。来源 `execution` 或 `actual-host` 用于 `ran`，`independent-review` 用于 `reviewed`，`user-confirmation` 用于 `user`；隔离回归统一使用 `controlled-test`。证明指针 `provenance.record` 可指向原日志、独立审查或实际用户发言，`actor` 标明原声明者，`observedAt` 保留原结论的实际时间。工具核对这些字段的完整性，不认证声明者身份或证明指针的真实性；调用者仍须根据实际原件确认可信性。
+`records` 是声明过的执行或审阅结论，记录 ID 唯一；每个当前版本子项必须唯一对应一份记录。`status` 可为 `passed`、`pending`、`failed`、`skipped`、`denied`。来源 `execution` 或 `actual-host` 用于 `ran`，`independent-review` 用于 `reviewed`，`user-confirmation` 用于 `user`；隔离回归默认使用 `controlled-test`。本轮已批准的样片许可成功分支仅在临时项目中使用明确标为模拟的 `user-confirmation` 声明，验证机制，不认证真实用户确认或产生真实制作许可。证明指针 `provenance.record` 可指向原日志、独立审查或实际用户发言，`actor` 标明原声明者，`observedAt` 保留原结论的实际时间。工具核对这些字段的完整性，不认证声明者身份或证明指针的真实性；调用者仍须根据实际原件确认可信性。
 
 当前版本缺少任一必需子项时整条保持待审；失败、跳过、否决、错误版本、错误类型、错误范围、错误文件或内容摘要差异均不能通过。命令流式读取产物计算摘要，机械核对实际内容，不从文件名猜测内容身份。只有非空的全部子项通过，整条才通过。
 
@@ -70,4 +70,10 @@
 
 要求的 `status`、`earned`、`controlledTest`、`writeBackAllowed` 与 `evidenceIds` 来自同一业务核对；`evidenceReport(result)` 负责输出既有检查及要求汇总。证据命令只组合上述两个入口。内部按 `requirements[].id` 和其 `criteria[].id` 分别定位，不能用外部拼接检查标识充当唯一业务身份：合法 ID 均可含冒号，对外标识仍不保证全局唯一。
 
-#131 只完成这一共享基础及报告适配；样片和影响命令目前仍通过原适配入口工作，后续工单迁移它们的消费方式与依赖影响复核。此接口不自动读取依赖图，也不认证真实审阅或扩展许可范围。
+`sample` 直接消费这一业务结果，按所选要求和子项分别定位。它只对所选视觉范围及原有媒体、来源、模式等条件判断许可，其他终审要求待审不阻止所选视觉范围取得许可；报告保留其他画面、领域准确性、发音听审和完整成片终审的排除范围。
+
+`recheckEvidence(original, affectedArtifacts)` 接收基础核对结果与明确影响上下文，返回独立复核结果。上下文中的每项为 `{path, causeIds, reasonChains}`：`path` 为调用者已解析的产物真实绝对路径，其他字段保留依赖影响的起因与传播链。证据模块不解析依赖图；`impact` 负责计算并传入这些数据。
+
+复核复制原结果及影响上下文，不修改原核对结果；受影响的已通过子项变为待审并保留 `previousStatus`，受影响原因在 `dependencyImpact` 中提供。已有失败、否决、待审和跳过不被提升或掩盖，无关子项保留原判断。子项变化后重新计算要求状态、`earned`、受控标识和回写资格；不同影响集合可从同一基础结果独立复核。`evidenceReport` 继续生成既有展示字段，内部原因与新增汇总不扩展影响命令的外部报告。
+
+基础核对结果只说明记录与内容、版本和范围对应，复核结果另说明指定依赖影响下的重审需要，二者不能合成无上下文的“有效”布尔值。证据与样片接口不自动读取依赖图，也不认证真实审阅或扩展许可范围；影响命令未提供 evidence 时仍可核对依赖，其证据子结果保持待审。
