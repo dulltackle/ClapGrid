@@ -1,19 +1,9 @@
 import { mkdir, writeFile, readFile, realpath, stat, access } from 'node:fs/promises';
 import { constants } from 'node:fs';
-import { resolve, dirname, basename, relative, isAbsolute } from 'node:path';
-import { pathToFileURL, fileURLToPath } from 'node:url';
-import { statusOf, failure, resolveProjectFile } from './production/common.mjs';
-
-/** 已有文件及父目录按真实路径比较；尚未生成的输出保留其路径末段。
- * @param {string} path @returns {Promise<string>} */
-async function canonicalPath(path) {
-  try { return await realpath(path); }
-  catch (error) {
-    if (!(error instanceof Error) || !('code' in error) || !['ENOENT', 'ENOTDIR'].includes(String(error.code))) throw error;
-    const parent = dirname(path);
-    return parent === path ? path : resolve(await canonicalPath(parent), basename(path));
-  }
-}
+import { resolve, dirname } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { statusOf, failure, canonicalFilePath } from './production/common.mjs';
+import { projectFileReferences } from './production/project-file-references.mjs';
 
 /** 在命令产生输出前拒绝可预先识别的报告写入错误。
  * @param {string} target */
@@ -60,59 +50,33 @@ export async function main(argv) {
   // 默认交付路径也必须在执行前参与报告覆盖保护。
   if (command === 'pack' && !options.output) options.output = resolve(options.project || process.cwd(), 'delivery.tar.gz');
   if (!options.report) options.report = resolve(options.project || process.cwd(), 'logs/production', `${startedAt.replaceAll(':', '-')}-${process.pid}.json`);
-  const protectedPaths = new Set([resolve(options.project, options.manifest), resolve(options.project, 'video.md'), ...(options.output ? [options.output] : []), ...(options.archive ? [options.archive] : [])]);
+  const protectedPaths = await projectFileReferences(options, 'report-protection');
   let exclusiveReport = false;
   /** @param {string} target */
   const reportConflicts = async target => {
     if (protectedPaths.has(target)) return true;
-    const canonical = await canonicalPath(target);
-    return (await Promise.all([...protectedPaths].map(canonicalPath))).includes(canonical);
+    const canonical = await canonicalFilePath(target);
+    if ((await Promise.all([...protectedPaths].map(canonicalFilePath))).includes(canonical)) return true;
+    // 硬链接具有不同的真实路径；已有报告还须按实际文件身份保护输入原件。
+    let targetInfo;
+    try { targetInfo = await stat(target, { bigint: true }); }
+    catch (error) {
+      if (error instanceof Error && 'code' in error && ['ENOENT', 'ENOTDIR'].includes(String(error.code))) return false;
+      throw error;
+    }
+    for (const path of protectedPaths) {
+      try {
+        const info = await stat(path, { bigint: true });
+        if (info.dev === targetInfo.dev && info.ino === targetInfo.ino) return true;
+      } catch (error) {
+        if (!(error instanceof Error) || !('code' in error) || !['ENOENT', 'ENOTDIR'].includes(String(error.code))) throw error;
+      }
+    }
+    return false;
   };
   try {
     if (parseError) throw new Error(parseError);
     if (!options.project) throw new Error('必须指定 --project <项目根目录>');
-    /** @param {unknown} value @param {boolean} [evidenceOnly] */
-    const collectPaths = (value, evidenceOnly = false) => {
-      if (!value || typeof value !== 'object') return;
-      for (const [key, item] of Object.entries(value)) {
-        const pathKeys = evidenceOnly ? ['path', 'artifact'] : ['path', 'card', 'source', 'audio', 'assembly', 'review', 'typecheck', 'evidence', 'lastFrame'];
-        if (typeof item === 'string' && pathKeys.includes(key)) protectedPaths.add(resolve(options.project, item));
-        else if (!evidenceOnly && ['assets', 'transitions'].includes(key) && Array.isArray(item)) {
-          for (const path of item) if (typeof path === 'string') protectedPaths.add(resolve(options.project, path));
-          collectPaths(item, evidenceOnly);
-        } else if (typeof item === 'object') collectPaths(item, evidenceOnly);
-      }
-    };
-    /** 仅将能定位为项目内普通文件的证明指针加入保护；不认证其声明内容。
-     * @param {unknown} value @returns {Promise<void>} */
-    const collectProofs = async value => {
-      if (!value || typeof value !== 'object') return;
-      for (const [key, item] of Object.entries(value)) {
-        if (key === 'provenance' && item && typeof item === 'object' && 'record' in item && typeof item.record === 'string') {
-          try {
-            const pointer = item.record.startsWith('file:') ? fileURLToPath(item.record) : item.record;
-            if (isAbsolute(pointer) || !/^[a-z][a-z0-9+.-]*:/i.test(pointer)) {
-              const candidate = resolve(options.project, pointer);
-              const actual = await resolveProjectFile(options.project, relative(options.project, candidate));
-              protectedPaths.add(candidate);
-              protectedPaths.add(actual);
-            }
-          } catch { /* 非文件指针由调用者核对原件；路径保护不判断证据真实性。 */ }
-        } else if (item && typeof item === 'object') await collectProofs(item);
-      }
-    };
-    try {
-      const manifest = JSON.parse(await readFile(resolve(options.project, options.manifest), 'utf8'));
-      collectPaths(manifest);
-      if (typeof manifest.evidence === 'string') {
-        try {
-          const evidencePath = await resolveProjectFile(options.project, manifest.evidence);
-          const evidence = JSON.parse(await readFile(evidencePath, 'utf8'));
-          collectPaths(evidence, true);
-          await collectProofs(evidence);
-        } catch { /* 所属命令校验缺失或无效记录；可读记录的关联文件提前保护。 */ }
-      }
-    } catch {}
     if (await reportConflicts(options.report)) {
       const requested = options.report;
       options.report = resolve(options.project, 'logs/production', `failure-${startedAt.replaceAll(':', '-')}-${process.pid}.json`);

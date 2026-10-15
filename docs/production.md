@@ -1,5 +1,7 @@
 # 项目制作命令
 
+制作入口与归档、引用解释均使用既有 Node 环境，日常制作和相关检查不执行 Python；媒体工具要求仍见下文。归档操作与旧包兼容边界见 [制作交付包](production-package.md)。
+
 统一入口是 `npm run production -- <命令> --project <项目根目录>`，也可直接调用 `node scripts/production.mjs`。入口共享简短摘要、完整 JSON 报告与退出状态。项目由工作空间决定，不按对话或 Git 分支另建项目身份。
 
 ```sh

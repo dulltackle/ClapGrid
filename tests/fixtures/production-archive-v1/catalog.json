@@ -1,0 +1,1516 @@
+{
+  "source": {
+    "commit": "a55109aa0e93dc3b9d2e5b6f126607adb86d592d",
+    "path": "scripts/production/archive.py",
+    "snapshot": "legacy/archive.py",
+    "sha256": "f691d1d2825b3e0f049aa2c40cf2143310242748d086a7ead929a2688a6316b4",
+    "generatorSha256": "e87147aef92768b219725f65dd14a832d1f7cd1729742de7d4cc3dea5ecf9302",
+    "command": "tests/fixtures/production-archive-v1/generate.py --compare-python /home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin/python3.12",
+    "cwd": "/home/forclaw/tmp/clapgrid-122-ticket-123"
+  },
+  "environments": [
+    {
+      "version": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+      "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+      "executable": "/usr/bin/python3",
+      "role": "本机对照版本",
+      "status": "verified"
+    },
+    {
+      "version": "3.12.13 (main, May 10 2026, 19:30:01) [Clang 22.1.3 ]",
+      "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+      "executable": "/home/forclaw/tmp/clapgrid-spec-122/python/cpython-3.12.13-linux-x86_64-gnu/bin/python3.12",
+      "role": "最低声明版本",
+      "status": "verified"
+    }
+  ],
+  "comparison": {
+    "minimumDeclared": "3.12",
+    "status": "verified",
+    "indexBytesEqual": true,
+    "results": [
+      {
+        "path": "valid.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "passed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "passed",
+              "message": "全部归档成员按顺序校验完成"
+            }
+          ],
+          "details": {
+            "archive": "/home/forclaw/tmp/clapgrid-122-ticket-123/tests/fixtures/production-archive-v1/valid.tar.gz",
+            "order": [
+              ".clapgrid-package.json",
+              "src.ts",
+              "card.json",
+              "audio.wav",
+              "assembly.mp4",
+              "review.mp4",
+              "tsconfig.json",
+              "empty.bin",
+              "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+              "production.json"
+            ],
+            "publication": "verified",
+            "scope": "归档文件完整性；不判定人工确认"
+          }
+        }
+      },
+      {
+        "path": "pax-overrides.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "passed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "passed",
+              "message": "全部归档成员按顺序校验完成"
+            }
+          ],
+          "details": {
+            "archive": "/home/forclaw/tmp/clapgrid-122-ticket-123/tests/fixtures/production-archive-v1/pax-overrides.tar.gz",
+            "order": [
+              ".clapgrid-package.json",
+              "src.ts",
+              "card.json",
+              "audio.wav",
+              "assembly.mp4",
+              "review.mp4",
+              "tsconfig.json",
+              "empty.bin",
+              "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+              "production.json"
+            ],
+            "publication": "verified",
+            "scope": "归档文件完整性；不判定人工确认"
+          }
+        }
+      },
+      {
+        "path": "corrupt/missing.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "归档缺失成员：src.ts"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/extra.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "归档额外成员：unexpected.txt"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/duplicate.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "归档重复成员：src.ts"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/size.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "归档成员内容摘要或大小不符：src.ts"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/digest.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "归档成员内容摘要或大小不符：src.ts"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/manifest.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "归档成员内容摘要或大小不符：production.json"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/index.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "归档成员内容摘要或大小不符：.clapgrid-package.json"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/invalid-header.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "归档文件头损坏或结束块缺失：invalid header"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/header-truncated.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "归档文件头损坏或结束块缺失：truncated header"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/body-truncated.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "unexpected end of data"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/gzip-crc.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "CRC check failed 0x2673cc66 != 0x2673cc99"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/gzip-length.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "Incorrect length of data produced"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/gzip-truncated.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "Compressed file ended before the end-of-stream marker was reached"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/missing-end-blocks.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "归档文件头损坏或结束块缺失：empty header"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/single-end-block.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "归档缺少第二个结束零块"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/bad-header-at-end.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "归档文件头损坏或结束块缺失：invalid header"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/nonzero-tar-tail.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "归档结束块后存在非零数据或额外成员"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/malformed-pax.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "归档文件头损坏或结束块缺失：invalid header"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/compressed-nonzero-tail.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "Not a gzipped file (b'ju')"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/compressed-zero-tail.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "passed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "passed",
+              "message": "全部归档成员按顺序校验完成"
+            }
+          ],
+          "details": {
+            "archive": "/home/forclaw/tmp/clapgrid-122-ticket-123/tests/fixtures/production-archive-v1/corrupt/compressed-zero-tail.tar.gz",
+            "order": [
+              ".clapgrid-package.json",
+              "src.ts",
+              "card.json",
+              "audio.wav",
+              "assembly.mp4",
+              "review.mp4",
+              "tsconfig.json",
+              "empty.bin",
+              "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+              "production.json"
+            ],
+            "publication": "verified",
+            "scope": "归档文件完整性；不判定人工确认"
+          }
+        }
+      },
+      {
+        "path": "corrupt/compressed-zero-then-junk.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "Not a gzipped file (b'ju')"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/compressed-zero-then-gzip.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "passed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "passed",
+              "message": "全部归档成员按顺序校验完成"
+            }
+          ],
+          "details": {
+            "archive": "/home/forclaw/tmp/clapgrid-122-ticket-123/tests/fixtures/production-archive-v1/corrupt/compressed-zero-then-gzip.tar.gz",
+            "order": [
+              ".clapgrid-package.json",
+              "src.ts",
+              "card.json",
+              "audio.wav",
+              "assembly.mp4",
+              "review.mp4",
+              "tsconfig.json",
+              "empty.bin",
+              "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+              "production.json"
+            ],
+            "publication": "verified",
+            "scope": "归档文件完整性；不判定人工确认"
+          }
+        }
+      },
+      {
+        "path": "corrupt/concatenated-empty-gzip.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "passed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "passed",
+              "message": "全部归档成员按顺序校验完成"
+            }
+          ],
+          "details": {
+            "archive": "/home/forclaw/tmp/clapgrid-122-ticket-123/tests/fixtures/production-archive-v1/corrupt/concatenated-empty-gzip.tar.gz",
+            "order": [
+              ".clapgrid-package.json",
+              "src.ts",
+              "card.json",
+              "audio.wav",
+              "assembly.mp4",
+              "review.mp4",
+              "tsconfig.json",
+              "empty.bin",
+              "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+              "production.json"
+            ],
+            "publication": "verified",
+            "scope": "归档文件完整性；不判定人工确认"
+          }
+        }
+      },
+      {
+        "path": "corrupt/concatenated-zero-gzip.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "passed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "passed",
+              "message": "全部归档成员按顺序校验完成"
+            }
+          ],
+          "details": {
+            "archive": "/home/forclaw/tmp/clapgrid-122-ticket-123/tests/fixtures/production-archive-v1/corrupt/concatenated-zero-gzip.tar.gz",
+            "order": [
+              ".clapgrid-package.json",
+              "src.ts",
+              "card.json",
+              "audio.wav",
+              "assembly.mp4",
+              "review.mp4",
+              "tsconfig.json",
+              "empty.bin",
+              "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+              "production.json"
+            ],
+            "publication": "verified",
+            "scope": "归档文件完整性；不判定人工确认"
+          }
+        }
+      },
+      {
+        "path": "corrupt/concatenated-nonzero-gzip.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "归档结束块后存在非零数据或额外成员"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/concatenated-crc.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "CRC check failed 0xefb5afd1 != 0xefb5af2e"
+            }
+          ]
+        }
+      },
+      {
+        "path": "corrupt/compressed-zero-then-crc.tar.gz",
+        "result": {
+          "command": "verify-package",
+          "status": "failed",
+          "checks": [
+            {
+              "id": "archive",
+              "status": "failed",
+              "message": "CRC check failed 0xefb5afd1 != 0xefb5af2e"
+            }
+          ]
+        }
+      }
+    ],
+    "minimumGeneratedArchive": "valid-python-3.12.tar.gz",
+    "minimumPackResult": {
+      "command": "pack",
+      "status": "passed",
+      "checks": [
+        {
+          "id": "archive",
+          "status": "passed",
+          "message": "全部归档成员按顺序校验完成"
+        }
+      ],
+      "details": {
+        "archive": "/home/forclaw/tmp/clapgrid-122-ticket-123/tests/fixtures/production-archive-v1/valid-python-3.12.tar.gz",
+        "order": [
+          ".clapgrid-package.json",
+          "src.ts",
+          "card.json",
+          "audio.wav",
+          "assembly.mp4",
+          "review.mp4",
+          "tsconfig.json",
+          "empty.bin",
+          "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+          "production.json"
+        ],
+        "members": 10,
+        "publication": "published",
+        "scope": "归档文件完整性；不判定人工确认"
+      }
+    },
+    "localVerifyMinimumResult": {
+      "command": "verify-package",
+      "status": "passed",
+      "checks": [
+        {
+          "id": "archive",
+          "status": "passed",
+          "message": "全部归档成员按顺序校验完成"
+        }
+      ],
+      "details": {
+        "archive": "/home/forclaw/tmp/clapgrid-122-ticket-123/tests/fixtures/production-archive-v1/valid-python-3.12.tar.gz",
+        "order": [
+          ".clapgrid-package.json",
+          "src.ts",
+          "card.json",
+          "audio.wav",
+          "assembly.mp4",
+          "review.mp4",
+          "tsconfig.json",
+          "empty.bin",
+          "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+          "production.json"
+        ],
+        "publication": "verified",
+        "scope": "归档文件完整性；不判定人工确认"
+      }
+    },
+    "scope": "同一冻结清单与固定归档；不泛化至其他 Python 版本或平台"
+  },
+  "identities": [
+    {
+      "path": "corrupt/bad-header-at-end.tar.gz",
+      "size": 2232,
+      "sha256": "9a15cfd130fac2fe6a82b0734de28fcaec32742bb6f6ff2b2415b61ee45f01cd"
+    },
+    {
+      "path": "corrupt/body-truncated.tar.gz",
+      "size": 1034,
+      "sha256": "ac9514debbb8c27dace9193517579008b596855f15e9b3bca9039e0ab1e18378"
+    },
+    {
+      "path": "corrupt/compressed-nonzero-tail.tar.gz",
+      "size": 2262,
+      "sha256": "8b8f3a4cb18cbcfe4a35ab1a6a6d094d2ece2d31cfa940d79746c73bd080337e"
+    },
+    {
+      "path": "corrupt/compressed-zero-tail.tar.gz",
+      "size": 2290,
+      "sha256": "dbbf6de79ad2b6a97a6f939a286ef9fe940bf6c20867bb5b3e1d51bab2771f1d"
+    },
+    {
+      "path": "corrupt/compressed-zero-then-crc.tar.gz",
+      "size": 2319,
+      "sha256": "6ec23b9e56321576a95c79e20302372adfa7c7110bd2b71694f03bd4ea98c317"
+    },
+    {
+      "path": "corrupt/compressed-zero-then-gzip.tar.gz",
+      "size": 2319,
+      "sha256": "fd7a24b5e928a98ed00fc9838ce888f5969753825aa29bbb65df089258b2a918"
+    },
+    {
+      "path": "corrupt/compressed-zero-then-junk.tar.gz",
+      "size": 2294,
+      "sha256": "4ed27a81981a31c4ee10d2c643648f6b3b8f2f5cc797634c6be0736818e3acdb"
+    },
+    {
+      "path": "corrupt/concatenated-crc.tar.gz",
+      "size": 2287,
+      "sha256": "5d50ad8338c99e1b22882ec9b784d1b644970f20c748aaf642efd3145568b57c"
+    },
+    {
+      "path": "corrupt/concatenated-empty-gzip.tar.gz",
+      "size": 2278,
+      "sha256": "0a1fb6810cbdb43165a91321cc133651ca59ef87f9ad5f17c5314cbc8e2c8333"
+    },
+    {
+      "path": "corrupt/concatenated-nonzero-gzip.tar.gz",
+      "size": 2286,
+      "sha256": "c67c474cbeb11e721172ba47b5100f5bb67f8d38851b26cda12e88532cd50551"
+    },
+    {
+      "path": "corrupt/concatenated-zero-gzip.tar.gz",
+      "size": 2287,
+      "sha256": "264a2949d047d44c050666889e0de54f7e961c94da36ed8a8d3e22f8015fab36"
+    },
+    {
+      "path": "corrupt/digest.tar.gz",
+      "size": 2208,
+      "sha256": "a0dfa3e90c6526e78e80845d00dc6739143feb076bf6c5b83291dbd0b7ceb18e"
+    },
+    {
+      "path": "corrupt/duplicate.tar.gz",
+      "size": 2237,
+      "sha256": "783d8d64c12490ec336884dba9509c6ae89fa81e5c354486554fa48e0b1506cd"
+    },
+    {
+      "path": "corrupt/extra.tar.gz",
+      "size": 2256,
+      "sha256": "21f97a96ab2857cf9cc1b436f51436691afc3366992add60497de7c18555ba4d"
+    },
+    {
+      "path": "corrupt/gzip-crc.tar.gz",
+      "size": 2258,
+      "sha256": "65ee18ac39ea999626b4257475492e75099613c69b4f4a9948cbb30ac97b436a"
+    },
+    {
+      "path": "corrupt/gzip-length.tar.gz",
+      "size": 2258,
+      "sha256": "800e68d0f34e72ce5c73c3eef3afc178413a8f6bd797bc681d5b3b891fbb5e0d"
+    },
+    {
+      "path": "corrupt/gzip-truncated.tar.gz",
+      "size": 2249,
+      "sha256": "b1740a1e37a5e5dd032ed1a25ca5f721cdecba0c893f7825480fe5079e297565"
+    },
+    {
+      "path": "corrupt/header-truncated.tar.gz",
+      "size": 74,
+      "sha256": "d4969d6751cd4b63940de7561df715c15276bdf81409304e234e452fdccafe9e"
+    },
+    {
+      "path": "corrupt/index.tar.gz",
+      "size": 2226,
+      "sha256": "526c68cfb026a106a85e6db133d2278c6922164d56554d55516a5bda16f2a214"
+    },
+    {
+      "path": "corrupt/invalid-header.tar.gz",
+      "size": 2187,
+      "sha256": "ca4e071379714033e431b69c42ff436f12b70e6adba82051b7835ff3dd320be3"
+    },
+    {
+      "path": "corrupt/malformed-pax.tar.gz",
+      "size": 2226,
+      "sha256": "173d9b33149c8f8e0dd2b6ec03b5d019c178010753fb8082c3dca545ee311ece"
+    },
+    {
+      "path": "corrupt/manifest.tar.gz",
+      "size": 2225,
+      "sha256": "65c43f3db8257b20d6ee1a036f87bd5fd75c67d8acae93cc61f0444ad7ad2955"
+    },
+    {
+      "path": "corrupt/missing-end-blocks.tar.gz",
+      "size": 2200,
+      "sha256": "5de28177a64aec5f628d281604ed8d69e3f6411e38b641e4278801ad8e9c3034"
+    },
+    {
+      "path": "corrupt/missing.tar.gz",
+      "size": 2185,
+      "sha256": "6ec365ba707948624dafc3dc934c93d9d77d0562b9d0d920d6080dacfb7f97f4"
+    },
+    {
+      "path": "corrupt/nonzero-tar-tail.tar.gz",
+      "size": 2229,
+      "sha256": "a3a252d1667cb4f9c40e5df18aebbc22068aaa3673cbf4f9d55091bf4a9fd9b3"
+    },
+    {
+      "path": "corrupt/single-end-block.tar.gz",
+      "size": 2201,
+      "sha256": "7c721164404523cc8b1b2012bf66861a74f4524f477c5145d1de68e59c065624"
+    },
+    {
+      "path": "corrupt/size.tar.gz",
+      "size": 2229,
+      "sha256": "c7051ccda2b5fc1bc777f9badf49ebfe3d178bd52451bd36b9e14c7edc3cce8e"
+    },
+    {
+      "path": "expected-index.json",
+      "size": 2562,
+      "sha256": "1559b558b9808de61accecdb1249d1dfcee610ae1ea02dea32cb33d160e85d42"
+    },
+    {
+      "path": "legacy/archive.py",
+      "size": 10642,
+      "sha256": "f691d1d2825b3e0f049aa2c40cf2143310242748d086a7ead929a2688a6316b4"
+    },
+    {
+      "path": "pax-overrides.tar.gz",
+      "size": 2278,
+      "sha256": "ffa6e944de13964e1bffe1800b66cc3148789dd5b4995921967a5e6ee2683d37"
+    },
+    {
+      "path": "project/assembly.mp4",
+      "size": 10,
+      "sha256": "77a156333e7a6a59a940e12ddb4b0aa10cf357b5fe3de8d0d9b493eb03cadb15"
+    },
+    {
+      "path": "project/audio.wav",
+      "size": 1280,
+      "sha256": "d414b085826eb06778483ba35564dc849e643359f69ed9747878ba6e54985bed"
+    },
+    {
+      "path": "project/card.json",
+      "size": 21,
+      "sha256": "e83c12db5ee3c62282c295c521fa51a10e6cfff8e247c64f09838dbc134bd385"
+    },
+    {
+      "path": "project/empty.bin",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "project/production.json",
+      "size": 1991,
+      "sha256": "4c97508fb4e020586f4215b4a4afdd968845d6c6b79e3a0972b7d46c8f667c4c"
+    },
+    {
+      "path": "project/review.mp4",
+      "size": 7,
+      "sha256": "452b7b642e325cb2b5b20ac28536ada8b0ad312217a98ab7ff23330603b63126"
+    },
+    {
+      "path": "project/src.ts",
+      "size": 24,
+      "sha256": "32576f49c1451e654493768f6b17c7ea0bd9e86e714116d2f22131339147e2a7"
+    },
+    {
+      "path": "project/tsconfig.json",
+      "size": 3,
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+    },
+    {
+      "path": "project/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+      "size": 13,
+      "sha256": "c6baa15d33a43beb8450acb65ae681d12286341cdfd93bea945d11e518feb789"
+    },
+    {
+      "path": "valid-python-3.12.tar.gz",
+      "size": 2270,
+      "sha256": "922723f8475abde68657be68db05f3f0b43195ca555f4eb4c930ea113aee7346"
+    },
+    {
+      "path": "valid.tar.gz",
+      "size": 2258,
+      "sha256": "4ba4c6203b4ea886edd82f5f3ecfba1c7dfdeda6da0da155682c38b3e636c0a2"
+    }
+  ],
+  "success": {
+    "path": "valid.tar.gz",
+    "legacyPackResult": {
+      "command": "pack",
+      "status": "passed",
+      "checks": [
+        {
+          "id": "archive",
+          "status": "passed",
+          "message": "全部归档成员按顺序校验完成"
+        }
+      ],
+      "details": {
+        "archive": "/home/forclaw/tmp/clapgrid-122-ticket-123/tests/fixtures/production-archive-v1/valid.tar.gz",
+        "order": [
+          ".clapgrid-package.json",
+          "src.ts",
+          "card.json",
+          "audio.wav",
+          "assembly.mp4",
+          "review.mp4",
+          "tsconfig.json",
+          "empty.bin",
+          "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+          "production.json"
+        ],
+        "members": 10,
+        "publication": "published",
+        "scope": "归档文件完整性；不判定人工确认"
+      }
+    },
+    "legacyResult": {
+      "command": "verify-package",
+      "status": "passed",
+      "checks": [
+        {
+          "id": "archive",
+          "status": "passed",
+          "message": "全部归档成员按顺序校验完成"
+        }
+      ],
+      "details": {
+        "archive": "/home/forclaw/tmp/clapgrid-122-ticket-123/tests/fixtures/production-archive-v1/valid.tar.gz",
+        "order": [
+          ".clapgrid-package.json",
+          "src.ts",
+          "card.json",
+          "audio.wav",
+          "assembly.mp4",
+          "review.mp4",
+          "tsconfig.json",
+          "empty.bin",
+          "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+          "production.json"
+        ],
+        "publication": "verified",
+        "scope": "归档文件完整性；不判定人工确认"
+      }
+    },
+    "members": [
+      {
+        "path": "src.ts",
+        "sha256": "32576f49c1451e654493768f6b17c7ea0bd9e86e714116d2f22131339147e2a7",
+        "size": 24
+      },
+      {
+        "path": "card.json",
+        "sha256": "e83c12db5ee3c62282c295c521fa51a10e6cfff8e247c64f09838dbc134bd385",
+        "size": 21
+      },
+      {
+        "path": "audio.wav",
+        "sha256": "d414b085826eb06778483ba35564dc849e643359f69ed9747878ba6e54985bed",
+        "size": 1280
+      },
+      {
+        "path": "assembly.mp4",
+        "sha256": "77a156333e7a6a59a940e12ddb4b0aa10cf357b5fe3de8d0d9b493eb03cadb15",
+        "size": 10
+      },
+      {
+        "path": "review.mp4",
+        "sha256": "452b7b642e325cb2b5b20ac28536ada8b0ad312217a98ab7ff23330603b63126",
+        "size": 7
+      },
+      {
+        "path": "tsconfig.json",
+        "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "size": 3
+      },
+      {
+        "path": "empty.bin",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size": 0
+      },
+      {
+        "path": "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+        "sha256": "c6baa15d33a43beb8450acb65ae681d12286341cdfd93bea945d11e518feb789",
+        "size": 13
+      },
+      {
+        "path": "production.json",
+        "sha256": "4c97508fb4e020586f4215b4a4afdd968845d6c6b79e3a0972b7d46c8f667c4c",
+        "size": 1991
+      },
+      {
+        "path": ".clapgrid-package.json",
+        "sha256": "1559b558b9808de61accecdb1249d1dfcee610ae1ea02dea32cb33d160e85d42",
+        "size": 2562
+      }
+    ]
+  },
+  "paxSuccess": {
+    "path": "pax-overrides.tar.gz",
+    "legacyResult": {
+      "command": "verify-package",
+      "status": "passed",
+      "checks": [
+        {
+          "id": "archive",
+          "status": "passed",
+          "message": "全部归档成员按顺序校验完成"
+        }
+      ],
+      "details": {
+        "archive": "/home/forclaw/tmp/clapgrid-122-ticket-123/tests/fixtures/production-archive-v1/pax-overrides.tar.gz",
+        "order": [
+          ".clapgrid-package.json",
+          "src.ts",
+          "card.json",
+          "audio.wav",
+          "assembly.mp4",
+          "review.mp4",
+          "tsconfig.json",
+          "empty.bin",
+          "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+          "production.json"
+        ],
+        "publication": "verified",
+        "scope": "归档文件完整性；不判定人工确认"
+      }
+    },
+    "effectiveFields": [
+      "path",
+      "size",
+      "uid",
+      "gid",
+      "uname",
+      "gname",
+      "mtime"
+    ]
+  },
+  "corrupt": [
+    {
+      "name": "missing",
+      "path": "corrupt/missing.tar.gz",
+      "construction": "旧 tarfile 重写原成员，只改变 missing",
+      "requiredStatus": "failed",
+      "requiredReason": "缺失成员",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "归档缺失成员：src.ts"
+          }
+        ]
+      }
+    },
+    {
+      "name": "extra",
+      "path": "corrupt/extra.tar.gz",
+      "construction": "旧 tarfile 重写原成员，只改变 extra",
+      "requiredStatus": "failed",
+      "requiredReason": "额外成员",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "归档额外成员：unexpected.txt"
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate",
+      "path": "corrupt/duplicate.tar.gz",
+      "construction": "旧 tarfile 重写原成员，只改变 duplicate",
+      "requiredStatus": "failed",
+      "requiredReason": "重复成员",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "归档重复成员：src.ts"
+          }
+        ]
+      }
+    },
+    {
+      "name": "size",
+      "path": "corrupt/size.tar.gz",
+      "construction": "旧 tarfile 重写原成员，只改变 size",
+      "requiredStatus": "failed",
+      "requiredReason": "内容摘要或大小不符",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "归档成员内容摘要或大小不符：src.ts"
+          }
+        ]
+      }
+    },
+    {
+      "name": "digest",
+      "path": "corrupt/digest.tar.gz",
+      "construction": "旧 tarfile 重写原成员，只改变 digest",
+      "requiredStatus": "failed",
+      "requiredReason": "内容摘要或大小不符",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "归档成员内容摘要或大小不符：src.ts"
+          }
+        ]
+      }
+    },
+    {
+      "name": "manifest",
+      "path": "corrupt/manifest.tar.gz",
+      "construction": "旧 tarfile 重写原成员，只改变 manifest",
+      "requiredStatus": "failed",
+      "requiredReason": "内容摘要或大小不符",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "归档成员内容摘要或大小不符：production.json"
+          }
+        ]
+      }
+    },
+    {
+      "name": "index",
+      "path": "corrupt/index.tar.gz",
+      "construction": "旧 tarfile 重写原成员，只改变 index",
+      "requiredStatus": "failed",
+      "requiredReason": "内容摘要或大小不符",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "归档成员内容摘要或大小不符：.clapgrid-package.json"
+          }
+        ]
+      }
+    },
+    {
+      "name": "invalid-header",
+      "path": "corrupt/invalid-header.tar.gz",
+      "construction": "首个文件头替换为非零无效块",
+      "requiredStatus": "failed",
+      "requiredReason": "文件头损坏",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "归档文件头损坏或结束块缺失：invalid header"
+          }
+        ]
+      }
+    },
+    {
+      "name": "header-truncated",
+      "path": "corrupt/header-truncated.tar.gz",
+      "construction": "首文件头只保留 255 字节",
+      "requiredStatus": "failed",
+      "requiredReason": "文件头截断",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "归档文件头损坏或结束块缺失：truncated header"
+          }
+        ]
+      }
+    },
+    {
+      "name": "body-truncated",
+      "path": "corrupt/body-truncated.tar.gz",
+      "construction": "索引正文删除最后字节及后续流",
+      "requiredStatus": "failed",
+      "requiredReason": "成员正文截断",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "unexpected end of data"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gzip-crc",
+      "path": "corrupt/gzip-crc.tar.gz",
+      "construction": "翻转 gzip CRC 尾字段",
+      "requiredStatus": "failed",
+      "requiredReason": "gzip 完整性损坏",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "CRC check failed 0x2673cc66 != 0x2673cc99"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gzip-length",
+      "path": "corrupt/gzip-length.tar.gz",
+      "construction": "翻转 gzip ISIZE 尾字段",
+      "requiredStatus": "failed",
+      "requiredReason": "gzip 长度校验损坏",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "Incorrect length of data produced"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gzip-truncated",
+      "path": "corrupt/gzip-truncated.tar.gz",
+      "construction": "gzip 删除尾部 9 字节",
+      "requiredStatus": "failed",
+      "requiredReason": "gzip 截断",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "Compressed file ended before the end-of-stream marker was reached"
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing-end-blocks",
+      "path": "corrupt/missing-end-blocks.tar.gz",
+      "construction": "最后正文对齐之后移除所有结束零块",
+      "requiredStatus": "failed",
+      "requiredReason": "双结束零块缺失",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "归档文件头损坏或结束块缺失：empty header"
+          }
+        ]
+      }
+    },
+    {
+      "name": "single-end-block",
+      "path": "corrupt/single-end-block.tar.gz",
+      "construction": "仅保留一个结束零块",
+      "requiredStatus": "failed",
+      "requiredReason": "第二个结束零块缺失",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "归档缺少第二个结束零块"
+          }
+        ]
+      }
+    },
+    {
+      "name": "bad-header-at-end",
+      "path": "corrupt/bad-header-at-end.tar.gz",
+      "construction": "结束之前插入损坏文件头",
+      "requiredStatus": "failed",
+      "requiredReason": "结束块损坏",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "归档文件头损坏或结束块缺失：invalid header"
+          }
+        ]
+      }
+    },
+    {
+      "name": "nonzero-tar-tail",
+      "path": "corrupt/nonzero-tar-tail.tar.gz",
+      "construction": "tar 结束零块之后追加非零数据",
+      "requiredStatus": "failed",
+      "requiredReason": "结束后存在非零数据",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "归档结束块后存在非零数据或额外成员"
+          }
+        ]
+      }
+    },
+    {
+      "name": "malformed-pax",
+      "path": "corrupt/malformed-pax.tar.gz",
+      "construction": "局部 PAX 首条记录长度首字符改为 x（保持物理块大小）",
+      "requiredStatus": "failed",
+      "requiredReason": "PAX 记录长度损坏",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "归档文件头损坏或结束块缺失：invalid header"
+          }
+        ]
+      }
+    },
+    {
+      "name": "compressed-nonzero-tail",
+      "path": "corrupt/compressed-nonzero-tail.tar.gz",
+      "construction": "完整 gzip 流之后追加非零原始字节",
+      "requiredStatus": "failed",
+      "requiredReason": "压缩流尾部损坏",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "Not a gzipped file (b'ju')"
+          }
+        ]
+      }
+    },
+    {
+      "name": "compressed-zero-tail",
+      "path": "corrupt/compressed-zero-tail.tar.gz",
+      "construction": "完整 gzip 流之后追加 32 个原始零字节",
+      "requiredStatus": "passed",
+      "requiredReason": "沿用旧 gzip 的零尾容错，完整流均须校验",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "passed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "passed",
+            "message": "全部归档成员按顺序校验完成"
+          }
+        ],
+        "details": {
+          "archive": "/home/forclaw/tmp/clapgrid-122-ticket-123/tests/fixtures/production-archive-v1/corrupt/compressed-zero-tail.tar.gz",
+          "order": [
+            ".clapgrid-package.json",
+            "src.ts",
+            "card.json",
+            "audio.wav",
+            "assembly.mp4",
+            "review.mp4",
+            "tsconfig.json",
+            "empty.bin",
+            "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+            "production.json"
+          ],
+          "publication": "verified",
+          "scope": "归档文件完整性；不判定人工确认"
+        }
+      }
+    },
+    {
+      "name": "compressed-zero-then-junk",
+      "path": "corrupt/compressed-zero-then-junk.tar.gz",
+      "construction": "gzip 零尾之后追加非零垃圾，不得在首零处停止校验",
+      "requiredStatus": "failed",
+      "requiredReason": "压缩流尾部损坏",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "Not a gzipped file (b'ju')"
+          }
+        ]
+      }
+    },
+    {
+      "name": "compressed-zero-then-gzip",
+      "path": "corrupt/compressed-zero-then-gzip.tar.gz",
+      "construction": "gzip 零尾之后追加有效仅含零明文的第二流",
+      "requiredStatus": "passed",
+      "requiredReason": "沿用旧行为，零尾不能掩盖后续完整 gzip 流",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "passed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "passed",
+            "message": "全部归档成员按顺序校验完成"
+          }
+        ],
+        "details": {
+          "archive": "/home/forclaw/tmp/clapgrid-122-ticket-123/tests/fixtures/production-archive-v1/corrupt/compressed-zero-then-gzip.tar.gz",
+          "order": [
+            ".clapgrid-package.json",
+            "src.ts",
+            "card.json",
+            "audio.wav",
+            "assembly.mp4",
+            "review.mp4",
+            "tsconfig.json",
+            "empty.bin",
+            "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+            "production.json"
+          ],
+          "publication": "verified",
+          "scope": "归档文件完整性；不判定人工确认"
+        }
+      }
+    },
+    {
+      "name": "concatenated-empty-gzip",
+      "path": "corrupt/concatenated-empty-gzip.tar.gz",
+      "construction": "追加第二个空 gzip 流",
+      "requiredStatus": "passed",
+      "requiredReason": "沿用旧行为，全部连续 gzip 流均须校验",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "passed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "passed",
+            "message": "全部归档成员按顺序校验完成"
+          }
+        ],
+        "details": {
+          "archive": "/home/forclaw/tmp/clapgrid-122-ticket-123/tests/fixtures/production-archive-v1/corrupt/concatenated-empty-gzip.tar.gz",
+          "order": [
+            ".clapgrid-package.json",
+            "src.ts",
+            "card.json",
+            "audio.wav",
+            "assembly.mp4",
+            "review.mp4",
+            "tsconfig.json",
+            "empty.bin",
+            "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+            "production.json"
+          ],
+          "publication": "verified",
+          "scope": "归档文件完整性；不判定人工确认"
+        }
+      }
+    },
+    {
+      "name": "concatenated-zero-gzip",
+      "path": "corrupt/concatenated-zero-gzip.tar.gz",
+      "construction": "追加第二个仅含零明文的 gzip 流",
+      "requiredStatus": "passed",
+      "requiredReason": "连续流明文是合法 tar 零尾，全部 gzip 流均须校验",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "passed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "passed",
+            "message": "全部归档成员按顺序校验完成"
+          }
+        ],
+        "details": {
+          "archive": "/home/forclaw/tmp/clapgrid-122-ticket-123/tests/fixtures/production-archive-v1/corrupt/concatenated-zero-gzip.tar.gz",
+          "order": [
+            ".clapgrid-package.json",
+            "src.ts",
+            "card.json",
+            "audio.wav",
+            "assembly.mp4",
+            "review.mp4",
+            "tsconfig.json",
+            "empty.bin",
+            "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+            "production.json"
+          ],
+          "publication": "verified",
+          "scope": "归档文件完整性；不判定人工确认"
+        }
+      }
+    },
+    {
+      "name": "concatenated-nonzero-gzip",
+      "path": "corrupt/concatenated-nonzero-gzip.tar.gz",
+      "construction": "追加第二个含非零明文的完整 gzip 流",
+      "requiredStatus": "failed",
+      "requiredReason": "tar 结束后非零数据",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "归档结束块后存在非零数据或额外成员"
+          }
+        ]
+      }
+    },
+    {
+      "name": "concatenated-crc",
+      "path": "corrupt/concatenated-crc.tar.gz",
+      "construction": "第二个 gzip 流 CRC 损坏，明文仅含零",
+      "requiredStatus": "failed",
+      "requiredReason": "连续压缩流完整性损坏",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "CRC check failed 0xefb5afd1 != 0xefb5af2e"
+          }
+        ]
+      }
+    },
+    {
+      "name": "compressed-zero-then-crc",
+      "path": "corrupt/compressed-zero-then-crc.tar.gz",
+      "construction": "gzip 零尾之后追加 CRC 损坏的第二流",
+      "requiredStatus": "failed",
+      "requiredReason": "零尾之后的连续压缩流完整性损坏",
+      "legacyResult": {
+        "command": "verify-package",
+        "status": "failed",
+        "checks": [
+          {
+            "id": "archive",
+            "status": "failed",
+            "message": "CRC check failed 0xefb5afd1 != 0xefb5af2e"
+          }
+        ]
+      }
+    }
+  ]
+}

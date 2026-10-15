@@ -1,0 +1,19 @@
+{
+ "schemaVersion":1,"project":{"width":64,"height":64,"fps":10},
+ "typecheck":"tsconfig.json","segments":[{"id":"A","frames":6,"card":"card.json","source":"src.ts","audio":"audio.wav","assembly":"assembly.mp4","review":"review.mp4"}],
+ "files":[
+ {"path":"src.ts","size":999,"10":"十","2":"二","01":"零一",
+ "extensions":{"huge":1234567890123456789012345678901234567890,"one":1.0,
+ "negativeZero":-0.0,"scientific":1e-7,"overflow":1e400,"negativeOverflow":-1e400,
+ "smallFixed":1e-4,"largeFixed":1e15,"largeScientific":1e16,"text":"中文😀\\\"\n\t\u0001",
+ "nested":[{"10":1,"2":2,"x":[1.0,-0.0]}],"duplicate":"first","after":true,"duplicate":"last"},
+ "category":"history","position":"first","trailing":null,"position":"last","sha256":"32576f49c1451e654493768f6b17c7ea0bd9e86e714116d2f22131339147e2a7"},
+ {"path": "card.json", "sha256": "e83c12db5ee3c62282c295c521fa51a10e6cfff8e247c64f09838dbc134bd385", "category": "production"},
+ {"path": "audio.wav", "sha256": "d414b085826eb06778483ba35564dc849e643359f69ed9747878ba6e54985bed", "category": "production"},
+ {"path": "assembly.mp4", "sha256": "77a156333e7a6a59a940e12ddb4b0aa10cf357b5fe3de8d0d9b493eb03cadb15", "category": "production"},
+ {"path": "review.mp4", "sha256": "452b7b642e325cb2b5b20ac28536ada8b0ad312217a98ab7ff23330603b63126", "category": "production"},
+ {"path": "tsconfig.json", "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356", "category": "technical"},
+ {"path": "empty.bin", "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "category": "production"},
+ {"path": "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin", "sha256": "c6baa15d33a43beb8450acb65ae681d12286341cdfd93bea945d11e518feb789", "category": "production"}
+ ]
+,"unusedRoot":"���"}

@@ -8,7 +8,9 @@
 
 本轮目标仍是保持制作入口行为：作者明确声明 `files`；项目文件引用不自动等于入包成员；报告保护与归档必需集合分别保留用途规则；归档成功不提升人工审阅结论。用户随后选定 Node 统一、优先采用 `tar-stream` 并继续使用 v1 索引，兼容范围与逐项决定见 [ADR-0004](adr/0004-node-production-archive.md)；以下选项比较保留评估时的依据。本评估不承诺 gzip 输出字节与 Python 完全相同。
 
-现有说明与实现分别见 [制作交付包](production-package.md)、[archive.py](../scripts/production/archive.py)、[Node 调用入口](../scripts/production/package-common.mjs)。现有 Python 实现已经额外补了严格 tar 文件头、第二个结束零块、结束后数据和 gzip 读至末尾检查；这些项目规则必须跟随迁移。
+本评估保留迁移前的调查事实与结论；下列 Python 链接指向冻结原始实现，现行 Node 日常操作与兼容边界见 [制作交付包](production-package.md)。
+
+迁移前说明与实现分别见 [制作交付包](production-package.md)、[archive.py](../tests/fixtures/production-archive-v1/legacy/archive.py)、[Node 调用入口](../scripts/production/package-common.mjs)。现有 Python 实现已经额外补了严格 tar 文件头、第二个结束零块、结束后数据和 gzip 读至末尾检查；这些项目规则必须跟随迁移。
 
 ## 能力对应
 
@@ -62,7 +64,7 @@ Node 提供 `fsPromises.rename`；POSIX 规定覆盖时目标名称始终指向�
 
 ## 迁移成本与完成条件
 
-范围相对集中：目前归档 Python 实现为 221 行；生产调用只有 Node 入口启动该脚本。归档测试有 5 处 Python 调用承担查看、改写坏包与恢复，需要一并替换，才能让日常运行和相关测试都不依赖 Python。历史制作目录中的 Python 文件属于已经保存的制作成果，不应为语言统一而删除。当前插件 bundle 不包含制作归档脚本，本轮讨论不是插件安装更新。[归档实现](../scripts/production/archive.py)、[归档测试](../tests/production-package.test.ts)、[插件构建](../scripts/build-plugin.mjs)
+范围相对集中：目前归档 Python 实现为 221 行；生产调用只有 Node 入口启动该脚本。归档测试有 5 处 Python 调用承担查看、改写坏包与恢复，需要一并替换，才能让日常运行和相关测试都不依赖 Python。历史制作目录中的 Python 文件属于已经保存的制作成果，不应为语言统一而删除。当前插件 bundle 不包含制作归档脚本，本轮讨论不是插件安装更新。[归档实现](../tests/fixtures/production-archive-v1/legacy/archive.py)、[归档测试](../tests/production-package.test.ts)、[插件构建](../scripts/build-plugin.mjs)
 
 | 工作包 | 相对成本 | 完成条件 |
 | --- | --- | --- |

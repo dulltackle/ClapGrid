@@ -1,0 +1,398 @@
+{
+  "source": {
+    "commit": "cd8b4df863541e596c0690e4368e5d1ba3216281",
+    "nodeEntry": "scripts/production.mjs",
+    "archive": "scripts/production/archive.py",
+    "archiveSha256": "f691d1d2825b3e0f049aa2c40cf2143310242748d086a7ead929a2688a6316b4",
+    "pythonVersion": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "basis": "复制既有独立project原字节，仅修改src.ts实际mtime_ns；由未迁移旧Node统一入口调用真实Python写包和原核对，成员原字节身份不变"
+  },
+  "fixtures": [
+    {
+      "path": "positive-nanoseconds.tar.gz",
+      "size": 2303,
+      "sha256": "8f6a72371879098167986092df56e7ac1b0eab598e4d7b496dedf2c53572857c",
+      "sourceMtimeNs": 100,
+      "observedMtimeNs": 100,
+      "legacyResults": [
+        {
+          "command": [
+            "/usr/bin/node",
+            "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+            "pack",
+            "--project",
+            "/home/forclaw/tmp/clapgrid-125-pax-time-50vp67dz",
+            "--report",
+            "/home/forclaw/tmp/clapgrid-125-pax-time-50vp67dz/pack.json"
+          ],
+          "cwd": "/home/forclaw/tmp/clapgrid-122-ticket-123",
+          "returncode": 0,
+          "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-125-pax-time-50vp67dz/pack.json\n",
+          "stderr": "",
+          "report": {
+            "schemaVersion": 1,
+            "command": "pack",
+            "status": "passed",
+            "checks": [
+              {
+                "id": "archive",
+                "status": "passed",
+                "message": "全部归档成员按顺序校验完成"
+              }
+            ],
+            "details": {
+              "archive": "/home/forclaw/tmp/clapgrid-125-pax-time-50vp67dz/delivery.tar.gz",
+              "order": [
+                ".clapgrid-package.json",
+                "src.ts",
+                "card.json",
+                "audio.wav",
+                "assembly.mp4",
+                "review.mp4",
+                "tsconfig.json",
+                "empty.bin",
+                "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                "production.json"
+              ],
+              "members": 10,
+              "publication": "published",
+              "scope": "归档文件完整性；不判定人工确认"
+            },
+            "project": "/home/forclaw/tmp/clapgrid-125-pax-time-50vp67dz",
+            "manifest": "production.json",
+            "startedAt": "2026-10-14T05:28:58.067Z",
+            "finishedAt": "2026-10-14T05:28:58.131Z",
+            "report": "/home/forclaw/tmp/clapgrid-125-pax-time-50vp67dz/pack.json"
+          }
+        },
+        {
+          "command": [
+            "/usr/bin/node",
+            "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+            "verify-package",
+            "--project",
+            "/home/forclaw/tmp/clapgrid-125-pax-time-50vp67dz",
+            "--report",
+            "/home/forclaw/tmp/clapgrid-125-pax-time-50vp67dz/verify-package.json",
+            "--archive",
+            "/home/forclaw/tmp/clapgrid-125-pax-time-50vp67dz/delivery.tar.gz"
+          ],
+          "cwd": "/home/forclaw/tmp/clapgrid-122-ticket-123",
+          "returncode": 0,
+          "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-125-pax-time-50vp67dz/verify-package.json\n",
+          "stderr": "",
+          "report": {
+            "schemaVersion": 1,
+            "command": "verify-package",
+            "status": "passed",
+            "checks": [
+              {
+                "id": "archive",
+                "status": "passed",
+                "message": "全部归档成员按顺序校验完成"
+              }
+            ],
+            "details": {
+              "archive": "/home/forclaw/tmp/clapgrid-125-pax-time-50vp67dz/delivery.tar.gz",
+              "order": [
+                ".clapgrid-package.json",
+                "src.ts",
+                "card.json",
+                "audio.wav",
+                "assembly.mp4",
+                "review.mp4",
+                "tsconfig.json",
+                "empty.bin",
+                "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                "production.json"
+              ],
+              "publication": "verified",
+              "scope": "归档文件完整性；不判定人工确认"
+            },
+            "project": "/home/forclaw/tmp/clapgrid-125-pax-time-50vp67dz",
+            "manifest": "production.json",
+            "startedAt": "2026-10-14T05:28:58.202Z",
+            "finishedAt": "2026-10-14T05:28:58.262Z",
+            "report": "/home/forclaw/tmp/clapgrid-125-pax-time-50vp67dz/verify-package.json"
+          }
+        }
+      ],
+      "members": [
+        {
+          "path": ".clapgrid-package.json",
+          "size": 2562,
+          "sha256": "1559b558b9808de61accecdb1249d1dfcee610ae1ea02dea32cb33d160e85d42",
+          "pax": {}
+        },
+        {
+          "path": "src.ts",
+          "size": 24,
+          "sha256": "32576f49c1451e654493768f6b17c7ea0bd9e86e714116d2f22131339147e2a7",
+          "pax": {
+            "mtime": "1.0000000000000001e-07"
+          }
+        },
+        {
+          "path": "card.json",
+          "size": 21,
+          "sha256": "e83c12db5ee3c62282c295c521fa51a10e6cfff8e247c64f09838dbc134bd385",
+          "pax": {
+            "mtime": "1791954309.8719063"
+          }
+        },
+        {
+          "path": "audio.wav",
+          "size": 1280,
+          "sha256": "d414b085826eb06778483ba35564dc849e643359f69ed9747878ba6e54985bed",
+          "pax": {
+            "mtime": "1791954309.8719063"
+          }
+        },
+        {
+          "path": "assembly.mp4",
+          "size": 10,
+          "sha256": "77a156333e7a6a59a940e12ddb4b0aa10cf357b5fe3de8d0d9b493eb03cadb15",
+          "pax": {
+            "mtime": "1791954309.8705585"
+          }
+        },
+        {
+          "path": "review.mp4",
+          "size": 7,
+          "sha256": "452b7b642e325cb2b5b20ac28536ada8b0ad312217a98ab7ff23330603b63126",
+          "pax": {
+            "mtime": "1791954309.8719063"
+          }
+        },
+        {
+          "path": "tsconfig.json",
+          "size": 3,
+          "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+          "pax": {
+            "mtime": "1791954309.8719063"
+          }
+        },
+        {
+          "path": "empty.bin",
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "pax": {
+            "mtime": "1791954309.8719063"
+          }
+        },
+        {
+          "path": "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+          "size": 13,
+          "sha256": "c6baa15d33a43beb8450acb65ae681d12286341cdfd93bea945d11e518feb789",
+          "pax": {
+            "path": "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+            "mtime": "1791954309.8724253"
+          }
+        },
+        {
+          "path": "production.json",
+          "size": 1991,
+          "sha256": "4c97508fb4e020586f4215b4a4afdd968845d6c6b79e3a0972b7d46c8f667c4c",
+          "pax": {
+            "mtime": "1791954309.8719063"
+          }
+        }
+      ]
+    },
+    {
+      "path": "negative-nanoseconds.tar.gz",
+      "size": 2309,
+      "sha256": "0ee273d90eda1963646d43291111de26bbd6510dde84b3f4b547c0f83d363991",
+      "sourceMtimeNs": -100,
+      "observedMtimeNs": -100,
+      "legacyResults": [
+        {
+          "command": [
+            "/usr/bin/node",
+            "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+            "pack",
+            "--project",
+            "/home/forclaw/tmp/clapgrid-125-pax-time-cpmfbjhc",
+            "--report",
+            "/home/forclaw/tmp/clapgrid-125-pax-time-cpmfbjhc/pack.json"
+          ],
+          "cwd": "/home/forclaw/tmp/clapgrid-122-ticket-123",
+          "returncode": 0,
+          "stdout": "pack：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-125-pax-time-cpmfbjhc/pack.json\n",
+          "stderr": "",
+          "report": {
+            "schemaVersion": 1,
+            "command": "pack",
+            "status": "passed",
+            "checks": [
+              {
+                "id": "archive",
+                "status": "passed",
+                "message": "全部归档成员按顺序校验完成"
+              }
+            ],
+            "details": {
+              "archive": "/home/forclaw/tmp/clapgrid-125-pax-time-cpmfbjhc/delivery.tar.gz",
+              "order": [
+                ".clapgrid-package.json",
+                "src.ts",
+                "card.json",
+                "audio.wav",
+                "assembly.mp4",
+                "review.mp4",
+                "tsconfig.json",
+                "empty.bin",
+                "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                "production.json"
+              ],
+              "members": 10,
+              "publication": "published",
+              "scope": "归档文件完整性；不判定人工确认"
+            },
+            "project": "/home/forclaw/tmp/clapgrid-125-pax-time-cpmfbjhc",
+            "manifest": "production.json",
+            "startedAt": "2026-10-14T05:28:58.342Z",
+            "finishedAt": "2026-10-14T05:28:58.405Z",
+            "report": "/home/forclaw/tmp/clapgrid-125-pax-time-cpmfbjhc/pack.json"
+          }
+        },
+        {
+          "command": [
+            "/usr/bin/node",
+            "/home/forclaw/tmp/clapgrid-122-ticket-123/scripts/production.mjs",
+            "verify-package",
+            "--project",
+            "/home/forclaw/tmp/clapgrid-125-pax-time-cpmfbjhc",
+            "--report",
+            "/home/forclaw/tmp/clapgrid-125-pax-time-cpmfbjhc/verify-package.json",
+            "--archive",
+            "/home/forclaw/tmp/clapgrid-125-pax-time-cpmfbjhc/delivery.tar.gz"
+          ],
+          "cwd": "/home/forclaw/tmp/clapgrid-122-ticket-123",
+          "returncode": 0,
+          "stdout": "verify-package：passed；检查 1 项；0 项失败或未完成\n完整报告：/home/forclaw/tmp/clapgrid-125-pax-time-cpmfbjhc/verify-package.json\n",
+          "stderr": "",
+          "report": {
+            "schemaVersion": 1,
+            "command": "verify-package",
+            "status": "passed",
+            "checks": [
+              {
+                "id": "archive",
+                "status": "passed",
+                "message": "全部归档成员按顺序校验完成"
+              }
+            ],
+            "details": {
+              "archive": "/home/forclaw/tmp/clapgrid-125-pax-time-cpmfbjhc/delivery.tar.gz",
+              "order": [
+                ".clapgrid-package.json",
+                "src.ts",
+                "card.json",
+                "audio.wav",
+                "assembly.mp4",
+                "review.mp4",
+                "tsconfig.json",
+                "empty.bin",
+                "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+                "production.json"
+              ],
+              "publication": "verified",
+              "scope": "归档文件完整性；不判定人工确认"
+            },
+            "project": "/home/forclaw/tmp/clapgrid-125-pax-time-cpmfbjhc",
+            "manifest": "production.json",
+            "startedAt": "2026-10-14T05:28:58.479Z",
+            "finishedAt": "2026-10-14T05:28:58.539Z",
+            "report": "/home/forclaw/tmp/clapgrid-125-pax-time-cpmfbjhc/verify-package.json"
+          }
+        }
+      ],
+      "members": [
+        {
+          "path": ".clapgrid-package.json",
+          "size": 2562,
+          "sha256": "1559b558b9808de61accecdb1249d1dfcee610ae1ea02dea32cb33d160e85d42",
+          "pax": {}
+        },
+        {
+          "path": "src.ts",
+          "size": 24,
+          "sha256": "32576f49c1451e654493768f6b17c7ea0bd9e86e714116d2f22131339147e2a7",
+          "pax": {
+            "mtime": "-9.999999994736442e-08"
+          }
+        },
+        {
+          "path": "card.json",
+          "size": 21,
+          "sha256": "e83c12db5ee3c62282c295c521fa51a10e6cfff8e247c64f09838dbc134bd385",
+          "pax": {
+            "mtime": "1791954309.8719063"
+          }
+        },
+        {
+          "path": "audio.wav",
+          "size": 1280,
+          "sha256": "d414b085826eb06778483ba35564dc849e643359f69ed9747878ba6e54985bed",
+          "pax": {
+            "mtime": "1791954309.8719063"
+          }
+        },
+        {
+          "path": "assembly.mp4",
+          "size": 10,
+          "sha256": "77a156333e7a6a59a940e12ddb4b0aa10cf357b5fe3de8d0d9b493eb03cadb15",
+          "pax": {
+            "mtime": "1791954309.8705585"
+          }
+        },
+        {
+          "path": "review.mp4",
+          "size": 7,
+          "sha256": "452b7b642e325cb2b5b20ac28536ada8b0ad312217a98ab7ff23330603b63126",
+          "pax": {
+            "mtime": "1791954309.8719063"
+          }
+        },
+        {
+          "path": "tsconfig.json",
+          "size": 3,
+          "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+          "pax": {
+            "mtime": "1791954309.8719063"
+          }
+        },
+        {
+          "path": "empty.bin",
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "pax": {
+            "mtime": "1791954309.8719063"
+          }
+        },
+        {
+          "path": "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+          "size": 13,
+          "sha256": "c6baa15d33a43beb8450acb65ae681d12286341cdfd93bea945d11e518feb789",
+          "pax": {
+            "path": "中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/中文长路径目录/素材原件.bin",
+            "mtime": "1791954309.8724253"
+          }
+        },
+        {
+          "path": "production.json",
+          "size": 1991,
+          "sha256": "4c97508fb4e020586f4215b4a4afdd968845d6c6b79e3a0972b7d46c8f667c4c",
+          "pax": {
+            "mtime": "1791954309.8719063"
+          }
+        }
+      ]
+    }
+  ],
+  "unverified": [
+    "其他平台、Python3.12小数指数写出（主v1基线已核对3.12；本新增来源只记录实际环境）"
+  ]
+}

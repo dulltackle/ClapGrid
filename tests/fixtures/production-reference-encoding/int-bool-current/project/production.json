@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "width": 64,
+    "height": 64,
+    "fps": 10
+  },
+  "typecheck": "tsconfig.json",
+  "evidence": "evidence.json",
+  "segments": [
+    {
+      "id": "A",
+      "card": "card.json",
+      "source": "source.ts",
+      "audio": "audio.wav",
+      "assembly": "assembly.mp4",
+      "review": "review.mp4",
+      "frames": 1
+    }
+  ],
+  "files": [
+    {
+      "path": "source.ts",
+      "category": "production",
+      "sha256": "32576f49c1451e654493768f6b17c7ea0bd9e86e714116d2f22131339147e2a7"
+    },
+    {
+      "path": "card.json",
+      "category": "production",
+      "sha256": "8ed9ec639efede0d57ce0a86b94cdc71a39c0cea160516b71e55a4406d9fa336"
+    },
+    {
+      "path": "audio.wav",
+      "category": "production",
+      "sha256": "1afce679742ee76dafd29051d7caf493526d847f9105380d36c2cdc18848d4d8"
+    },
+    {
+      "path": "assembly.mp4",
+      "category": "production",
+      "sha256": "918b7f24bdb2e2ae63b32abd2d4fe8c80320ff32f21e74a77b9fd82bf95dbcd5"
+    },
+    {
+      "path": "review.mp4",
+      "category": "production",
+      "sha256": "d8157ef6b5d6eb15969e3facbf3a3a34a7206009da974ba58ed4b2c54064319a"
+    },
+    {
+      "path": "tsconfig.json",
+      "category": "production",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "path": "原件NaN Infinity -Infinity😀.json",
+      "category": "technical",
+      "sha256": "7a7268f937c95e72c312369a11e81d8a2306a92dd529ac140c96bcff211bb1e6"
+    },
+    {
+      "path": "evidence.json",
+      "category": "technical",
+      "sha256": "aaa14b4d19c0334c239d2dcf6c3f69d8e9034804307d94d6f432032b5e99fe31"
+    }
+  ]
+}
