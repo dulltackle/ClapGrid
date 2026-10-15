@@ -2,7 +2,7 @@ import { createReadStream } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dependencySchema } from './dependencies-schema.mjs';
 import { readManifest, resolveProjectFile, failure, statusOf } from './common.mjs';
-import verifyEvidence from './evidence.mjs';
+import { evaluateEvidence, recheckEvidence, evidenceReport } from './evidence.mjs';
 
 const outputKinds = new Set(['assembly', 'review', 'last-frame', 'transition']);
 /** @param {string} path */
@@ -160,17 +160,15 @@ export default async function impact(options) {
       message: `受影响输出需重制或重新核对来源与确认：${node.reasonChains.map(chain => chain.join(' -> ')).join('；')}` });
     let evidence;
     if (manifest.evidence !== undefined) {
-      const original = await verifyEvidence(options);
-      const affectedPaths = new Set(await Promise.all(affected.map(node => resolveProjectFile(options.project, node.path))));
-      const evidenceChecks = original.checks.map(check => {
-        if (check.status !== 'passed' || !check.path || !affectedPaths.has(check.path)) return check;
-        return { ...check, status: /** @type {const} */ ('pending'), previousStatus: check.status, dependencyAffected: true,
-          message: '对应产物的制作输入或依赖已变化，旧确认需重新核对；当前输出字节未变不能证明仍有效。' };
-      });
+      const original = await evaluateEvidence(options);
+      const affectedArtifacts = await Promise.all(affected.map(async node => ({ path: await resolveProjectFile(options.project, node.path), causeIds: node.causeIds.filter(id => id !== undefined), reasonChains: node.reasonChains })));
+      const rechecked = recheckEvidence(original, affectedArtifacts);
+      const evidenceChecks = evidenceReport(rechecked).checks;
+      const criteria = rechecked.requirements.flatMap(requirement => requirement.criteria);
       checks.push(...evidenceChecks.map(check => ({ ...check, id: `evidence:${check.id}` })));
-      evidence = { status: statusOf(evidenceChecks), checks: evidenceChecks,
-        needsReview: evidenceChecks.filter(check => check.dependencyAffected && typeof check.evidenceId === 'string').map(check => check.evidenceId),
-        unchangedProofs: evidenceChecks.filter(check => check.status === 'passed').map(check => ({ evidenceId: check.evidenceId, path: check.path, scope: check.scope, source: check.source, reusedFrom: check.reusedFrom })),
+      evidence = { status: rechecked.status, checks: evidenceChecks,
+        needsReview: criteria.filter(criterion => criterion.previousStatus && criterion.proof).map(criterion => criterion.proof?.evidenceId),
+        unchangedProofs: criteria.filter(criterion => criterion.status === 'passed' && criterion.proof).map(criterion => ({ evidenceId: criterion.proof?.evidenceId, path: criterion.proof?.path, scope: criterion.proof?.scope, source: criterion.proof?.source, reusedFrom: criterion.proof?.reusedFrom })),
         scope: '复用现有 evidence 核对；受影响输入重新判断旧确认，无关且内容/范围匹配的证据保持原有效性，不改写原件。' };
     } else {
       evidence = { status: 'pending', checks: [], needsReview: [], scope: '项目未提供 evidence 记录，未执行确认对应检查，不能声明人工确认通过。' };

@@ -7,7 +7,9 @@ export function evidenceReport(result) {
   if (result.inputError) return { command: 'evidence', status: 'failed', checks: [failure('evidence-input', result.inputError.message, result.inputError.path)] };
   const checks = result.requirements.flatMap(requirement => requirement.criteria.map(criterion => ({
     id: `${requirement.id}:${criterion.id}`, status: criterion.status, path: criterion.path,
-    ...criterion.proof, message: criterion.message,
+    ...criterion.proof,
+    ...(criterion.previousStatus ? { previousStatus: criterion.previousStatus, dependencyAffected: true } : {}),
+    message: criterion.message,
   })));
   const requirements = result.requirements.map(({ criteria, ...requirement }) => requirement);
   return { command: 'evidence', status: result.status, checks,

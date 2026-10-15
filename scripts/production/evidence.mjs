@@ -25,13 +25,44 @@ const evidenceSchema = z.object({ schemaVersion: z.literal(1), reviewVersion: id
 /** @typedef {z.infer<typeof recordSchema>} EvidenceRecord */
 /** @typedef {z.infer<typeof requirementSchema>} EvidenceRequirement */
 /** @typedef {{path:string,evidenceId:string,kind:EvidenceRecord['kind'],scope:string[],source:EvidenceRecord['source'],provenance:EvidenceRecord['provenance'],reusedFrom:string[]}} EvidenceProof */
+/** @typedef {{path:string,causeIds:string[],reasonChains:string[][]}} EvidenceDependencyImpact */
 /** 子项的声明、所选记录和机械核对结论分别保留；proof 仅在完整对应核对后提供。
- * @typedef {{id:string,requirementId:string,kind:EvidenceRecord['kind'],artifact:string,scope:string[],status:import('./common.mjs').Status,message:string,path?:string,evidence?:EvidenceRecord,proof?:EvidenceProof}} EvidenceCriterionResult */
+ * @typedef {{id:string,requirementId:string,kind:EvidenceRecord['kind'],artifact:string,scope:string[],status:import('./common.mjs').Status,message:string,path?:string,evidence?:EvidenceRecord,proof?:EvidenceProof,previousStatus?:import('./common.mjs').Status,dependencyImpact?:EvidenceDependencyImpact}} EvidenceCriterionResult */
 /** @typedef {{id:string,text?:string,classifiedBy:EvidenceRequirement['classifiedBy'],criteria:EvidenceCriterionResult[],status:import('./common.mjs').Status,earned:boolean,controlledTest:boolean,writeBackAllowed:boolean,evidenceIds:string[]}} EvidenceRequirementResult */
 /** @typedef {{status:import('./common.mjs').Status,document?:string,reviewVersion?:string,requirements:EvidenceRequirementResult[],inputError?:{message:string,path?:string}}} EvidenceResult */
 
 export { evidenceReport } from './evidence-report.mjs';
 import { evidenceReport } from './evidence-report.mjs';
+
+/** @param {Pick<EvidenceRequirement,'id'|'text'|'classifiedBy'>} requirement
+ * @param {EvidenceCriterionResult[]} criteria @returns {EvidenceRequirementResult} */
+function summarizeRequirement(requirement, criteria) {
+  const status = statusOf(criteria);
+  const controlledTest = criteria.some(criterion => criterion.evidence?.source === 'controlled-test');
+  return { id: requirement.id, text: requirement.text, classifiedBy: requirement.classifiedBy, criteria, status, earned: status === 'passed', controlledTest,
+    writeBackAllowed: status === 'passed' && !controlledTest, evidenceIds: criteria.flatMap(criterion => criterion.evidence ? [criterion.evidence.id] : []) };
+}
+
+/** 对已核对结果应用明确的产物影响；不读取依赖图，也不修改原结果或传入的原因。
+ * @param {EvidenceResult} original @param {EvidenceDependencyImpact[]} affectedArtifacts @returns {EvidenceResult} */
+export function recheckEvidence(original, affectedArtifacts) {
+  const result = structuredClone(original);
+  const byPath = new Map(affectedArtifacts.map(impact => [impact.path, impact]));
+  for (const requirement of result.requirements) {
+    for (const criterion of requirement.criteria) {
+      const impact = criterion.path ? byPath.get(criterion.path) : undefined;
+      if (!impact) continue;
+      criterion.dependencyImpact = structuredClone(impact);
+      if (criterion.status !== 'passed') continue;
+      criterion.previousStatus = criterion.status;
+      criterion.status = 'pending';
+      criterion.message = '对应产物的制作输入或依赖已变化，旧确认需重新核对；当前输出字节未变不能证明仍有效。';
+    }
+  }
+  result.requirements = result.requirements.map(requirement => summarizeRequirement(requirement, requirement.criteria));
+  result.status = statusOf(result.requirements);
+  return result;
+}
 
 /** @param {z.infer<typeof kind>} evidenceKind @param {z.infer<typeof recordSchema>['source']} source */
 function matchingSource(evidenceKind, source) {
@@ -69,9 +100,6 @@ export async function evaluateEvidence(options) {
       if (new Set(requirement.required.map(value => value.id)).size !== requirement.required.length) throw new Error(`要求 ${requirement.id} 的子项 ID 重复。`);
       /** @type {EvidenceCriterionResult[]} */
       const criteria = [];
-      /** @type {string[]} */
-      const evidenceIds = [];
-      let controlledTest = false;
       for (const criterion of requirement.required) {
         /** @type {EvidenceCriterionResult} */
         const result = { ...criterion, requirementId: requirement.id, status: 'pending', path: document, message: '缺少对应证据，仍需执行或审阅。' };
@@ -86,8 +114,6 @@ export async function evaluateEvidence(options) {
         const record = candidates[0];
         if (!record) continue;
         result.evidence = record;
-        evidenceIds.push(record.id);
-        controlledTest ||= record.source === 'controlled-test';
         try {
           if (record.kind !== criterion.kind) throw new Error('证据类型与人提供的要求分类不匹配。');
           if (!sameScope(record.scope, criterion.scope)) throw new Error('证据审阅范围与要求不匹配。');
@@ -125,9 +151,7 @@ export async function evaluateEvidence(options) {
           result.proof = { path: artifact, evidenceId: record.id, kind: record.kind, scope: record.scope, source: record.source, provenance: record.provenance, reusedFrom };
         } catch (error) { Object.assign(result, { status: 'failed', message: error instanceof Error ? error.message : String(error) }); }
       }
-      const status = statusOf(criteria);
-      requirements.push({ id: requirement.id, text: requirement.text, classifiedBy: requirement.classifiedBy, criteria, status, earned: status === 'passed', controlledTest,
-        writeBackAllowed: status === 'passed' && !controlledTest, evidenceIds });
+      requirements.push(summarizeRequirement(requirement, criteria));
     }
     return { status: statusOf(requirements), document, reviewVersion: input.reviewVersion, requirements };
   } catch (error) {
