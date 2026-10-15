@@ -170,3 +170,31 @@ const keyboardChildrenScript=script.slice(0,script.indexOf('\n(async () =>'))+St
 }catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
 `;
 test('父详情内历史与关联的完整键盘返回链',{timeout:40000},t=>{assert.ok(chrome);return checkInteractiveBrowser(t,keyboardChildrenScript,fixture,1200,800);});
+
+const failedAssociationNewLayerScript=script.slice(0,script.indexOf('\n(async () =>'))+String.raw`
+(async()=>{try{
+ state.status.snapshot.assets=[{id:'asset',name:'示例.mp4',duration:60}];state.status.snapshot.segments=['a','b'].map((id,i)=>({id,order:i+1,text:id,visualNote:'',video:{assetId:'asset',start:0}}));
+ await act(async()=>{createRoot(document.getElementById('root')).render(<App/>);await settle();});await settle();
+ await click(button('查找'));await key('x');
+ await click(field('查看片段 1 的详情'));const parent=layer('画面素材详情');await click(button('更改'));
+ const vertical=document.querySelector('.ag-body-vertical-scroll-viewport'),nativeFrame=window.requestAnimationFrame,nativeCancel=window.cancelAnimationFrame,frames=new Map();let next=0;
+ window.requestAnimationFrame=cb=>{const id=--next;frames.set(id,cb);return id;};window.cancelAnimationFrame=id=>{if(id<0)frames.delete(id);else nativeCancel(id);};
+ state.batchFailure=true;await click(button('保存关联与起点'));
+ check(!layer('关联视频') && !state.current && document.body.textContent.includes('多行新增失败'),'关联失败实际关闭并释放，保留错误反馈');
+ window.requestAnimationFrame=nativeFrame;window.cancelAnimationFrame=nativeCancel;
+ await act(async()=>{await window.browserInput({click:'button[aria-haspopup="dialog"]'});await settle();});await settle();
+ const active=document.activeElement,newer=active.closest('[role="dialog"][aria-modal="true"]'),scroll=vertical.scrollTop;
+ const selected=[...document.querySelectorAll('.ag-row-selected')].map(row=>row.getAttribute('row-id')).join(),data=JSON.stringify(state.status.snapshot.segments);
+ check(newer?.querySelector('h2')?.textContent==='更多操作' && newer.contains(active),'用户新模态层已拥有焦点');
+ window.requestAnimationFrame=nativeFrame;window.cancelAnimationFrame=nativeCancel;
+ await act(async()=>{const batch=[...frames.values()];frames.clear();for(const cb of batch)cb(performance.now());await settle();});await settle();
+ check(document.activeElement===active && newer.contains(active) && vertical.scrollTop===scroll,'旧失败返回不得穿透新最上层或滚动');
+ check(field('查找文案').value==='x' && layer('画面素材详情')===parent,'旧失败保留查找与仍存续父详情');
+ check([...document.querySelectorAll('.ag-row-selected')].map(row=>row.getAttribute('row-id')).join()===selected && JSON.stringify(state.status.snapshot.segments)===data && state.batchRequests.length===1,'选中与数据保持且失败不重试');
+ await key('Escape');check(parent.isConnected,'关闭新层不丢失原父流程');
+ await click(button('关闭详情'));check(document.activeElement===field('查看片段 1 的详情'),'父流程最终关闭仍回自己的来源');
+ await key('ArrowDown');check(document.activeElement.closest('[row-id]')?.getAttribute('row-id')==='b','失败跨链后仍可继续表格方向导航');
+ document.getElementById('result').dataset.state='passed';
+}catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
+`;
+test('关联失败关闭待返回时新模态层与父来源仍受保护',{timeout:40000},t=>{assert.ok(chrome);return checkInteractiveBrowser(t,failedAssociationNewLayerScript,fixture,1200,800);});

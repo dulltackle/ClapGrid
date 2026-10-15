@@ -123,3 +123,24 @@ for (const [name, unavailable] of [['禁用', 'disabled'], ['不可见', 'hidden
     ), fixture, 420, 420);
   });
 }
+
+test('跨流程查找与新详情替换旧弹窗返回后仍保留新来源', { timeout: 40000 }, t => {
+  assert.ok(chrome, '此验收必须实际运行 Chrome');
+  return checkInteractiveBrowser(t, scenario(
+    `await act(async () => { await window.browserInput({ click: '.search-trigger' }); await settle(); }); await key('x');
+     await click(document.querySelector('[row-id="row-64"] [data-row-details]'));
+     const parent = document.querySelector('[aria-label="口播片段详情"]');
+     check(parent?.textContent.includes('文案 64'), '查找后从另一片段打开新详情');
+     await click(button('保留音频'));
+     const currentLayer = document.querySelector('[aria-label="保留音频"]');
+     const selected = [...document.querySelectorAll('.ag-row-selected')].map(row => row.getAttribute('row-id')).join();
+     const rowCount = state.status.snapshot.segments.length;`,
+    `check(document.activeElement === active && currentLayer.contains(active) && vertical.scrollTop === scroll, '旧返回不能穿透新模态层或改变滚动');
+     check(document.querySelector('[aria-label="查找文案"]').value === 'x' && document.querySelector('[aria-label="口播片段详情"]') === parent, '保留查找及新详情');
+     check([...document.querySelectorAll('.ag-row-selected')].map(row => row.getAttribute('row-id')).join() === selected && state.status.snapshot.segments.length === rowCount, '保留选中及项目数据');
+     await click(button('关闭')); check(parent.contains(document.activeElement), '新子流程返回新父详情');
+     await click(button('关闭详情'));
+     check(document.activeElement === document.querySelector('[row-id="row-64"] [data-row-details]'), '新父流程仍返回自己的片段来源');
+     await key('ArrowDown'); check(document.activeElement.closest('[row-id]')?.getAttribute('row-id') === 'row-65', '连续关闭后方向键从新来源继续导航');`,
+  ), fixture, 420, 420);
+});
