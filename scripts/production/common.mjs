@@ -49,7 +49,7 @@ export async function readManifest(options) {
 }
 /** @param {string} id @param {string} message @param {string} [path] @returns {Check} */
 export function failure(id, message, path) { return { id, status: 'failed', message, ...(path ? { path } : {}) }; }
-/** @param {Check[]} checks @returns {Status} */
+/** @param {{status:Status}[]} checks @returns {Status} */
 export function statusOf(checks) {
   if (checks.length === 0 || checks.some(check => check.status === 'failed')) return 'failed';
   if (checks.some(check => check.status === 'pending')) return 'pending';

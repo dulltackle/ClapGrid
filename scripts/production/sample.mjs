@@ -4,7 +4,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { z } from 'zod';
 import { readManifest, resolveProjectFile, failure, statusOf } from './common.mjs';
-import checkEvidence from './evidence.mjs';
+import { evaluateEvidence } from './evidence.mjs';
 
 const exec = promisify(execFile);
 const identity = z.string().min(1);
@@ -14,8 +14,6 @@ const sampleSchema = z.object({ id: identity, mode: z.enum(['actual-project', 'c
   representative: z.object({ materials: z.array(identity).min(1), motions: z.array(identity).min(1), transitions: z.array(identity).min(1) }),
   confirmation: z.object({ requirement: identity, videoCriterion: identity, planCriterion: identity }).refine(value => value.videoCriterion !== value.planCriterion, '样片和方案须分别关联证据子项'),
 });
-const stateSchema = z.object({ reviewVersion: identity, requirements: z.array(z.object({ id: identity, status: z.enum(['passed', 'failed', 'pending', 'skipped']), controlledTest: z.boolean() })) });
-const provenanceSchema = z.object({ actor: identity, record: identity, observedAt: identity });
 const excluded = ['其他画面', '领域准确性', '发音听审', '完整成片终审'];
 
 /** @param {string} path */
@@ -51,24 +49,23 @@ export default async function sample(options) {
     const decode = await exec('ffmpeg', ['-v', 'error', '-xerror', '-nostdin', '-i', video, '-map', '0:v:0', '-f', 'null', '-'], { maxBuffer: 1024 * 1024 });
     if (decode.stderr.trim()) throw new Error(`样片视频完整解码出现错误 ${video}：${decode.stderr.trim()}`);
     checks.push({ id: 'sample-video', status: 'passed', path: video, frames, message: '动态视频完整解码通过；代表性与视觉效果仍由用户实际审阅。' });
-    const evidence = await checkEvidence(options);
-    const state = stateSchema.safeParse(evidence.details);
-    if (!state.success) throw new Error(`无法核对样片确认记录：${evidence.checks.map(check => check.message).join('；')}`);
-    if (state.data.reviewVersion !== input.reviewVersion) throw new Error('样片与证据审阅版本不匹配。');
-    const direction = state.data.requirements.find(requirement => requirement.id === input.confirmation.requirement);
+    const evidence = await evaluateEvidence(options);
+    if (evidence.inputError) throw new Error(`无法核对样片确认记录：${evidence.inputError.message}`);
+    if (evidence.reviewVersion !== input.reviewVersion) throw new Error('样片与证据审阅版本不匹配。');
+    const direction = evidence.requirements.find(requirement => requirement.id === input.confirmation.requirement);
     if (!direction) throw new Error('缺少样片视觉方向对应的验收要求。');
     checks.push({ id: 'sample-direction', status: direction.status, message: direction.status === 'passed' ? '对应要求的全部必需证据机械完整。' : '视觉方向尚未通过，保持待审或待修改。' });
     const confirmations = [];
     let actualUser = true;
     for (const [criterion, artifact] of [[input.confirmation.videoCriterion, video], [input.confirmation.planCriterion, plan]]) {
-      const matches = evidence.checks.filter(check => check.id === `${direction.id}:${criterion}`);
-      const expected = matches[0];
-      if (matches.length !== 1 || !expected) throw new Error(`样片或方案证据子项缺失或标识不唯一：${criterion}`);
-      checks.push(expected);
+      const expected = direction.criteria.find(item => item.id === criterion);
+      if (!expected) throw new Error(`样片或方案证据子项缺失或标识不唯一：${criterion}`);
+      checks.push({ id: `${direction.id}:${expected.id}`, status: expected.status, path: expected.path, ...expected.proof, message: expected.message });
       if (expected.status !== 'passed') { actualUser = false; continue; }
-      if (expected.kind !== 'user' || expected.path !== artifact || !sameScope(z.array(identity).parse(expected.scope), input.scope)) throw new Error('视觉确认必须对应样片与采用方案及相同的视觉审阅范围。');
-      actualUser &&= expected.source === 'user-confirmation';
-      confirmations.push({ evidenceId: expected.evidenceId, source: expected.source, provenance: provenanceSchema.parse(expected.provenance), reusedFrom: expected.reusedFrom });
+      const proof = expected.proof;
+      if (!proof || proof.kind !== 'user' || proof.path !== artifact || !sameScope(proof.scope, input.scope)) throw new Error('视觉确认必须对应样片与采用方案及相同的视觉审阅范围。');
+      actualUser &&= proof.source === 'user-confirmation';
+      confirmations.push({ evidenceId: proof.evidenceId, source: proof.source, provenance: proof.provenance, reusedFrom: proof.reusedFrom });
     }
     if (confirmations.length === 2 && JSON.stringify(confirmations[0]?.provenance) !== JSON.stringify(confirmations[1]?.provenance)) throw new Error('样片与采用方案应关联同一实际用户确认来源。');
     Object.assign(details, { confirmations, mechanicalEvidenceComplete: direction.status === 'passed' });

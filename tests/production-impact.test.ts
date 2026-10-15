@@ -84,6 +84,9 @@ test('真实入口只读核对完整稳定依赖图，未变媒体可复用而�
   assert.deepEqual(result.report.affected.outputs, []);
   assert.equal(result.report.details.unchanged.length, 18);
   assert.equal(result.report.details.actualHost, 'pending');
+  assert.equal(result.report.details.evidence.status, 'pending');
+  assert.deepEqual(result.report.details.evidence.checks, []);
+  assert.deepEqual(result.report.details.evidence.needsReview, []);
   assert.deepEqual(readFileSync(join(f.project, 'production.json')), before);
 });
 
@@ -98,7 +101,9 @@ test('A源改变使A末帧和B相邻转场重制，真实边界消除旧画面�
   assert.equal(result.status, 1, result.stdout);
   assert.equal(result.report.status, 'pending');
   assert.deepEqual(result.report.affected.outputs.map((n: { id: string }) => n.id).sort(), ['A-assembly', 'A-last-frame', 'A-review', 'B-assembly', 'B-review', 'B-transition'].sort());
+  assert.equal(result.report.affected.outputs.find((n: { id: string }) => n.id === 'A-assembly').relation, 'direct');
   const transition = result.report.affected.outputs.find((n: { id: string }) => n.id === 'B-transition');
+  assert.equal(transition.relation, 'indirect');
   assert.ok(transition.reasonChains.some((chain: string[]) => chain.join(' -> ') === 'A-source -> A-assembly -> A-last-frame -> B-transition'));
   assert.deepEqual(result.report.affected.segments, ['A', 'B']);
   assert.deepEqual(readFileSync(join(f.project, 'production.json')), before);
@@ -143,22 +148,34 @@ test('影响识别重新核对旧确认，重制后真实证据入口拒绝旧A/
   const f = fixture(t);
   const requirements = [];
   const records = [];
+  writeFileSync(join(f.project, '证明原件.txt'), '隔离机制测试模拟证明，不是真实用户审阅。\n');
+  writeFileSync(join(f.project, '历史档案.json'), '{"original":"应保持原字节的模拟历史档案"}\n');
+  const originals = ['证明原件.txt', '历史档案.json'].map(path => ({ path, bytes: readFileSync(join(f.project, path)) }));
   for (const node of f.nodes.filter(n => n.kind === 'review' || n.kind === 'audio')) {
     const scope = [node.segmentId!];
     const kind = node.kind === 'review' ? 'user' : 'ran';
     requirements.push({ id: node.id, classifiedBy: { source: 'human', identity: '受控技术测试作者' }, required: [{ id: 'proof', kind, artifact: node.path, scope }] });
-    const record = { id: `old-${node.id}`, requirement: node.id, criterion: 'proof', kind, reviewVersion: 'version-1', artifact: { path: node.path, sha256: node.sha256 }, scope, status: 'passed', source: 'controlled-test', provenance: { actor: '受控测试', record: '受控模型不代表真实用户或有效配音', observedAt: '2026-10-13T00:00:00Z' } };
+    const record = { id: `old-${node.id}`, requirement: node.id, criterion: 'proof', kind, reviewVersion: 'version-1', artifact: { path: node.path, sha256: node.sha256 }, scope, status: 'passed', source: 'controlled-test', provenance: { actor: '受控测试', record: '证明原件.txt', observedAt: '2026-10-13T00:00:00Z' } };
     records.push(record, { ...record, id: `current-${node.id}`, reviewVersion: 'version-2', reuseOf: record.id });
   }
   f.manifest.evidence = '证据.json'; f.save();
   writeFileSync(join(f.project, '证据.json'), JSON.stringify({ schemaVersion: 1, reviewVersion: 'version-2', requirements, records }));
   assert.equal(f.run('evidence').status, 0);
   const proofBefore = readFileSync(join(f.project, '证据.json'));
+  const unchangedOutput = sha(join(f.project, 'A-review.mkv'));
   writeFileSync(join(f.project, 'A-source.mjs'), 'export const color = "blue";\n');
   const impact = f.run();
+  assert.equal(sha(join(f.project, 'A-review.mkv')), unchangedOutput);
   assert.equal(impact.status, 1, impact.stdout);
   assert.deepEqual(impact.report.details.evidence.needsReview.sort(), ['current-A-review', 'current-B-review']);
   assert.equal(impact.report.details.evidence.checks.find((c: { id: string }) => c.id === 'C-review:proof').status, 'passed');
+  assert.deepEqual(impact.report.details.evidence.unchangedProofs.map((proof: { evidenceId: string }) => proof.evidenceId).sort(), ['current-A-audio', 'current-B-audio', 'current-C-audio', 'current-C-review']);
+  const affectedA = impact.report.details.evidence.checks.find((c: { id: string }) => c.id === 'A-review:proof');
+  assert.equal(affectedA.previousStatus, 'passed');
+  assert.equal(affectedA.dependencyAffected, true);
+  assert.equal(affectedA.status, 'pending');
+  assert.deepEqual(affectedA.reusedFrom, ['old-A-review']);
+  assert.deepEqual(affectedA.provenance, records.find(record => record.id === 'current-A-review')!.provenance);
   f.render('A'); f.render('B');
   const evidence = f.run('evidence');
   assert.equal(evidence.status, 1, evidence.stdout);
@@ -170,6 +187,7 @@ test('影响识别重新核对旧确认，重制后真实证据入口拒绝旧A/
     assert.equal(check.source, 'controlled-test');
   }
   assert.deepEqual(readFileSync(join(f.project, '证据.json')), proofBefore);
+  for (const original of originals) assert.deepEqual(readFileSync(join(f.project, original.path)), original.bytes);
 });
 
 test('删除声明使用的转场节点及其边也不能把不完整图报告为无影响', t => {

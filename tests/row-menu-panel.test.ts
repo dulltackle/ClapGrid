@@ -95,7 +95,10 @@ state.speech = {locked:lock === 'speech', voice:{speaker:'zh_female_vv_uranus_bi
 state.status.modification = ['codex','user'].includes(lock) ? {owner:lock} : null;
 await action(()=>[...timers.values()].forEach(cb=>cb()));
 check(document.querySelector('[data-delete-confirm]').disabled, '弹窗期间共享锁阻止确认：'+lock);
-assertTheme('disabled', document.querySelector('[data-delete-confirm]'));
+const confirm = document.querySelector('[data-delete-confirm]');
+// React 提交禁用状态后才开始 CSS 过渡，固定延时不能保证已到达最终透明度。
+await Promise.all(confirm.getAnimations().map(animation => animation.finished));
+assertTheme('disabled', confirm);
 await input({click:'[role="alertdialog"] [data-delete-confirm]'}); check(state.batchRequests.length === 1, '锁定不提交');
 }
 await input({key:'Escape'}); check(!dialog(), '锁定仍可取消');
@@ -114,6 +117,20 @@ const raceFixture = fixture.replace(
   "if (change.kind === 'delete') { const current = state.status.snapshot.segments.find(item => item.id === change.expected.id); if (JSON.stringify(current) === JSON.stringify(change.expected)) state.status.snapshot.segments = state.status.snapshot.segments.filter(item => item.id !== change.expected.id); }",
 ).replace("results: [] };", "results: batch.changes.map((change,index) => ({ index, outcome: index ? 'deleted' : 'changed', message: index ? '口播片段已删除，已跳过' : '口播片段内容已变化，已跳过' })) };");
 test('确认删除保持旧快照并反馈过时目标，动态任务锁及修改权阻止提交', {skip:chrome ? false:'需要 Chrome',timeout:40000}, t=>checkInteractiveBrowser(t,raceScript,raceFixture));
+
+test('动态锁禁用确认按钮时等待透明度过渡完成后核对主题', {timeout:40000}, t => {
+  assert.ok(chrome, '主题矩阵需要真实 Chrome，环境缺失不能记为通过');
+  // 延长真实 CSS 过渡，稳定暴露固定等待在过渡中途读取透明度的问题。
+  const slowTransitionScript = raceScript.replace(
+    "for (const lock of ['task', 'speech', 'codex', 'user']) {",
+    `const confirm = document.querySelector('[data-delete-confirm]');
+confirm.style.transitionDuration = '1s';
+getComputedStyle(confirm).opacity;
+for (const lock of ['task', 'speech', 'codex', 'user']) {`,
+  );
+  assert.notEqual(slowTransitionScript, raceScript, '回归场景必须实际延长过渡');
+  return checkInteractiveBrowser(t, slowTransitionScript, raceFixture);
+});
 
 const edgeScript = script.slice(0, script.indexOf('\n(async () =>')) + String.raw`
 (async () => { try {
