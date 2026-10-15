@@ -178,7 +178,28 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
     const index = api && !api.isDestroyed() ? api.getRowNode(destination.id)?.rowIndex ?? Math.max(0, api.getDisplayedRowCount() - 1) : 0;
     return source({ ...destination, index }, options);
   };
+  /** 接收合法数据时保留用户当前表格位置，不重放已经取消的流程来源。 */
+  const acceptGridUpdate = (apply: () => void) => {
+    const active = document.activeElement;
+    const api = grid();
+    const row = active instanceof HTMLElement ? active.closest('[row-id]') : null;
+    const id = row?.getAttribute('row-id');
+    const details = active instanceof HTMLElement && active.hasAttribute('data-row-details');
+    const column = active instanceof HTMLElement && active.matches('[role="gridcell"][col-id]') ? active.getAttribute('col-id') : null;
+    const current = intent();
+    // AG Grid 默认在刷新后按旧 rowIndex 重新聚焦；先清除该缓存，稳定身份由此处维护。
+    const preserve = id && (details || column) && api && !api.isDestroyed() && api.getRowNode(id)?.rowIndex != null;
+    if (preserve) api.clearFocusedCell();
+    flushSync(apply);
+    if (!preserve || !current.valid() || api.isDestroyed() || layers().length) return;
+    const node = api.getRowNode(id);
+    if (node?.rowIndex == null) return;
+    const selector = `[row-id="${CSS.escape(id)}"] ${details ? '[data-row-details]' : `[col-id="${CSS.escape(column!)}"]`}`;
+    const target = document.querySelector<HTMLElement>(selector);
+    if (!focus(target)) return;
+    if (column) api.setFocusedCell(node.rowIndex, column);
+  };
   // 在业务已允许关闭时固定意图；Portal 稍后发来的自动焦点回调不能重新取得恢复权。
   const close = (restore: () => void, action: () => void) => { preparations.get(restore)?.(); action(); };
-  return { capture, captureSegment, intent, cancelPending, listen, close };
+  return { capture, captureSegment, intent, cancelPending, listen, close, acceptGridUpdate };
 }

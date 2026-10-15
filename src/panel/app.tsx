@@ -10,7 +10,7 @@ import { DeleteConfirm } from './delete-confirm.js';
 import { AudioHistoryPanel } from './audio-panels.js';
 import { DetailPanel } from './detail-panel.js';
 import { VoicePanel } from './voice-panel.js';
-import { segmentFocusCoordinator, type FocusReturn } from './dialog-focus.js';
+import { segmentFocusCoordinator, type FocusReturn, type FocusIntent } from './dialog-focus.js';
 import { ExportTaskDetails, exportStateLabel, useExportTasks } from './export-tasks.js';
 import { ExportSettingsPanel } from './export-settings.js';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
@@ -107,7 +107,6 @@ export function App() {
   const [rowMenuOpen, setRowMenuOpen] = useState(false);
   const menuRestore = useRef(true);
   const [deleteTargets, setDeleteTargets] = useState<{ targets: Segment[]; origin: FocusReturn } | null>(null);
-  const rowOrigin = useRef(() => {});
   const [selectionState, setSelectionState] = useState('正在连接勾选…');
   const [connectionVersion, setConnectionVersion] = useState(0);
   const table = useRef<TableSession | null>(null);
@@ -173,20 +172,25 @@ export function App() {
     grid.current?.stopEditing(true);
     failed(new Error('编辑连接已断开，未提交输入已取消；请重新读取后编辑。'));
   };
-  const startEdit = (id: string, field: 'text' | 'visualNote' = 'text') => {
-    if (status?.taskLocked || speech?.locked || exports.exports?.locked) return Promise.resolve();
+  const startEdit = (id: string, field: 'text' | 'visualNote' = 'text', intent?: FocusIntent) => {
+    if ((intent && !intent.valid()) || status?.taskLocked || speech?.locked || exports.exports?.locked) return Promise.resolve();
     return editing.begin('segments', next => {
-    flushSync(() => { setStatus(next); setError(''); setSaveError(''); setSaveState('saved'); });
-    const row = grid.current?.getRowNode(id);
-    if (row?.rowIndex == null) throw new Error('口播片段已删除，请选择其他片段。');
-    if (segmentDetail.id) row.setSelected(true, true);
-    grid.current?.ensureColumnVisible(field);
-    grid.current?.startEditingCell({ rowIndex: row.rowIndex, colKey: field });
-  }, disconnected, cause => {
-    if (cause.message === 'Codex 正在修改' || cause.message === '用户正在编辑') {
-      setSaveState('saved');
-      queueMicrotask(() => { void editing.refresh(() => queryStatus(panelServiceUrl()), setStatus, () => {}); });
-    } else failed(cause);
+      if (intent && !intent.valid()) {
+        focusReturns.acceptGridUpdate(() => setStatus(next));
+        void editing.cancel('segments');
+        return;
+      }
+      flushSync(() => { setStatus(next); setError(''); setSaveError(''); setSaveState('saved'); });
+      const row = grid.current?.getRowNode(id);
+      if (row?.rowIndex == null) throw new Error('口播片段已删除，请选择其他片段。');
+      if (segmentDetail.id) row.setSelected(true, true);
+      grid.current?.ensureColumnVisible(field);
+      grid.current?.startEditingCell({ rowIndex: row.rowIndex, colKey: field });
+    }, disconnected, cause => {
+      if (cause.message === 'Codex 正在修改' || cause.message === '用户正在编辑') {
+        setSaveState('saved');
+        queueMicrotask(() => { void editing.refresh(() => queryStatus(panelServiceUrl()), setStatus, () => {}); });
+      } else failed(cause);
     });
   };
   const audioError = () => failed(new Error('音频无法播放，请检查项目文件后重试。'));
@@ -379,21 +383,29 @@ export function App() {
   const insertRelative = async (placement: 'before' | 'after') => {
     if (!rowMenu || selectedIds.length !== 1 || disabled || editing.getState().busy || editing.getState().editing) return;
     const relative = { anchor: rowMenu.anchor, expectedIds: rowMenu.expectedIds, placement };
+    const origin = rowMenu.origin;
+    const intent = focusReturns.intent();
     menuRestore.current = false; setRowMenuOpen(false);
     let inserted: string | undefined;
+    let restoring = false;
     await editing.save('segments', { acquire: true }, async (token, action) => {
       setSaveState('saving'); setSaveError('');
       const result = await modifyUserBatch(panelServiceUrl(), { changes: [{ kind: 'add', text: '', relative }] }, token, action.signal);
-      action.apply(() => { flushSync(() => setStatus(result.status)); });
+      action.apply(() => { focusReturns.acceptGridUpdate(() => setStatus(result.status)); });
       const item = result.results[0];
       if (item?.outcome !== 'applied' || !item.id) throw new Error(item?.message ?? '未能确认新增口播片段');
       action.apply(() => {
         inserted = item.id; setSaveState('saved');
+        if (!intent.valid()) return;
         const node = grid.current?.getRowNode(item.id!);
         if (node?.rowIndex != null) { node.setSelected(true, true); grid.current?.ensureColumnVisible('text'); grid.current?.ensureIndexVisible(node.rowIndex, 'middle'); }
       });
-    }, cause => { failed(cause); requestAnimationFrame(() => rowOrigin.current()); });
-    if (inserted) await startEdit(inserted);
+    }, cause => {
+      failed(cause);
+      if (intent.valid()) { restoring = true; origin(); }
+    });
+    if (!restoring) origin.cancel();
+    if (inserted && intent.valid()) await startEdit(inserted, 'text', intent);
   };
 
   const speechTask = speech?.tasks.at(-1);
@@ -576,7 +588,6 @@ export function App() {
       if (!node.isSelected()) node.setSelected(true, true);
       rowMenu?.origin.cancel();
       const origin = focusReturns.capture(target, { fallback: 'menu' });
-      rowOrigin.current = origin;
       setRowMenu({ anchor: structuredClone(node.data), expectedIds: status?.snapshot.segments.map(segment => segment.id) ?? [], origin });
     }} onKeyDown={event => {
       if (event.key !== 'Escape' || event.nativeEvent.isComposing || event.defaultPrevented) return;
