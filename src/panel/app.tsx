@@ -10,7 +10,7 @@ import { DeleteConfirm } from './delete-confirm.js';
 import { AudioHistoryPanel } from './audio-panels.js';
 import { DetailPanel } from './detail-panel.js';
 import { VoicePanel } from './voice-panel.js';
-import { dialogReturnFocus } from './dialog-focus.js';
+import { dialogReturnFocus, segmentFocusCoordinator } from './dialog-focus.js';
 import { ExportTaskDetails, exportStateLabel, useExportTasks } from './export-tasks.js';
 import { ExportSettingsPanel } from './export-settings.js';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
@@ -158,13 +158,12 @@ export function App() {
   }, []);
   useEffect(() => { grid.current?.resetRowHeights(); }, [activeMatch, searchRowHeight]);
   const returnFocus = useRef({ settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, material: () => {}, detail: () => {} });
+  const [focusReturns] = useState(() => segmentFocusCoordinator(() => grid.current, {
+    search: () => searchInput.current, table: () => tableFallback.current, more: () => moreButton.current,
+  }));
+  useEffect(() => focusReturns.listen(), [focusReturns]);
   const rememberOrigin = (trigger: HTMLElement, detail: keyof typeof returnFocus.current) => {
-    const drawer = trigger.closest<HTMLElement>('[aria-label="口播片段详情"]');
-    returnFocus.current[detail] = drawer ? () => {
-      if (trigger.isConnected && !trigger.matches(':disabled')) trigger.focus({ preventScroll: true });
-      else if (drawer.isConnected) drawer.focus({ preventScroll: true });
-      else moreButton.current?.focus();
-    } : dialogReturnFocus(trigger, () => grid.current, () => searchInput.current ?? (tableFallback.current?.hidden ? moreButton.current : tableFallback.current));
+    returnFocus.current[detail] = focusReturns.capture(trigger);
   };
   const openDetail = (next: typeof detail, trigger: HTMLElement) => { rememberOrigin(trigger, 'detail'); setDetail(next); };
   const failed = (cause: Error) => { setSaveState('failed'); setSaveError(cause.message); };
@@ -521,7 +520,7 @@ export function App() {
       onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail} />}
     {exportSettingsOpen && status && <ExportSettingsPanel restoreFocus={returnFocus.current.settings} editing={editing} status={status} onStatus={setStatus} onSaveState={(state, message = '') => { setSaveState(state); setSaveError(message); }} onClose={() => setExportSettingsOpen(false)} />}
     {inlineAudio && <audio ref={audioPlayer} key={inlineAudio.url} src={inlineAudio.url} autoPlay onPlay={() => setPlaying(inlineAudio.taskId)} onPause={() => setPlaying(null)} onEnded={() => setPlaying(null)} onError={audioError} />}
-    {audioHistory && <AudioHistoryPanel segmentId={audioHistory} speech={speech} onClose={() => setAudioHistory(null)} restoreFocus={returnFocus.current.history} />}
+    {audioHistory && <AudioHistoryPanel segmentId={audioHistory} speech={speech} onClose={() => focusReturns.close(returnFocus.current.history, () => setAudioHistory(null))} restoreFocus={returnFocus.current.history} />}
     {segmentDetail.id && <SegmentDetails controller={segmentDetail} segment={detailSegment} segments={status?.snapshot.segments ?? []}
       busy={editState.busy} disabled={disabled} error={saveError}
       media={<>
@@ -546,9 +545,9 @@ export function App() {
       <div className="flex flex-wrap items-center gap-2"><Button variant="outline" disabled={saveState === 'saving' || (importing && !sourcePath.trim())} onClick={() => { void saveVideo(); }}>{saveState === 'saving' ? '正在处理…' : importing ? '导入并复制' : '保存关联与起点'}</Button>
         <Button variant="outline" onClick={() => { void cancelVideo(); }}>取消</Button></div>
     </DetailPanel>}
-    {preview && <DetailPanel title="视频预览" label="视频预览" restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={() => setPreview(null)} restoreFocus={returnFocus.current.preview}>
+    {preview && <DetailPanel title="视频预览" label="视频预览" restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={() => focusReturns.close(returnFocus.current.preview, () => setPreview(null))} restoreFocus={returnFocus.current.preview}>
       <video className="block w-full max-h-[60dvh] shrink-0" key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
-      <p>从 {preview.start} 秒开始，预览默认静音。</p><Button variant="outline" onClick={() => setPreview(null)}>关闭预览</Button>
+      <p>从 {preview.start} 秒开始，预览默认静音。</p><Button variant="outline" onClick={() => focusReturns.close(returnFocus.current.preview, () => setPreview(null))}>关闭预览</Button>
     </DetailPanel>}
     {deleteTargets && <DeleteConfirm count={deleteTargets.length} disabled={disabled} lock={lock}
       onClose={() => setDeleteTargets(null)} restoreFocus={() => rowOrigin.current()}
