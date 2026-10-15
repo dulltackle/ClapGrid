@@ -50,10 +50,11 @@ export function useSegmentDetails({ editing, status, accept, save, failed, inlin
     if (intent.inline) await inline(intent.id, intent.field ?? 'text');
     else setFocusRequest({ target: intent.focusText ? 'text' : 'panel', intent: requested });
   };
-  const navigate = (intent: SegmentIntent, origin?: FocusReturn) => {
+  const navigate = (intent: SegmentIntent, origin?: FocusReturn, requested = focus.intent()) => {
+    if (!requested.valid()) { origin?.cancel(); return; }
     if (editing.getState().busy && (draft || !intent?.inline)) { origin?.cancel(); return; }
     if (dirty) { pending?.origin?.cancel(); setPending({ intent, origin }); return; }
-    void execute(intent, origin);
+    void execute(intent, origin, requested);
   };
   const begin = (field: SegmentTextField = 'text') => {
     activeField.current = field;
