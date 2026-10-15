@@ -80,3 +80,93 @@ for (const [width, height] of [[1600,1000],[420,800],[360,320]]) {
     return checkInteractiveBrowser(t, script, fixture.replace('export async function importVideo() {', "export async function importVideo() { if (state.importFailure) throw Error('视频导入失败');"), width, height);
   });
 }
+
+const abandonedEditorScript = script.slice(0, script.indexOf('\n(async () =>')) + String.raw`
+(async () => { try {
+ state.status.snapshot.assets=[{id:'asset',name:'示例.mp4',duration:60}];state.status.snapshot.segments[0].video={assetId:'asset',start:0};
+ await act(async()=>{createRoot(document.getElementById('root')).render(<App/>);await settle();});await settle();
+ await click(field('查看片段 1 的详情'));const parent=layer('画面素材详情');
+ state.acquireGate=deferred();await click(button('更改'));
+ check(state.current && !layer('关联视频'),'关联请求正在等待真实修改权响应');
+ await act(async()=>{await window.browserInput({click:'.search-trigger'});await settle();});await settle();
+ check(document.activeElement===field('查找文案'),'真实新操作已转向查找');
+ await key('Escape');
+ await act(async()=>{await window.browserInput({click:'[aria-label="口播片段详情"] h2'});await settle();});await settle();
+ check(parent.contains(document.activeElement),'用户已返回仍存续的父详情');
+ await act(async()=>{state.acquireGate.resolve();state.acquireGate=null;await settle();});await settle();
+ check(!layer('关联视频') && parent.contains(document.activeElement) && !state.current,'回到父详情不能重新取得旧关联请求的导航权，迟到修改权释放');
+ await key('Escape');check(document.activeElement===field('查看片段 1 的详情'),'取消子请求后父流程仍能回原表格入口');
+ document.getElementById('result').dataset.state='passed';
+}catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
+`;
+test('离开关联请求再回父详情不复活迟到修改权', {timeout:40000}, t=>{assert.ok(chrome);return checkInteractiveBrowser(t,abandonedEditorScript,fixture,1200,800);});
+
+const unavailableParentScript = (unavailable: string) => script.slice(0, script.indexOf('\n(async () =>')) + String.raw`
+(async () => { try {
+ state.status.snapshot.assets=[{id:'asset',name:'示例.mp4',duration:60}];
+ state.status.snapshot.segments=['a','b'].map((id,i)=>({id,order:i+1,text:id,video:{assetId:'asset',start:0}}));
+ await act(async()=>{createRoot(document.getElementById('root')).render(<App/>);await settle();});await settle();
+ field('查看片段 1 的详情').focus();await key('Enter');const parent=layer('画面素材详情');
+ check(parent,'真实键盘可打开父详情');
+ const entry=button('播放预览');entry.focus();await key('Enter');
+ check(layer('视频预览')?.contains(document.activeElement),'真实键盘可打开嵌套预览');
+ ${unavailable}
+ await key('Escape');check(!layer('视频预览') && document.activeElement===parent,'父入口失效后返回仍存续的父层容器');
+ await key('Escape');check(document.activeElement===field('查看片段 1 的详情'),'子返回没有丢失父流程自己的表格来源');
+ await key('ArrowDown');check(document.activeElement.closest('[row-id]')?.getAttribute('row-id')==='b','连续关闭后可从正确片段继续真实表格导航');
+ check(!state.saves && !state.mutations.length,'查看和关闭不写入业务数据');
+ document.getElementById('result').dataset.state='passed';
+}catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
+`;
+for(const [name,environment] of [['卸载','entry.remove();'],['不可见','entry.hidden=true;'],['禁用','entry.disabled=true;']] as const)test('嵌套预览父入口'+name+'后仍可连续返回表格',{timeout:40000},t=>{assert.ok(chrome);return checkInteractiveBrowser(t,unavailableParentScript(environment),fixture,1200,800);});
+
+const failedAssociationScript=script.slice(0,script.indexOf('\n(async () =>'))+String.raw`
+(async()=>{try{
+ state.status.snapshot.assets=[{id:'asset',name:'示例.mp4',duration:60}];state.status.snapshot.segments[0].video={assetId:'asset',start:0};
+ await act(async()=>{createRoot(document.getElementById('root')).render(<App/>);await settle();});await settle();
+ await click(field('查看片段 1 的详情'));const parent=layer('画面素材详情');await click(button('更改'));
+ state.batchFailure=true;await click(button('保存关联与起点'));
+ check(!layer('关联视频') && !state.current && parent.contains(document.activeElement),'关联保存失败仍按业务规则关闭编辑层、释放修改权并返回父层');
+ check(document.body.textContent.includes('多行新增失败') && state.batchRequests.length===1,'失败反馈保留且不自动重试');
+ await key('Escape');check(document.activeElement===field('查看片段 1 的详情'),'失败关闭没有消费父详情来源');
+ document.getElementById('result').dataset.state='passed';
+}catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
+`;
+test('关联保存失败关闭子层并保留父层来源',{timeout:40000},t=>{assert.ok(chrome);return checkInteractiveBrowser(t,failedAssociationScript,fixture,1200,800);});
+
+const disconnectedWhileAwayScript=script.slice(0,script.indexOf('\n(async () =>'))+String.raw`
+(async()=>{try{
+ state.status.snapshot.assets=[{id:'asset',name:'示例.mp4',duration:60}];state.status.snapshot.segments[0].video={assetId:'asset',start:0};
+ await act(async()=>{createRoot(document.getElementById('root')).render(<App/>);await settle();});await settle();
+ await click(field('查看片段 1 的详情'));await click(button('更改'));
+ const parent=layer('画面素材详情'),nativeFrame=window.requestAnimationFrame,nativeCancel=window.cancelAnimationFrame,frames=new Map();let next=0;
+ window.requestAnimationFrame=cb=>{const id=--next;frames.set(id,cb);return id;};window.cancelAnimationFrame=id=>{if(id<0)frames.delete(id);else nativeCancel(id);};
+ window.dispatchEvent(new Event('blur'));
+ await act(async()=>{state.current.disconnect();await settle();});await settle();
+ check(!layer('关联视频') && !state.current,'离开期间断连仍按业务规则关闭编辑层');
+ const active=document.activeElement;
+ window.dispatchEvent(new Event('focus'));window.requestAnimationFrame=nativeFrame;window.cancelAnimationFrame=nativeCancel;
+ await act(async()=>{const batch=[...frames.values()];frames.clear();for(const cb of batch)cb(performance.now());await settle();});await settle();
+ check(document.activeElement===active,'返回面板不补执行离开期间产生的旧子返回');
+ await click(button('关闭详情'));check(document.activeElement===field('查看片段 1 的详情'),'离开取消子恢复不丢失仍存续父来源');
+ document.getElementById('result').dataset.state='passed';
+}catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
+`;
+test('离开面板期间断连关闭子层不重放旧返回',{timeout:40000},t=>{assert.ok(chrome);return checkInteractiveBrowser(t,disconnectedWhileAwayScript,fixture,1200,800);});
+
+const keyboardChildrenScript=script.slice(0,script.indexOf('\n(async () =>'))+String.raw`
+(async()=>{try{
+ state.status.snapshot.assets=[{id:'asset',name:'示例.mp4',duration:60}];state.status.snapshot.segments=['a','b'].map((id,i)=>({id,order:i+1,text:id,video:{assetId:'asset',start:0}}));
+ await act(async()=>{createRoot(document.getElementById('root')).render(<App/>);await settle();});await settle();
+ field('查看片段 1 的详情').focus();await key('Enter');const parent=layer('画面素材详情');check(parent,'键盘打开父详情');
+ const history=button('保留音频');history.focus();await key('Enter');check(field('保留音频')?.contains(document.activeElement),'键盘打开父内配音历史');
+ await key('Escape');check(document.activeElement===history,'键盘关闭历史回父层原入口');
+ const association=button('更改');association.focus();await key('Enter');check(layer('关联视频')?.contains(document.activeElement),'键盘打开父内关联视频');
+ await key('Escape');check(document.activeElement===association && !state.current,'键盘取消关联释放修改权并回父层原入口');
+ await key('Escape');check(document.activeElement===field('查看片段 1 的详情'),'两个子流程结束后父来源仍可返回');
+ await key('ArrowDown');check(document.activeElement.closest('[row-id]')?.getAttribute('row-id')==='b','连续键盘关闭后继续真实表格方向导航');
+ check(!state.saves && !state.mutations.length,'键盘查看和取消不产生业务写入');
+ document.getElementById('result').dataset.state='passed';
+}catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
+`;
+test('父详情内历史与关联的完整键盘返回链',{timeout:40000},t=>{assert.ok(chrome);return checkInteractiveBrowser(t,keyboardChildrenScript,fixture,1200,800);});

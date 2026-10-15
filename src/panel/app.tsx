@@ -166,9 +166,10 @@ export function App() {
     returnFocus.current[detail] = focusReturns.capture(trigger);
   };
   const openDetail = (next: typeof detail, trigger: HTMLElement) => { rememberOrigin(trigger, 'detail'); setDetail(next); };
+  const closeDetail = () => focusReturns.close(returnFocus.current.detail, () => setDetail(null));
   const failed = (cause: Error) => { setSaveState('failed'); setSaveError(cause.message); };
   const disconnected = () => {
-    setVideoEditor(null); setImporting(false);
+    focusReturns.close(returnFocus.current.video, () => { setVideoEditor(null); setImporting(false); });
     grid.current?.stopEditing(true);
     failed(new Error('编辑连接已断开，未提交输入已取消；请重新读取后编辑。'));
   };
@@ -270,13 +271,10 @@ export function App() {
     });
   }, failed);
   const openVideoEditor = (id?: string) => {
-    const origin = document.activeElement;
-    const originLayer = origin?.closest('[role="dialog"], [aria-label="口播片段详情"]');
-    const stillRequested = () => id
-      ? !!originLayer?.isConnected && originLayer.contains(document.activeElement)
-      : document.activeElement === document.body || document.activeElement === moreButton.current || document.activeElement === origin;
+    const origin = returnFocus.current.video;
+    const requested = focusReturns.intent(origin);
     return editing.begin('segments', next => {
-      if (!stillRequested()) { void editing.cancel('segments'); return; }
+      if (!requested.valid()) { void editing.cancel('segments'); return; }
       setStatus(next); setSaveError(''); setSaveState('saved');
       if (id) {
         const segment = next.snapshot.segments.find(segment => segment.id === id);
@@ -285,14 +283,15 @@ export function App() {
       } else { setSourcePath(''); setImporting(true); }
     }, disconnected, cause => {
       failed(cause);
-      requestAnimationFrame(() => { if (stillRequested()) returnFocus.current.video(); });
+      if (requested.valid()) focusReturns.close(origin, origin);
     });
   };
   const cancelVideo = () => {
-    setVideoEditor(null); setImporting(false); setSaveState('saved');
+    focusReturns.close(returnFocus.current.video, () => { setVideoEditor(null); setImporting(false); setSaveState('saved'); });
     void editing.cancel('segments');
   };
   const saveVideo = () => editing.save('segments', {}, async (token, action) => {
+    const origin = returnFocus.current.video;
     setSaveState('saving'); setSaveError('');
     try {
       if (importing) {
@@ -306,7 +305,7 @@ export function App() {
         if (result.summary.applied !== 1) throw new Error(result.results[0]?.message ?? '关联未保存');
       }
       action.apply(() => setSaveState('saved'));
-    } finally { action.apply(() => { setVideoEditor(null); setImporting(false); }); }
+    } finally { action.apply(() => focusReturns.close(origin, () => { setVideoEditor(null); setImporting(false); })); }
   }, failed);
   const synchronizeSelection = (ids: string[]) => {
     setSelectedIds(ids);
@@ -461,25 +460,25 @@ export function App() {
       </div>
     </header>
     <p id="export-scope" className="sr-only">全片导出：查找与勾选不改变范围</p>
-    {detail === 'more' && <DetailPanel title="更多操作" onClose={() => setDetail(null)} restoreFocus={() => returnFocus.current.detail()}>
+    {detail === 'more' && <DetailPanel title="更多操作" onClose={closeDetail} restoreFocus={returnFocus.current.detail}>
       <div className="flex flex-col gap-2 mb-1">
         {searchOpen && <>
-          <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => { setDetail(null); void addSegment(); }}>新增口播片段</Button>
-          <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { setDetail(null); void exports.run(); }}>导出全片</Button>
+          <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => { closeDetail(); void addSegment(); }}>新增口播片段</Button>
+          <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { closeDetail(); void exports.run(); }}>导出全片</Button>
         </>}
         <p className="m-0 text-[12px] text-muted-foreground">全片导出：查找与勾选不改变范围</p>
-        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => { rememberOrigin(moreButton.current!, 'video'); setDetail(null); void openVideoEditor(); }}>导入本地视频</Button>
+        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => { rememberOrigin(moreButton.current!, 'video'); closeDetail(); void openVideoEditor(); }}>导入本地视频</Button>
         <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => setDetail('paste')}>粘贴多行文案</Button>
         <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!speech} onClick={() => setDetail('voice')}>声音设置</Button>
-        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!status} onClick={() => { rememberOrigin(moreButton.current!, 'settings'); setDetail(null); setExportSettingsOpen(true); }}>导出设置</Button>
+        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!status} onClick={() => { rememberOrigin(moreButton.current!, 'settings'); closeDetail(); setExportSettingsOpen(true); }}>导出设置</Button>
         <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" onClick={() => setDetail('tasks')}>任务记录</Button>
       </div>
-      <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail(null)}>关闭</Button>
+      <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={closeDetail}>关闭</Button>
     </DetailPanel>}
     {detail === 'voice' && speech && <VoicePanel speech={speech} disabled={disabled} busy={editState.busy}
       error={saveState === 'failed' ? saveError : undefined} onChange={voice => { void changeVoice(voice); }}
-      onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail} />}
-    {detail === 'tasks' && <DetailPanel title="任务记录" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
+      onClose={closeDetail} restoreFocus={returnFocus.current.detail} />}
+    {detail === 'tasks' && <DetailPanel title="任务记录" onClose={closeDetail} restoreFocus={returnFocus.current.detail}>
       <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail('diagnostics')}>连接诊断</Button>
       {speech && <section aria-label="配音任务" className="flex flex-col gap-2 [&_p]:my-2 [&_p]:text-[12px] [&_summary]:font-medium">
       {speech.operations.length > 0 && <section aria-label="批量配音进度" aria-live="polite">
@@ -493,9 +492,9 @@ export function App() {
         {!speech.tasks.length && <p>暂无配音任务</p>}
       </section>}
       <ExportTaskDetails controller={exports} />
-      <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail(null)}>关闭任务记录</Button>
+      <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={closeDetail}>关闭任务记录</Button>
     </DetailPanel>}
-    {detail === 'diagnostics' && <DetailPanel title="连接诊断" onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail}>
+    {detail === 'diagnostics' && <DetailPanel title="连接诊断" onClose={closeDetail} restoreFocus={returnFocus.current.detail}>
       <p className="m-0" role="status">{error || (status ? '本地服务已连接' : '正在连接本地服务…')}</p>
       {status && <dl className="m-0 rounded-md border border-solid border-input bg-muted p-3 text-[12px] [&_dt]:font-semibold [&_dd]:m-0 [&_dd]:mb-2 [&_dd:last-child]:mb-0">
         <dt>面板版本</dt><dd>{buildIdentity.state === 'known' ? `${buildIdentity.version} (${buildIdentity.contentFingerprint})` : '未知（开发构建或旧版本）'}</dd>
@@ -508,13 +507,13 @@ export function App() {
         <dt>PID</dt><dd>{status.pid}</dd>
       </dl>}
       <p className="m-0 text-[12px] text-muted-foreground">{selectionState}</p>
-      <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail(null)}>关闭诊断</Button>
+      <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={closeDetail}>关闭诊断</Button>
     </DetailPanel>}
     {detail === 'paste' && <PastePanel value={paste} busy={editState.busy} disabled={disabled}
       error={saveState === 'failed' ? saveError : ''} onChange={setPaste}
       onSubmit={() => { void organize({ changes: [{ kind: 'paste', text: paste }] }); }}
-      onClose={() => setDetail(null)} restoreFocus={returnFocus.current.detail} />}
-    {exportSettingsOpen && status && <ExportSettingsPanel restoreFocus={returnFocus.current.settings} editing={editing} status={status} onStatus={setStatus} onSaveState={(state, message = '') => { setSaveState(state); setSaveError(message); }} onClose={() => setExportSettingsOpen(false)} />}
+      onClose={closeDetail} restoreFocus={returnFocus.current.detail} />}
+    {exportSettingsOpen && status && <ExportSettingsPanel restoreFocus={returnFocus.current.settings} editing={editing} status={status} onStatus={setStatus} onSaveState={(state, message = '') => { setSaveState(state); setSaveError(message); }} onClose={() => focusReturns.close(returnFocus.current.settings, () => setExportSettingsOpen(false))} />}
     {inlineAudio && <audio ref={audioPlayer} key={inlineAudio.url} src={inlineAudio.url} autoPlay onPlay={() => setPlaying(inlineAudio.taskId)} onPause={() => setPlaying(null)} onEnded={() => setPlaying(null)} onError={audioError} />}
     {audioHistory && <AudioHistoryPanel segmentId={audioHistory} speech={speech} onClose={() => focusReturns.close(returnFocus.current.history, () => setAudioHistory(null))} restoreFocus={returnFocus.current.history} />}
     {segmentDetail.id && <SegmentDetails controller={segmentDetail} segment={detailSegment} segments={status?.snapshot.segments ?? []}

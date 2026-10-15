@@ -21,28 +21,51 @@ const focus = (element: HTMLElement | null | undefined) => {
   return document.activeElement === element;
 };
 
+/** 共享面板切换保留交接来源；片段子流程结束由来源处理父层及最上层返回。 */
+export function restorePanelFocus(restore: () => void, withinLayer = false) {
+  const top = layers().at(-1);
+  if (top) {
+    if (withinLayer) restore();
+    if (!top.contains(document.activeElement) || !available(document.activeElement as HTMLElement)) focus(top);
+  } else if (document.activeElement === document.body || !available(document.activeElement as HTMLElement)) restore();
+  else (restore as Partial<FocusReturn>).cancel?.();
+}
+
 /** 片段流程的来源独立于待执行返回；用户新操作只取消旧意图，不删除父流程来源。 */
 export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementRef; table: ElementRef; more: ElementRef }) {
   let epoch = 0;
+  let present = true;
   const preparations = new WeakMap<() => void, () => void>();
+  const contexts = new WeakMap<() => void, () => boolean>();
   let pending: (() => void) | undefined;
   const cancelPending = () => { epoch++; pending?.(); pending = undefined; };
-  const intent = (): FocusIntent => { const current = epoch; return { valid: () => epoch === current }; };
+  const intent = (origin?: () => void): FocusIntent => {
+    const current = epoch;
+    const startedPresent = present;
+    return { valid: () => startedPresent && present && epoch === current && (!origin || (contexts.get(origin)?.() ?? false)) };
+  };
   const listen = () => {
     // 不观察控件 focus/blur 和普通 scroll：卸载、轮询、恢复自身也会产生这些事件。
     const events = ['pointerdown', 'keydown', 'beforeinput', 'input', 'wheel', 'touchmove'] as const;
     // Escape 可能被业务忙态拒绝；只有实际允许的关闭才在 close 中使旧意图失效。
     const interaction = (event: Event) => { if (!(event instanceof KeyboardEvent && event.key === 'Escape')) cancelPending(); };
+    const leave = () => { present = false; cancelPending(); };
+    const enter = () => { present = true; cancelPending(); };
+    const visibility = () => { present = document.visibilityState !== 'hidden'; cancelPending(); };
     for (const event of events) document.addEventListener(event, interaction, true);
-    window.addEventListener('blur', cancelPending);
-    window.addEventListener('pagehide', cancelPending);
-    document.addEventListener('visibilitychange', cancelPending);
+    window.addEventListener('blur', leave);
+    window.addEventListener('pagehide', leave);
+    window.addEventListener('focus', enter);
+    window.addEventListener('pageshow', enter);
+    document.addEventListener('visibilitychange', visibility);
     return () => {
       cancelPending();
       for (const event of events) document.removeEventListener(event, interaction, true);
-      window.removeEventListener('blur', cancelPending);
-      window.removeEventListener('pagehide', cancelPending);
-      document.removeEventListener('visibilitychange', cancelPending);
+      window.removeEventListener('blur', leave);
+      window.removeEventListener('pagehide', leave);
+      window.removeEventListener('focus', enter);
+      window.removeEventListener('pageshow', enter);
+      document.removeEventListener('visibilitychange', visibility);
     };
   };
   const source = (origin: Origin, options: ReturnOptions): FocusReturn => {
@@ -52,7 +75,7 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
     const restore = (() => {
       if (ended) return;
       ended = true;
-      if (closingIntent && !closingIntent.valid()) return;
+      if (!present || (closingIntent && !closingIntent.valid())) return;
       pending?.();
       const current = epoch;
       const closingFocus = document.activeElement;
@@ -134,6 +157,7 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
       // 让关闭、Portal 清理及虚拟行提交先完成；任何新操作都能在滚动发生前取消。
       frame = requestAnimationFrame(() => attempt(2));
     }) as FocusReturn;
+    contexts.set(restore, () => !ended && (document.activeElement === document.body || document.activeElement === origin.trigger || !!origin.parent?.contains(document.activeElement)));
     preparations.set(restore, () => {
       if (ended || closingIntent) return;
       cancelPending();
