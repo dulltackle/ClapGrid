@@ -23,8 +23,8 @@ const action = async fn => { await act(async () => { await fn(); await new Promi
   check(document.querySelectorAll('.ag-row[row-id]').length < 80, '使用真实虚拟行');
   const horizontal = document.querySelector('.ag-body-horizontal-scroll-viewport');
   const detail = () => document.querySelector('[aria-label="查看片段 1 的详情"]');
-  check(document.querySelectorAll('[role="columnheader"]').length === 6, '仅五个业务表头和勾选列，没有详情列');
-  check(!document.querySelector('[col-id="details"]'), '详情入口不占用单元格或列宽');
+  check(document.querySelectorAll('[role="columnheader"]').length === 6, '文案、素材、配音、序号、操作和勾选列');
+  check(!document.querySelector('[col-id="visualNote"]'), '不再保留独立画面说明列');
   const initialDetail = detail().getBoundingClientRect().toJSON();
   check(initialDetail.left >= 0 && initialDetail.right <= innerWidth, '横向滚动前详情入口完整可见');
   for (const scrollLeft of [200, horizontal.scrollWidth, 0]) {

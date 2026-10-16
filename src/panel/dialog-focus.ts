@@ -171,7 +171,7 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
     const row = trigger.closest('[row-id]');
     return source({ trigger, parent: trigger.closest<HTMLElement>('[aria-label="口播片段详情"], [role="dialog"], [role="alertdialog"]') ?? undefined,
       id: row?.getAttribute('row-id') ?? undefined, index: Number(row?.getAttribute('row-index') ?? 0),
-      column: trigger.closest('[col-id]')?.getAttribute('col-id') ?? undefined, details: trigger.hasAttribute('data-row-details') }, options);
+      column: trigger.hasAttribute('data-row-details') ? undefined : trigger.closest('[col-id]')?.getAttribute('col-id') ?? undefined, details: trigger.hasAttribute('data-row-details') }, options);
   };
   const captureSegment = (destination: Destination, options: ReturnOptions = {}): FocusReturn => {
     const api = grid();

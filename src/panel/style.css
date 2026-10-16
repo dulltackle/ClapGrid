@@ -62,10 +62,6 @@ html, body, #root { height: 100%; overflow: hidden; }
 /* AG Grid 无层单元格规则需要同层适配，避免覆盖 Tailwind 的正文对齐。 */
 .ag-cell:is([col-id="text"], [col-id="visualNote"]) { display: flex; align-items: center; }
 
-/* 行悬浮入口不占列宽；沿用 AG Grid 的右侧滚动条偏移，避免覆盖纵向滚动条。
-   sticky 元素宽度为零，按钮向行内展开。 */
-.segment-grid .segment-row-details { right: var(--ag-internal-pinned-right-sticky-offset, 0px); }
-
 /* 宿主可能先发送 pen 悬浮、稍后发送 mouse；使用原生悬浮避免等待 AG Grid 的 mouse 筛选。
    复用 Quartz 的覆盖层，保留勾选背景叠加以及固定列的一致高亮。 */
 .segment-grid .ag-row:hover:not(.ag-full-width-row) {

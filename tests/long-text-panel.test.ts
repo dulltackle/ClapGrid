@@ -32,13 +32,13 @@ const script = String.raw`
         { id: 'short', order: 2, text: '简短文案', video: null },
       ];
       await act(async () => { createRoot(document.getElementById('root')).render(<App />); await settle(); }); await settle();
-      check(cell().textContent === original, '摘要不截断实际文案');
+      check(cell().querySelector('.text-summary').textContent === original, '摘要不截断实际文案');
       const textNode = document.createTreeWalker(cell(), NodeFilter.SHOW_TEXT).nextNode();
       const summary = textNode.parentElement;
       const lineHeight = parseFloat(getComputedStyle(summary).lineHeight);
       const height = summary.getBoundingClientRect().height;
       check(height >= lineHeight * 2 && height <= lineHeight * 3 + 1, '长文案显示 2–3 行摘要：' + height + '/' + lineHeight);
-      check(document.querySelector('[row-id="short"] [col-id="text"]').textContent === '简短文案', '短文案正常显示');
+      check(document.querySelector('[row-id="short"] [col-id="text"] .text-summary').textContent === '简短文案', '短文案正常显示');
       check(document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight, '页面没有额外滚动');
       await shot('browse');
       await act(async () => { cell().dispatchEvent(new MouseEvent('click', { bubbles: true })); await settle(); }); await settle();
@@ -51,7 +51,7 @@ const script = String.raw`
       check(editor().scrollTop > 0, '可以滚动访问文案末尾');
       await shot('editing');
       await input('这份草稿应取消'); await key('Escape');
-      check(!editor() && state.saves === 0 && cell().textContent === original && !state.current, 'Esc 取消不提交并释放修改权');
+      check(!editor() && state.saves === 0 && cell().querySelector('.text-summary').textContent === original && !state.current, 'Esc 取消不提交并释放修改权');
       state.delayQuery = true; await poll();
       check(state.queries.length, '已有编辑前发出的迟到查询');
       await open('F2');
@@ -73,13 +73,13 @@ const script = String.raw`
       check(state.segmentRequests.length === 1 && state.segmentRequests[0].change.text === complete + '\n' && state.segmentRequests[0].token === lease.token, '保存携带修改权和完整文案且重复 Enter 不重复提交');
       check(document.querySelector('footer').textContent.includes('保存中'), '连接先关闭仍等待保存响应');
       await act(async () => { state.saveGate.resolve(); state.saveGate = null; await settle(); });
-      check(!editor() && cell().textContent === complete + '\n' && document.querySelector('[data-save-status]').textContent === '已保存', '保存成功正常结束且展示完整结果的摘要');
+      check(!editor() && cell().querySelector('.text-summary').textContent === complete + '\n' && document.querySelector('[data-save-status]').textContent === '已保存', '保存成功正常结束且展示完整结果的摘要');
       await open('Enter'); check(editor().value === complete + '\n', '再次编辑保留完整内容');
       await input(complete + '第二次保存'); await key('Tab');
       check(!editor() && state.segmentRequests.length === 2 && state.segmentRequests[1].change.text === complete + '第二次保存', 'Tab 沿用结束编辑并保存的约定');
       await open('F2'); await input('断线时不应提交的草稿');
       await act(async () => { state.current.disconnect(); await settle(); });
-      check(!editor() && state.segmentRequests.length === 2 && cell().textContent === complete + '第二次保存', '断线取消未提交输入并保留已保存文案');
+      check(!editor() && state.segmentRequests.length === 2 && cell().querySelector('.text-summary').textContent === complete + '第二次保存', '断线取消未提交输入并保留已保存文案');
       check(document.querySelector('footer').textContent.includes('未提交输入已取消'), '断线提示持续可见');
       await poll(); await open('Enter'); await input(complete + '失焦保存');
       await act(async () => { [...document.querySelectorAll('button')].find(node => node.textContent === '查找').focus(); await settle(); });

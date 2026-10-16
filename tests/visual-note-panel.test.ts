@@ -21,24 +21,14 @@ const input = (selector, value) => action(() => {
   node.dispatchEvent(new Event('input', { bubbles: true }));
 });
 const button = name => [...document.querySelectorAll('button')].find(node => node.textContent === name);
-const note = '[row-id="segment"] [col-id="visualNote"]';
-const exposeNote = () => action(() => { document.querySelector('.ag-body-horizontal-scroll-viewport').scrollLeft = 10000; });
 (async () => { try {
   await action(() => createRoot(document.getElementById('root')).render(<App />));
-  await exposeNote();
-  check(document.querySelector('[col-id="visualNote"]').textContent.includes('画面说明'), '恢复画面说明列');
-  await click(note);
-  check(document.activeElement === document.querySelector('[aria-label="画面说明全文"]'), '单击说明直接编辑');
-  await input('[aria-label="画面说明全文"]', '产品特写\n切换全景');
-  await key('Enter');
-  check(state.status.snapshot.segments[0].visualNote === '产品特写\n切换全景', '说明提交成功');
-  check(state.status.snapshot.segments[0].text === '原文', '说明保存不覆盖文案');
-  check(state.segmentRequests.at(-1).change.text === undefined, '行内请求只修改说明');
-  await click(note); await input('[aria-label="画面说明全文"]', '应取消'); await key('Escape');
-  check(state.status.snapshot.segments[0].visualNote === '产品特写\n切换全景', 'Escape 取消说明');
+  check(!document.querySelector('[col-id="visualNote"]'), '说明合并到文案摘要');
+  await click('[row-id="segment"] [data-note-toggle]');
+  check(document.querySelector('[role="region"]').textContent.includes('暂无画面说明'), '空说明可展开');
   await click('[aria-label="查看片段 1 的详情"]');
   const detail = '[aria-label="详情画面说明"]';
-  check(document.querySelector(detail).value === '产品特写\n切换全景', '详情显示同一说明');
+  check(document.querySelector(detail).value === '', '详情显示同一说明');
   await click(detail); await input(detail, '详情草稿');
   await action(() => { button('关闭详情').click(); });
   check(document.querySelector('[role="alertdialog"]'), '关闭前保护说明草稿');
@@ -54,11 +44,12 @@ const exposeNote = () => action(() => { document.querySelector('.ag-body-horizon
   await action(() => button('保存画面说明').click());
   check(state.status.snapshot.segments[0].visualNote === '外部新说明' && document.querySelector(detail).value === '断线草稿' && document.body.textContent.includes('不能覆盖新内容'), '断线重存拒绝覆盖新说明');
   await action(() => button('关闭详情').click()); await click('[data-discard-draft]');
-  await exposeNote(); await click(note); await input('[aria-label="画面说明全文"]', ''); await key('Enter');
-  check(state.status.snapshot.segments[0].visualNote === '' && state.status.snapshot.segments[0].text === '原文', '说明允许清空');
+  await click('[aria-label="查看片段 1 的详情"]');
+  await click(detail); await input(detail, '');
+  await action(() => button('保存画面说明').click());
+  check(state.status.snapshot.segments[0].visualNote === '' && state.status.snapshot.segments[0].text === '原文', '说明允许清空且保留文案');
+  await action(() => { button('关闭详情').click(); });
   await action(() => { state.status.taskLocked = true; [...intervals.values()].forEach(fn => fn()); });
-  await click(note);
-  check(!document.querySelector('[aria-label="画面说明全文"]'), '任务锁阻止行内说明编辑');
   await click('[aria-label="查看片段 1 的详情"]');
   check(document.querySelector(detail).disabled, '任务锁阻止详情说明编辑');
   document.getElementById('result').dataset.state = 'passed';
@@ -66,5 +57,5 @@ const exposeNote = () => action(() => { document.querySelector('.ag-body-horizon
 `;
 
 for (const [width, height] of [[1200, 800], [420, 800]]) {
-  test(`画面说明行内与详情编辑、草稿冲突及任务锁（${width}）`, { timeout: 40000 }, t => checkInteractiveBrowser(t, script, fixture, width, height));
+  test(`画面说明展开与详情编辑、草稿冲突及任务锁（${width}）`, { timeout: 40000 }, t => checkInteractiveBrowser(t, script, fixture, width, height));
 }

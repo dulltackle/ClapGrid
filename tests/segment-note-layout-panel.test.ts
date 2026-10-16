@@ -1,0 +1,82 @@
+import { test } from 'node:test';
+import { fixture } from './helpers/editing-fixture.js';
+import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
+const script = String.raw`
+import { act } from 'react';
+import { createRoot } from 'react-dom/client';
+import { App } from './src/panel/app.tsx';
+import { state } from 'editing-fixture';
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+const timers = new Map(); let timer = 0;
+window.setInterval = fn => { timers.set(++timer, fn); return timer; }; window.clearInterval = id => timers.delete(id);
+const settle = () => new Promise(resolve => setTimeout(resolve, 120));
+const action = async fn => { await act(async () => { await fn(); await settle(); }); await settle(); };
+const check = (ok, message) => { if (!ok) throw Error(message); };
+const click = selector => action(() => window.browserInput({ click: selector }));
+const row = id => document.querySelector('[row-id="'+id+'"]');
+const region = () => document.querySelector('[role="region"][aria-label$="画面说明"]');
+(async () => { try {
+ state.status.snapshot.segments = Array.from({length: 60}, (_, i) => ({id:'s'+i,order:i+1,text:i===0?'股骨头坏死，为什么可能让原本圆滑的关节面塌陷？':'先看这里：大腿骨顶端的球形部分，就是股骨头。',visualNote:i===0?'说明全文；包含元数据与审阅记录。'.repeat(30):'圈选股骨头，局部放大画面移入并推近。',video:null}));
+ await action(() => createRoot(document.getElementById('root')).render(<App/>));
+ check(!document.querySelector('[col-id="visualNote"]'), '说明不再挤占独立列宽');
+ const text = row('s0').querySelector('[col-id="text"]');
+ if (innerWidth>=780) check(text.getBoundingClientRect().width>300, '文案获得主要空间');
+ check(row('s0').getBoundingClientRect().height===80, '折叠行保持80px');
+ const normalColor=getComputedStyle(row('s0')).getPropertyValue('--ag-data-background-color');
+ const selected = () => state.selectionRequests?.at(-1) ?? [];
+ const summary=row('s0').querySelector('[col-id="text"] button');
+ await action(()=>summary.focus());
+ await action(()=>window.browserInput({key:'Enter'}));
+ check(!document.querySelector('[aria-label="文案全文"]'), '摘要回车只展开说明，不误入文案编辑');
+ check(region()?.textContent.includes(state.status.snapshot.segments[0].visualNote), '展开保留完整原文');
+ check(getComputedStyle(row('s0')).getPropertyValue('--ag-data-background-color')!==normalColor, '展开行以浅蓝背景标识');
+ check(!document.querySelector('[aria-label="口播片段详情"]'), '展开不打开抽屉');
+ check(selected().length===0 && state.saves===0 && state.leases.length===0, '展开不勾选、不申请编辑或写入');
+ check(region().getBoundingClientRect().bottom<=row('s0').getBoundingClientRect().bottom+1, '动态行高容纳完整说明区');
+ check(row('s1').getBoundingClientRect().top>=region().getBoundingClientRect().bottom-1, '说明不覆盖下一行：'+JSON.stringify({region:region().getBoundingClientRect().toJSON(),next:row('s1').getBoundingClientRect().toJSON(),row:row('s0').getBoundingClientRect().toJSON()}));
+ check(region().getBoundingClientRect().width<=innerWidth, '展开区不溢出面板');
+ const main=document.querySelector('main');
+ await action(()=>{main.style.width=(innerWidth-40)+'px';});
+ check(region().getBoundingClientRect().right<=main.getBoundingClientRect().right, '面板缩放后重新测量说明宽度');
+ await action(()=>{main.style.width='';});
+ const horizontal=document.querySelector('.ag-body-horizontal-scroll-viewport');
+ for(const scrollLeft of [horizontal.scrollWidth,0]) {
+   await action(()=>{horizontal.scrollLeft=scrollLeft;});
+   const bounds=region().getBoundingClientRect();
+   check(bounds.left>=0 && bounds.right<=innerWidth, '横向滚动后完整说明仍位于面板内部：'+JSON.stringify({bounds:bounds.toJSON(),row:row('s0').getBoundingClientRect().toJSON(),scroll:document.querySelector('.ag-grid-viewport').scrollLeft,horizontal:horizontal.scrollLeft}));
+ }
+ await window.browserInput({screenshot:'note-layout-expanded'});
+ await click('[row-id="s0"] [data-note-toggle]');
+ check(!region() && row('s0').getBoundingClientRect().height===80, '折叠恢复原高度');
+ check(getComputedStyle(row('s0')).getPropertyValue('--ag-data-background-color')===normalColor, '折叠后移除展开背景');
+ await click('[row-id="s1"] [data-note-toggle]');
+ check(region()?.getAttribute('aria-label')==='片段 2 画面说明', '切换按稳定身份展开');
+ await action(() => window.browserInput({ key:'Tab' }));
+ const noteText=region().querySelector('[aria-label="画面说明原文"]');
+ await action(() => noteText.focus());
+ check(document.activeElement===noteText, '完整说明可通过键盘聚焦阅读');
+ await action(() => window.browserInput({key:'Escape'}));
+ check(!region() && document.activeElement===row('s1').querySelector('[data-note-toggle]'), 'Escape收起后回到当前行入口');
+ await action(() => { document.querySelector('.ag-grid-viewport').scrollTop=0; });
+ await click('[row-id="s0"] [data-note-toggle]');
+ await action(() => { state.status.snapshot.segments[0].visualNote='外部更新的说明'; [...timers.values()].forEach(fn=>fn()); });
+ check(region()?.textContent.includes('外部更新的说明'), '轮询刷新展开原文');
+ await action(() => { state.status.snapshot.segments.splice(0,1); [...timers.values()].forEach(fn=>fn()); });
+ check(!region(), '删除展开片段不会错误展示其他行');
+ const viewport = document.querySelector('.ag-grid-viewport');
+ await action(() => { viewport.scrollTop=viewport.scrollHeight; });
+ check(!row('s0') && row('s59'), '保留纵向虚拟化');
+ await click('[row-id="s59"] [data-note-toggle]');
+ check(region()?.getAttribute('aria-label')==='片段 60 画面说明', '末行展开身份正确');
+ await action(()=>{state.status.snapshot.segments=Array.from({length:600},(_,i)=>({id:'n'+i,order:i+1,text:'文案',visualNote:'',video:null}));[...timers.values()].forEach(fn=>fn());});
+ await action(()=>{viewport.scrollTop=viewport.scrollHeight;});
+ const order=row('n599').querySelector('[col-id="order"]');
+ const number=order.querySelector('span > span');
+ check(number.textContent==='600' && number.getBoundingClientRect().right<=order.getBoundingClientRect().right, '序号列容纳三位序号，缩窄不裁切编号');
+ document.getElementById('result').dataset.state='passed';
+} catch(error) { document.getElementById('result').dataset.state='failed'; document.getElementById('result').textContent=error.stack; } })();
+`;
+for (const [width, height] of [[1200, 800], [780, 579], [420, 800], [420, 360]]) {
+  test(`文案主导行布局与说明展开（${width}×${height}）`, { timeout: 40000 }, t => checkInteractiveBrowser(t, script, fixture, width, height));
+}
