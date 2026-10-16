@@ -10,7 +10,15 @@ import { state } from 'editing-fixture';
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const settle = () => new Promise(resolve => setTimeout(resolve, 100));
 const check = (value, message) => { if (!value) throw Error(message); };
-const click = async selector => { await act(async () => { await window.browserInput({ click: selector }); await settle(); }); await settle(); };
+const click = async selector => { await act(async () => {
+ const node = document.querySelector(selector);
+ if (node?.matches('[data-segment-script]')) {
+  // 详情覆盖整行右侧，点击仍可见的文案左侧；整格中心不再代表可见文案。
+  const bounds = node.getBoundingClientRect(), point = { x: bounds.left + 20, y: bounds.top + bounds.height / 2 };
+  await window.browserInput({ pointer: { ...point, type: 'mousePressed' } });
+  await window.browserInput({ pointer: { ...point, type: 'mouseReleased' } });
+ } else await window.browserInput({ click: selector });
+ await settle(); }); await settle(); };
 const key = async key => { await act(async () => { await window.browserInput({ key }); await settle(); }); };
 const cell = () => document.querySelector('[row-id="segment"] [col-id="text"]');
 (async () => { try {
@@ -19,7 +27,7 @@ const cell = () => document.querySelector('[row-id="segment"] [col-id="text"]');
  check(!document.querySelector('[aria-label="口播片段详情"]'), '默认没有片段详情');
  check(cell().getBoundingClientRect().width >= (innerWidth > 1000 ? 480 : 200), '文案获得主要剩余宽度');
  const before = cell().getBoundingClientRect().toJSON();
- await click('[row-id="segment"] [col-id="text"]');
+ await click('[row-id="segment"] [data-segment-script]');
  const editor = document.querySelector('[aria-label="文案全文"]');
  check(editor && document.activeElement === editor, '单击直接编辑');
  check(editor.getBoundingClientRect().height <= before.height, '行内编辑不增高');
@@ -33,7 +41,7 @@ const cell = () => document.querySelector('[row-id="segment"] [col-id="text"]');
  check(document.querySelector('[aria-label="口播片段详情"]'), '行尾打开非模态详情');
  const after = cell().getBoundingClientRect();
  check(beforeOpen.x === after.x && beforeOpen.width === after.width && beforeOpen.height === after.height, '详情不改变列宽和行高');
- await click('[row-id="second"] [col-id="text"]');
+ await click('[row-id="second"] [data-segment-script]');
  check(document.querySelector('[aria-label="文案全文"]') === document.activeElement, '详情联动不抢编辑焦点');
  check(document.querySelector('[aria-label="口播片段详情"]').textContent.includes('片段 2'), '详情跟随稳定身份');
  await key('Escape');
