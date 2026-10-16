@@ -39,7 +39,8 @@ const legacy = [...document.querySelectorAll('header button')].find(node => node
 check(getComputedStyle(legacy).borderTopWidth === '1px' && getComputedStyle(legacy).paddingLeft === (innerWidth <= 600 ? '8px' : '12px'), '非试点按钮原有样式保留');
 const textCell = document.querySelector('[row-id="a"] [col-id="text"]');
 const textRect = textCell.querySelector('.text-summary').getBoundingClientRect(), groupRect = textCell.querySelector('.text-summary').parentElement.getBoundingClientRect(), cellRect = textCell.getBoundingClientRect();
-check(getComputedStyle(textCell).display === 'flex' && Math.abs(groupRect.top + groupRect.height / 2 - cellRect.top - cellRect.height / 2) <= 1 && textRect.top >= groupRect.top && textRect.bottom <= groupRect.bottom, '文案与说明摘要整体保留垂直居中的弹性布局');
+const supportRect = textCell.querySelector('[data-segment-support]').getBoundingClientRect();
+check(getComputedStyle(textCell).display === 'flex' && Math.abs(textRect.top + textRect.height / 2 - groupRect.top - groupRect.height / 2) <= 1 && groupRect.bottom <= supportRect.top && supportRect.bottom <= cellRect.bottom, '文案在上层居中，辅助内容位于下层且不重叠或溢出');
 check(getComputedStyle(document.querySelector('.segment-grid')).display === 'block', '表格容器保持原有块布局，不被同名工具类覆盖');
 check(document.querySelector('[row-id="a"] [col-id="text"]').getBoundingClientRect().height > 20, '真实表格行布局保持可用');
 check(!state.batchRequests, '尚未提交');
