@@ -19,7 +19,7 @@ export async function verifyLoadedPlugin() {
   if (typeof receipt.sourceRepository === 'string' && installedCommit) {
     try {
       await promisify(execFile)('git', ['-C', receipt.sourceRepository, 'diff', '--quiet', installedCommit, 'HEAD', '--',
-        'src', ...(desired.data.schemaVersion === 2 && buildIdentity.schemaVersion === 2 ? [':(exclude)src/panel'] : []), 'plugins', 'scripts/build-plugin.mjs', 'scripts/plugin-identity.mjs', 'package.json', 'package-lock.json', 'vite.config.ts', 'tsconfig.build.json'], { timeout: 3000 });
+        'src', 'plugins', 'scripts/build-plugin.mjs', 'scripts/plugin-identity.mjs', 'package.json', 'package-lock.json', 'vite.config.ts', 'tsconfig.build.json'], { timeout: 3000 });
     } catch (error) {
       if ((error as { code?: number }).code === 1) throw new Error('插件源码已有更新，当前安装仍是旧构建，请执行插件更新流程。');
       throw new Error('插件源码版本无法核对，请检查更新记录中的本地仓库。');
