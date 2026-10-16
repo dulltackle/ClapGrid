@@ -56,6 +56,8 @@ test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿�
         check(cell, '应显示真实表格文案单元格');
         cell.dispatchEvent(new MouseEvent('click', { bubbles: true })); await settle();
       });
+      // 获取修改权与 AG Grid 编辑器挂载异步完成，等待真实结果而非固定一帧。
+      for (let attempt = 0; attempt < 20 && !field('文案全文'); attempt++) await act(async () => { await settle(); });
       const editor = field('文案全文');
       check(editor, '单击应打开真实文案编辑器');
       await input(editor, '已保存的新文案');
