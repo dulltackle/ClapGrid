@@ -10,6 +10,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { build } from 'esbuild';
 import { buildPanelStyles } from './panel-styles.js';
 import { chrome } from './browser.js';
+import { waitForDevToolsPort } from './browser-startup.js';
 
 /** 真实浏览器按键用于原生焦点导航；业务替身仍只位于 HTTP 客户端边界。 */
 export async function checkInteractiveBrowser(t: TestContext, script: string, fixture: string, width = 1600, height = 1000, options: { colorScheme?: 'light' | 'dark'; reducedMotion?: boolean; resources?: Record<string, { body: Uint8Array; type: string }> } = {}) {
@@ -56,12 +57,7 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
     await delay(100);
     rmSync(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   });
-  let port = '';
-  for (let attempt = 0; attempt < 100 && !port; attempt++) {
-    try { port = readFileSync(join(directory, 'profile', 'DevToolsActivePort'), 'utf8').split('\n')[0]!; }
-    catch { await delay(50); }
-  }
-  assert.ok(port, 'Chrome 必须启动，不能将环境缺失记为通过');
+  const port = await waitForDevToolsPort(join(directory, 'profile', 'DevToolsActivePort'));
   const pages = await (await fetch(`http://127.0.0.1:${port}/json`)).json() as { type: string; webSocketDebuggerUrl: string }[];
   socket = new WebSocket(pages.find(page => page.type === 'page')!.webSocketDebuggerUrl);
   await new Promise(resolve => socket!.addEventListener('open', resolve, { once: true }));
