@@ -9,7 +9,7 @@ globalThis.IS_REACT_ACT_ENVIRONMENT=true;
 const timers=new Map();let timer=0;window.setInterval=cb=>{timers.set(++timer,cb);return timer};window.clearInterval=id=>timers.delete(id);
 const action=async cb=>{await act(async()=>{await cb();await new Promise(r=>setTimeout(r,100));});await new Promise(r=>setTimeout(r,250));};
 const input=request=>action(()=>window.browserInput(request)); const check=(v,m)=>{if(!v)throw Error(m)};
-const right=id=>input({click:'[row-id="'+id+'"] [col-id="text"]',button:'right'});
+const right=id=>input({click:'[row-id="'+id+'"] [data-segment-script]',button:'right'});
 const item=name=>[...menu().querySelectorAll('[role="menuitem"]')].find(node=>node.textContent===name);
 const menu=()=>document.querySelector('[aria-label="口播片段操作"]');
 (async()=>{try{
@@ -50,7 +50,7 @@ const interruptions = {
   blank: `await input({ pointer: { type: 'mousePressed', x: 5, y: 5 } }); await input({ pointer: { type: 'mouseReleased', x: 5, y: 5 } });`,
   tab: `await input({ key: 'Tab' });`,
   arrow: `document.querySelector('[row-id="c"] [col-id="order"]').focus(); await input({ key: 'ArrowDown' });`,
-  control: `document.querySelector('[row-id="c"] [col-id="1"]').focus(); await input({ key: 'Tab' }); check(document.activeElement.hasAttribute('data-speech-more'), '真实Tab进入只读配音更多按钮');`,
+  control: `document.querySelector('[row-id="c"] [data-speech-more]').focus(); await input({ key: 'Tab', shift:true }); await input({ key: 'Tab' }); check(document.activeElement.hasAttribute('data-speech-more'), '真实Tab进入只读配音更多按钮');`,
   edge: `document.querySelector('[row-id="tail-5"] [col-id="order"]').focus(); await input({ key: 'ArrowDown' });`,
   details: `await input({ click: '[row-id="c"] [data-row-details]' });`,
   wheel: `await input({ pointer: { type: 'mouseWheel', x: 500, y: 450, deltaY: 600 } });`,
@@ -69,7 +69,7 @@ const input = request => action(() => window.browserInput(request));
 (async () => { try {
   state.status.snapshot.segments = ['a', 'b', 'c', ...Array.from({ length: 77 }, (_, index) => 'tail-' + index)].map((id, index) => ({ id, order: index + 1, text: id, visualNote: '', video: null }));
   await action(() => createRoot(document.getElementById('root')).render(<App />));
-  await input({ click: '[row-id="b"] [col-id="text"]', button: 'right' });
+  await input({ click: '[row-id="b"] [data-segment-script]', button: 'right' });
   state.saveGate = deferred(); const saveGate = state.saveGate;
   await input({ click: '[role="menuitem"]:nth-child(3)' });
   check(state.batchRequests?.length === 1 && !document.querySelector('[aria-label="文案全文"]'), '真实新增请求已进入等待，未提前编辑');

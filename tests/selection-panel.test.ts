@@ -48,13 +48,13 @@ const selected=ids=>check(JSON.stringify([...(state.selectionRequests.at(-1)??[]
  await input({click:'.search-trigger'});await input({key:'第'});
  check(document.querySelectorAll('.ag-row[row-id]').length===4,'查找保持全部片段');selected(['a','b']);
  await input({key:'Escape'});check(document.activeElement.classList.contains('search-trigger'),'关闭查找回到查找按钮');selected(['a','b']);stable();
- await input({click:'[row-id="b"] [col-id="text"]',button:'right'});
+ await input({click:'[row-id="b"] [data-segment-script]',button:'right'});
  await input({key:'Escape'});selected(['a','b']);check(!document.querySelector('[role="menu"]'),'Escape 关闭行菜单');
  await input({key:'Escape'});selected([]);stable();
  await input({click:'.ag-header input[type="checkbox"]'});selected(['a','b','c','created-1']);
  await input({click:'.ag-header input[type="checkbox"]'});selected([]);
  await select('a');await select('b');
- await input({click:'[row-id="a"] [col-id="text"]',button:'right'});
+ await input({click:'[row-id="a"] [data-segment-script]',button:'right'});
  check(document.querySelector('[role="menu"] [role="menuitem"]').textContent==='删除口播片段','菜单删除项名称明确');
  await input({click:'[role="menu"] [role="menuitem"]'});
  check(document.querySelector('[role="alertdialog"]').textContent.includes('2 个'),'新入口确认准确删除范围');

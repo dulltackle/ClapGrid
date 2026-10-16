@@ -98,7 +98,7 @@ const script = String.raw`
         horizontal.scrollLeft = left; await settle();
         document.querySelectorAll('[role="columnheader"] .ag-header-cell-text').forEach(node => headers.add(node.textContent.trim()));
       }
-      check(['序号', '文案', '画面素材', '配音'].every(name => headers.has(name)), '宽窄视口均可访问业务列与行尾详情');
+      check(['序号', '口播片段'].every(name => headers.has(name)), '宽窄视口均可访问口播片段与行尾详情');
       document.getElementById('result').dataset.state = 'passed';
     } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; }
   })();

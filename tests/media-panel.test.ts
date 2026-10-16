@@ -19,7 +19,7 @@ const script = String.raw`
   const click = async node => { check(node && !node.disabled, '入口可用：' + (node?.outerHTML ?? document.querySelector('[row-id="s1"]')?.textContent)); await act(async () => { node.focus(); if (node.hasAttribute('data-speech-more')) await window.browserInput({ click: '[aria-label="' + node.getAttribute('aria-label') + '"]' }); else node.click(); await settle(); }); await settle(); };
   const key = async key => { await act(async () => { await window.browserInput({ key }); await settle(); }); await settle(); };
   const poll = async () => { await act(async () => { [...intervals.values()].forEach(fn => fn()); await settle(); }); await settle(); };
-  const cell = (id, col) => document.querySelector('[row-id="' + id + '"] [col-id="' + col + '"]');
+  const cell = (id, col) => document.querySelector('[row-id="' + id + '"]' + (col === '1' ? '' : ' [col-id="' + col + '"]'));
   const dialog = () => document.activeElement.closest('[role="dialog"][aria-modal="true"]') ?? document.querySelector('[role="dialog"][aria-modal="true"]') ?? document.querySelector('aside');
   (async () => {
     try {

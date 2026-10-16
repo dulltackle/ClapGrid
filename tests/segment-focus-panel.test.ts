@@ -17,7 +17,7 @@ const scenario = (action: string, assertion: string, source = 0, beforeClose = '
   const check = (condition, message) => { if (!condition) throw Error(message); };
   const settle = () => new Promise(resolve => setTimeout(resolve, 60));
   const button = text => [...document.querySelectorAll('button')].find(node => node.textContent === text);
-  const cell = id => document.querySelector('[row-id="' + id + '"] [col-id="1"]');
+  const cell = id => document.querySelector('[row-id="' + id + '"] [col-id="noteToggle"]');
   const click = async node => { await act(async () => { check(node, '入口必须存在'); node.click(); await settle(); }); await settle(); };
   const key = async key => { await act(async () => { await window.browserInput({ key }); await settle(); }); };
   const poll = async () => { await act(async () => { for (const callback of [...intervals.values()]) callback(); await settle(); }); await settle(); };
@@ -29,7 +29,7 @@ const scenario = (action: string, assertion: string, source = 0, beforeClose = '
       ${beforeOpen}
       const horizontal = document.querySelector('.ag-body-horizontal-scroll-viewport');
       const vertical = document.querySelector('.ag-body-vertical-scroll-viewport');
-      horizontal.scrollLeft = 500; vertical.scrollTop = ${source} * 80; await settle();
+      horizontal.scrollLeft = 500; vertical.scrollTop = ${source} * 102; await settle();
       if (${parent}) {
         await click(document.querySelector('[row-id="row-${source}"] [data-row-details]'));
         await click(button('保留音频'));
@@ -38,7 +38,7 @@ const scenario = (action: string, assertion: string, source = 0, beforeClose = '
         await click(document.querySelector('[data-speech-history]'));
       }
       check(document.querySelector('[aria-label="保留音频"]'), '从真实表格打开普通片段弹窗');
-      horizontal.scrollLeft = 0; vertical.scrollTop = ${source === 0 ? 5000 : 0}; await settle();
+      horizontal.scrollLeft = 0; vertical.scrollTop = ${source === 0 ? 6528 : 0}; await settle();
       check(!cell('row-${source}'), '原入口已被真实虚拟滚动卸载');
       ${beforeClose}
       const nativeFrame = window.requestAnimationFrame;
@@ -68,8 +68,8 @@ const cancelled = `check(!document.activeElement.closest('[row-id]') && vertical
 const cases: [string, string, string, number?][] = [
   ['空白点击', `await window.browserInput({ pointer: { type: 'mousePressed', x: 5, y: 5 } }); await window.browserInput({ pointer: { type: 'mouseReleased', x: 5, y: 5 } });`, cancelled],
   ['Tab 导航', `await key('Tab');`, cancelled],
-  ['方向键导航', `document.querySelector('[row-id="row-64"] [col-id="text"]').focus(); await key('ArrowDown');`, `check(document.activeElement.closest('[row-id]')?.getAttribute('row-id') === 'row-65' && vertical.scrollTop > 4000, '尊重用户在当前可见行的方向键导航，不返回旧行');`],
-  ['手动滚动', `await window.browserInput({ pointer: { type: 'mouseWheel', x: 150, y: 220, deltaY: -600 } }); await settle();`, `check(!document.activeElement.closest('[row-id]') && vertical.scrollTop > 3000 && vertical.scrollTop < 5000, '保留手动滚轮产生的新滚动位置，不滚回旧入口');`],
+  ['方向键导航', `document.querySelector('[row-id="row-64"] [col-id="text"]').focus(); await key('ArrowDown');`, `check(document.activeElement.closest('[row-id]')?.getAttribute('row-id') === 'row-65' && vertical.scrollTop > 5000, '尊重用户在当前可见行的方向键导航，不返回旧行');`],
+  ['手动滚动', `await window.browserInput({ pointer: { type: 'mouseWheel', x: 150, y: 220, deltaY: -600 } }); await settle();`, `check(!document.activeElement.closest('[row-id]') && vertical.scrollTop > 4500 && vertical.scrollTop < 6528, '保留手动滚轮产生的新滚动位置，不滚回旧入口');`],
   ['打开查找并输入', `await click(button('查找')); await key('新');`, cancelled + `check(document.activeElement.getAttribute('aria-label') === '查找文案' && document.activeElement.value === '新', '保留新的查找输入与焦点');`],
   ['打开其他流程', `await click(button('更多'));`, `check(document.querySelector('[role="dialog"][aria-modal="true"]').contains(document.activeElement) && vertical.scrollTop === scroll, '新流程拥有最上层焦点，旧返回不得穿透或滚动');`],
   ['离开后返回面板', `window.dispatchEvent(new Event('blur')); window.dispatchEvent(new Event('focus'));`, cancelled],
@@ -86,7 +86,7 @@ for (const [name, action, assertion, source] of cases) {
   });
 }
 
-const unavailableTarget = `const hiddenTarget = document.createElement('style'); hiddenTarget.textContent = '[col-id="1"] { visibility: hidden !important; }'; document.head.append(hiddenTarget);`;
+const unavailableTarget = `const hiddenTarget = document.createElement('style'); hiddenTarget.textContent = '[col-id="noteToggle"] { visibility: hidden !important; }'; document.head.append(hiddenTarget);`;
 const followupCases: [string, string, string, string][] = [
   ['首帧后重排', `await advanceFrame(); check(vertical.scrollTop < 1000, '首帧已实际尝试虚拟定位'); const moved = state.status.snapshot.segments.shift(); state.status.snapshot.segments.splice(40, 0, moved); await poll(); hiddenTarget.remove();`, `await new Promise(resolve => setTimeout(resolve, 350)); check(document.activeElement === cell('row-0'), '后续帧重读执行时的稳定片段身份：' + JSON.stringify({active:document.activeElement.outerHTML.slice(0,600),target:cell('row-0')?.outerHTML.slice(0,200),scroll:vertical.scrollTop})); await key('ArrowDown'); check(document.activeElement === cell('row-41'), '后续帧同步当前 AG Grid 行位置');`, unavailableTarget],
   ['首帧后删除', `await advanceFrame(); check(vertical.scrollTop < 1000, '首帧已实际尝试虚拟定位'); state.status.snapshot.segments.shift(); await poll(); hiddenTarget.remove();`, `check(document.activeElement === cell('row-1'), '后续帧发现原目标已删除，采用原显示位置的当前片段');`, unavailableTarget],

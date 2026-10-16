@@ -28,11 +28,11 @@ const settle = () => new Promise(resolve => setTimeout(resolve, 160));
     const region = document.querySelector('[aria-label="片段 ' + (index + 1) + ' 配音"]');
     const controls = region.querySelector('[role="group"]');
     const status = region.querySelector('[role="status"]');
-    check(controls.querySelectorAll('button').length === 2, '每行只有主按钮和更多入口');
-    check(controls.getBoundingClientRect().bottom <= status.getBoundingClientRect().top, '主操作在状态上方');
+    check(controls.querySelectorAll('button').length === 1 && region.closest('[row-id]').querySelectorAll('[data-speech-more]').length === 1, '主按钮与行尾更多各一个');
+    check(controls.getBoundingClientRect().right <= status.getBoundingClientRect().left && Math.abs(controls.getBoundingClientRect().top-status.getBoundingClientRect().top)<24, '试听与状态横向并排');
     check(region.textContent.includes(label), '保留状态：' + label);
     const cell = region.closest('[role="gridcell"]');
-    check(cell.getBoundingClientRect().width === 118 && region.closest('[row-id]').getBoundingClientRect().height === 80, '保持配音列宽与行高');
+    check(cell.getAttribute('col-id') === 'text' && region.closest('[row-id]').getBoundingClientRect().height === 102, '配音处于片段下层，折叠行高102px');
     for (const button of controls.querySelectorAll('button')) {
       const bounds = button.getBoundingClientRect(), cellBounds = cell.getBoundingClientRect();
       check(bounds.left >= cellBounds.left && bounds.right <= cellBounds.right, '按钮不横向溢出单元格');
@@ -47,5 +47,5 @@ const settle = () => new Promise(resolve => setTimeout(resolve, 160));
 } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; } })();
 `;
 for (const [width, height] of [[780, 579], [420, 360]]) {
-  test(`配音主按钮在上、状态在下及单元格边界（${width}×${height}）`, { timeout: 30000 }, t => checkInteractiveBrowser(t, script, fixture, width, height));
+  test(`配音主按钮与状态横向排列及双层行边界（${width}×${height}）`, { timeout: 30000 }, t => checkInteractiveBrowser(t, script, fixture, width, height));
 }

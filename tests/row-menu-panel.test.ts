@@ -17,7 +17,7 @@ const input = request => action(() => window.browserInput(request));
 const check = (v, m) => { if (!v) throw Error(m); };
 const menu = () => document.querySelector('[role="menu"][aria-label="口播片段操作"]');
 const dialog = () => document.querySelector('[role="alertdialog"]');
-const right = id => input({click: '[row-id="'+id+'"] [col-id="text"]', button:'right'});
+const right = id => input({click: '[row-id="'+id+'"] [data-segment-script]', button:'right'});
 const bounds = node => { const r = node.getBoundingClientRect(); check(r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight, '浮层不越界'); };
 (async () => { try {
 state.status.snapshot.segments = ['a','b','c'].map((id,i)=>({id,order:i+1,text:id,video:null}));

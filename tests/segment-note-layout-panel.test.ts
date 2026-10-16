@@ -22,10 +22,15 @@ const region = () => document.querySelector('[role="region"][aria-label$="画面
  check(!document.querySelector('[col-id="visualNote"]'), '说明不再挤占独立列宽');
  const text = row('s0').querySelector('[col-id="text"]');
  if (innerWidth>=780) check(text.getBoundingClientRect().width>300, '文案获得主要空间');
- check(row('s0').getBoundingClientRect().height===80, '折叠行保持80px');
+ check(row('s0').getBoundingClientRect().height===102, '折叠行保持102px');
+ const scriptBounds=row('s0').querySelector('[data-segment-script]').getBoundingClientRect();
+ const supportBounds=row('s0').querySelector('[data-segment-support]').getBoundingClientRect();
+ check(scriptBounds.bottom<=supportBounds.top && scriptBounds.width>300, '文案独立占据上层，辅助内容位于下层');
+ const noteSummary=row('s0').querySelector('[data-note-summary]');
+ check(parseFloat(getComputedStyle(noteSummary).lineHeight)<=noteSummary.clientHeight && getComputedStyle(noteSummary).fontSize==='12px', '说明摘要使用可读字号且行高不使文字落到裁切区域');
  const normalColor=getComputedStyle(row('s0')).getPropertyValue('--ag-data-background-color');
  const selected = () => state.selectionRequests?.at(-1) ?? [];
- const summary=row('s0').querySelector('[col-id="text"] button');
+ const summary=row('s0').querySelector('[data-note-summary]');
  await action(()=>summary.focus());
  await action(()=>window.browserInput({key:'Enter'}));
  check(!document.querySelector('[aria-label="文案全文"]'), '摘要回车只展开说明，不误入文案编辑');
@@ -48,7 +53,7 @@ const region = () => document.querySelector('[role="region"][aria-label$="画面
  }
  await window.browserInput({screenshot:'note-layout-expanded'});
  await click('[row-id="s0"] [data-note-toggle]');
- check(!region() && row('s0').getBoundingClientRect().height===80, '折叠恢复原高度');
+ check(!region() && row('s0').getBoundingClientRect().height===102, '折叠恢复原高度');
  check(getComputedStyle(row('s0')).getPropertyValue('--ag-data-background-color')===normalColor, '折叠后移除展开背景');
  await click('[row-id="s1"] [data-note-toggle]');
  check(region()?.getAttribute('aria-label')==='片段 2 画面说明', '切换按稳定身份展开');

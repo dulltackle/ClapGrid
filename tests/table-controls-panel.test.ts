@@ -19,11 +19,11 @@ const action = async fn => { await act(async () => { await fn(); await new Promi
   state.status.snapshot.segments = Array.from({length: 80}, (_, i) => ({id: String(i + 1), order: i + 1, text: '口播片段 ' + (i + 1), video: null}));
   await action(() => createRoot(document.getElementById('root')).render(<App/>));
   const row = () => document.querySelector('[row-id="1"]');
-  check(row().getBoundingClientRect().height === 80, '保持 80px 行高');
+  check(row().getBoundingClientRect().height === 102, '保持 102px 行高');
   check(document.querySelectorAll('.ag-row[row-id]').length < 80, '使用真实虚拟行');
   const horizontal = document.querySelector('.ag-body-horizontal-scroll-viewport');
   const detail = () => document.querySelector('[aria-label="查看片段 1 的详情"]');
-  check(document.querySelectorAll('[role="columnheader"]').length === 6, '文案、素材、配音、序号、操作和勾选列');
+  check(document.querySelectorAll('[role="columnheader"]').length === 4, '口播片段、序号、行尾操作和勾选列');
   check(!document.querySelector('[col-id="visualNote"]'), '不再保留独立画面说明列');
   const initialDetail = detail().getBoundingClientRect().toJSON();
   check(initialDetail.left >= 0 && initialDetail.right <= innerWidth, '横向滚动前详情入口完整可见');
