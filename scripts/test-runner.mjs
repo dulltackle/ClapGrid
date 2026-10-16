@@ -7,11 +7,15 @@ import { fileURLToPath } from 'node:url';
 export const rowTests = ['panel-targets', 'segment-note-layout-panel', 'speech-cell-layout-panel', 'drag-scroll-panel', 'editing-panel', 'wide-panel', 'row-menu-panel', 'long-text-panel'];
 
 export function failureFiles(root, failures) {
-  return [...new Set(failures.map(item => {
-    const file = isAbsolute(item.file ?? '') ? relative(root, item.file) : item.file;
+  let unknown = false;
+  const files = [...new Set(failures.flatMap(item => {
+    if (!item.file) { unknown = true; return []; }
+    const file = isAbsolute(item.file) ? relative(root, item.file) : item.file;
     if (!file || !/^tests\/[\w.-]+\.test\.ts$/.test(file) || !existsSync(resolve(root, file))) throw Error(`无法定位待复验测试文件：${item.file}`);
-    return file;
+    return [file];
   }))];
+  // 未知失败需复跑完整测试；仍先校验所有已知路径，避免掩盖越界或丢失文件。
+  return unknown ? [] : files;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -24,7 +28,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     if (values.suite === 'tooling') files = ['tests/check-runner.test.ts', 'tests/test-reporting.test.ts'];
     if (values.suite === 'failed') {
       const manifest = JSON.parse(readFileSync(process.env.CLAPGRID_FAILURE_MANIFEST ?? resolve(root, 'logs/check-state/failures.json'), 'utf8'));
-      files = manifest.failures?.length ? failureFiles(root, manifest.failures) : files;
+      const failed = failureFiles(root, manifest.failures ?? []);
+      if (failed.length) files = failed;
     }
     const report = resolve(process.env.CLAPGRID_TEST_REPORT ?? `logs/tests/${Date.now()}-${process.pid}.json`);
     mkdirSync(dirname(report), { recursive: true });

@@ -28,6 +28,8 @@ test('失败复验使用新检出中的全部失败文件，拒绝丢失文件�
   mkdirSync(join(root, 'tests'));
   for (const file of ['a.test.ts', 'b.test.ts']) writeFileSync(join(root, 'tests', file), '');
   assert.deepEqual(failureFiles(root, [{ file: 'tests/a.test.ts' }, { file: 'tests/b.test.ts' }, { file: 'tests/a.test.ts' }]), ['tests/a.test.ts', 'tests/b.test.ts']);
+  assert.deepEqual(failureFiles(root, [{ name: '未知位置' }, { file: 'tests/a.test.ts' }]), [], '任一未知文件失败都回退到完整测试');
   assert.throws(() => failureFiles(root, [{ file: '../other/tests/a.test.ts' }]), /无法定位/);
   assert.throws(() => failureFiles(root, [{ file: 'tests/missing.test.ts' }]), /无法定位/);
+  assert.throws(() => failureFiles(root, [{ name: '未知位置' }, { file: '../other/tests/a.test.ts' }]), /无法定位/);
 });

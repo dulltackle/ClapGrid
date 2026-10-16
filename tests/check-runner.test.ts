@@ -43,6 +43,26 @@ test('开发检查接受未提交内容，输出身份但不宣称正式验收',
   assert.notEqual(sourceIdentity(root).fingerprint, before.fingerprint);
 });
 
+test('检查进度及命令输出不混入原生测试器的 V8 stdout 通道', async t => {
+  const { root } = repository(t, `require('node:assert/strict').equal(process.env.NODE_TEST_CONTEXT,undefined);console.log('命令中文输出');`);
+  const raw: string[] = [];
+  const write = process.stdout.write;
+  // 保留原生事件帧；截获普通输出，稳定检测帧混入而不依赖管道合包时机。
+  process.stdout.write = function (this: typeof process.stdout, chunk: any, ...args: any[]) {
+    if (!Buffer.isBuffer(chunk) || chunk[0] !== 0xff || chunk[1] !== 0x0f) {
+      raw.push(String(chunk));
+      return (process.stderr.write as any)(chunk, ...args);
+    }
+    return (write as any).call(this, chunk, ...args);
+  } as typeof write;
+  let result;
+  try { result = await runCheck(root); }
+  finally { process.stdout.write = write; }
+  assert.deepEqual(raw, [], '进度与子命令输出必须走 stderr，stdout 只传原生测试事件');
+  assert.equal(result.status, 'passed');
+  assert.match(readFileSync(join(result.directory, 'test.log'), 'utf8'), /命令中文输出/);
+});
+
 test('检查期间修改源码使结果失效并停止后续阶段', async t => {
   const { root } = repository(t, "require('node:fs').writeFileSync('value','changed')");
   const result = await runCheck(root);
@@ -186,6 +206,17 @@ test('失败后集中复验全部失败阶段，仍失败时阻止新的完整�
   assert.equal(repaired.status, 'passed');
   assert.equal(repaired.recheck.status, 'passed');
   assert.equal(existsSync(join(root, 'logs/check-state/failures.json')), false);
+});
+
+test('损坏的测试报告记入失败阶段并阻止未通过的复验放行', async t => {
+  const { root } = repository(t, `if(['test','test:failed'].includes(process.env.npm_lifecycle_event))require('node:fs').writeFileSync(process.env.CLAPGRID_TEST_REPORT,'{');`);
+  const result = await runCheck(root);
+  assert.equal(result.status, 'failed');
+  assert.equal(result.results.find((item: any) => item.name === 'test').status, 'failed');
+  assert.deepEqual(JSON.parse(readFileSync(join(root, 'logs/check-state/failures.json'), 'utf8')).stages, ['test']);
+  const retry = await runCheck(root);
+  assert.equal(retry.blocked, true);
+  assert.deepEqual(retry.results.map((item: any) => item.name), ['test:failed']);
 });
 
 test('预检失败不启动完整检查且固定提交不接受旧预检证据', async t => {

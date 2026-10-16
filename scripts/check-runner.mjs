@@ -4,11 +4,19 @@ import { resolve, relative, join } from 'node:path';
 import { sameSource, sourceIdentity } from './check-source.mjs';
 import { withCheckRun, stopGroup, stateDirectory } from './check-lifecycle.mjs';
 
+// Node 22 的测试子进程以 stdout 传输 V8 事件；混入中文原始输出可能破坏帧边界。
+// https://github.com/nodejs/node/issues/65934
+const output = process.env.NODE_TEST_CONTEXT === 'child-v8' ? process.stderr : process.stdout;
+export const checkProgress = message => output.write(`${message}\n`);
+
 export async function runLogged(command, args, cwd, logPath, context, env = {}) {
   if (context.signal.aborted) return { status: 'cancelled', exitCode: null, signal: 'SIGTERM' };
   const log = createWriteStream(logPath);
   return new Promise(resolveResult => {
-    const child = spawn(command, args, { cwd, detached: process.platform !== 'win32', env: { ...context.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
+    const childEnv = { ...context.env, ...env };
+    // 普通检查命令不是外层原生测试器的子测试，不能继承其内部报告协议。
+    delete childEnv.NODE_TEST_CONTEXT;
+    const child = spawn(command, args, { cwd, detached: process.platform !== 'win32', env: childEnv, stdio: ['ignore', 'pipe', 'pipe'] });
     let errorMessage, group, stopping;
     const cancel = () => { if (group && !stopping) stopping = stopGroup(group).catch(error => { errorMessage = error.message; }); };
     child.on('spawn', () => {
@@ -16,7 +24,7 @@ export async function runLogged(command, args, cwd, logPath, context, env = {}) 
       if (context.signal.aborted) cancel();
     });
     context.signal.addEventListener('abort', cancel, { once: true });
-    child.stdout.on('data', chunk => { process.stdout.write(chunk); log.write(chunk); });
+    child.stdout.on('data', chunk => { output.write(chunk); log.write(chunk); });
     child.stderr.on('data', chunk => { process.stderr.write(chunk); log.write(chunk); });
     child.on('error', error => { errorMessage = error.message; log.write(`${error.message}\n`); });
     child.on('close', async (exitCode, signal) => {
@@ -47,24 +55,27 @@ function saveFailures(context, summary) {
 async function phases(root, directory, names, mode, context, env = {}) {
   mkdirSync(directory, { recursive: true });
   context.recordLog(directory);
-  console.log(`检查日志：${directory}`);
+  checkProgress(`检查日志：${directory}`);
   const summary = { mode, directory, startedAt: new Date().toISOString(), node: process.version, source: sourceIdentity(root), status: 'running', results: [], failures: [], pending: [...names], note: '阶段指纹只用于发现变化，不证明期间从未修改。跳过不代表通过，详见测试原始日志及结构化报告。' };
   const save = () => writeFileSync(resolve(directory, 'summary.json'), JSON.stringify(summary, null, 2) + '\n');
   save();
   try {
     for (const name of names) {
       if (context.signal.aborted) { summary.status = 'cancelled'; break; }
-      console.log(`开始 ${name}`);
+      checkProgress(`开始 ${name}`);
       const slug = name.replaceAll(':', '-');
       const report = resolve(directory, `${slug}-tests.json`), log = resolve(directory, `${slug}.log`);
       const startedAt = new Date().toISOString();
       const result = await runLogged(npm, ['run', name], root, log, context, { ...env, CLAPGRID_TEST_REPORT: report });
       summary.results.push({ name, ...result, log, startedAt, completedAt: new Date().toISOString() });
       if (existsSync(report) && result.status !== 'cancelled') {
-        const tests = read(report);
         summary.results.at(-1).testReport = report;
-        summary.failures.push(...(tests.failures ?? []).map(item => ({ ...item, file: item.file ? relative(root, resolve(root, item.file)).replaceAll('\\', '/') : undefined })));
-        if (!tests.complete && result.status !== 'cancelled') { result.status = 'failed'; summary.results.at(-1).status = 'failed'; summary.results.at(-1).error = '测试事件报告不完整'; }
+        try {
+          const tests = read(report);
+          summary.failures.push(...(tests.failures ?? []).map(item => ({ ...item, file: item.file ? relative(root, resolve(root, item.file)).replaceAll('\\', '/') : undefined })));
+          if (!tests.complete) { result.status = 'failed'; result.error = '测试事件报告不完整'; }
+        } catch (error) { result.status = 'failed'; result.error = `无法读取测试事件报告：${error.message}`; }
+        Object.assign(summary.results.at(-1), result);
       }
       summary.pending = names.filter(step => !summary.results.some(result => result.name === step && result.status !== 'cancelled'));
       summary.sourceAfter = sourceIdentity(root);

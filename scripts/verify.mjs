@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { git, sourceIdentity, sameSource } from './check-source.mjs';
-import { runLogged } from './check-runner.mjs';
+import { runLogged, checkProgress } from './check-runner.mjs';
 import { withCheckRun } from './check-lifecycle.mjs';
 
 /** 独立 Git 检出不共享工作区或 node_modules；日志和失败现场保留供复核。 */
@@ -17,7 +17,7 @@ export async function verify(root, revision, outputRoot = join(root, 'logs/verif
     context.recordLog(directory);
     const summary = { mode: 'verification', commit, checkout, directory, startedAt: new Date().toISOString(), node: process.version, status: 'running', results: [] };
     const save = () => writeFileSync(join(directory, 'summary.json'), JSON.stringify(summary, null, 2) + '\n');
-    console.log(`正式验收日志：${directory}`); save();
+    checkProgress(`正式验收日志：${directory}`); save();
     try {
       git(root, ['clone', '--quiet', '--no-checkout', '--no-hardlinks', '--', root, checkout]);
       git(checkout, ['checkout', '--quiet', '--detach', commit]);
