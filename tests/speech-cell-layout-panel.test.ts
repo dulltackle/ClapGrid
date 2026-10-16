@@ -33,6 +33,7 @@ const settle = () => new Promise(resolve => setTimeout(resolve, 160));
     check(region.textContent.includes(label), '保留状态：' + label);
     const cell = region.closest('[role="gridcell"]');
     check(cell.getAttribute('col-id') === 'text' && region.closest('[row-id]').getBoundingClientRect().height === 102, '配音处于片段下层，折叠行高102px');
+    check(status.getBoundingClientRect().right <= cell.getBoundingClientRect().right && status.scrollWidth <= status.clientWidth, '全部配音状态完整显示，不被行尾操作裁切');
     for (const button of controls.querySelectorAll('button')) {
       const bounds = button.getBoundingClientRect(), cellBounds = cell.getBoundingClientRect();
       check(bounds.left >= cellBounds.left && bounds.right <= cellBounds.right, '按钮不横向溢出单元格');
@@ -46,6 +47,6 @@ const settle = () => new Promise(resolve => setTimeout(resolve, 160));
   document.getElementById('result').dataset.state = 'passed';
 } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; } })();
 `;
-for (const [width, height] of [[780, 579], [420, 360]]) {
+for (const [width, height] of [[780, 579], [541, 579], [420, 360]]) {
   test(`配音主按钮与状态横向排列及双层行边界（${width}×${height}）`, { timeout: 30000 }, t => checkInteractiveBrowser(t, script, fixture, width, height));
 }

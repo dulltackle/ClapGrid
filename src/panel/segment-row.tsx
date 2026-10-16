@@ -20,11 +20,11 @@ export function SegmentRowCell({ data, query, activeId, visit, rowHeight, assets
 }) {
   if (!data) return null;
   const asset = assets.find(asset => asset.id === data.video?.assetId);
-  return <div className="flex h-full w-full min-w-0 flex-col py-1">
-    <div data-segment-script className="flex min-h-0 flex-1 items-center border-0 border-b border-solid border-input/60">
+  return <div className="flex h-full w-full min-w-0 flex-col pb-1">
+    <div data-segment-script className="flex min-h-0 flex-1 items-center border-0 border-b border-solid border-input/60 text-[15px]">
       <SearchText text={data.text} query={query} current={data.id === activeId} visit={visit} rowHeight={rowHeight - 44} />
     </div>
-    <div data-segment-support className="flex h-12 min-w-0 shrink-0 items-center gap-3">
+    <div data-segment-support className="flex h-[54px] min-w-0 shrink-0 items-center gap-4">
       {asset ? <button className="h-11 w-[84px] shrink-0 cursor-pointer overflow-hidden rounded-md border border-solid border-input bg-background p-0 text-foreground hover:bg-ui-accent" aria-label={`播放 ${asset.name}`} onClick={event => preview(data, event.currentTarget)}>
         <img src={`${panelServiceUrl()}/api/media/${asset.id}/thumbnail`} alt="" className="h-full w-full object-contain" />
       </button> : <span className="flex h-11 w-[84px] shrink-0 items-center justify-center text-xs text-muted-foreground">未关联</span>}
@@ -40,11 +40,11 @@ export function SegmentRowActions({ data, expandedId, toggleNote, open, speech, 
 }) {
   if (!data) return null;
   const expanded = expandedId === data.id;
-  return <div className="flex h-full flex-col py-1">
+  return <div className="flex h-full flex-col pb-1">
     <div className="flex min-h-0 flex-1 items-center justify-end border-0 border-b border-solid border-input/60">
-      <Button variant="ghost" size="xs" className="size-6 shrink-0 rounded-md p-0 text-foreground opacity-0 group-[:hover]/segment:opacity-100 focus-visible:opacity-100" data-row-details aria-label={`查看片段 ${data.order} 的详情`} title="片段详情" onClick={event => open(data.id, event.currentTarget)}><InfoCircledIcon aria-hidden /></Button>
+      <Button variant="ghost" size="xs" className="size-5 shrink-0 rounded-md p-0 text-foreground opacity-0 group-[:hover]/segment:opacity-100 focus-visible:opacity-100" data-row-details aria-label={`查看片段 ${data.order} 的详情`} title="片段详情" onClick={event => open(data.id, event.currentTarget)}><InfoCircledIcon aria-hidden /></Button>
       <Button variant="ghost" size="xs" className="size-6 shrink-0 rounded-md p-0" data-note-toggle aria-label={`${expanded ? '收起' : '展开'}片段 ${data.order} 的画面说明`} aria-expanded={expanded} aria-controls={expanded ? `segment-note-${data.id}` : undefined} onClick={() => toggleNote(data.id)}>{expanded ? <ChevronUpIcon aria-hidden className="size-4" /> : <ChevronDownIcon aria-hidden className="size-4" />}</Button>
     </div>
-    <div className="flex h-12 shrink-0 items-center justify-end"><SegmentSpeechMenu segment={data} speech={speech} disabled={disabled} generate={() => generate(data.id)} history={trigger => history(data.id, trigger)} /></div>
+    <div className="flex h-[54px] shrink-0 items-center justify-end"><SegmentSpeechMenu segment={data} speech={speech} disabled={disabled} generate={() => generate(data.id)} history={trigger => history(data.id, trigger)} /></div>
   </div>;
 }
