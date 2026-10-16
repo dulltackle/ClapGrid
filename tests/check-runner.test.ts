@@ -119,6 +119,32 @@ test('显式停止可恢复拥有者异常退出后的锁，并清理其仍运�
   assert.equal(existsSync(join(root, 'logs/check-state/active')), false);
 });
 
+test('停止通过控制通道交给拥有者，不依赖调用者可见的 PID', async t => {
+  const { root } = repository(t, 'require("node:fs").writeFileSync("started","yes");setTimeout(()=>{},20000)');
+  const child = spawn(process.execPath, ['scripts/check.mjs'], { cwd: root, stdio: 'ignore' });
+  const exited = new Promise(resolve => child.once('exit', resolve));
+  await until(() => existsSync(join(root, 'started')), '拥有者已开始运行');
+  const path = join(root, 'logs/check-state/active/owner.json');
+  const owner = JSON.parse(readFileSync(path, 'utf8'));
+  // 模拟另一个终端命名空间：记录的 PID 对当前调用者不可见。
+  writeFileSync(path, JSON.stringify({ ...owner, pid: 2147483647, namespace: 'other-namespace' }));
+  const { stopCheckRun } = await import(new URL('../scripts/check-lifecycle.mjs', import.meta.url).href);
+  assert.equal((await stopCheckRun(root)).status, 'cancelled');
+  await exited;
+  assert.equal(existsSync(join(root, 'logs/check-state/active')), false);
+});
+
+test('控制通道不可达且无法确认跨命名空间拥有者已死时保留锁', async t => {
+  const { root } = repository(t);
+  const directory = join(root, 'logs/check-state/active');
+  mkdirSync(directory, { recursive: true });
+  writeFileSync(join(directory, 'owner.json'), JSON.stringify({ pid: 2147483647, namespace: 'other-namespace', token: 'unreachable', birth: 'unknown' }));
+  const { stopCheckRun } = await import(new URL('../scripts/check-lifecycle.mjs', import.meta.url).href);
+  await assert.rejects(stopCheckRun(root), /无法确认旧任务退出/);
+  assert.equal(existsSync(directory), true);
+  await assert.rejects(runCheck(root), /已有检查/);
+});
+
 test('嵌套 verify 取消覆盖独立检出内 check 的进程组', async t => {
   const { root, commit } = repository(t, 'require("node:fs").writeFileSync("started","yes");setTimeout(()=>{},20000)');
   const controller = new AbortController();
@@ -128,6 +154,19 @@ test('嵌套 verify 取消覆盖独立检出内 check 的进程组', async t => 
   const result = await pending;
   assert.equal(result.status, 'cancelled');
   assert.equal(existsSync(join(root, 'logs/check-state/active')), false);
+});
+
+test('取消覆盖命令内另一个工作树子检查新建的进程组', { skip: process.platform === 'win32' }, async t => {
+  const nested = repository(t, 'setInterval(()=>require("node:fs").appendFileSync("heartbeat","x"),30)');
+  const task = `require('node:child_process').spawn(process.execPath,${JSON.stringify([join(nested.root, 'scripts/check.mjs')])},{cwd:${JSON.stringify(nested.root)},stdio:'ignore'});setInterval(()=>{},1000);`;
+  const { root } = repository(t, task);
+  const controller = new AbortController();
+  const pending = runCheck(root, undefined, { signal: controller.signal });
+  await until(() => existsSync(join(nested.root, 'heartbeat')), '子工作树检查已启动');
+  controller.abort();
+  assert.equal((await pending).status, 'cancelled');
+  const before = readFileSync(join(nested.root, 'heartbeat'), 'utf8'); await delay(150);
+  assert.equal(readFileSync(join(nested.root, 'heartbeat'), 'utf8'), before, '子检查的独立进程组也必须停止');
 });
 
 test('失败后集中复验全部失败阶段，仍失败时阻止新的完整检查', async t => {
