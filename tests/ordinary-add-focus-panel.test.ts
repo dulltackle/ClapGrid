@@ -55,7 +55,7 @@ for(const turn of ['查找输入','键盘导航','空白点击','滚轮','其他
  const count=state.status.snapshot.segments.length;
  state.saveGate=deferred();await add('顶部');
  if('${turn}'==='查找输入'){await click('查找');await key('B');}
- if('${turn}'==='键盘导航'){await action(()=>document.querySelector('[row-id="a"] [col-id="0"]').focus());await key('ArrowDown');}
+ if('${turn}'==='键盘导航'){await action(()=>document.querySelector('[row-id="a"] [col-id="text"]').focus());await key('ArrowDown');}
  if('${turn}'==='空白点击'){await action(async()=>{for(const type of ['mousePressed','mouseReleased'])await window.browserInput({pointer:{type,x:5,y:5}});});}
  if('${turn}'==='滚轮'){await action(()=>window.browserInput({pointer:{type:'mouseWheel',x:200,y:230,deltaY:100}}));}
  if('${turn}'==='其他流程')await click('更多');
@@ -140,7 +140,7 @@ for(const change of ['重排','删除','空表','虚拟卸载']) page(`新增详
 `);
 page('普通新增迟到响应不打断用户请求的现有片段行内编辑',String.raw`
  state.saveGate=deferred();await add('顶部');
- await action(()=>window.browserInput({click:'[row-id="b"] [col-id="text"]'}));
+ await action(()=>window.browserInput({click:'[row-id="b"] [data-segment-script]'}));
  await action(()=>{state.saveGate.resolve();state.saveGate=null;});
  const editor=document.querySelector('[aria-label="文案全文"]');
  check(editor?.value==='B' && document.activeElement===editor && !draft(),'新增只接收数据，保留用户在等待期间请求的 B 行内编辑');

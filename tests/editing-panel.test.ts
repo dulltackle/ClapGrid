@@ -10,6 +10,7 @@ test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿�
   import { createRoot } from 'react-dom/client';
   import { App } from './src/panel/app.tsx';
   import { assertTheme } from './tests/helpers/theme-contract.ts';
+  import { waitForPanel } from './tests/helpers/panel-targets.ts';
   import { state, deferred } from 'editing-fixture';
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   const intervals = new Map(); let nextTimer = 0;
@@ -56,7 +57,7 @@ test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿�
         check(cell, '应显示真实表格文案单元格');
         cell.dispatchEvent(new MouseEvent('click', { bubbles: true })); await settle();
       });
-      const editor = field('文案全文');
+      const editor = await waitForPanel(() => field('文案全文'), '真实文案编辑器挂载');
       check(editor, '单击应打开真实文案编辑器');
       await input(editor, '已保存的新文案');
       state.saveGate = deferred();
@@ -64,7 +65,7 @@ test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿�
       check(document.querySelector('[data-save-status]').textContent.includes('保存中'), '连接先正常关闭时仍等待保存响应');
       await act(async () => { state.saveGate.resolve(); state.saveGate = null; await settle(); });
       check(document.querySelector('[data-save-status]').textContent === '已保存', '连接先关闭、保存后成功不能误报失败');
-      check(document.querySelector('.ag-row[row-id="segment"] [col-id="text"]').textContent === '已保存的新文案', '表格应显示保存结果');
+      check(document.querySelector('.ag-row[row-id="segment"] [col-id="text"] .text-summary').textContent === '已保存的新文案', '表格应显示保存结果');
       await click('更多'); await click('导入本地视频');
       await input(field('视频文件绝对路径'), '/tmp/example.mp4');
       state.saveGate = deferred();

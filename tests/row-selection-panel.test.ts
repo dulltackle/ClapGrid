@@ -55,7 +55,7 @@ const script = String.raw`
       await input({ key: 'Escape' }); selected(['a']);
       check(!modal(), 'Esc 关闭配音详情并保留选择');
       await input({ click: '[row-id="b"] [role="status"]' }); selected(['b']);
-      await input({ click: '[row-id="b"] [col-id="text"]' });
+      await input({ click: '[row-id="b"] [data-segment-script]' });
       check(document.querySelector('[aria-label="文案全文"]'), '单击经修改权仲裁进入全文编辑');
       await input({ key: 'Escape' }); selected(['b']);
       check(!document.querySelector('[aria-label="文案全文"]'), 'Esc 关闭全文编辑');

@@ -30,7 +30,7 @@ const script = String.raw`
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(node, value);
     node.dispatchEvent(new Event('input', { bubbles: true })); await settle();
   }); };
-  const cell = (id, column) => document.querySelector('[row-id="' + id + '"] [col-id="' + column + '"]');
+  const cell = (id, column) => document.querySelector('[row-id="' + id + '"] [col-id="' + (column === '1' ? 'noteToggle' : column === '0' ? 'text' : column) + '"]');
   const screenshot = name => {
     const rect = dialog().getBoundingClientRect();
     check(rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight, '浮层必须完整位于视口内');
@@ -80,10 +80,10 @@ const script = String.raw`
       check(!dialog() && document.activeElement === settings, 'Esc 关闭后必须恢复原入口');
       check(state.saves === 0 && state.leases.length === 0, '查看设置不能申请修改权或保存');
       await click(button('查找')); await input(field('查找文案'), '保留');
-      const body = document.querySelector('.ag-body-vertical-scroll-viewport');
+      const body = document.querySelector('.ag-grid-viewport');
       const horizontal = document.querySelector('.ag-body-horizontal-scroll-viewport');
       check(body && horizontal, '必须找到真实表格的横纵滚动容器');
-      body.scrollTop = 700; await settle();
+      body.scrollTop = 20 * 102; await settle();
       const rowId = 'segment-20';
       const checkbox = document.querySelector('[row-id="' + rowId + '"] input[type="checkbox"]');
       await click(checkbox);
@@ -124,7 +124,7 @@ const script = String.raw`
       check(!document.activeElement.closest('[row-id]'), '关闭后清理尚未完成时点击空白，旧返回不得重新聚焦表格');
 
       horizontal.scrollLeft = 520; await settle();
-      const listen = [...cell(rowId, '1').querySelectorAll('button')].find(node => node.getAttribute('aria-label') === '试听');
+      const listen = [...cell(rowId, '0').querySelectorAll('button')].find(node => node.getAttribute('aria-label') === '试听');
       await click(listen); check(!dialog() && document.querySelector('main > audio'), '切换至单元格配音试听');
       await key('Escape');
       check(state.saves === 0 && state.mutations.length === 0 && JSON.stringify(state.status.snapshot.segments) === before, '连续查看视频与试听不改变片段或触发任务');

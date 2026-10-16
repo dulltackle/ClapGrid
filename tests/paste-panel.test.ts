@@ -61,7 +61,7 @@ for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`粘�
       await window.browserInput({ screenshot: 'paste-success-' + innerHeight });
       await key('Escape'); check(!dialog() && document.activeElement === button('更多'), '关闭焦点返回更多');
       const rows = [...document.querySelectorAll('.ag-row[row-id]')];
-      check(rows.length === 2 && rows[0].querySelector('[col-id="text"]').textContent === 'A' && rows[1].querySelector('[col-id="text"]').textContent === 'B', '真实 AG Grid 按非空行展示两个正确口播片段');
+      check(rows.length === 2 && rows[0].querySelector('[col-id="text"] .text-summary').textContent === 'A' && rows[1].querySelector('[col-id="text"] .text-summary').textContent === 'B', '真实 AG Grid 按非空行展示两个正确口播片段');
       document.getElementById('result').dataset.state = 'passed';
     } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; } })();
   `, fixture, width!, height!);

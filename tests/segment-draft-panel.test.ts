@@ -36,7 +36,7 @@ const textClick = id => action(() => window.browserInput({pointer:{type:'mousePr
  check(document.querySelector('[role="alertdialog"]') && button('继续编辑').disabled,'保存中不能关闭或重复操作');
  await action(()=>{state.saveGate.resolve();state.saveGate=null;});
  check(!document.querySelector('[role="alertdialog"]') && editor()?.value==='第二条' && document.activeElement===editor(),'保存成功后完成原来的行内编辑意图');
- check(cell('segment').textContent==='详情保存测试','详情保存共用表格结果');
+ check(cell('segment').querySelector('.text-summary').textContent==='详情保存测试','详情保存共用表格结果');
  await key('Escape'); await click(button('上一条片段')); await click(draft()); await input(draft(),'断线草稿');
  await action(()=>state.current.disconnect());
  check(draft().value==='断线草稿' && document.body.textContent.includes('详情草稿已保留'),'断线保留详情草稿并提示');

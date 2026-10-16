@@ -20,7 +20,7 @@ const script = String.raw`
   const key = async (key, shift = false) => { await act(async () => { await window.browserInput({ key, shift }); await settle(); }); await settle(); };
   const poll = async () => { await act(async () => { [...intervals.values()].forEach(fn => fn()); await settle(); }); await settle(); };
   const dialog = () => document.querySelector('[role="dialog"][aria-modal="true"]');
-  const cell = () => document.querySelector('[row-id="segment"] [col-id="1"]');
+  const cell = () => document.querySelector('[row-id="segment"]');
   const description = node => document.getElementById(node.getAttribute('aria-describedby'))?.textContent;
   (async () => {
     try {
@@ -57,7 +57,7 @@ const script = String.raw`
       check(box.top >= 0 && box.bottom <= innerHeight, '窄矮视口关闭操作可达：' + JSON.stringify({ box: box.toJSON(), height: innerHeight, dialog: history.getBoundingClientRect().toJSON(), scroll: history.scrollTop, scrollHeight: history.scrollHeight }));
       await window.browserInput({ screenshot: 'audio-history-' + innerHeight });
       await key('Escape');
-      check(document.activeElement === cell(), '锁变化后回到稳定片段单元格');
+      check(document.activeElement === cell().querySelector('[col-id="noteToggle"]'), '锁变化后回到稳定片段单元格');
       await click(button('试听', cell()));
       check(!dialog(), '表格试听不打开弹窗');
       const player = document.querySelector('main > audio');

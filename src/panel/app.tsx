@@ -1,5 +1,7 @@
-import { SegmentSpeech, SegmentSpeechCell } from './segment-speech.js';
+import { SegmentSpeech } from './segment-speech.js';
+import { SegmentRowCell, SegmentRowActions } from './segment-row.js';
 import { SegmentDetails, useSegmentDetails } from './segment-details.js';
+import { DragHandleDots2Icon } from '@radix-ui/react-icons';
 import { SegmentRowDetails } from './segment-row-details.js';
 import { PastePanel } from './paste-panel.js';
 import { Button, Input, NativeSelect, ContextMenu, ContextMenuTrigger, ContextMenuItem } from '@/components/ui/index.js';
@@ -20,7 +22,7 @@ import { AgGridProvider, AgGridReact } from 'ag-grid-react';
 import { queryStatus, querySpeech, submitSpeech, setVoice, importVideo, saveSegment, beginEdit, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
 import type { Segment, ServiceStatus, SpeechStatus, Voice, Batch } from '../shared/contracts.js';
 import { projectEditing } from './project-editing.js';
-import { SearchText, textMatches } from './text-search.js';
+import { textMatches } from './text-search.js';
 import { TextEditor } from './text-editor.js';
 import './style.css';
 import { useSegmentDrag } from './segment-drag.js';
@@ -29,10 +31,10 @@ import { useSegmentDrag } from './segment-drag.js';
 const theme = themeQuartz.withParams({
   browserColorScheme: 'light',
   accentColor: 'var(--color-accent)',
-  backgroundColor: 'var(--color-surface)',
+  backgroundColor: 'color-mix(in srgb, var(--color-focus) 2%, white)',
   foregroundColor: 'var(--color-ink)',
   borderColor: 'var(--color-border)',
-  headerBackgroundColor: 'var(--color-surface-subtle)',
+  headerBackgroundColor: 'color-mix(in srgb, var(--color-focus) 5%, white)',
   headerTextColor: 'var(--color-ink-secondary)',
   rowHoverColor: 'var(--color-hover)',
   fontFamily: 'var(--font-ui)',
@@ -40,8 +42,10 @@ const theme = themeQuartz.withParams({
   spacing: 'var(--space-1)',
   borderRadius: 'var(--radius-control)',
   wrapperBorderRadius: 'var(--radius-panel)',
-  headerHeight: 40,
-  rowHeight: 80,
+  headerHeight: 38,
+  rowHeight: 102,
+  pinnedColumnBorder: false,
+  columnBorder: false,
 });
 
 // 行内控件拥有鼠标事件；普通状态文字仍采用表格原生整行选择。
@@ -60,10 +64,6 @@ const cellControlKeyboard: NonNullable<ColDef<Segment>['suppressKeyboardEvent']>
   if (next < 0 || next >= buttons.length) return false;
   event.preventDefault(); buttons[next]!.focus(); return true;
 };
-
-function SearchCell({ value, data, query, activeId, visit, rowHeight }: { value?: string; data?: Segment; query: string; activeId: string | null; visit: number; rowHeight: number }) {
-  return <SearchText text={value ?? ''} query={query} current={data?.id === activeId} visit={visit} rowHeight={rowHeight} />;
-}
 
 function EmptyProject({ message }: { message: string }) { return <span>{message}</span>; }
 
@@ -117,11 +117,18 @@ export function App() {
   const tableFallback = useRef<HTMLButtonElement>(null);
   const gridElement = useRef<HTMLDivElement>(null);
   const [searchRowHeight, setSearchRowHeight] = useState(240);
+  const [expandedNote, setExpandedNote] = useState<string | null>(null);
+  const [noteHeight, setNoteHeight] = useState(120);
+  const toggleNote = (id: string) => setExpandedNote(previous => previous === id ? null : id);
   const matchingIds = new Set(status?.snapshot.segments.filter(segment => textMatches(segment.text, query).length > 0).map(segment => segment.id));
   const matchedIds = displayOrder.filter(id => matchingIds.has(id));
   const activeMatch = searchOpen && currentMatch && matchedIds.includes(currentMatch) ? currentMatch : null;
-  const searchLayout = useRef({ activeMatch, rowHeight: searchRowHeight });
-  searchLayout.current = { activeMatch, rowHeight: searchRowHeight };
+  const searchLayout = useRef({ activeMatch, rowHeight: searchRowHeight, expandedNote, noteHeight });
+  searchLayout.current = { activeMatch, rowHeight: searchRowHeight, expandedNote, noteHeight };
+  const mainRowHeight = (id?: string) => id === searchLayout.current.activeMatch ? Math.max(102, searchLayout.current.rowHeight) : 102;
+  useEffect(() => {
+    if (expandedNote && status && !status.snapshot.segments.some(segment => segment.id === expandedNote)) setExpandedNote(null);
+  }, [expandedNote, status]);
   const closeSearch = () => { focusReturns.cancelPending(); setSearchOpen(false); setCurrentMatch(null); requestAnimationFrame(() => tableFallback.current?.focus()); };
   const locate = (needle: string, direction: -1 | 1, restart = false) => {
     const api = grid.current;
@@ -155,7 +162,7 @@ export function App() {
     const observer = new ResizeObserver(() => setSearchRowHeight(Math.max(44, Math.min(240, element.clientHeight - 56))));
     observer.observe(element); return () => observer.disconnect();
   }, []);
-  useEffect(() => { grid.current?.resetRowHeights(); }, [activeMatch, searchRowHeight]);
+  useEffect(() => { grid.current?.resetRowHeights(); }, [activeMatch, searchRowHeight, expandedNote, noteHeight]);
   const returnFocus = useRef({ settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, detail: () => {} });
   const [focusReturns] = useState(() => segmentFocusCoordinator(() => grid.current, {
     search: () => searchInput.current, table: () => tableFallback.current, more: () => moreButton.current,
@@ -420,44 +427,31 @@ export function App() {
   const exportTask = exports.exports?.tasks.at(-1);
   const exportProblems = exports.exports?.tasks.filter(task => task.state === 'failed' || task.state === 'interrupted') ?? [];
   const lock = speech?.locked ? '配音进行中，项目已锁定；可查询和试听' : status?.taskLocked || exports.exports?.locked ? '导出进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : '';
+  const orderWidth = Math.max(64, 48 + String(status?.snapshot.segments.length ?? 0).length * 8);
+  const rowControls = { speech, disabled, reason: disabled ? '请先结束编辑或等待项目解除占用' : '', playing,
+    generate: (id: string) => { void generateSpeech(id); }, listen: toggleAudio,
+    history: (id: string, trigger: HTMLElement) => { rememberOrigin(trigger, 'history'); setAudioHistory(id); }, onError: audioError };
   const columns: ColDef<Segment>[] = [
-    { headerName: '序号', field: 'order', width: 80, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="flex h-full items-center gap-2"><button className="rounded-md border border-solid border-input bg-background text-foreground hover:bg-ui-accent shrink-0 cursor-grab touch-none p-[3px] leading-5 opacity-0 group-[:hover]/segment:opacity-100 focus-visible:opacity-100 active:cursor-grabbing disabled:opacity-0 group-[:hover]/segment:disabled:opacity-50" aria-label={`拖动片段 ${data.order}`} disabled={disabled} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}>⠿</button><span>{data.order}</span></span> },
-    { headerName: '文案', field: 'text', flex: 1, minWidth: 200, editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
-      cellRenderer: SearchCell,
-      cellRendererParams: { query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: searchRowHeight },
+    { headerName: '序号', field: 'order', width: orderWidth, minWidth: orderWidth, maxWidth: orderWidth, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="relative flex h-full items-center pl-3"><button className="rounded-md border border-solid border-input bg-background text-foreground hover:bg-ui-accent absolute -left-3 top-1/2 -translate-y-1/2 shrink-0 cursor-grab touch-none p-[3px] leading-5 opacity-0 group-[:hover]/segment:opacity-100 focus-visible:opacity-100 active:cursor-grabbing disabled:opacity-0 group-[:hover]/segment:disabled:opacity-50" aria-label={`拖动片段 ${data.order}`} disabled={disabled} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}><DragHandleDots2Icon aria-hidden className="size-3" /></button><span>{data.order}</span></span> },
+    { headerName: '口播片段', field: 'text', flex: 1, minWidth: 400, resizable: false, editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
+      cellRenderer: SegmentRowCell, cellStyle: params => ({ height: mainRowHeight(params.data?.id), paddingRight: 0 }),
+      cellRendererParams: { ...rowControls, query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: Math.max(102, searchRowHeight), toggleNote, expandedId: expandedNote, assets: status?.snapshot.assets ?? [],
+        preview: (segment: Segment, trigger: HTMLButtonElement) => { rememberOrigin(trigger, 'preview'); setPreview(segment.video); }, suppressMouseEventHandling: cellControlMouse },
       cellEditor: TextEditor, cellEditorPopup: false,
       suppressKeyboardEvent: params => {
+        if ((params.event.target as HTMLElement).closest('button')) return cellControlKeyboard(params);
         if (params.editing && params.event.key === 'Tab') { params.api.stopEditing(); return true; }
         return !params.editing && (['Enter', 'F2', 'Backspace', 'Delete'].includes(params.event.key) || params.event.key.length === 1);
       } },
-    { headerName: '画面素材', initialWidth: 110, minWidth: 90, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: (params: { data?: Segment }) => {
-      const segment = params.data;
-      if (!segment) return null;
-      const asset = status?.snapshot.assets.find(asset => asset.id === segment.video?.assetId);
-      return <div className="flex h-full items-center gap-2 leading-5">
-        {asset && <button className="h-[50px] w-[80px] shrink-0 cursor-pointer overflow-hidden rounded-md border border-solid border-input bg-background p-0 text-foreground hover:bg-ui-accent" aria-label={`播放 ${asset.name}`} onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(segment.video); }}>
-          <img src={`${panelServiceUrl()}/api/media/${asset.id}/thumbnail`} alt="" className="h-full w-full object-contain" />
-        </button>}
-        {!asset && <span className="text-xs text-muted-foreground">未关联</span>}
-
-      </div>;
-    } },
-    { headerName: '配音', initialWidth: 118, minWidth: 118, suppressKeyboardEvent: cellControlKeyboard, cellRenderer: SegmentSpeechCell,
-      cellRendererParams: { suppressMouseEventHandling: cellControlMouse, speech, disabled, reason: disabled ? '请先结束编辑或等待项目解除占用' : '', playing,
-        generate: (id: string) => { void generateSpeech(id); }, listen: toggleAudio,
-        history: (id: string, trigger: HTMLElement) => { rememberOrigin(trigger, 'history'); setAudioHistory(id); }, onError: audioError } },
-    { headerName: '画面说明', field: 'visualNote', initialWidth: 220, minWidth: 160,
-      editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
-      cellRenderer: ({ value }: { value?: string }) => <span className="block min-w-0 max-h-[66px] overflow-hidden whitespace-pre-wrap break-words pr-11 leading-[22px]">{value}</span>,
-      cellEditor: TextEditor,
-      suppressKeyboardEvent: params => {
-        if (params.editing && params.event.key === 'Tab') { params.api.stopEditing(); return true; }
-        return !params.editing && (['Enter', 'F2', 'Backspace', 'Delete'].includes(params.event.key) || params.event.key.length === 1);
-      } },
+    { headerName: '', colId: 'noteToggle', pinned: 'right', lockPinned: true, width: 56, minWidth: 56, maxWidth: 56, resizable: false,
+      suppressKeyboardEvent: cellControlKeyboard, cellStyle: params => ({ height: mainRowHeight(params.data?.id), paddingLeft: 0, paddingRight: 4 }),
+      cellRenderer: SegmentRowActions,
+      cellRendererParams: { ...rowControls, suppressMouseEventHandling: cellControlMouse, expandedId: expandedNote, toggleNote,
+        open: (id: string, trigger: HTMLButtonElement) => segmentDetail.navigate({ id }, focusReturns.capture(trigger)) } },
   ];
   const searchStatus = !query ? '输入文案查找' : !matchedIds.length ? '无匹配片段' : activeMatch ? `第 ${matchedIds.indexOf(activeMatch) + 1} / ${matchedIds.length} 个匹配片段` : `${matchedIds.length} 个匹配片段，点击下一个定位`;
-  return <main className="relative mx-auto flex h-dvh min-w-0 max-w-[1600px] flex-col gap-2 px-4 py-3 max-[600px]:p-2">
-    <header className={`flex h-8 min-h-8 flex-none flex-nowrap items-center justify-between max-[600px]:gap-1 ${searchOpen ? 'gap-1' : 'gap-3'}`}>
+  return <main className="relative mx-auto flex h-dvh min-w-0 max-w-[1600px] flex-col gap-1 px-4 py-3 pb-2 max-[600px]:p-2">
+    <header className={`mb-1 flex h-8 min-h-8 flex-none flex-nowrap items-center justify-between max-[600px]:gap-1 ${searchOpen ? 'gap-1' : 'gap-3'}`}>
       <h1 className="m-0 flex-none text-[22px] max-[600px]:text-[18px] leading-normal font-semibold">口播片段</h1>
       {searchOpen && <section id="segment-search" className="search-popover absolute right-4 top-12 z-30 flex min-h-10 w-[560px] max-w-[calc(100%-32px)] items-center gap-1 rounded-lg border border-solid border-input bg-background p-2 shadow-lg" role="dialog" aria-modal="false" aria-label="查找口播片段">
         <label className="min-w-[72px] flex-1"><Input className="h-6 px-1.5 py-0.5 text-[12px] md:text-[12px]" ref={searchInput} aria-label="查找文案" placeholder="查找文案" value={query}
@@ -602,8 +596,9 @@ export function App() {
       event.preventDefault();
       grid.current?.deselectAll();
     }}>{drag.indicator}<AgGridProvider modules={[AllCommunityModule]}><AgGridReact
-      animateRows={!searchOpen}
+      animateRows={false}
       readOnlyEdit stopEditingWhenCellsLoseFocus suppressClickEdit popupParent={document.body}
+      selectionColumnDef={{ width: 34, minWidth: 34, maxWidth: 34, cellStyle: params => ({ height: mainRowHeight(params.data?.id) }) }}
       rowSelection={{ mode: 'multiRow', selectAll: 'all', enableClickSelection: true }}
       onSelectionChanged={event => synchronizeSelection(event.api.getSelectedRows().map(segment => segment.id))}
       onGridReady={event => { grid.current = event.api; }}
@@ -612,21 +607,25 @@ export function App() {
         setDisplayOrder(previous => previous.join('\0') === ids.join('\0') ? previous : ids);
         if (currentMatch) { const index = event.api.getRowNode(currentMatch)?.rowIndex; if (index != null) searchAnchor.current = index; }
       }}
-      getRowHeight={params => params.data?.id === searchLayout.current.activeMatch ? searchLayout.current.rowHeight : 80}
-      onCellClicked={event => { if ((event.colDef.field === 'text' || event.colDef.field === 'visualNote') && event.data && !(event.event?.target as HTMLElement)?.closest('textarea')) { segmentDetail.navigate({ id: event.data.id, inline: true, field: event.colDef.field as 'text' | 'visualNote' }); } }}
+      getRowHeight={params => mainRowHeight(params.data?.id) + (params.data?.id === searchLayout.current.expandedNote ? searchLayout.current.noteHeight : 0)}
+      onCellClicked={event => { if ((event.colDef.field === 'text' || event.colDef.field === 'visualNote') && event.data && !(event.event?.target as HTMLElement)?.closest('textarea, button, [data-segment-support]')) { segmentDetail.navigate({ id: event.data.id, inline: true, field: event.colDef.field as 'text' | 'visualNote' }); } }}
       onCellKeyDown={event => {
+        if ((event.event?.target as HTMLElement)?.closest('button')) return;
         const key = (event.event as KeyboardEvent).key;
         if ('colDef' in event && (event.colDef.field === 'text' || event.colDef.field === 'visualNote') && event.data && !editing.getState().editing && (['Enter', 'F2'].includes(key) || key.length === 1)) segmentDetail.navigate({ id: event.data.id, inline: true, field: event.colDef.field as 'text' | 'visualNote' });
       }}
       getRowId={params => params.data.id}
       onCellEditingStopped={() => editing.finishCell()}
       onCellEditRequest={event => { const field = event.colDef.field; if (field === 'text' || field === 'visualNote') void save({ id: event.data.id, [field]: String(event.newValue ?? '') }); }}
-      rowClass="group/segment" suppressRowHoverHighlight theme={theme} loading={!status && !error} columnDefs={columns} rowData={reorderPreview ?? status?.snapshot.segments ?? []}
-      defaultColDef={{ editable: false, sortable: false, resizable: true }}
+      rowClass="group/segment" rowClassRules={{
+        '[--ag-data-background-color:color-mix(in_srgb,var(--color-focus)_5%,white)]': params => params.data?.id === expandedNote,
+        '[--ag-odd-row-background-color:color-mix(in_srgb,var(--color-focus)_5%,white)]': params => params.data?.id === expandedNote,
+      }} suppressRowHoverHighlight theme={theme} loading={!status && !error} columnDefs={columns} rowData={reorderPreview ?? status?.snapshot.segments ?? []}
+      defaultColDef={{ editable: false, sortable: false, resizable: true, cellStyle: params => ({ height: mainRowHeight(params.data?.id) }) }}
       overlayLoadingTemplate="<span>正在连接本地服务…</span>"
       noRowsOverlayComponent={EmptyProject}
       noRowsOverlayComponentParams={{ message: error ? '暂时无法读取口播片段' : '暂无口播片段' }} /></AgGridProvider>
-      <SegmentRowDetails element={gridElement} segments={reorderPreview ?? status?.snapshot.segments ?? []} onOpen={(id, trigger) => { segmentDetail.navigate({ id }, focusReturns.capture(trigger)); }} />
+      <SegmentRowDetails expandedId={expandedNote} mainHeight={mainRowHeight(expandedNote ?? undefined)} onHeight={setNoteHeight} onCollapse={() => setExpandedNote(null)} element={gridElement} segments={reorderPreview ?? status?.snapshot.segments ?? []} onOpen={(id, trigger) => { segmentDetail.navigate({ id }, focusReturns.capture(trigger)); }} />
     </div>
     </ContextMenuTrigger>
     {rowMenu && <RowMenu onCloseAutoFocus={event => {
@@ -638,8 +637,8 @@ export function App() {
       <ContextMenuItem disabled={disabled || selectedIds.length !== 1} onSelect={() => { void insertRelative('after'); }}>下方添加</ContextMenuItem>
     </RowMenu>}
     </ContextMenu>
-    <div className="flex h-8 shrink-0 items-center justify-center"><Button variant="ghost" size="sm" aria-label="新增口播片段（表格底部）" title="新增口播片段" disabled={disabled} onClick={() => { void addSegment(); }}>＋</Button></div>
-    <footer className="flex-none border-0 border-t border-solid border-input pt-2 text-[12px] text-muted-foreground [&_p]:m-0 [&_p]:wrap-anywhere" aria-label="项目状态">
+    <div className="flex h-4 shrink-0 items-center justify-center"><Button variant="ghost" size="sm" aria-label="新增口播片段（表格底部）" title="新增口播片段" disabled={disabled} onClick={() => { void addSegment(); }}>＋</Button></div>
+    <footer className="flex-none border-0 border-t border-solid border-input pt-1 text-[12px] text-muted-foreground [&_p]:m-0 [&_p]:wrap-anywhere" aria-label="项目状态">
       <div className="flex min-w-0 flex-nowrap items-center gap-1.5" role="status">
         <span className="flex-none">{error ? '服务连接失败' : status ? '本地服务已连接' : '正在连接本地服务…'}</span>
         <span data-save-status className={`flex-none ${saveState === 'failed' ? 'text-destructive' : ''}`}>{saveState === 'saving' ? '保存中…' : saveState === 'failed' ? '保存失败' : status ? '已保存' : '等待读取项目'}</span>

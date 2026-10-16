@@ -16,7 +16,7 @@ const input = request => action(() => window.browserInput(request));
 (async () => { try {
   state.status.snapshot.segments = ['a','b','c','d'].map((id, index) => ({ id, order: index + 1, text: id, visualNote: '', video: null }));
   await action(() => createRoot(document.getElementById('root')).render(<App />));
-  await input({ click: '[row-id="b"] [col-id="text"]', button: 'right' });
+  await input({ click: '[row-id="b"] [data-segment-script]', button: 'right' });
   state.batchGate = deferred(); state.batchFailure = true; const gate = state.batchGate;
   await input({ click: '[role="menuitem"]:nth-child(2)' });
   check(state.batchRequests.length === 1 && !document.activeElement.closest('[row-id]'), '添加交接不产生菜单到表格的中间恢复');
@@ -68,7 +68,7 @@ const input = request => action(() => window.browserInput(request));
 (async () => { try {
   state.status.snapshot.segments = ['a','b','c'].map((id, index) => ({ id, order: index + 1, text: id, visualNote: '', video: null }));
   await action(() => createRoot(document.getElementById('root')).render(<App />));
-  await input({ click: '[row-id="b"] [col-id="text"]', button: 'right' });
+  await input({ click: '[row-id="b"] [data-segment-script]', button: 'right' });
   state.saveGate = deferred(); const gate = state.saveGate;
   await input({ click: '[role="menuitem"]:nth-child(3)' });
   const oldLease = state.leases[0];
@@ -77,7 +77,7 @@ const input = request => action(() => window.browserInput(request));
   await action(() => window.dispatchEvent(new Event('pageshow')));
   check(document.querySelector('[row-id="new-0"]'), '重新读取仍接收服务端已经合法完成的新增');
   await new Promise(resolve => setTimeout(resolve, 350));
-  await input({ click: '[row-id="c"] [col-id="text"]' });
+  await input({ click: '[row-id="c"] [data-segment-script]' });
   const editor = document.querySelector('[aria-label="文案全文"]');
   check(editor?.closest('[row-id]')?.getAttribute('row-id') === 'c', '重新进入另一片段的真实编辑器：' + JSON.stringify({active:document.activeElement.outerHTML.slice(0,300),editor:editor?.outerHTML.slice(0,200),leases:state.leases.length,current:state.current?.token,errors:document.querySelector('[aria-label="操作异常"]')?.textContent}));
   await input({ key: 'Y' }); const newLease = state.current;
@@ -103,7 +103,7 @@ const input = request => action(() => window.browserInput(request));
 (async () => { try {
   state.status.snapshot.segments = ['a','b','c'].map((id, index) => ({ id, order: index + 1, text: id, visualNote: '', video: null }));
   await action(() => createRoot(document.getElementById('root')).render(<App />));
-  await input({ click: '[row-id="b"] [col-id="text"]', button: 'right' });
+  await input({ click: '[row-id="b"] [data-segment-script]', button: 'right' });
   // 菜单展示后服务端才出现锁，尚未轮询；必须由真实修改权请求拒绝。
   if ('${kind}' === 'task') state.status.taskLocked = true;
   if ('${kind}' === 'speech') state.speech = { locked: true, voice: { speaker: 'test', speechRate: 0 }, configured: false, operations: [], tasks: [], audio: [] };
