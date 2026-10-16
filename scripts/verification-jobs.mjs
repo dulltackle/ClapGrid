@@ -235,4 +235,3 @@ export async function waitVerification(directory, options = {}) {
     await setTimeout(options.pollMs ?? 500);
   }
 }
-
