@@ -52,7 +52,13 @@ try {
     const current = await runtime(pkg, 'workspace-status', true);
     if (current.state !== 'offline') before = current;
   }
-  if (before?.taskLocked || before?.modification) throw Error('项目有运行任务或正在编辑；等待结束后重新执行更新，不中断任务');
+  const fastPanel = before?.buildIdentity?.schemaVersion === 2 && identity.schemaVersion === 2 && before.buildIdentity.protocolVersion === 1 && identity.protocolVersion === 1 && before.buildIdentity.runtimeFingerprint === identity.runtimeFingerprint;
+  report.mode = fastPanel ? 'panel' : 'full';
+  if (before?.taskLocked || before?.modification) {
+    if (!fastPanel) throw Error('项目有运行任务或正在编辑；等待结束后重新执行更新，不中断任务');
+    report = { ...report, installed: 'unchanged', service: 'kept', host: 'kept', panel: 'pending', reason: '等待项目任务和编辑结束后重试', complete: false };
+    throw Object.assign(Error('面板更新待应用'), { pending: true });
+  }
   const backupRoot = resolve(v['backup-root'] || join(stateDir, 'updates'));
   for (const directory of [source, pkg, cache, join(resolve(v.workspace), 'clapgrid')]) {
     const within = relative(directory, backupRoot);
@@ -76,10 +82,10 @@ try {
   await cp(pkg, staged, { recursive: true });
   if ((await readPluginIdentity(staged)).contentFingerprint !== identity.contentFingerprint) throw Error('暂存安装包校验失败');
   const install = () => run(v.installer || 'codex', ['plugin', 'add', `clapgrid@${catalog.name}`, '--json']);
-  let moved = false, switched = false, stopped = false;
+  let moved = false, switched = false, stopped = false, panelApplied = false;
   try {
     // 停止操作本身再次核对任务；确认离线后才替换安装源。
-    if (before) {
+    if (before && !fastPanel) {
       const stop = await runtime(pkg, 'workspace-stop');
       if (stop.outcome !== 'stopping') throw Error('服务仍有运行任务或编辑，更新未执行');
       for (let i = 0; i < 100; i++) {
@@ -94,8 +100,31 @@ try {
     await install();
     if ((await readPluginIdentity(destination)).contentFingerprint !== identity.contentFingerprint) throw Error('安装缓存与目标构建不一致');
     report.installed = 'verified'; report.identity = identity; report.installedPath = destination;
-    await writeFile(targetFile + '.tmp', JSON.stringify({ schemaVersion: 1, identity, ...(v.revision ? { sourceRepository: await realpath('.') } : {}), installedPath: destination, workspace: v.workspace, observedAt: new Date().toISOString() }, null, 2));
+    await writeFile(targetFile + '.tmp', JSON.stringify({ schemaVersion: 2, identity, installedTarget: identity, loadedRuntime: fastPanel ? before.buildIdentity : null, activePanel: fastPanel ? before.activePanelIdentity : null, ...(v.revision ? { sourceRepository: await realpath('.') } : {}), installedPath: destination, workspace: v.workspace, observedAt: new Date().toISOString() }, null, 2));
     await rename(targetFile + '.tmp', targetFile);
+    if (fastPanel) {
+      // 服务读取校验后的不可变副本；构建目录和市场目录后续可替换，不影响已发布快照。
+      const releaseRoot = join(stateDir, 'panel-releases', identity.contentFingerprint.slice(7));
+      if (!await exists(releaseRoot)) {
+        const preparing = releaseRoot + '.staged-' + randomUUID();
+        await mkdir(join(stateDir, 'panel-releases'), { recursive: true });
+        await cp(destination, preparing, { recursive: true });
+        if ((await readPluginIdentity(preparing)).contentFingerprint !== identity.contentFingerprint) throw Error('面板发布副本校验失败');
+        await rename(preparing, releaseRoot);
+      }
+      if ((await readPluginIdentity(releaseRoot)).contentFingerprint !== identity.contentFingerprint) throw Error('已存在的面板发布副本无效');
+      const response = await fetch(`${before.url}/api/panel-release`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageDirectory: releaseRoot, instanceId: before.instanceId, expectedPanelFingerprint: before.activePanelIdentity?.panelFingerprint }),
+        redirect: 'error', signal: AbortSignal.timeout(30000) });
+      const applied = await response.json();
+      if (!response.ok) throw Error(applied.error || '面板更新未确认');
+      panelApplied = applied.outcome === 'applied';
+      report.host = 'kept'; report.service = 'kept'; report.panel = applied.outcome; report.instanceId = before.instanceId; report.url = before.url;
+      report.nextStep = applied.outcome === 'pending' ? '等待项目和所有面板空闲后重试；当前页面和任务保持。' : '在实际面板确认刷新并重新采集宿主、服务和面板证据；无需重载 MCP。';
+      const receipt = JSON.parse(await readFile(targetFile, 'utf8')); receipt.activePanel = applied.activePanelIdentity;
+      await writeFile(targetFile + '.tmp', JSON.stringify(receipt, null, 2)); await rename(targetFile + '.tmp', targetFile);
+      await rm(saved, { recursive: true });
+    } else {
     const opened = await runtime(destination, 'open');
     const status = await runtime(destination, 'workspace-status');
     const remote = await (await fetch(new URL('/api/identity', status.url), { redirect: 'error', signal: AbortSignal.timeout(3000) })).json();
@@ -104,18 +133,24 @@ try {
     report.service = 'verified'; report.instanceId = status.instanceId; report.url = status.url;
     report.nextStep = '重新加载宿主插件，并实际调用 clapgrid_host_context、clapgrid_status 和打开面板核对；安装成功不等于宿主已重载。';
     await rm(saved, { recursive: true });
+    }
   } catch (error) {
     report.error = error.message; report.installed = 'failed';
     // 新服务可能已经启动：先正常停机，无法确认时保留全部备份而不覆盖现场。
     try {
-      if (switched) {
+      if (fastPanel && panelApplied) {
+        const revert = await fetch(`${before.url}/api/panel-release`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rollbackFingerprint: before.activePanelIdentity.panelFingerprint, instanceId: before.instanceId, expectedPanelFingerprint: identity.panelFingerprint }), redirect: 'error', signal: AbortSignal.timeout(10000) });
+        const result = await revert.json(); if (!revert.ok || result.outcome !== 'applied') throw Error('面板回滚尚未确认；保留发布资源与恢复目录');
+      }
+      if (switched && !fastPanel) {
         try { const s = await runtime(destination, 'workspace-status');
           const stoppedNew = await runtime(destination, 'workspace-stop');
           if (stoppedNew.outcome !== 'stopping') throw Error('新服务仍忙');
           for (let i = 0; i < 100; i++) { try { await fetch(new URL('/api/identity', s.url), { signal: AbortSignal.timeout(500) }); } catch (e) { if (e.cause?.code === 'ECONNREFUSED') break; } await delay(100); if (i === 99) throw Error('新服务未离线'); }
         } catch (e) { if (!String(e.message).includes('服务身份已改变') && !String(e.message).includes('尚未打开') && !String(e.message).includes('Cannot find module')) throw e; }
-        await rename(source, join(backup, 'failed-source'));
       }
+      if (switched) await rename(source, join(backup, 'failed-source'));
       if (moved) await rename(saved, source);
       if (oldTarget) await writeFile(targetFile, oldTarget); else await rm(targetFile, { force: true });
       if (switched) { await install(); if (await pluginFingerprint(previousInstalled, { raw: true }) !== oldDigest) throw Error('旧安装缓存恢复校验失败'); }
@@ -127,5 +162,6 @@ try {
   await writeFile(join(backup, 'result.json'), JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
 } catch (error) {
-  console.error(JSON.stringify({ ...report, error: error.message })); process.exitCode = 1;
+  if (error.pending) console.log(JSON.stringify(report, null, 2));
+  else { console.error(JSON.stringify({ ...report, error: error.message })); process.exitCode = 1; }
 } finally { if (lock) await rm(lock, { recursive: true }); }

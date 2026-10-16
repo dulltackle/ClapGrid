@@ -5,22 +5,25 @@ import { readPluginIdentity } from './plugin-identity.mjs';
 const unknown = (reason) => ({ status: 'unknown', reason });
 const unreachable = (reason) => ({ status: 'unreachable', reason });
 function identity(value) {
-  if (value?.schemaVersion !== 1 || value.state !== 'known'
+  if (![1, 2].includes(value?.schemaVersion) || value.state !== 'known'
     || typeof value.contentFingerprint !== 'string' || !/^sha256:[a-f0-9]{64}$/.test(value.contentFingerprint)
     || !['clean', 'dirty', 'unknown'].includes(value.source?.state)
     || !(value.source.commit === null || (typeof value.source.commit === 'string' && /^[a-f0-9]{40,64}$/.test(value.source.commit)))) return null;
   // 仅输出用于判定的定型字段，不转发接口中的路径、令牌或任意元数据。
-  return { contentFingerprint: value.contentFingerprint,
+  return { schemaVersion: value.schemaVersion, contentFingerprint: value.contentFingerprint,
+    ...(value.schemaVersion === 2 ? { runtimeFingerprint: value.runtimeFingerprint, panelFingerprint: value.panelFingerprint, protocolVersion: value.protocolVersion } : {}),
     source: { commit: value.source.commit, state: value.source.state } };
 }
-function compare(value, reference) {
+function compare(value, reference, role = 'package') {
   const current = identity(value);
   if (!current) return unknown('缺少有效内容指纹');
   const base = identity(reference);
   if (!base) return { ...unknown('构建基准未知，无法比较'), identity: current };
-  const match = current.contentFingerprint === base.contentFingerprint;
+  const field = role !== 'package' && current.schemaVersion === 2 && base.schemaVersion === 2 ? role === 'panel' ? 'panelFingerprint' : 'runtimeFingerprint' : 'contentFingerprint';
+  const partitioned = field !== 'contentFingerprint';
+  const match = typeof current[field] === 'string' && current[field] === base[field] && (!partitioned || current.protocolVersion === 1 && base.protocolVersion === 1);
   return { status: match ? 'match' : 'mismatch', identity: current,
-    comparedFields: ['contentFingerprint'], referenceFingerprint: base.contentFingerprint,
+    comparedFields: partitioned ? [field, 'protocolVersion'] : [field], referenceFingerprint: base[field],
     reason: match ? '内容指纹一致' : '内容指纹不同' };
 }
 async function mcpEvidence(path, reference, expectedSource = 'actual-host') {
@@ -36,10 +39,10 @@ async function mcpEvidence(path, reference, expectedSource = 'actual-host') {
     if (ageSeconds < 0 || ageSeconds > 300) return { ...unknown('证据过期或来自未来，请重新调用宿主诊断'), ...provenance };
     if (evidence.status === 'unreachable') return { ...unreachable('留存证据记录宿主入口不可达'), ...provenance };
     if (evidence.status !== 'reachable') return { ...unknown('证据调用状态无效'), ...provenance };
-    return { ...compare(evidence.response?.buildIdentity, reference), ...provenance,
+    return { ...compare(evidence.response?.buildIdentity, reference, expectedSource === 'actual-browser' ? 'panel' : 'runtime'), ...provenance,
       instanceId: expectedSource === 'actual-browser' ? evidence.response?.instanceId : evidence.serviceStatus?.instanceId,
       workspace: evidence.response?.workspace,
-      serviceVerified: expectedSource === 'actual-browser' || compare(evidence.serviceStatus?.buildIdentity, reference).status === 'match' };
+      serviceVerified: expectedSource === 'actual-browser' || compare(evidence.serviceStatus?.buildIdentity, reference, 'runtime').status === 'match' };
   } catch { return unknown('证据文件不可读取或格式无效'); }
 }
 async function serviceIdentity(address, workspace, reference) {
@@ -58,7 +61,7 @@ async function serviceIdentity(address, workspace, reference) {
     if (!response.ok) return unreachable('现存服务身份接口未成功响应');
     const value = await response.json();
     if (value.application !== 'clapgrid' || value.workspace !== expected) return unknown('服务应用或工作空间归属不符；不会切换工作空间');
-    return { ...compare(value.buildIdentity, reference), instanceId: value.instanceId, workspace: expected, source: 'existing-service', observedAt: new Date().toISOString() };
+    return { ...compare(value.buildIdentity, reference, 'runtime'), panelStatus: compare(value.activePanelIdentity ?? value.buildIdentity, reference, 'panel').status, instanceId: value.instanceId, workspace: expected, source: 'existing-service', observedAt: new Date().toISOString() };
   } catch { return unreachable('现存服务身份接口不可达或响应无效'); }
 }
 try {
@@ -73,7 +76,7 @@ try {
   const service = await serviceIdentity(values['service-url'], values.workspace, build);
   const panel = await mcpEvidence(values['panel-evidence'], build, 'actual-browser');
   const complete = [installed, mcp, service, panel].every(item => item.status === 'match')
-    && mcp.source === 'actual-host' && panel.source === 'actual-browser' && mcp.serviceVerified
+    && service.panelStatus === 'match' && mcp.source === 'actual-host' && panel.source === 'actual-browser' && mcp.serviceVerified
     && mcp.instanceId === service.instanceId && panel.instanceId === service.instanceId
     && mcp.workspace === service.workspace && panel.workspace === service.workspace;
   const nextSteps = [];

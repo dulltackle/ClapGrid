@@ -20,6 +20,7 @@ test('旧包和旧服务升级后保留项目，安装失败恢复旧包，缺�
   mkdirSync(join(source, 'dist/panel'), { recursive: true });
   const build = async (label: string) => {
     writeFileSync(join(source, 'dist/panel/index.html'), `<html>${label}</html>`);
+    writeFileSync(join(source, 'src/runtime.ts'), readFileSync(join(repo, 'src/runtime.ts'), 'utf8') + `\nexport const releaseFixture = ${JSON.stringify(label)};\n`);
     await exec(process.execPath, [join(repo, 'scripts/build-plugin.mjs')], { cwd: source });
     const pkg = join(root, label); cpSync(join(source, 'dist/plugin/clapgrid'), pkg, { recursive: true }); return pkg;
   };

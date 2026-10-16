@@ -103,7 +103,7 @@ export async function modifyUserBatch(baseUrl: string, input: Batch, token: stri
   return { ...body, status: statusSchema.parse(body.status) };
 }
 
-export type TableSession = { tableId: string; select: (ids: string[]) => Promise<void>; close: () => Promise<void>; closed: Promise<void> };
+export type TableSession = { tableId: string; select: (ids: string[]) => Promise<void>; activity?: (busy: boolean) => Promise<void>; close: () => Promise<void>; closed: Promise<void> };
 
 /** 表格连接只保存临时勾选，不占用项目修改权；失联后禁止沿用旧选择。 */
 export async function connectTable(baseUrl: string): Promise<TableSession> {
@@ -130,6 +130,7 @@ export async function connectTable(baseUrl: string): Promise<TableSession> {
     let active = true;
     return {
       tableId, closed,
+      async activity(busy) { await postJson(baseUrl, '/api/panel-activity', { tableId, busy }, undefined, AbortSignal.timeout(3000)); },
       select(ids) {
         const snapshot = [...ids];
         queue = queue.then(async () => {

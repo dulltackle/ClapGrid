@@ -4,25 +4,35 @@ import { spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import type { TestContext } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
-import { build } from 'esbuild';
+import { buildBrowserScript, recordBrowserTimings, type BrowserTimings } from './browser-build.js';
 import { buildPanelStyles } from './panel-styles.js';
 import { chrome } from './browser.js';
 
 /** 真实浏览器按键用于原生焦点导航；业务替身仍只位于 HTTP 客户端边界。 */
-export async function checkInteractiveBrowser(t: TestContext, script: string, fixture: string, width = 1600, height = 1000, options: { colorScheme?: 'light' | 'dark'; reducedMotion?: boolean; resources?: Record<string, { body: Uint8Array; type: string }> } = {}) {
+export async function checkInteractiveBrowser(t: TestContext, script: string, fixture: string, width = 1600, height = 1000, options: { colorScheme?: 'light' | 'dark'; reducedMotion?: boolean; resources?: Record<string, { body: Uint8Array; type: string }>; buildDefine?: Record<string, string> } = {}) {
+  const started = performance.now();
+  const timings: BrowserTimings = { width, height };
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-dialog-'));
-  await build({
-    stdin: { resolveDir: fileURLToPath(new URL('../..', import.meta.url)), loader: 'tsx', contents: script },
-    bundle: true, jsx: 'automatic', format: 'iife', outfile: join(directory, 'test.js'), define: { 'process.env.NODE_ENV': '"development"' },
-    plugins: [{ name: 'http-fixture', setup(builder) {
-      builder.onResolve({ filter: /^(editing-fixture|\.\.\/shared\/client\.js)$/ }, () => ({ path: 'fixture', namespace: 'fixture' }));
-      builder.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: fixture, loader: 'js' }));
-    } }],
+  let browserManaged = false;
+  t.after(() => {
+    if (!browserManaged) {
+      const cleanupStarted = performance.now();
+      rmSync(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+      timings.cleanupMs = performance.now() - cleanupStarted; timings.totalMs = performance.now() - started;
+      timings.failedBeforeBrowser = true; recordBrowserTimings(t, timings);
+    }
   });
-  await buildPanelStyles(directory);
+  let stageStarted = performance.now();
+  const bundle = await buildBrowserScript(directory, script, fixture, options.buildDefine);
+  timings.bundleMs = performance.now() - stageStarted; timings.bundleCacheHit = bundle.cacheHit;
+  timings.bundleIdentity = bundle.identity;
+  stageStarted = performance.now();
+  const styles = await buildPanelStyles(directory);
+  timings.stylesMs = performance.now() - stageStarted; timings.stylesCacheHit = styles.cacheHit;
+  timings.stylesIdentity = styles.identity;
   writeFileSync(join(directory, 'index.html'), '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="test.css"><div id="root"></div><pre id="result" data-state="pending"></pre><script src="test.js"></script></html>');
   let pageUrl = pathToFileURL(join(directory, 'index.html')).href;
   if (options.resources) {
@@ -46,15 +56,20 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
     t.after(() => { server.closeAllConnections(); server.close(); });
   }
   // 旧版 Chrome 的滚轮命中仍受实际窗口边界限制，需与模拟视口同时设置。
+  stageStarted = performance.now();
   const browser = spawn(chrome!, ['--headless', `--window-size=${width},${height}`, '--no-sandbox', '--disable-dev-shm-usage', '--remote-debugging-port=0', `--user-data-dir=${join(directory, 'profile')}`, 'about:blank'], { stdio: 'ignore' });
   let socket: WebSocket | undefined;
   const exited = new Promise(resolve => browser.once('exit', resolve));
+  browserManaged = true;
   t.after(async () => {
+    const cleanupStarted = performance.now();
     if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ id: 999999, method: 'Browser.close' }));
     else browser.kill();
     await exited; socket?.close();
     await delay(100);
     rmSync(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    timings.cleanupMs = performance.now() - cleanupStarted; timings.totalMs = performance.now() - started;
+    recordBrowserTimings(t, timings);
   });
   let port = '';
   for (let attempt = 0; attempt < 100 && !port; attempt++) {
@@ -65,6 +80,7 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
   const pages = await (await fetch(`http://127.0.0.1:${port}/json`)).json() as { type: string; webSocketDebuggerUrl: string }[];
   socket = new WebSocket(pages.find(page => page.type === 'page')!.webSocketDebuggerUrl);
   await new Promise(resolve => socket!.addEventListener('open', resolve, { once: true }));
+  timings.chromeStartupMs = performance.now() - stageStarted; stageStarted = performance.now();
   let id = 0;
   const pending = new Map<number, { resolve: (value: any) => void; reject: (error: Error) => void }>();
   const send = (method: string, params: object = {}): Promise<any> => new Promise((resolve, reject) => {
@@ -132,5 +148,6 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
     await delay(50);
   }
   if (!result) { const page = await send('Runtime.evaluate', { expression: 'document.documentElement.outerHTML', returnByValue: true }); result = page.result.value; }
+  timings.interactionMs = performance.now() - stageStarted;
   assert.match(result ?? '浏览器未返回结果', /data-state="passed"/, result);
 }

@@ -1,4 +1,4 @@
-import { buildIdentity } from './build-identity.js';
+import { buildIdentity, compatibleRuntime } from './build-identity.js';
 import { verifyLoadedPlugin } from './plugin-release.js';
 import { hostThreadId, readHostWorkspace } from './host-workspace.js';
 import { bindWorkspace, workspaceProject, WorkspaceOfflineError } from './workspace-service.js';
@@ -17,7 +17,7 @@ export async function preparePanel(meta: Record<string, unknown> | undefined) {
   }
   const status = await queryStatus(url);
   if (buildIdentity.state !== 'known' || status.buildIdentity?.state !== 'known'
-    || status.buildIdentity.contentFingerprint !== buildIdentity.contentFingerprint) {
+    || !compatibleRuntime(status.buildIdentity, buildIdentity)) {
     throw new Error('服务版本与插件不一致或版本未知，请执行插件更新诊断。');
   }
   if (status.snapshot.project.directory !== project) throw new Error('项目目录与当前工作空间不符，请关闭重开。');

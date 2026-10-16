@@ -52,6 +52,7 @@ export const snapshotSchema = z.object({
 });
 export const statusSchema = z.object({
   buildIdentity: buildIdentitySchema.optional(),
+  activePanelIdentity: buildIdentitySchema.optional(),
   idleStopSupported: z.boolean().optional(),
   application: z.literal('clapgrid'),
   apiVersion: z.literal(1),
