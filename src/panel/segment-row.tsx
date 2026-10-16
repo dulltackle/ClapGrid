@@ -42,7 +42,7 @@ export function SegmentRowActions({ data, expandedId, toggleNote, open, speech, 
   const expanded = expandedId === data.id;
   return <div className="flex h-full flex-col pb-1">
     <div className="flex min-h-0 flex-1 items-center justify-end border-0 border-b border-solid border-input/60">
-      <Button variant="ghost" size="xs" className="size-5 shrink-0 rounded-md p-0 text-foreground opacity-0 group-[:hover]/segment:opacity-100 focus-visible:opacity-100" data-row-details aria-label={`查看片段 ${data.order} 的详情`} title="片段详情" onClick={event => open(data.id, event.currentTarget)}><InfoCircledIcon aria-hidden /></Button>
+      <Button variant="ghost" size="xs" className="size-6 shrink-0 rounded-md p-0 text-foreground opacity-0 group-[:hover]/segment:opacity-100 focus-visible:opacity-100" data-row-details aria-label={`查看片段 ${data.order} 的详情`} title="片段详情" onClick={event => open(data.id, event.currentTarget)}><InfoCircledIcon aria-hidden /></Button>
       <Button variant="ghost" size="xs" className="size-6 shrink-0 rounded-md p-0" data-note-toggle aria-label={`${expanded ? '收起' : '展开'}片段 ${data.order} 的画面说明`} aria-expanded={expanded} aria-controls={expanded ? `segment-note-${data.id}` : undefined} onClick={() => toggleNote(data.id)}>{expanded ? <ChevronUpIcon aria-hidden className="size-4" /> : <ChevronDownIcon aria-hidden className="size-4" />}</Button>
     </div>
     <div className="flex h-[54px] shrink-0 items-center justify-end"><SegmentSpeechMenu segment={data} speech={speech} disabled={disabled} generate={() => generate(data.id)} history={trigger => history(data.id, trigger)} /></div>
