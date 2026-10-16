@@ -8,6 +8,7 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './src/panel/app.tsx';
 import { state } from 'editing-fixture';
+import { rowScrollDistance, waitForPanel } from './tests/helpers/panel-targets.ts';
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const intervals = new Map(); let timer = 0;
 window.setInterval = callback => { intervals.set(++timer, callback); return timer; };
@@ -25,8 +26,8 @@ await input({pointer:{selector:'[row-id="1"] [aria-label^="拖动片段 "]',type
 await pointer('5','mouseMoved',0.8);
 const r=document.querySelector('[row-id="5"] [col-id="order"]').getBoundingClientRect();
 const x=r.x+r.width/2,y=r.y+r.height*.8;
-await input({pointer:{x,y,type:'mouseWheel',buttons:1,deltaY:r.height*40}});
-await action(()=>new Promise(r=>setTimeout(r,400)));
+await input({pointer:{x,y,type:'mouseWheel',buttons:1,deltaY:rowScrollDistance(document.querySelector('[row-id="5"]'),40)}});
+await waitForPanel(()=>Number(document.elementFromPoint(x,y)?.closest('[row-id]')?.getAttribute('row-id'))>30, '滚轮后的目标行进入指针位置');
 const target=document.elementFromPoint(x,y).closest('[row-id]').getAttribute('row-id');
 check(Number(target)>30,'滚轮后新目标存在');
 check(document.querySelector('[aria-label="口播片段插入位置"]')?.dataset.targetId===target,'滚轮后静止指针的插入线更新到当前目标');

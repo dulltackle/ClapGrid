@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import { test, type TestContext } from 'node:test';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const { checkUi } = await import(new URL('../scripts/check-ui.mjs', import.meta.url).href);
 const { extendedTests } = await import(new URL('../scripts/ui-check-plan.mjs', import.meta.url).href);
+const { runCheck } = await import(new URL('../scripts/check-runner.mjs', import.meta.url).href);
 
 function repository(t: TestContext, typecheck = 'process.exit(0)') {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-ui-check-')); t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -68,4 +69,33 @@ test('退出零但核心用例被标为 todo 不能获得通过证据', async t 
   assert.equal(result.results.at(-1).exitCode, 0);
   assert.equal(result.results.at(-1).status, 'failed');
   assert.deepEqual(result.results.map((stage: { name: string }) => stage.name), ['typecheck', 'ui-tests']);
+});
+
+test('UI快检占用统一生命周期，取消后不进入测试和构建', async t => {
+  const root = repository(t, 'require("node:fs").mkdirSync("logs",{recursive:true});require("node:fs").writeFileSync("logs/started","yes");setInterval(()=>{},1000)');
+  const controller = new AbortController();
+  const pending = checkUi(root, { signal: controller.signal });
+  try {
+    const deadline = Date.now() + 5000;
+    while (!existsSync(join(root, 'logs/started')) && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 20));
+    assert.ok(existsSync(join(root, 'logs/started')));
+    await assert.rejects(runCheck(root), /已有检查/);
+  } finally { controller.abort(); }
+  const result = await pending;
+  assert.equal(result.status, 'cancelled'); assert.equal(result.completeForLocalUi, false);
+  assert.deepEqual(result.results.map((stage: any) => stage.name), ['typecheck']);
+  assert.equal(existsSync(join(root, 'logs/check-state/active')), false);
+});
+
+test('UI失败保留结构化完整失败清单供后续集中复验', async t => {
+  const root = repository(t);
+  writeFileSync(join(root, 'tests/table-controls-panel.test.ts'), 'import{test}from"node:test";test("点击范围失败",()=>{throw Error("fixture failure")});');
+  const result = await checkUi(root);
+  assert.equal(result.status, 'failed');
+  const manifest = JSON.parse(readFileSync(join(root, 'logs/check-state/failures.json'), 'utf8'));
+  assert.deepEqual(manifest.stages, ['test']);
+  assert.ok(manifest.failures.some((failure: any) => failure.name === '点击范围失败' && failure.file === 'tests/table-controls-panel.test.ts'));
+  const report = JSON.parse(readFileSync(join(result.directory, 'ui-tests.json'), 'utf8'));
+  assert.equal(report.complete, true);
+  assert.equal(report.failures.length, 1);
 });

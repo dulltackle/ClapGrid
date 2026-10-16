@@ -1,17 +1,13 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
-import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readlinkSync, readdirSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readlinkSync, readdirSync, realpathSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { release } from 'node:os';
 import { setTimeout } from 'node:timers/promises';
 import { git, sameSource, sourceIdentity } from './check-source.mjs';
-
-export function atomicJson(path, value) {
-  const temporary = `${path}.${process.pid}.${randomUUID()}.tmp`;
-  writeFileSync(temporary, JSON.stringify(value, null, 2) + '\n');
-  renameSync(temporary, path);
-}
+import { atomicJson, reserveCheckRun, releaseCheckReservation, currentCheckRun, checkRunProcessesEnded, stopCheckRun, stateDirectory } from './check-lifecycle.mjs';
+export { atomicJson } from './check-lifecycle.mjs';
 
 function toolIdentity(commands, args = ['--version']) {
   for (const command of commands.filter(Boolean)) {
@@ -105,7 +101,7 @@ export function verificationStatus(directory) {
     if (alive === false) {
       if (summary.phase === 'starting' && !worker) summary.observation = '启动器已退出，后台任务身份尚未确认；保留登记，不自动重启';
       else if (Date.now() - Date.parse(summary.heartbeatAt ?? summary.startedAt) <= 30000) summary.observation = '心跳仍新鲜，拥有者暂不可观测；保留登记，不自动重启';
-      else if (ownedProcessesEnded(worker ?? summary.owner)) {
+      else if ((summary.lifecycleRoot ? checkRunProcessesEnded(summary.lifecycleRoot, summary.token, summary.directory) : ownedProcessesEnded(worker ?? summary.owner)) === true) {
         summary.status = 'interrupted'; summary.completedAt = new Date().toISOString();
         summary.error = '验收拥有者已退出；原日志保留，本次不自动重试';
       } else summary.observation = '拥有者已退出，子进程结束尚未确认；保留登记，不自动重启';
@@ -127,9 +123,23 @@ function reusableEvidence(summary) {
     if (!['install.log', 'check.log'].every(name => existsSync(join(summary.directory, name)))) return false;
     const check = read(summary.checkSummary);
     const current = sourceIdentity(summary.checkout);
+    const preflight = check.preflight;
+    const pkg = read(join(summary.checkout, 'package.json'));
+    const expectedPreflight = pkg.checkPreflight ?? ['typecheck'];
+    const evidenceComplete = result => {
+      if (!result.log || !existsSync(result.log)) return false;
+      if (result.name.startsWith('test') && pkg.scripts?.[result.name]?.includes('scripts/test-runner.mjs') && !result.testReport) return false;
+      if (!result.testReport) return true;
+      const report = read(result.testReport); return report.complete && report.failures?.length === 0;
+    };
     return !current.dirty && check.status === 'passed' && check.pending?.length === 0 && check.results?.length === 3
+      && preflight?.status === 'passed' && sameSource(summary.source, preflight.source) && sameSource(summary.source, preflight.sourceAfter)
+      && preflight.pending?.length === 0 && preflight.results?.length === expectedPreflight.length
+      && expectedPreflight.every(name => preflight.results.some(result => result.name === name && result.status === 'passed' && result.exitCode === 0))
+      && Array.isArray(check.failures) && check.failures.length === 0
       && ['typecheck', 'test', 'build'].every(name => check.results.some(result => result.name === name && result.status === 'passed' && result.exitCode === 0)
         && existsSync(join(summary.checkout, 'logs/check', summary.checkSummary.split(/[\\/]/).at(-2), `${name}.log`)))
+      && [...preflight.results, ...check.results].every(evidenceComplete)
       && sameSource(summary.source, check.source) && sameSource(summary.source, check.sourceAfter)
       && sameSource(summary.source, summary.sourceAfter) && sameSource(summary.source, current);
   } catch { return false; }
@@ -140,52 +150,50 @@ export async function startVerification(root, revision, outputRoot = join(root, 
   root = realpathSync(root); outputRoot = resolve(outputRoot);
   const commit = git(root, ['rev-parse', '--verify', '--end-of-options', `${revision}^{commit}`]);
   const runner = createHash('sha256');
-  for (const name of ['verify.mjs', 'verification-jobs.mjs', 'verification-worker.mjs', 'check-source.mjs', 'check-runner.mjs']) runner.update(readFileSync(fileURLToPath(new URL(name, import.meta.url))));
+  for (const name of ['verify.mjs', 'verification-jobs.mjs', 'verification-worker.mjs', 'check-source.mjs', 'check-runner.mjs', 'check-lifecycle.mjs', 'test-runner.mjs', 'test-reporter.mjs']) runner.update(readFileSync(fileURLToPath(new URL(name, import.meta.url))));
   const identity = { schema: 1, runnerFingerprint: `sha256:${runner.digest('hex')}`, repository: root, commit, tree: git(root, ['rev-parse', `${commit}^{tree}`]), environment: options.environment ?? verificationEnvironment() };
   const key = createHash('sha256').update(JSON.stringify(identity)).digest('hex');
   mkdirSync(outputRoot, { recursive: true });
-  const lock = join(outputRoot, `.active-${key}`);
   for (let attempt = 0; attempt < 100; attempt++) {
-    try { mkdirSync(lock); }
-    catch (error) {
-      if (error.code !== 'EEXIST') throw error;
-      let active;
-      try { active = read(join(lock, 'owner.json')); } catch { await setTimeout(50); continue; }
-      let previous;
-      try { previous = verificationStatus(active.directory); } catch { throw Error(`验收登记记录缺失，保留现场，请人工核对：${lock}`); }
+    const active = currentCheckRun(root);
+    if (active) {
+      if (active.verificationKey !== key) throw Error('已有检查运行或待清理；同一工作树不能启动不同身份的检查，请查询原任务或使用独立工作树');
+      if (!active.verificationDirectory) { await setTimeout(50); continue; }
+      const previous = verificationStatus(active.verificationDirectory);
       if (!terminal(previous.status)) return { ...previous, attached: true, reused: false };
-      // 只有确认任务结束才能清理活跃登记；claim 防止两个回收者同时删除新登记。
-      try { mkdirSync(join(lock, 'claim')); } catch (error) { if (error.code === 'EEXIST' || error.code === 'ENOENT') { await setTimeout(50); continue; } throw error; }
-      let owner;
-      try { owner = read(join(lock, 'owner.json')); } catch { rmSync(join(lock, 'claim'), { recursive: true, force: true }); await setTimeout(50); continue; }
-      if (owner.token !== active.token) { rmSync(join(lock, 'claim'), { recursive: true }); continue; }
-      if (previous.status === 'interrupted') atomicJson(join(active.directory, 'summary.json'), previous);
-      const retired = `${lock}.${randomUUID()}.retired`;
-      renameSync(lock, retired);
-      rmSync(retired, { recursive: true });
+      if (previous.status === 'interrupted') {
+        // 只在已核对全部登记进程组结束后，复用生命周期的清理入口，不直接删锁。
+        await stopCheckRun(root, { token: active.token });
+        atomicJson(join(previous.directory, 'summary.json'), previous);
+      } else await setTimeout(50); // 等待执行者完成最终清理。
       continue;
     }
-    const token = randomUUID();
-    let directory;
+    let reservation, directory, spawned = false;
     try {
+      try { reservation = reserveCheckRun(root, 'verification', { verificationKey: key }); }
+      catch (error) {
+        if (existsSync(join(stateDirectory(root), 'active'))) { await setTimeout(50); continue; }
+        throw error;
+      }
       if (options.reusePassed) {
         const matches = readdirSync(outputRoot).filter(name => name.startsWith('run-')).map(name => {
           try { return read(join(outputRoot, name, 'summary.json')); } catch { return null; }
         }).filter(summary => summary?.key === key && reusableEvidence(summary)).sort((a, b) => b.completedAt.localeCompare(a.completedAt));
-        if (matches[0]) { rmSync(lock, { recursive: true }); return { ...matches[0], reused: true, attached: false }; }
+        if (matches[0]) { releaseCheckReservation(root, reservation.token); return { ...matches[0], reused: true, attached: false }; }
       }
       directory = mkdtempSync(join(outputRoot, 'run-'));
       const now = new Date().toISOString();
-      const summary = { mode: 'verification', runId: directory.split(/[\\/]/).at(-1), token, key, identity, commit, directory, checkout: join(directory, 'source'), startedAt: now, heartbeatAt: now,
+      const summary = { mode: 'verification', runId: directory.split(/[\\/]/).at(-1), token: reservation.token, key, identity, commit, directory, lifecycleRoot: root, checkout: join(directory, 'source'), startedAt: now, heartbeatAt: now,
         owner: processIdentity(), phase: 'starting', status: 'running', results: [] };
       atomicJson(join(directory, 'summary.json'), summary);
-      atomicJson(join(lock, 'owner.json'), { token, directory });
+      atomicJson(join(stateDirectory(root), 'active/owner.json'), { ...reservation, verificationDirectory: directory });
       const log = openSync(join(directory, 'worker.log'), 'a');
       let child;
       const env = { ...process.env };
       delete env.NODE_TEST_CONTEXT;
       try { child = spawn(process.execPath, [fileURLToPath(new URL('./verification-worker.mjs', import.meta.url)), directory], { env, detached: true, stdio: ['ignore', log, log], windowsHide: true }); }
       finally { closeSync(log); }
+      spawned = !!child.pid;
       if (child.pid) atomicJson(join(directory, 'worker-owner.json'), { owner: processIdentity(child.pid) });
       const started = new Promise((resolveStart, reject) => { child.once('spawn', resolveStart); child.once('error', reject); });
       await started;
@@ -193,24 +201,37 @@ export async function startVerification(root, revision, outputRoot = join(root, 
       // worker 发布拥有者前不返回，避免启动者退出后误把新任务判成中断。
       for (let wait = 0; wait < 100; wait++) {
         const running = read(join(directory, 'summary.json'));
-        if (running.owner?.pid === child.pid || terminal(running.status)) return { ...running, attached: false, reused: false };
+        if (running.executionReady && running.owner?.pid === child.pid || terminal(running.status)) return { ...running, attached: false, reused: false };
         if (child.exitCode !== null) throw Error('验收后台任务启动失败，请检查 worker.log');
         await setTimeout(50);
       }
       throw Error(`验收启动未确认，请按 runId 查询；不会自动重启：${summary.runId}`);
     } catch (error) {
       // 已注册任务保留，不能因启动观察超时解除锁并重复执行。
-      if (!directory) rmSync(lock, { recursive: true });
+      if (!spawned && reservation) releaseCheckReservation(root, reservation.token);
+      if (!spawned && directory && existsSync(join(directory, 'summary.json'))) {
+        const summary = read(join(directory, 'summary.json'));
+        atomicJson(join(directory, 'summary.json'), { ...summary, status: 'failed', error: String(error), completedAt: new Date().toISOString() });
+      }
       throw error;
     }
   }
-  throw Error(`验收登记尚未就绪，请保留现场并稍后查询：${lock}`);
+  throw Error('验收登记尚未就绪，请保留现场并稍后查询原任务');
+}
+
+export async function cancelVerification(root, directory) {
+  const summary = verificationStatus(directory);
+  if (terminal(summary.status)) return summary;
+  if (realpathSync(root) !== summary.lifecycleRoot) throw Error('验收工作树不匹配，拒绝取消');
+  await stopCheckRun(root, { token: summary.token });
+  return waitVerification(directory);
 }
 
 export async function waitVerification(directory, options = {}) {
   for (;;) {
     const summary = verificationStatus(directory);
     if (terminal(summary.status)) return summary;
+    if (options.signal?.aborted) return cancelVerification(summary.lifecycleRoot, directory);
     await setTimeout(options.pollMs ?? 500);
   }
 }

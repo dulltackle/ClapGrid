@@ -10,7 +10,13 @@
     "dev": "tsx src/service/main.ts --dev",
     "build": "tsc -p tsconfig.build.json && vite build",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.production.json",
-    "test": "tsx --test --test-concurrency=1 tests/*.test.ts",
+    "test": "node scripts/test-runner.mjs",
+    "test:rows": "node scripts/test-runner.mjs --suite rows",
+    "test:tooling": "node scripts/test-runner.mjs --suite tooling",
+    "test:failed": "node scripts/test-runner.mjs --suite failed",
+    "check:preflight": "node scripts/check.mjs --preflight",
+    "check:failed": "node scripts/check.mjs --failed",
+    "check:stop": "node scripts/check-lifecycle.mjs",
     "start": "node dist/service/main.js",
     "runtime": "node dist/runtime.js",
     "mcp": "node dist/mcp/main.js",
@@ -25,6 +31,7 @@
     "diagnose:identity": "node scripts/diagnose-identity.mjs",
     "production": "node scripts/production.mjs"
   },
+  "checkPreflight": ["typecheck", "test:tooling", "test:rows"],
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.1",
     "@radix-ui/react-icons": "1.3.2",

@@ -10,6 +10,7 @@ test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿�
   import { createRoot } from 'react-dom/client';
   import { App } from './src/panel/app.tsx';
   import { assertTheme } from './tests/helpers/theme-contract.ts';
+  import { waitForPanel } from './tests/helpers/panel-targets.ts';
   import { state, deferred } from 'editing-fixture';
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   const intervals = new Map(); let nextTimer = 0;
@@ -56,9 +57,7 @@ test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿�
         check(cell, '应显示真实表格文案单元格');
         cell.dispatchEvent(new MouseEvent('click', { bubbles: true })); await settle();
       });
-      // 获取修改权与 AG Grid 编辑器挂载异步完成，等待真实结果而非固定一帧。
-      for (let attempt = 0; attempt < 20 && !field('文案全文'); attempt++) await act(async () => { await settle(); });
-      const editor = field('文案全文');
+      const editor = await waitForPanel(() => field('文案全文'), '真实文案编辑器挂载');
       check(editor, '单击应打开真实文案编辑器');
       await input(editor, '已保存的新文案');
       state.saveGate = deferred();
