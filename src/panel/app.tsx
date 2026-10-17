@@ -32,7 +32,7 @@ import { panelCompatibility, panelNeedsRefresh, panelRestoreKey, readPanelRestor
 const theme = themeQuartz.withParams({
   browserColorScheme: 'light',
   accentColor: 'var(--color-accent)',
-  backgroundColor: 'color-mix(in srgb, var(--color-focus) 2%, white)',
+  backgroundColor: 'var(--color-surface)',
   foregroundColor: 'var(--color-ink)',
   borderColor: 'var(--color-border)',
   headerBackgroundColor: 'color-mix(in srgb, var(--color-focus) 5%, white)',
@@ -477,7 +477,7 @@ export function App() {
     generate: (id: string) => { void generateSpeech(id); }, listen: toggleAudio,
     history: (id: string, trigger: HTMLElement) => { rememberOrigin(trigger, 'history'); setAudioHistory(id); }, onError: audioError };
   const columns: ColDef<Segment>[] = [
-    { headerName: '序号', field: 'order', width: orderWidth, minWidth: orderWidth, maxWidth: orderWidth, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="relative flex h-full items-center pl-3"><button className="rounded-md border border-solid border-input bg-background text-foreground hover:bg-ui-accent absolute -left-3 top-1/2 -translate-y-1/2 shrink-0 cursor-grab touch-none p-[3px] leading-5 opacity-0 group-[:hover]/segment:opacity-100 focus-visible:opacity-100 active:cursor-grabbing disabled:opacity-0 group-[:hover]/segment:disabled:opacity-50" aria-label={`拖动片段 ${data.order}`} disabled={disabled} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}><DragHandleDots2Icon aria-hidden className="size-3" /></button><span>{data.order}</span></span> },
+    { headerName: '序号', field: 'order', width: orderWidth, minWidth: orderWidth, maxWidth: orderWidth, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="relative flex h-full items-center pl-7"><button className="rounded-md border border-solid border-input bg-background text-foreground hover:bg-ui-accent absolute left-0 top-1/2 -translate-y-1/2 shrink-0 cursor-grab touch-none flex size-6 items-center justify-center p-[3px] leading-5 opacity-0 group-[:hover]/segment:opacity-100 focus-visible:opacity-100 active:cursor-grabbing disabled:opacity-0 group-[:hover]/segment:disabled:opacity-50" aria-label={`拖动片段 ${data.order}`} disabled={disabled} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}><DragHandleDots2Icon aria-hidden className="size-3" /></button><span>{data.order}</span></span> },
     { headerName: '口播片段', field: 'text', flex: 1, minWidth: 360, resizable: false, editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
       cellRenderer: SegmentRowCell, cellStyle: params => ({ height: mainRowHeight(params.data?.id), paddingRight: 0 }),
       cellRendererParams: { ...rowControls, query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: Math.max(102, searchRowHeight), toggleNote, expandedId: expandedNote, assets: status?.snapshot.assets ?? [],
