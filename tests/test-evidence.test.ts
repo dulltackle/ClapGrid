@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { test, type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, cpSync, symlinkSync, readdirSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, cpSync, symlinkSync, readdirSync, existsSync, statSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -353,7 +353,7 @@ test('普通严格 UI 来源在 main 类型阶段失效，后续仍须复验 UI 
   const manifestPath=join(root,'logs/check-state/failures.json'),manifest=JSON.parse(readFileSync(manifestPath,'utf8'));
   assert.deepEqual(manifest.strictTestFiles,['tests/sample.test.ts']);assert.ok(manifest.stages.includes('test'),'严格范围必须产生测试待办阶段');
   const recheck=command('scripts/check.mjs','--failed');assert.notEqual(recheck.status,0,'只复验typecheck不能解除严格UI阻塞');assert.ok(recheck.stdout.includes('普通严格UI'));
-  rmSync(join(root,'logs/unavailable'));assert.equal(command('scripts/check.mjs','--failed').status,0);assert.equal(existsSync(manifestPath),false);
+  rmSync(join(root,'logs/unavailable'));writeFileSync(join(root,'erase.cjs'),'// 修复实际故障注入阶段，不能靠删除待办放行\n');assert.equal(command('scripts/check.mjs','--failed').status,0);assert.equal(existsSync(manifestPath),false);
 });
 
 test('完整 all/rows 的业务 UI 文件保持严格，非 UI skip 政策仍按文件保留', t => {
@@ -379,7 +379,8 @@ test('完整 all/rows 的业务 UI 文件保持严格，非 UI skip 政策仍按
 
 test('新宿主校验旧执行器原 plan，已通过的旧业务 UI 可验而 skip/todo 仍拒绝', t => {
   const {root,command}=repository(t);
-  for(const file of ['test-evidence.mjs','check-runner.mjs'])writeFileSync(join(root,'scripts',file),readFileSync(new URL(`./fixtures/legacy-a0558ff/${file}`,import.meta.url)));
+  rmSync(join(root,'scripts/node-compile-cache.mjs'));
+  for(const file of ['test-evidence.mjs','check-runner.mjs','test-runner.mjs'])writeFileSync(join(root,'scripts',file),readFileSync(new URL(`./fixtures/legacy-a0558ff/${file}`,import.meta.url)));
   rmSync(join(root,'tests/sample.test.ts'));
   const ui='tests/drag-scroll-panel.test.ts',ordinary='tests/ordinary.test.ts';
   writeFileSync(join(root,'scripts/test-inventory.json'),JSON.stringify({schemaVersion:1,files:[{file:ui,executor:'node',scopes:['all','tooling','rows']},{file:ordinary,executor:'node',scopes:['all','tooling','rows']}]}));
@@ -400,6 +401,7 @@ function legacyRepository(t: TestContext, revision: string, framework: string) {
   for(const file of ['check-runner.mjs','test-runner.mjs'])cpSync(new URL(`./fixtures/legacy-d1e740a/${file}`,import.meta.url),join(root,'scripts',file));
   cpSync(new URL(`./fixtures/legacy-${revision}/test-evidence.mjs`,import.meta.url),join(root,'scripts/test-evidence.mjs'));
   rmSync(join(root,'scripts/check-evidence.mjs'));
+  rmSync(join(root,'scripts/node-compile-cache.mjs'));
   if(framework==='node')rmSync(join(root,'scripts/vitest-runner.mjs'));
   if(framework!=='playwright')rmSync(join(root,'scripts/playwright-runner.mjs'));
   return fixture;
@@ -447,4 +449,19 @@ test('新目标不能删除累计证明后降级旧协议，旧 UI skip 也不�
   writeFileSync(join(old.root,file),`import{test}from'node:test';test.skip('旧UI没有实际执行',()=>{});`);
   assert.equal(old.command('scripts/check.mjs').status,0,'旧生产者确实允许该skip，拒绝来自新宿主政策');
   const oldDirs=readdirSync(join(old.root,'logs/check')).sort();assert.notEqual(validate(old.root,join(old.root,'logs/check',oldDirs.at(-1)!,'summary.json')).status,0);
+});
+
+test('实际结束身份校验返回新采集身份，拒绝旧报告掩盖源码或原始来源变化', t => {
+  const {root,command}=repository(t);
+  mkdirSync(join(root,'src'));const input=join(root,'src/guard-input.bin');writeFileSync(input,Buffer.from([41]));
+  const actual=command('scripts/test-runner.mjs');assert.equal(actual.status,0,actual.stdout+actual.stderr);
+  const reportPath=join(root,'logs/report.json'),report=JSON.parse(readFileSync(reportPath,'utf8'));
+  const expectedPath=join(root,'logs/parent-expected.json');writeFileSync(expectedPath,JSON.stringify(report.identity));
+  const host=new URL('../scripts/test-evidence.mjs',import.meta.url).href;
+  const validate=()=>command('--input-type=module','--eval',`import{readFileSync}from'node:fs';import{validateExecutionSourceAsync}from${JSON.stringify(host)};const report=JSON.parse(readFileSync(${JSON.stringify(reportPath)},'utf8'));const expected=JSON.parse(readFileSync(${JSON.stringify(expectedPath)},'utf8'));console.log(JSON.stringify(await validateExecutionSourceAsync(${JSON.stringify(root)},report,report.plan,expected)));`);
+  const valid=validate();assert.equal(valid.status,0,valid.stdout+valid.stderr);assert.deepEqual(JSON.parse(valid.stdout),report.identity);
+  const raw=readFileSync(report.sources.native.path);writeFileSync(report.sources.native.path,Buffer.concat([raw,Buffer.from(' ')]));
+  assert.notEqual(validate().status,0,'真实原始证据损坏仍被完整校验拒绝');writeFileSync(report.sources.native.path,raw);
+  const stat=statSync(input);writeFileSync(input,Buffer.from([99]));utimesSync(input,stat.atime,stat.mtime);
+  const changed=validate();assert.notEqual(changed.status,0,'不能沿用磁盘报告自报的结束身份');assert.match(changed.stderr,/源码/);
 });

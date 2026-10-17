@@ -1,10 +1,11 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve, relative } from 'node:path';
-import { sourceIdentity, sameSource } from './check-source.mjs';
+import { sourceIdentity, sourceIdentityAsync, sameSource } from './check-source.mjs';
 import { normalizeNative as vitestNative } from './vitest-evidence.mjs';
 import { normalizeNative as playwrightNative } from './playwright-evidence.mjs';
 import { validateStageProof, validateCumulativeEvidence } from './check-evidence.mjs';
+import { nodeCompileCacheModule, nodeCompileCachePolicy } from './node-compile-cache.mjs';
 
 export const inventoryPath = 'scripts/test-inventory.json';
 const read = path => JSON.parse(readFileSync(path, 'utf8'));
@@ -120,13 +121,24 @@ export function executionPlan(root, { suite = 'all', files, executor } = {}) {
 const usesCumulativeEvidence = root => existsSync(join(root, 'scripts/check-evidence.mjs'));
 
 export function executionIdentity(root, executionId = process.env.CLAPGRID_TEST_EXECUTION_ID) {
+  return identityWithSource(root, executionId, sourceIdentity(root));
+}
+
+export async function executionIdentityAsync(root, executionId = process.env.CLAPGRID_TEST_EXECUTION_ID, options = {}) {
+  return identityWithSource(root, executionId, await sourceIdentityAsync(root, options));
+}
+
+function identityWithSource(root, executionId, source) {
   // 协议由目标检出决定；新目标缺证明不能因报告自称旧版而降级。
   const cumulative = usesCumulativeEvidence(root);
   const inputs = ['package.json', 'package-lock.json', inventoryPath, 'scripts/test-runner.mjs', 'scripts/test-reporter.mjs', 'scripts/test-evidence.mjs',
     ...(cumulative ? ['scripts/check-evidence.mjs', 'scripts/check-runner.mjs', 'scripts/check-lifecycle.mjs'] : []),
     ...(cumulative || existsSync(join(root, 'scripts/vitest-runner.mjs')) ? ['scripts/vitest-runner.mjs', 'scripts/vitest-reporter.mjs', 'scripts/vitest-evidence.mjs', 'vitest.config.ts'] : []),
-    ...(cumulative || existsSync(join(root, 'scripts/playwright-runner.mjs')) ? ['scripts/playwright-runner.mjs', 'scripts/playwright-evidence.mjs', 'scripts/playwright-resources.mjs', 'playwright.config.ts'] : [])];
-  return { executionId, source: sourceIdentity(root), config: inputs.map(file => [file, existsSync(join(root, file)) ? digest(join(root, file)) : null]), environment: { node: process.version, platform: process.platform, arch: process.arch, chrome: process.env.CHROME_BIN ?? null, nodeOptions: process.env.NODE_OPTIONS ?? null } };
+    ...(cumulative || existsSync(join(root, 'scripts/playwright-runner.mjs')) ? ['scripts/playwright-runner.mjs', 'scripts/playwright-evidence.mjs', 'scripts/playwright-resources.mjs', 'playwright.config.ts'] : []),
+    ...(existsSync(join(root, 'scripts/source-identity.json')) ? ['scripts/check-source.mjs', 'scripts/source-identity.json', ...(existsSync(join(root, 'scripts/vitest-bootstrap.mjs')) ? ['scripts/vitest-bootstrap.mjs'] : [])] : []),
+    ...(existsSync(join(root, nodeCompileCacheModule)) ? [nodeCompileCacheModule] : [])];
+  const compileCache = nodeCompileCachePolicy(root);
+  return { executionId, source, config: inputs.map(file => [file, existsSync(join(root, file)) ? digest(join(root, file)) : null]), environment: { node: process.version, platform: process.platform, arch: process.arch, chrome: process.env.CHROME_BIN ?? null, nodeOptions: process.env.NODE_OPTIONS ?? null, ...(compileCache ? { nodeCompileCache: compileCache } : {}) } };
 }
 const caseKey = item => JSON.stringify([item.file, item.name, item.nesting, item.line, item.column]);
 const sameIdentity = (a, b) => a.executionId === b.executionId && sameSource(a.source, b.source) && JSON.stringify(a.config) === JSON.stringify(b.config) && JSON.stringify(a.environment) === JSON.stringify(b.environment);
@@ -136,20 +148,37 @@ const portable = (root, item) => ({ ...item, ...(item.file ? { file: relativeFil
 const normalizeNative = (root, native, executor) => executor === 'vitest' ? vitestNative(root, native) : executor === 'playwright' ? playwrightNative(root, native) : native;
 
 export function executorEvidence(root, plan, nativePath, identity, { strict = false, logPath, additionalSources = [] } = {}) {
+  return evidenceFromNative(root, plan, nativePath, identity, executionIdentity(root, identity.executionId), { strict, logPath, additionalSources });
+}
+
+export async function executorEvidenceAsync(root, plan, nativePath, identity, options = {}) {
+  const after = await executionIdentityAsync(root, identity.executionId, { signal: options.signal });
+  return evidenceFromNative(root, plan, nativePath, identity, after, options);
+}
+
+function evidenceFromNative(root, plan, nativePath, identity, identityAfter, { strict = false, logPath, additionalSources = [] } = {}) {
   const native = normalizeNative(root, read(nativePath), plan.executor);
-  const report = { schemaVersion: 2, kind: 'test-execution', executor: native.executor, plan, identity, identityAfter: executionIdentity(root, identity.executionId),
+  const report = { schemaVersion: 2, kind: 'test-execution', executor: native.executor, plan, identity, identityAfter,
     startedAt: native.startedAt, completedAt: native.completedAt, complete: native.complete,
     expected: { files: plan.files, cases: (native.expectedCases ?? []).map(item => portable(root, item)), caseDiscovery: plan.executor === 'node' ? 'native test:enqueue events' : plan.executor === 'playwright' ? 'Playwright official JSON suites/specs' : 'Vitest onTestModuleCollected events' },
     actual: { files: (native.files ?? []).map(item => portable(root, item)), cases: (native.cases ?? []).map(item => portable(root, item)) },
     failures: (native.failures ?? []).map(item => portable(root, item)), errors: native.errors ?? [], summary: native.summary,
     policy: { strict }, sources: { native: { path: nativePath, sha256: digest(nativePath) }, ...(logPath ? { log: { path: logPath, sha256: digest(logPath) } } : {}), ...(additionalSources.length ? { additional: additionalSources.map(path => ({ path, sha256: digest(path) })) } : {}) } };
-  // identityAfter 刚在本次同步构造中采集；仅读原始报告/写忽略日志，不重复扫描同一边界。
+  // identityAfter 来自本次入口的实际采集；此后仅读原报告，不接受调用者自报快照。
   try { validateExecution(root, report, plan, identity); report.status = 'passed'; }
   catch (error) { report.status = 'failed'; report.validationError = error.message; }
   return report;
 }
 
 export const nodeEvidence = executorEvidence;
+
+/** 自己采集当前身份并完整核验来源；返回值不是报告自报的结束快照。 */
+export async function validateExecutionSourceAsync(root, report, plan, identity, { signal, ...options } = {}) {
+  const current = await executionIdentityAsync(root, identity.executionId, { signal });
+  validateExecution(root, report, plan, identity, { ...options, checkSource: false });
+  if (!sameIdentity(current, identity)) throw Error('测试源码、配置、环境或执行范围身份不符');
+  return current;
+}
 
 /** 在开发检查、固定提交验收和历史复用时执行相同完整性检查。 */
 export function validateExecution(root, report, plan, identity, { checkSource = false, strict = false, strictFiles = [] } = {}) {

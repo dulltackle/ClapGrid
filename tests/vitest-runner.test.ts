@@ -1,7 +1,7 @@
 import { test, type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync, spawn } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, cpSync, symlinkSync, readdirSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, cpSync, symlinkSync, readdirSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { setTimeout as delay } from 'node:timers/promises';
 import { join } from 'node:path';
@@ -10,7 +10,14 @@ import { fileURLToPath } from 'node:url';
 const project = fileURLToPath(new URL('../', import.meta.url));
 function repository(t: TestContext) {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-vitest-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.after(() => {
+    if(process.env.CLAPGRID_VITEST_TEST_EVIDENCE){
+      const archive=join(process.env.CLAPGRID_VITEST_TEST_EVIDENCE,root.split('/').at(-1)!);mkdirSync(archive,{recursive:true});
+      for(const name of ['logs','scripts','tests','package.json','vitest.config.ts'])if(existsSync(join(root,name)))cpSync(join(root,name),join(archive,name),{recursive:true});
+      writeFileSync(join(archive,'origin.json'),JSON.stringify({originalRoot:root,note:'保全实际原报告和配置，不改写已结束来源路径。'},null,2));
+    }
+    rmSync(root, { recursive: true, force: true });
+  });
   mkdirSync(join(root, 'scripts')); mkdirSync(join(root, 'tests'));
   for (const name of readdirSync(join(project, 'scripts')).filter(name => name.endsWith('.mjs'))) cpSync(join(project, 'scripts', name), join(root, 'scripts', name));
   symlinkSync(join(project, 'node_modules'), join(root, 'node_modules'));
@@ -46,6 +53,49 @@ test('混合入口一次覆盖 Node 与 Vitest 文件并保留逐项原始证据
   assert.equal(new Set(report.executions.map((x:any)=>x.identity.executionId)).size,1);
 });
 
+test('配置、setup 与用例加载前完成全部实际源码读取，异步采集不提前执行项目代码', t => {
+  const {root,sample,command}=repository(t);
+  writeFileSync(join(root,'scripts/source-identity.json'),readFileSync(join(project,'scripts/source-identity.json')));
+  const input=join(root,'zz-last-input.bin'),trace=join(root,'logs/project-loads.log');
+  writeFileSync(input,Buffer.alloc(1024*1024,7));utimesSync(input,new Date(0),new Date(0));
+  mkdirSync(join(root,'logs'));
+  const marker=(stage:string)=>`import{statSync,appendFileSync}from'node:fs';if(statSync(${JSON.stringify(input)}).atimeMs<=1000)throw Error('项目代码在完整源码读取之前执行');appendFileSync(${JSON.stringify(trace)},${JSON.stringify(stage+'\n')});`;
+  writeFileSync(join(root,'vitest.config.ts'),marker('config')+`export default{root:${JSON.stringify(root)},test:{environment:'node',include:['tests/*.test.ts'],setupFiles:['./setup.ts'],maxWorkers:1,fileParallelism:false,retry:0}};`);
+  writeFileSync(join(root,'setup.ts'),marker('setup'));
+  writeFileSync(sample,marker('test')+`import{test,expect}from'vitest';test('实际加载边界',()=>expect(7).toBe(7));`);
+  const result=command('scripts/test-runner.mjs','--suite','logic');
+  assert.equal(result.status,0,result.stdout+result.stderr);
+  assert.equal(readFileSync(trace,'utf8'),'config\nsetup\ntest\n');
+  const report=JSON.parse(readFileSync(join(root,'logs/report.json'),'utf8'));
+  assert.match(report.identity.source.fingerprint,/^sha256-merkle-v1:/);
+  assert.equal(report.status,'passed');
+  assert.equal(report.identity.config.length,21);
+});
+
+test('完整 fresh 边界后的受控子进程使用公共 API，未知 Node 选项仍沿原 CLI', t => {
+  const {root,command,env}=repository(t);
+  writeFileSync(join(root,'scripts/source-identity.json'),readFileSync(join(project,'scripts/source-identity.json')));
+  rmSync(join(root,'node_modules'));mkdirSync(join(root,'node_modules'));
+  for(const name of readdirSync(join(project,'node_modules')))if(name!=='vitest')symlinkSync(join(project,'node_modules',name),join(root,'node_modules',name),'dir');
+  const packageRoot=join(root,'node_modules/vitest'),cliUsed=join(root,'logs/cli-used');mkdirSync(packageRoot);
+  writeFileSync(join(packageRoot,'package.json'),readFileSync(join(project,'node_modules/vitest/package.json')));
+  symlinkSync(join(project,'node_modules/vitest/dist'),join(packageRoot,'dist'),'dir');
+  writeFileSync(join(packageRoot,'vitest.mjs'),`import{writeFileSync}from'node:fs';writeFileSync(${JSON.stringify(cliUsed)},'used');throw Error('CLI trap：fresh 不应加载 CLI parser');`);
+  const result=command('scripts/test-runner.mjs','--suite','logic');
+  assert.equal(result.status,0,result.stdout+result.stderr);
+  assert.equal(existsSync(cliUsed),false);
+  const report=JSON.parse(readFileSync(join(root,'logs/report.json'),'utf8'));
+  assert.equal(report.status,'passed');assert.equal(report.actual.cases.length,1);
+  assert.equal(report.actual.cases[0].name,'候选场景');assert.ok(report.actual.cases[0].line>0&&report.actual.cases[0].column>0);
+  assert.deepEqual(report.identityAfter,report.identity);
+  const official=JSON.parse(readFileSync(join(root,'logs/report-native.json.vitest.json'),'utf8'));
+  assert.equal(official.success,true);assert.equal(official.numTotalTests,1);assert.equal(official.numPassedTests,1);
+  env.NODE_OPTIONS='--no-warnings';
+  const legacy=command('scripts/test-runner.mjs','--suite','logic');
+  assert.notEqual(legacy.status,0,legacy.stdout+legacy.stderr);
+  assert.equal(readFileSync(cliUsed,'utf8'),'used','非空 NODE_OPTIONS 保留先采集后启动原 CLI 的边界');
+});
+
 test('Vitest 首次失败进入统一待办，并按当前执行者集中复验', t => {
   const {root,sample,command}=repository(t);
   writeFileSync(sample, `import {test,expect} from 'vitest';test('候选失败',()=>expect(2).toBe(3));`);
@@ -58,6 +108,21 @@ test('Vitest 首次失败进入统一待办，并按当前执行者集中复验'
   const recheck=command('scripts/check.mjs','--failed');
   assert.equal(recheck.status,0,recheck.stdout+recheck.stderr);
   assert.ok(!existsSync(join(root,'logs/check-state/failures.json')), '复验完成应移除待办');
+});
+
+test('受控 Node 与 Vitest 子进程采用相同默认编译缓存，父进程控制不被改写', t => {
+  const {root,sample,command,env}=repository(t),directory=join(root,'node_modules/.cache/clapgrid-node-compile-v1');
+  delete env.NODE_COMPILE_CACHE;delete env.NODE_DISABLE_COMPILE_CACHE;
+  const imports=`import{getCompileCacheDir}from'node:module';import{appendFileSync}from'node:fs';`;
+  const body=`if(process.env.NODE_COMPILE_CACHE!==${JSON.stringify(directory)}||!getCompileCacheDir())throw Error('受控child缺少默认编译缓存');appendFileSync('logs/cache-side-effects','x');`;
+  writeFileSync(join(root,'tests/node.test.ts'),`${imports}import{test}from'node:test';test('原生默认编译缓存',()=>{${body}});`);
+  writeFileSync(sample,`${imports}import{test}from'vitest';${body}test('候选默认编译缓存',()=>{});`);
+  const result=command('scripts/test-runner.mjs');
+  assert.equal(result.status,0,result.stdout+result.stderr);
+  assert.equal(readFileSync(join(root,'logs/cache-side-effects'),'utf8'),'xx');
+  const report=JSON.parse(readFileSync(join(root,'logs/report.json'),'utf8'));assert.equal(report.status,'passed');assert.deepEqual(report.identityAfter,report.identity);
+  assert.equal(env.NODE_COMPILE_CACHE,undefined,'仅派生child环境，不改调用者环境');
+  assert.deepEqual(report.identity.environment.nodeCompileCache,{directory,disable:null});assert.ok(report.identity.config.some((entry:string[])=>entry[0]==='scripts/node-compile-cache.mjs'&&entry[1]));
 });
 
 for (const [name, source] of [
@@ -135,7 +200,9 @@ test('普通 Vitest 范围明确保留 skip 与 todo，沿用原生非 UI 政策
 });
 
 test('减少重复指纹扫描仍拒绝 Vitest 运行期间的非选中源码变化', t => {
+  for (const configured of [false,true]) {
   const {root,sample,command}=repository(t);
+  if(configured)writeFileSync(join(root,'scripts/source-identity.json'),readFileSync(join(project,'scripts/source-identity.json')));
   writeFileSync(sample, `import {test} from 'vitest';import {writeFileSync} from 'node:fs';test('运行期间改源码',()=>writeFileSync('tests/node.test.ts','//运行期间变化'));`);
   const result=command('scripts/test-runner.mjs','--suite','logic');
   assert.notEqual(result.status,0,result.stdout+result.stderr);
@@ -143,4 +210,70 @@ test('减少重复指纹扫描仍拒绝 Vitest 运行期间的非选中源码变
   assert.equal(report.status,'failed');
   assert.notEqual(report.identity.source.fingerprint,report.identityAfter.source.fingerprint);
   assert.match(report.validationError,/源码/);
+  }
+});
+
+
+test('纯框架预加载与实际源码读取重叠，释放后不遗留 IPC 语义', {skip:process.platform!=='linux'}, t => {
+  const {root,sample,command,env}=repository(t);
+  writeFileSync(join(root,'scripts/source-identity.json'),readFileSync(join(project,'scripts/source-identity.json')));
+  mkdirSync(join(root,'logs'));mkdirSync(join(root,'logs/bin'));
+  const marker=join(root,'logs/preload-overlap.json');
+  const wrapper=`#!/usr/bin/env node
+import{readFileSync,existsSync,writeFileSync}from'node:fs';import{spawnSync}from'node:child_process';
+if(process.argv.includes('ls-files')&&!existsSync(${JSON.stringify(marker)})){
+const until=Date.now()+2000;let found=false;
+while(Date.now()<until&&!found){try{const ids=readFileSync('/proc/'+process.ppid+'/task/'+process.ppid+'/children','utf8').trim().split(/\\s+/);found=ids.some(pid=>{try{return readFileSync('/proc/'+pid+'/cmdline','utf8').split('\\0').some(arg=>arg.endsWith('/scripts/vitest-bootstrap.mjs')||arg.endsWith('/vitest/vitest.mjs'))}catch{return false}})}catch{}if(!found)Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,20)}
+writeFileSync(${JSON.stringify(marker)},JSON.stringify({found}));}
+const result=spawnSync('/usr/bin/git',process.argv.slice(2),{stdio:'inherit'});process.exit(result.status??1);`;
+  writeFileSync(join(root,'logs/bin/git'),wrapper,{mode:0o755});
+  env.PATH=join(root,'logs/bin')+':'+process.env.PATH;
+  writeFileSync(sample,`import{test,expect}from'vitest';test('原 CLI 不带 IPC',()=>{for(const key of ['send','connected','channel','disconnect'])expect(typeof process[key]).toBe('undefined')});`);
+  const result=command('scripts/test-runner.mjs','--suite','logic');
+  assert.equal(result.status,0,result.stdout+result.stderr);
+  assert.equal(JSON.parse(readFileSync(marker,'utf8')).found,true,'源码读取期间应已有受控 Vitest 子进程，项目代码仍由另一条读取边界测试限制');
+  assert.equal(JSON.parse(readFileSync(join(root,'logs/report.json'),'utf8')).status,'passed');
+});
+
+
+test('源码读取尚未放行时取消，预加载子进程与源码线程全部退出', {skip:process.platform!=='linux',timeout:10000}, async t => {
+  const {root,sample,env}=repository(t);
+  writeFileSync(join(root,'scripts/source-identity.json'),readFileSync(join(project,'scripts/source-identity.json')));
+  mkdirSync(join(root,'logs'));mkdirSync(join(root,'logs/bin'));
+  const marker=join(root,'logs/child-pid'),loaded=join(root,'logs/config-loaded');
+  writeFileSync(join(root,'vitest.config.ts'),`import{writeFileSync}from'node:fs';writeFileSync(${JSON.stringify(loaded)},'loaded');export default{test:{include:['tests/*.test.ts']}};`);
+  writeFileSync(sample,`import{test}from'vitest';test('不能开始',()=>{});`);
+  const wrapper=`#!/usr/bin/env node
+import{readFileSync,existsSync,writeFileSync}from'node:fs';import{spawnSync}from'node:child_process';
+if(process.argv.includes('ls-files')&&!existsSync(${JSON.stringify(marker)})){const ids=readFileSync('/proc/'+process.ppid+'/task/'+process.ppid+'/children','utf8').trim().split(/\\s+/);const child=ids.find(pid=>{try{return readFileSync('/proc/'+pid+'/cmdline','utf8').split('\\0').some(arg=>arg.endsWith('/scripts/vitest-bootstrap.mjs')||arg.endsWith('/vitest/vitest.mjs'))}catch{return false}});writeFileSync(${JSON.stringify(marker)},child??'missing');Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,300);}
+const r=spawnSync('/usr/bin/git',process.argv.slice(2),{stdio:'inherit'});process.exit(r.status??1);`;
+  writeFileSync(join(root,'logs/bin/git'),wrapper,{mode:0o755});
+  const child=spawn(process.execPath,['scripts/test-runner.mjs','--suite','logic'],{cwd:root,env:{...env,PATH:join(root,'logs/bin')+':'+process.env.PATH},stdio:'pipe'});
+  let output='';child.stdout.on('data',chunk=>output+=chunk);child.stderr.on('data',chunk=>output+=chunk);
+  const ended=new Promise<number|null>(done=>child.once('close',done));
+  t.after(async()=>{if(child.exitCode===null)child.kill('SIGTERM');await ended;});
+  const until=Date.now()+5000;while(!existsSync(marker)&&Date.now()<until)await delay(10);
+  assert.ok(existsSync(marker),'应观察到实际源码读取');
+  const pid=Number(readFileSync(marker,'utf8'));assert.ok(Number.isInteger(pid)&&pid>0);
+  child.kill('SIGTERM');assert.equal(await ended,130,output);
+  assert.throws(()=>process.kill(pid,0),(error:any)=>error.code==='ESRCH','等待实际子进程退出再返回');
+  assert.ok(!existsSync(loaded),'取消前未执行项目配置');
+  assert.ok(!existsSync(join(root,'logs/report.json')),'未执行不能产生 passed 证据');
+});
+
+test('NODE_OPTIONS 的项目钩子保守等待全部源码读取，不能借预加载提前执行', {skip:process.platform!=='linux'}, t => {
+  const {root,command}=repository(t);
+  mkdirSync(join(root,'logs'));mkdirSync(join(root,'logs/bin'));
+  writeFileSync(join(root,'scripts/source-identity.json'),readFileSync(join(project,'scripts/source-identity.json')));
+  const input=join(root,'zz-hook-input.bin'),hook=join(root,'logs/project-hook.mjs'),trace=join(root,'logs/hook-loaded');
+  writeFileSync(input,Buffer.alloc(1024*1024,7));utimesSync(input,new Date(0),new Date(0));
+  writeFileSync(hook,`import{statSync,appendFileSync}from'node:fs';if(statSync(${JSON.stringify(input)}).atimeMs<=1000)throw Error('NODE_OPTIONS 在完整读取前执行项目钩子');appendFileSync(${JSON.stringify(trace)},'loaded\\n');`);
+  const marker=join(root,'logs/source-list-started');
+  writeFileSync(join(root,'logs/bin/git'),`#!/bin/sh\nif [ "$3" = "ls-files" ] && [ ! -e '${marker}' ]; then touch '${marker}'; sleep 0.3; fi\nexec /usr/bin/git "$@"\n`,{mode:0o755});
+  const script=`import{runVitestFresh}from'./scripts/vitest-runner.mjs';import{executionPlan}from'./scripts/test-evidence.mjs';import{randomUUID}from'node:crypto';process.env.NODE_OPTIONS=${JSON.stringify('--import='+new URL('file://'+hook).href)};process.env.PATH=${JSON.stringify(join(root,'logs/bin')+':')}+process.env.PATH;const result=await runVitestFresh(process.cwd(),executionPlan(process.cwd(),{suite:'logic'}),${JSON.stringify(join(root,'logs/report.json'))},randomUUID());process.exitCode=result.code;`;
+  const result=command('--input-type=module','--eval',script);
+  assert.equal(result.status,0,result.stdout+result.stderr);
+  assert.ok(readFileSync(trace,'utf8').includes('loaded'));
+  const report=JSON.parse(readFileSync(join(root,'logs/report.json'),'utf8'));
+  assert.equal(report.status,'passed');assert.match(report.identity.environment.nodeOptions,/project-hook/);
 });

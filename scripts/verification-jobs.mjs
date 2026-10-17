@@ -1,3 +1,4 @@
+import { nodeCompileCacheEnvironment, nodeCompileCacheModule, nodeCompileCacheVerificationControls } from './node-compile-cache.mjs';
 import { createHash } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readlinkSync, readdirSync, realpathSync } from 'node:fs';
@@ -25,6 +26,7 @@ function toolIdentity(commands, args = ['--version']) {
 export function verificationEnvironment() {
   const variables = ['PATH', 'CHROME_BIN', 'FFMPEG_BIN', 'TMPDIR', 'TMP', 'TEMP', 'LANG', 'LC_ALL', 'TZ', 'CI', 'DISPLAY', 'NODE_OPTIONS', 'NODE_ENV', 'FONTCONFIG_FILE', 'FONTCONFIG_PATH', 'CLAPGRID_BROWSER_BUILD_CACHE', 'npm_config_registry', 'npm_config_userconfig'];
   const environment = Object.fromEntries(variables.map(name => [name, process.env[name] ?? null]));
+  environment.nodeCompileCache = nodeCompileCacheVerificationControls();
   const tools = {
     npm: toolIdentity([process.platform === 'win32' ? 'npm.cmd' : 'npm']),
     chrome: toolIdentity(process.env.CHROME_BIN ? [process.env.CHROME_BIN] : ['google-chrome', 'chromium', 'chromium-browser']),
@@ -45,7 +47,7 @@ export function verificationEnvironment() {
   catch { /* 无法读取显式配置时禁止历史复用。 */ }
   return { node: process.version, executable: realpathSync(process.execPath), platform: process.platform, osRelease: release(), arch: process.arch,
     environmentFingerprint: `sha256:${createHash('sha256').update(JSON.stringify(environment)).digest('hex')}`, tools,
-    fontsFingerprint, fontConfiguration, sanitizedVariables: ['NODE_TEST_CONTEXT'],
+    fontsFingerprint, fontConfiguration, sanitizedVariables: ['NODE_TEST_CONTEXT'], nodeCompileCache: environment.nodeCompileCache,
     reusable: Object.values(tools).every(Boolean) && !!fontsFingerprint && (!process.env.FONTCONFIG_FILE || !!fontConfiguration) };
 }
 
@@ -151,8 +153,8 @@ export async function startVerification(root, revision, outputRoot = join(root, 
   root = realpathSync(root); outputRoot = resolve(outputRoot);
   const commit = git(root, ['rev-parse', '--verify', '--end-of-options', `${revision}^{commit}`]);
   const runner = createHash('sha256');
-  for (const name of ['verify.mjs', 'verification-jobs.mjs', 'verification-worker.mjs', 'check-source.mjs', 'check-runner.mjs', 'check-lifecycle.mjs', 'test-runner.mjs', 'test-reporter.mjs', 'test-evidence.mjs', 'check-evidence.mjs', 'vitest-evidence.mjs', 'vitest-reporter.mjs', 'vitest-runner.mjs', 'playwright-runner.mjs', 'playwright-evidence.mjs', 'playwright-resources.mjs']) runner.update(readFileSync(fileURLToPath(new URL(name, import.meta.url))));
-  const identity = { schema: 1, runnerFingerprint: `sha256:${runner.digest('hex')}`, repository: root, commit, tree: git(root, ['rev-parse', `${commit}^{tree}`]), environment: options.environment ?? verificationEnvironment() };
+  for (const name of ['verify.mjs', 'verification-jobs.mjs', 'verification-worker.mjs', 'check-source.mjs', 'check-runner.mjs', 'check-lifecycle.mjs', 'test-runner.mjs', 'test-reporter.mjs', 'test-evidence.mjs', 'check-evidence.mjs', 'vitest-evidence.mjs', 'vitest-reporter.mjs', 'vitest-runner.mjs', 'vitest-bootstrap.mjs', 'playwright-runner.mjs', 'playwright-evidence.mjs', 'playwright-resources.mjs', ...(existsSync(fileURLToPath(new URL('./node-compile-cache.mjs', import.meta.url))) ? [nodeCompileCacheModule.slice('scripts/'.length)] : [])]) runner.update(readFileSync(fileURLToPath(new URL(name, import.meta.url))));
+  const identity = { schema: 1, runnerFingerprint: `sha256:${runner.digest('hex')}`, repository: root, commit, tree: git(root, ['rev-parse', `${commit}^{tree}`]), environment: options.environment ? { ...options.environment, nodeCompileCache: nodeCompileCacheVerificationControls() } : verificationEnvironment() };
   const key = createHash('sha256').update(JSON.stringify(identity)).digest('hex');
   mkdirSync(outputRoot, { recursive: true });
   for (let attempt = 0; attempt < 100; attempt++) {
@@ -190,7 +192,7 @@ export async function startVerification(root, revision, outputRoot = join(root, 
       atomicJson(join(stateDirectory(root), 'active/owner.json'), { ...reservation, verificationDirectory: directory });
       const log = openSync(join(directory, 'worker.log'), 'a');
       let child;
-      const env = { ...process.env };
+      const env = nodeCompileCacheEnvironment(root, process.env, { default: false });
       delete env.NODE_TEST_CONTEXT;
       try { child = spawn(process.execPath, [fileURLToPath(new URL('./verification-worker.mjs', import.meta.url)), directory], { env, detached: true, stdio: ['ignore', log, log], windowsHide: true }); }
       finally { closeSync(log); }

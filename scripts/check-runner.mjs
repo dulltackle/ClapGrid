@@ -3,7 +3,8 @@ import { spawn } from 'node:child_process';
 import { createWriteStream, mkdirSync, readFileSync, existsSync, rmSync, realpathSync } from 'node:fs';
 import { resolve, relative, join } from 'node:path';
 import { sameSource, sourceIdentity } from './check-source.mjs';
-import { withCheckRun, stopGroup, stateDirectory, atomicJson, currentCheckRun } from './check-lifecycle.mjs';
+import { withCheckRun, stopGroup, stopCommandGroup, stateDirectory, atomicJson, currentCheckRun } from './check-lifecycle.mjs';
+import { nodeCompileCacheEnvironment } from './node-compile-cache.mjs';
 
 // Node 22 的测试子进程以 stdout 传输 V8 事件；混入中文原始输出可能破坏帧边界。
 // https://github.com/nodejs/node/issues/65934
@@ -12,9 +13,9 @@ export const checkProgress = message => output.write(`${message}\n`);
 
 export async function runLogged(command, args, cwd, logPath, context, env = {}) {
   if (context.signal.aborted) return { status: 'cancelled', exitCode: null, signal: 'SIGTERM' };
+  const childEnv = nodeCompileCacheEnvironment(cwd, { ...context.env, ...env }, { default: false });
   const log = createWriteStream(logPath);
   return new Promise(resolveResult => {
-    const childEnv = { ...context.env, ...env };
     // 普通检查命令不是外层原生测试器的子测试，不能继承其内部报告协议。
     delete childEnv.NODE_TEST_CONTEXT;
     childEnv.CLAPGRID_CHECK_COMMAND_ROOT = cwd;
@@ -27,7 +28,7 @@ export async function runLogged(command, args, cwd, logPath, context, env = {}) 
       const lines = (remainder + text).split('\n'); remainder = lines.pop();
       for (const line of lines) if (/not ok |error TS\d|^✖|^FAIL|Error:/.test(line)) { diagnostics.push(line.slice(0, 500)); if (diagnostics.length > 12) diagnostics.shift(); }
     };
-    const cancel = () => { if (group && !stopping) stopping = stopGroup(group).catch(error => { errorMessage = error.message; }); };
+    const cancel = () => { if (group && !stopping) stopping = stopCommandGroup(cwd, group, context).catch(error => { errorMessage = error.message; }); };
     child.on('spawn', () => {
       group = context.register(child.pid);
       if (context.signal.aborted) cancel();

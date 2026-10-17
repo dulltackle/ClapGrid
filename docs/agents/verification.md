@@ -190,3 +190,17 @@ Node 22 递归监听在临时子目录删除时可能发出 `ENOENT/scandir`，�
 业务 UI 的严格政策按文件身份执行，适用于 `all`、`rows`、相关测试、集中复验和正式验收。未迁移的 Node 浏览器业务文件在唯一清单登记 `policy:ui`；Playwright 文件、UI scope 及 `native-ui` 对照同样严格。计划的 `strictFiles` 明列子集，逐文件拒绝 skip/todo，不因所处命令而放宽，也不扩大到非 UI 的普通 skip/todo。新增 Node 业务 UI 测试需同步登记政策；浏览器启动、缓存和生命周期专项的 OS 能力回归不按文件名当作业务 UI。
 
 旧清单未采用政策字段时，执行计划保留旧 JSON 形状；当前校验器仍独立按 UI scope、执行者、原生组和 a0558ff 已确认的 33 个 Node 业务 UI 兼容映射强制政策。旧检出实际 UI passed 可验证，旧 skip/todo 不会因格式兼容而放行；新清单采用明确 policy 后以当前声明为准。冻结旧执行器测试夹具验证此边界，CI 不依赖完整 Git 历史。
+
+## 启动准备与测量条件（#156）
+
+源码身份配置 `scripts/source-identity.json` 选择 `sha256-merkle-v1`，异步入口默认至多 4 个短期源码线程，API 可显式请求至多 8 个；无配置的历史目标继续原协议。每个边界仍读取全部当前内容，取消等待本次全部线程退出。单一 Vitest 可在读取期间预载纯框架，当前身份完成后才执行项目配置、setup 和测试；未知预载条件保守串行。协议及完整输入边界见 [试点记录](../research/test-executor-pilot.md#完整准备协议)。
+
+核心仅在 segment、table、wide 三个已隔离文件内并行；speech 三场景与 CSS 两场景保持串行，CSS 共用扩展 test 的 worker pool 而不请求浏览器 fixture。并发上限仍为 2，扩展/未知集合仍保守降为 1。JS 开发 bundle 压缩并保留名称；CSS 框架在真实缓存 miss 时加载。准备路径变化后仍执行原脚本、等待、断言与独立 context/page，零重试。
+
+采用 `scripts/node-compile-cache.mjs` 的目标仅给单次受控测试 child 派生 Node 字节码缓存默认目录：canonical 工作树的 `node_modules/.cache/clapgrid-node-compile-v1`。父 main、源码线程、类型检查与构建不额外自动开启；显式 `NODE_COMPILE_CACHE`（包括空字符串）及 `NODE_DISABLE_COMPILE_CACHE` 保留。切换工作树/正式独立检出时，自动默认按实际目标重派生。旧目标缺政策模块时保留原配置/环境身份形状。
+
+watch 的异步派生链关闭自动默认，跨子孙传播该保守策略，显式用户控件仍优先；同进程独立任务继续正常默认。依赖目录规则不增加缓存白名单，内部实际依赖变化仍要求重启。字节码只减少编译准备，每次测试仍产生本次 nonce、真实执行及原生报告。
+
+`browser-timings` 新增导航、视口核对、结果等待/轮询与 browserInput binding 请求耗时/计数。请求耗时与页面运行、结果等待可能重叠；它们都是观测到的 wall-clock，不能相加当 CPU 或入口收益。完整入口仍包含类型检查、测试、生产构建和生命周期清理。
+
+原生/候选各至少三次、并发 1/2、冷/热及默认字节码条件按 [测量方法](../research/test-executor-pilot.md#测量方法) 分开记录。最终数字、固定提交正式验收及 CI 来源写回 [#156](https://github.com/dulltackle/ClapGrid/issues/156)。记录与交付必须对应同一受验提交；源代码与文档变化后重新固定目标并检查受影响证据。

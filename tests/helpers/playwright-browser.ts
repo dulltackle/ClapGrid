@@ -129,25 +129,40 @@ class Panel {
       await session.send('Browser.setWindowBounds', { windowId, bounds: { width, height } });
       await session.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
       await session.send('Emulation.setEmulatedMedia', { features: [] });
-      await page.exposeBinding('browserInput', async (_, options) => dispatch(session, options, width));
+      timings.nativeInputDispatchMs = 0;
+      timings.nativeInputDispatchCount = 0;
+      await page.exposeBinding('browserInput', async (_, options) => {
+        const inputStarted = performance.now();
+        timings.nativeInputDispatchCount = Number(timings.nativeInputDispatchCount) + 1;
+        try { return await dispatch(session, options, width); }
+        finally { timings.nativeInputDispatchMs = Number(timings.nativeInputDispatchMs) + performance.now() - inputStarted; }
+      });
       const errors: Error[] = [];
       page.on('pageerror', error => errors.push(error));
       page.on('crash', () => errors.push(Error('浏览器页面崩溃')));
       timings.contextMs = performance.now() - stage;
       stage = performance.now();
       await page.goto(pathToFileURL(join(directory, 'index.html')).href, { waitUntil: 'load' });
+      timings.navigationMs = performance.now() - stage;
+      const viewportStarted = performance.now();
       const metrics = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
       assert.deepEqual(metrics, { width, height }, '真实页面视口必须对应原场景');
       timings.windowBounds = (await session.send('Browser.getWindowBounds', { windowId })).bounds;
+      timings.viewportVerificationMs = performance.now() - viewportStarted;
       let result: string | undefined;
       const deadline = performance.now() + 30000;
+      const resultWaitStarted = performance.now();
+      let resultPollCount = 0;
       while (performance.now() < deadline && !this.abort.signal.aborted) {
         if (errors.length) throw errors[0];
+        resultPollCount++;
         result = await page.locator('#result').evaluate(node => node.outerHTML).catch(() => undefined);
         if (result && !result.includes('data-state="pending"')) break;
         await delay(50);
       }
+      Object.assign(timings, { resultWaitMs: performance.now() - resultWaitStarted, resultPollCount });
       assert.deepEqual(errors, []);
+      // 导航/结果等待含页面运行，输入回调可能与它们重叠；这些墙钟分项不是 CPU 时间。
       timings.interactionMs = performance.now() - stage;
       assert.match(result ?? '浏览器未返回结果', /data-state="passed"/, result);
     } finally {

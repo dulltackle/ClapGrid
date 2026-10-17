@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { test } from '@playwright/test';
+import { test } from './helpers/playwright-browser.js';
 import { mkdtempSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';

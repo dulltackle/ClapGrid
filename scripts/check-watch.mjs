@@ -1,7 +1,8 @@
+import { withNodeCompileCacheWatch } from './node-compile-cache.mjs';
 import { randomUUID, createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, realpathSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { withCheckRun, atomicJson, currentCheckRun, stateDirectory, checkRunGroupsEnded } from './check-lifecycle.mjs';
+import { withCheckRun, atomicJson, currentCheckRun, stateDirectory } from './check-lifecycle.mjs';
 import { cleanupCheckResources } from './playwright-resources.mjs';
 import { runLogged, checkProgress, recordCheckFailures } from './check-runner.mjs';
 import { git, sourceIdentity } from './check-source.mjs';
@@ -15,7 +16,11 @@ function missingFailures(path, original) {
 }
 
 /** watch拥有整段会话的锁，每轮在新进程沿单次入口实际执行；不保存跨轮通过资格。 */
-export async function watchRelated(root, options = {}) {
+export function watchRelated(root, options = {}) {
+  return withNodeCompileCacheWatch(() => executeWatchRelated(root, options));
+}
+
+async function executeWatchRelated(root, options) {
   root = realpathSync(root);
   if (process.env.CLAPGRID_CHECK_CHILD_ROOT === root) throw Error('watch需要独立会话锁，不能作为同树检查的继承子阶段');
   const directory = join(root, 'logs/check-watch', `${new Date().toISOString().replaceAll(':', '-')}-${randomUUID()}`);
@@ -65,7 +70,8 @@ export async function watchRelated(root, options = {}) {
             if (!context.signal.aborted) recordCheckFailures(context, { status: 'failed', source: sourceIdentity(root), directory: roundDirectory, completedAt: new Date().toISOString(), phase: 'test', referenceFiles: expected.referenceFiles, strictTestFiles: expected.strictFiles, results: [...new Set(['test', ...expected.pendingStages])].map(name => ({ name, status: 'failed' })), failures: [{ name: record.error }] });
           }
           summary.state = 'cleaning'; save();
-          await cleanupCheckResources(join(stateDirectory(root), 'active'), summary.owner.token, checkRunGroupsEnded);
+          await context.drainGroups();
+          await cleanupCheckResources(join(stateDirectory(root), 'active'), summary.owner.token, context.confirmGroupsEnded);
           observer.probe();
           let status = context.signal.aborted ? 'cancelled' : generation !== summary.generation ? 'invalidated' : record.status;
           if (status === 'passed' && expected.pendingStages.length) {

@@ -4,22 +4,23 @@ import { mkdirSync, readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { executionPlan, failureFiles, executionIdentity, nodeEvidence, aggregateEvidence, testInventory, ownedTests, validateExecution } from './test-evidence.mjs';
+import { nodeCompileCacheEnvironment } from './node-compile-cache.mjs';
+import { executionPlan, failureFiles, executionIdentityAsync, executorEvidenceAsync, aggregateEvidence, testInventory, ownedTests, validateExecution } from './test-evidence.mjs';
 
 export const rowTests = ['panel-targets', 'segment-note-layout-panel', 'speech-cell-layout-panel', 'drag-scroll-panel', 'editing-panel', 'wide-panel', 'row-menu-panel', 'long-text-panel'];
 export { failureFiles } from './test-evidence.mjs';
 
-async function runNode(root, plan, report, identity) {
+async function runNode(root, plan, report, identity, abortSignal) {
   const nativePath = report.replace(/\.json$/, '') + '-native.json';
   const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
   const loader = pkg.devDependencies?.tsx ? ['--import', 'tsx'] : [];
   const child = spawn(process.execPath, [...loader, '--test', '--test-concurrency=1',
     '--test-reporter=tap', '--test-reporter-destination=stdout', '--test-reporter=./scripts/test-reporter.mjs', `--test-reporter-destination=${nativePath}`, '--test-reporter=tap', `--test-reporter-destination=${report}.tap.log`, ...plan.files],
-  { cwd: root, stdio: 'inherit', env: { ...process.env, CLAPGRID_TEST_EXECUTION_ID: identity.executionId }, detached: false });
+  { cwd: root, stdio: 'inherit', env: nodeCompileCacheEnvironment(root, { ...process.env, CLAPGRID_TEST_EXECUTION_ID: identity.executionId }), detached: false });
   let failure; child.on('error', error => { failure = error; });
   const { code, signal } = await new Promise(done => child.on('close', (code, signal) => done({ code, signal })));
   try {
-    const evidence = nodeEvidence(root, plan, nativePath, identity, { logPath: `${report}.tap.log` });
+    const evidence = await executorEvidenceAsync(root, plan, nativePath, identity, { logPath: `${report}.tap.log`, signal: abortSignal });
     writeFileSync(report, JSON.stringify(evidence, null, 2) + '\n');
     if (evidence.status !== 'passed') console.error(evidence.validationError);
     return code === 0 && !failure && evidence.status === 'passed' ? 0 : code || (signal ? 130 : 1);
@@ -28,7 +29,8 @@ async function runNode(root, plan, report, identity) {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   let cancelled = false;
-  const cancel = () => { cancelled = true; };
+  const controller = new AbortController();
+  const cancel = () => { cancelled = true; controller.abort(Error('测试执行已取消')); };
   process.on('SIGINT', cancel); process.on('SIGTERM', cancel);
   try {
     const { values } = parseArgs({ options: { suite: { type: 'string', default: 'all' }, files: { type: 'string' }, concurrency: { type: 'string', default: '1' } } });
@@ -42,13 +44,15 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       files = failed.length ? failed : testInventory(root).map(entry => entry.file);
     }
     const plan = executionPlan(root, { suite: values.suite, ...(files ? { files } : {}) });
-    const executionId = process.env.CLAPGRID_TEST_EXECUTION_ID ?? randomUUID();
-    const identity = executionIdentity(root, executionId);
-    const report = resolve(process.env.CLAPGRID_TEST_REPORT ?? `logs/tests/${Date.now()}-${process.pid}.json`); mkdirSync(dirname(report), { recursive: true });
-    console.log(`预期执行 ${plan.executor}（${plan.suite}）：${plan.files.join(', ')}`);
     const inventory = ownedTests(root);
     const owner = file => inventory.find(entry => entry.file === file)?.executor;
     const owners = [...new Set(plan.files.map(owner))];
+    if (owners.includes('playwright') || plan.files.some(file => inventory.some(entry => entry.file === file && entry.group === 'ui' && entry.scopes.includes('comparison-only')))) process.env.BROWSERSLIST_IGNORE_OLD_DATA ??= 'true';
+    const executionId = process.env.CLAPGRID_TEST_EXECUTION_ID ?? randomUUID();
+    const report = resolve(process.env.CLAPGRID_TEST_REPORT ?? `logs/tests/${Date.now()}-${process.pid}.json`); mkdirSync(dirname(report), { recursive: true });
+    console.log(`预期执行 ${plan.executor}（${plan.suite}）：${plan.files.join(', ')}`);
+    const preload = owners.length === 1 && owners[0] === 'vitest' && existsSync(resolve(root, 'scripts/source-identity.json'));
+    let identity = preload ? null : await executionIdentityAsync(root, executionId, { signal: controller.signal });
     const paths = []; let status = 0;
     for (const executor of owners) {
       if (cancelled) break;
@@ -56,12 +60,13 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       const childPlan = executionPlan(root, { suite: plan.suite, files: selected, executor });
       const target = owners.length === 1 ? report : report.replace(/\.json$/, '') + `-${executor}.json`;
       let code;
-      if (executor === 'node') code = await runNode(root, childPlan, target, identity);
+      if (executor === 'node') code = await runNode(root, childPlan, target, identity, controller.signal);
       else if (executor === 'vitest') {
-        const { runVitest } = await import('./vitest-runner.mjs');
-        code = await runVitest(root, childPlan, target, identity);
+        const { runVitest, runVitestFresh } = await import('./vitest-runner.mjs');
+        if (preload) ({ code, identity } = await runVitestFresh(root, childPlan, target, executionId, { signal: controller.signal }));
+        else code = await runVitest(root, childPlan, target, identity, { signal: controller.signal });
       } else {
-        const child = spawn(process.execPath, [`scripts/${executor}-runner.mjs`, '--files', JSON.stringify(selected), '--suite', plan.suite], { cwd: root, stdio: 'inherit', env: { ...process.env, CLAPGRID_TEST_REPORT: target, CLAPGRID_TEST_EXECUTION_ID: executionId, CLAPGRID_TEST_CONCURRENCY: values.concurrency, CLAPGRID_TEST_IDENTITY: JSON.stringify(identity) }, detached: false });
+        const child = spawn(process.execPath, [`scripts/${executor}-runner.mjs`, '--files', JSON.stringify(selected), '--suite', plan.suite], { cwd: root, stdio: 'inherit', env: nodeCompileCacheEnvironment(root, { ...process.env, CLAPGRID_TEST_REPORT: target, CLAPGRID_TEST_EXECUTION_ID: executionId, CLAPGRID_TEST_CONCURRENCY: values.concurrency, CLAPGRID_TEST_IDENTITY: JSON.stringify(identity) }), detached: false });
         child.on('error', error => console.error(error.message));
         code = await new Promise(done => child.on('close', (code, signal) => done(code ?? (signal ? 130 : 1))));
       }

@@ -72,6 +72,66 @@ test('默认日常命令单次退出，显式watch空闲仍持锁且停止后释
   assert.equal(existsSync(join(r.root, 'logs/check-state/active')), false);
 });
 
+test('watch默认不创建字节码cache，首冷执行后idle且真实外部依赖仍要求重启', async t => {
+  const r=repository(t);rmSync(join(r.root,'node_modules'));mkdirSync(join(r.root,'node_modules'));
+  for(const name of readdirSync(join(project,'node_modules')))if(name!=='.cache')symlinkSync(join(project,'node_modules',name),join(r.root,'node_modules',name));
+  const directory=join(r.root,'node_modules/.cache/clapgrid-node-compile-v1');assert.equal(existsSync(directory),false);
+  r.put('tests/value.test.ts',`import{test}from'node:test';import{getCompileCacheDir}from'node:module';test('watch cache off',()=>{if(getCompileCacheDir()||process.env.NODE_COMPILE_CACHE!==undefined)throw Error('watch自动cache仍启用');});`);r.commit();
+  r.put('src/value.ts','export const value=8;\n');
+  const keys=['NODE_COMPILE_CACHE','NODE_DISABLE_COMPILE_CACHE','CLAPGRID_NODE_COMPILE_CACHE_DEFAULT'] as const,saved=keys.map(key=>[key,process.env[key]] as const);
+  for(const key of keys)delete process.env[key];let w:ReturnType<typeof r.start>;
+  try{w=r.start();}finally{for(const[key,value]of saved)if(value===undefined)delete process.env[key];else process.env[key]=value;}
+  await w.wait(()=>r.summary()?.state==='idle');assert.equal(r.summary().rounds[0].status,'passed');
+  assert.equal(existsSync(directory),false,'watch派生测试不自动创建默认cache');
+  await delay(2200);assert.equal(r.summary().state,'idle');assert.equal(r.summary().rounds.length,1,'执行器输出不得自触发新轮');
+  r.put('node_modules/.cache/foreign-dependency/input.js','export const changed=1;');
+  assert.equal(await w.closed,1);assert.equal(r.summary().state,'restart-required');assert.equal(existsSync(join(r.root,'logs/check-state/active')),false);
+});
+
+test('默认字节码namespace内部真实导入的JS依赖变更必须要求重启', async t => {
+  const r=repository(t), input='node_modules/.cache/clapgrid-node-compile-v1/foreign.js';
+  rmSync(join(r.root,'node_modules'));mkdirSync(join(r.root,'node_modules'));
+  for(const name of readdirSync(join(project,'node_modules')))if(name!=='.cache')symlinkSync(join(project,'node_modules',name),join(r.root,'node_modules',name));
+  r.put(input,'export const dependency=1;');
+  r.put('tests/value.test.ts',`import{test}from'node:test';import{dependency}from'../${input}';test('foreign dependency',()=>{if(dependency!==1)throw Error('changed')});`);
+  r.commit();r.put('src/value.ts','export const value=8;\n');
+  const w=r.start();await w.wait(()=>r.summary()?.state==='idle');
+  r.put(input,'export const dependency=2;');
+  await w.wait(()=>r.summary()?.state==='restart-required');assert.equal(await w.closed,1);
+  assert.equal(existsSync(join(r.root,'logs/check-state/active')),false);
+});
+
+test('默认字节码8hex形状的已解析真实依赖优先于产物白名单',async t=>{
+  const r=repository(t);rmSync(join(r.root,'node_modules'));mkdirSync(join(r.root,'node_modules'));
+  for(const name of readdirSync(join(project,'node_modules')))if(name!=='.cache')symlinkSync(join(project,'node_modules',name),join(r.root,'node_modules',name));
+  const{cachedDataVersionTag}=await import('node:v8');const version=`${process.version}-${process.arch}-${cachedDataVersionTag().toString(16).padStart(8,'0')}-${process.getuid!()}`;
+  const input=`node_modules/.cache/clapgrid-node-compile-v1/${version}/deadbeef`;
+  r.put(input,'export const dependency=1;');r.put('tests/value.test.ts',`import{test}from'node:test';import{dependency}from'../${input}';test('hex dependency',()=>{if(dependency!==1)throw Error('changed')});`);
+  r.commit();r.put('src/value.ts','export const value=8;\n');const w=r.start();await w.wait(()=>r.summary()?.state==='idle');assert.equal(r.summary().rounds[0].status,'passed');
+  r.put(input,'export const dependency=2;');await w.wait(()=>r.summary()?.state==='restart-required');assert.equal(await w.closed,1);
+});
+
+for(const suffix of ['unknown.cache','nested/node_modules/foreign/index.js'])test(`默认字节码namespace内部${suffix}仍作为依赖变化要求重启`,async t=>{
+  const r=repository(t);r.put('src/value.ts','export const value=8;\n');
+  const w=r.start();await w.wait(()=>r.summary()?.state==='idle');assert.equal(r.summary().rounds[0].status,'passed');
+  r.put(`node_modules/.cache/clapgrid-node-compile-v1/${suffix}`,'foreign dependency');
+  await w.wait(()=>r.summary()?.state==='restart-required');assert.equal(await w.closed,1);
+  assert.equal(existsSync(join(r.root,'logs/check-state/active')),false);
+});
+
+test('watch跨进程嵌套工作树共享安装也保持自动cache关闭，不触发自身新轮',async t=>{
+  const r=repository(t);rmSync(join(r.root,'node_modules'));mkdirSync(join(r.root,'node_modules'));
+  for(const name of readdirSync(join(project,'node_modules')))if(name!=='.cache')symlinkSync(join(project,'node_modules',name),join(r.root,'node_modules',name));
+  const nestedSource=`import{test}from'node:test';import{getCompileCacheDir}from'node:module';test('nested cache off',()=>{if(process.env.NODE_COMPILE_CACHE!==undefined||getCompileCacheDir())throw Error('nested default重新开启');});`;
+  const nested=join(r.root,'logs/nested');mkdirSync(nested,{recursive:true});cpSync(join(r.root,'scripts'),join(nested,'scripts'),{recursive:true});mkdirSync(join(nested,'tests'));symlinkSync(join(r.root,'node_modules'),join(nested,'node_modules'),'dir');
+  writeFileSync(join(nested,'.gitignore'),'logs/\nnode_modules\n');writeFileSync(join(nested,'package.json'),'{"type":"module"}');writeFileSync(join(nested,'tests/nested.test.mjs'),nestedSource);
+  writeFileSync(join(nested,'scripts/test-inventory.json'),JSON.stringify({schemaVersion:1,files:[{file:'tests/nested.test.mjs',executor:'node',scopes:['all']}]}));
+  execFileSync('git',['init','-q',nested]);execFileSync('git',['-C',nested,'add','.']);execFileSync('git',['-C',nested,'-c','user.name=Fixture','-c','user.email=fixture@example.invalid','-c','commit.gpgsign=false','commit','-qm','nested']);
+  r.put('tests/value.test.ts',`import{test}from'node:test';import{readFileSync,existsSync}from'node:fs';import{spawnSync}from'node:child_process';test('actual nested root',()=>{const root=${JSON.stringify(nested)},env={...process.env,NODE_TEST_CONTEXT:undefined,CLAPGRID_TEST_EXECUTION_ID:undefined,CLAPGRID_TEST_REPORT:root+'/logs/report.json'};const result=spawnSync(process.execPath,['scripts/test-runner.mjs'],{cwd:root,env,encoding:'utf8'});if(result.status!==0)throw Error(result.stdout+result.stderr);const report=JSON.parse(readFileSync(root+'/logs/report.json','utf8'));if(report.identity.environment.nodeCompileCache.automatic!=='watch-disabled')throw Error('嵌套身份漏off');if(existsSync(root+'/node_modules/.cache/clapgrid-node-compile-v1'))throw Error('共享安装被默认cache写入');});`);
+  r.commit();r.put('src/value.ts','export const value=8;\n');const w=r.start();await w.wait(()=>r.summary()?.state==='idle');assert.equal(r.summary().rounds[0].status,'passed');
+  await delay(2200);assert.equal(r.summary().rounds.length,1);assert.equal(r.summary().state,'idle');w.child.kill('SIGTERM');assert.equal(await w.closed,130);
+});
+
 function browserFixture(r: ReturnType<typeof repository>, body: string) {
   const helper = pathToFileURL(join(project, 'tests/helpers/playwright-browser.ts')).href;
   r.put('tests/value.test.ts', `import{test}from${JSON.stringify(helper)};test("actual browser",async({panel})=>{await panel.check("document.getElementById('result').dataset.state='passed';",'');${body}});`);
@@ -144,6 +204,26 @@ test('上游真实检查取消覆盖watch及孙进程，不遗留两层工作树
   assert.equal(readFileSync(join(r.root, 'logs/heartbeat'), 'utf8'), heartbeat);
   assert.equal(existsSync(join(parent.root, 'logs/check-state/active')), false); assert.equal(existsSync(join(r.root, 'logs/check-state/active')), false);
   assert.equal(r.summary().state, 'cancelled');
+});
+
+test('取消round先收尾同拥有者登记的跨组孙进程，再写cancelled并释放锁', { skip: process.platform !== 'linux' }, async t => {
+  const r = repository(t);
+  r.put('tests/value.test.ts', `import{test}from'node:test';import{spawn}from'node:child_process';import{existsSync,writeFileSync}from'node:fs';import{setTimeout as delay}from'node:timers/promises';import{withCheckRun}from'../scripts/check-lifecycle.mjs';test('registered descendant',async()=>{process.env.CLAPGRID_CHECK_CHILD_ROOT=process.cwd();await withCheckRun(process.cwd(),'inherited-worker',async context=>{const child=spawn(process.execPath,['-e',"const fs=require('node:fs');const timer=setInterval(()=>fs.writeFileSync('logs/detached-heartbeat','live'),20);process.once('SIGTERM',()=>{fs.writeFileSync('logs/detached-term',String(Date.now()));setTimeout(()=>{clearInterval(timer);fs.writeFileSync('logs/detached-ended',String(Date.now()));process.exit(0)},750);});"],{detached:true,stdio:'ignore'});await new Promise(resolve=>child.once('spawn',resolve));const group=context.register(child.pid);while(!existsSync('logs/detached-heartbeat'))await delay(20);writeFileSync('logs/detached-group.json',JSON.stringify(group));await new Promise(()=>{setInterval(()=>{},1000)});});});`);
+  r.commit(); r.put('src/value.ts', 'export const value=8;\n');
+  const running = r.start(); await running.wait(() => existsSync(join(r.root, 'logs/detached-group.json')));
+  const group = JSON.parse(readFileSync(join(r.root, 'logs/detached-group.json'), 'utf8'));
+  const active = join(r.root, 'logs/check-state/active');
+  assert.ok(group.paths.includes(join(active, `group-${group.pid}.json`)));
+  const processGroup = Number(execFileSync('ps', ['-p', String(group.pid), '-o', 'pgid='], { encoding: 'utf8' }).trim());
+  assert.equal(processGroup, group.pid);
+  const owner = JSON.parse(readFileSync(join(active, 'owner.json'), 'utf8'));
+  running.child.kill('SIGTERM'); assert.equal(await running.closed, 130);
+  assert.equal(existsSync(join(r.root, 'logs/detached-term')), true);
+  assert.equal(existsSync(join(r.root, 'logs/detached-ended')), true, '跨组孙进程须实际完成TERM收尾');
+  assert.equal(alive(group.pid), false); assert.equal(existsSync(active), false);
+  assert.equal(r.summary().state, 'cancelled'); assert.equal(r.summary().rounds.length, 1); assert.equal(r.summary().rounds[0].status, 'cancelled');
+  assert.ok(r.summary().lifecycleCompletedAt);
+  t.diagnostic(JSON.stringify({ event: 'registered-descendant-drained', group, processGroup, owner, termAt: readFileSync(join(r.root, 'logs/detached-term'), 'utf8'), endedAt: readFileSync(join(r.root, 'logs/detached-ended'), 'utf8'), state: r.summary().state, roundStatus: r.summary().rounds[0].status, lifecycleCompletedAt: r.summary().lifecycleCompletedAt }));
 });
 
 test('父检查取消嵌套watch的真实Chrome，两个ancestor登记与profile均清理后释放锁', { skip: process.platform !== 'linux' }, async t => {

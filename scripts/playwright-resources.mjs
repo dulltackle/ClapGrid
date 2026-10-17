@@ -117,6 +117,7 @@ async function cleanup(resource, confirmGroupsEnded) {
   const held = await acquireCleanupLock(resource, lockPath, confirmGroupsEnded);
   const intentPath = `${resource.cleanupEvidence}.intent.json`;
   try {
+    if (confirmGroupsEnded() !== true) throw Error('资源清理锁取得后组或拥有者身份变化，保留登记');
     if (!completed(resource)) {
       let intent = existsSync(intentPath) ? read(intentPath) : null;
       if (intent && (!same(intent.marker, resource.marker) || !same(intent.registrations, resource.registrations) || intent.groupsEnded !== true)) throw Error('资源清理意图身份不符，保留登记');

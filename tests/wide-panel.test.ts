@@ -1,6 +1,8 @@
 import { test } from './helpers/playwright-browser.js';
 import { fixture } from './helpers/editing-fixture.js';
 
+test.describe.configure({ mode: 'parallel' });
+
 const script = String.raw`
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';

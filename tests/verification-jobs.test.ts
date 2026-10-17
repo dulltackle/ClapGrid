@@ -39,7 +39,7 @@ function repository(t: TestContext, task = "require('node:assert/strict').equal(
   const git = (...args: string[]) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
   git('init', '-q');
   mkdirSync(join(root, 'scripts'));
-  for (const file of ['check.mjs', 'check-runner.mjs', 'check-source.mjs', 'check-lifecycle.mjs', 'playwright-resources.mjs', 'playwright-evidence.mjs', 'playwright-runner.mjs', 'test-runner.mjs', 'test-reporter.mjs', 'test-evidence.mjs', 'check-evidence.mjs', 'vitest-evidence.mjs', 'vitest-reporter.mjs', 'vitest-runner.mjs', 'verification-jobs.mjs', 'verify.mjs', 'verification-worker.mjs']) cpSync(join(scripts, file), join(root, 'scripts', file));
+  for (const file of ['node-compile-cache.mjs', 'check.mjs', 'check-runner.mjs', 'check-source.mjs', 'check-lifecycle.mjs', 'playwright-resources.mjs', 'playwright-evidence.mjs', 'playwright-runner.mjs', 'test-runner.mjs', 'test-reporter.mjs', 'test-evidence.mjs', 'check-evidence.mjs', 'vitest-evidence.mjs', 'vitest-reporter.mjs', 'vitest-runner.mjs', 'vitest-bootstrap.mjs', 'verification-jobs.mjs', 'verify.mjs', 'verification-worker.mjs']) cpSync(join(scripts, file), join(root, 'scripts', file));
   writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 'check-fixture', version: '1.0.0', private: true, scripts: { check: 'node scripts/check.mjs', typecheck: 'node task.cjs', test: 'node task.cjs', build: 'node task.cjs' } }));
   writeFileSync(join(root, 'package-lock.json'), JSON.stringify({ name: 'check-fixture', version: '1.0.0', lockfileVersion: 3, packages: { '': { name: 'check-fixture', version: '1.0.0' } } }));
   writeFileSync(join(root, '.gitignore'), 'logs/\nnode_modules/\n');
@@ -413,4 +413,18 @@ test('累计校验模块变化改变正式执行器身份，不能连接旧任�
   const changedJob=JSON.parse(next.stdout);
   try { assert.notEqual(changedJob.identity.runnerFingerprint,job.identity.runnerFingerprint);assert.notEqual(changedJob.key,job.key); }
   finally { const cancelled=cli('cancel','--run',changedJob.runId);assert.equal(cancelled.status,130,cancelled.stderr); }
+});
+
+
+test('字节码cache控件及执行政策变化不能连接旧正式任务', t => {
+  const {root,commit}=repository(t,'setInterval(()=>{},1000)'),env={...process.env};delete env.NODE_TEST_CONTEXT;delete env.NODE_COMPILE_CACHE;delete env.NODE_DISABLE_COMPILE_CACHE;delete env.CLAPGRID_NODE_COMPILE_CACHE_DEFAULT;
+  const cli=(...args:string[])=>spawnSync(process.execPath,[join(root,'scripts/verify.mjs'),...args],{cwd:root,env,encoding:'utf8'});
+  const first=cli('start','--revision',commit);assert.equal(first.status,0,first.stderr);const job=JSON.parse(first.stdout);
+  try {
+    for(const controls of [{NODE_COMPILE_CACHE:''},{NODE_COMPILE_CACHE:'custom'},{NODE_DISABLE_COMPILE_CACHE:'1'}]){
+      Object.assign(env,controls);const changed=cli('start','--revision',commit);assert.notEqual(changed.status,0,'不同cache控件不能连接旧任务');assert.match(changed.stderr,/不同身份/);delete env.NODE_COMPILE_CACHE;delete env.NODE_DISABLE_COMPILE_CACHE;
+    }
+    const file=join(root,'scripts/node-compile-cache.mjs');writeFileSync(file,readFileSync(file,'utf8')+'\n// 政策变更必须改变宿主执行器指纹\n');
+    const changed=cli('start','--revision',commit);assert.notEqual(changed.status,0,'cache政策变化不能连接旧任务');assert.match(changed.stderr,/不同身份/);
+  } finally {const result=cli('cancel','--run',job.runId);assert.equal(result.status,130,result.stderr);}
 });
