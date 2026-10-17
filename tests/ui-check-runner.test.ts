@@ -9,15 +9,19 @@ import { fileURLToPath } from 'node:url';
 const { checkUi } = await import(new URL('../scripts/check-ui.mjs', import.meta.url).href);
 const { extendedTests } = await import(new URL('../scripts/ui-check-plan.mjs', import.meta.url).href);
 const { runCheck } = await import(new URL('../scripts/check-runner.mjs', import.meta.url).href);
+const themeSource = `import { themeQuartz } from 'ag-grid-community';
+const theme = themeQuartz.withParams({ backgroundColor: 'white', rowHeight: 102 });`;
 
-function repository(t: TestContext, typecheck = 'process.exit(0)') {
+function repository(t: TestContext, typecheck = 'process.exit(0)', extraThemePanel = false) {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-ui-check-')); t.after(() => rmSync(root, { recursive: true, force: true }));
   const git = (...args: string[]) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   git('init', '-q'); mkdirSync(join(root, 'tests')); mkdirSync(join(root, 'src'));
+  mkdirSync(join(root, 'src/panel')); writeFileSync(join(root, 'src/panel/app.tsx'), themeSource);
   writeFileSync(join(root, '.gitignore'), 'logs/\nnode_modules/\n');
   writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 'ui-check-fixture', private: true, type: 'module', scripts: { typecheck: 'node task.cjs', build: 'node -e "process.exit(0)"' } }));
   writeFileSync(join(root, 'task.cjs'), typecheck); writeFileSync(join(root, 'src/value.ts'), 'original');
   for (const path of extendedTests) writeFileSync(join(root, path), 'import {test} from "node:test"; test("fixture stage", () => {});');
+  if (extraThemePanel) writeFileSync(join(root, 'tests/theme-extra-panel.test.ts'), 'import {test} from "node:test"; test("theme fixture stage", () => {});');
   symlinkSync(fileURLToPath(new URL('../node_modules', import.meta.url)), join(root, 'node_modules'), 'dir');
   git('add', '.'); git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'fixture');
   // 本组验证调度与证据；真实 Chrome 运行另由 panel 用例覆盖。
@@ -51,6 +55,20 @@ test('未知非样式源码即使 UI 子集通过也保留完整检查待办', a
   assert.equal(result.status, 'requires-full-check', result.error); assert.equal(result.completeForLocalUi, false);
   assert.equal(result.plan.requiredFollowup, 'full-check');
   assert.equal(result.effectiveConcurrency, 1);
+});
+
+test('纯主题颜色变更在既有 UI 阶段实际执行完成后通过本地检查', async t => {
+  const root = repository(t, 'process.exit(0)', true);
+  writeFileSync(join(root, 'src/panel/app.tsx'), themeSource.replace("'white'", "'var(--color-surface)'"));
+  const result = await checkUi(root, { scope: 'row' });
+  assert.equal(result.status, 'passed', result.error);
+  assert.equal(result.completeForLocalUi, true);
+  assert.equal(result.plan.requiredFollowup, null);
+  assert.equal(result.effectiveConcurrency, 1);
+  assert.deepEqual(result.results.map((stage: { name: string }) => stage.name), ['typecheck', 'ui-tests', 'build']);
+  assert.ok(result.plan.tests.includes('tests/theme-extra-panel.test.ts'));
+  assert.equal(result.testTotals.passed, extendedTests.length + 1);
+  assert.equal(result.source.fingerprint, result.sourceAfter.fingerprint);
 });
 
 test('UI 检查期间源码变化立即失效，不能继续测试或构建', async t => {

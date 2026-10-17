@@ -21,17 +21,55 @@ export const componentTests = [
   { pattern: /(?:add|paste|insert|drag)/, tests: ['ordinary-add-focus', 'paste', 'relative-insert', 'relative-insert-lifecycle', 'drag'] },
 ];
 
-function withoutStaticClasses(source, file) {
+const themeColorFields = new Set([
+  'accentColor', 'backgroundColor', 'foregroundColor', 'borderColor',
+  'headerBackgroundColor', 'headerTextColor', 'rowHoverColor',
+]);
+const isStaticString = node => (node?.type === 'Literal' && typeof node.value === 'string') ||
+  (node?.type === 'TemplateLiteral' && node.expressions.length === 0);
+
+function staticThemeColors(program, file) {
+  const values = new Set();
+  if (file !== 'src/panel/app.tsx') return values;
+  const imported = program.body.some(node => node.type === 'ImportDeclaration' && node.importKind === 'value' &&
+    node.source.value === 'ag-grid-community' && node.specifiers.some(specifier => specifier.type === 'ImportSpecifier' &&
+      specifier.importKind === 'value' && specifier.imported.name === 'themeQuartz' && specifier.local.name === 'themeQuartz'));
+  if (!imported) return values;
+  const themes = program.body.filter(node => node.type === 'VariableDeclaration' && node.kind === 'const')
+    .flatMap(node => node.declarations).filter(node => node.id.type === 'Identifier' && node.id.name === 'theme');
+  if (themes.length !== 1) return values;
+  const call = themes[0].init;
+  if (call?.type !== 'CallExpression' || call.optional || call.arguments.length !== 1) return values;
+  const callee = call.callee;
+  if (callee.type !== 'MemberExpression' || callee.computed || callee.optional ||
+    callee.object.type !== 'Identifier' || callee.object.name !== 'themeQuartz' ||
+    callee.property.type !== 'Identifier' || callee.property.name !== 'withParams') return values;
+  const params = call.arguments[0];
+  if (params.type !== 'ObjectExpression') return values;
+  const keys = new Set();
+  for (const property of params.properties) {
+    if (property.type !== 'Property' || property.kind !== 'init' || property.computed || property.method || property.shorthand) return new Set();
+    const key = property.key.type === 'Identifier' ? property.key.name : property.key.value;
+    if (typeof key !== 'string' || keys.has(key)) return new Set();
+    keys.add(key);
+    if (themeColorFields.has(key) && isStaticString(property.value)) values.add(property.value);
+  }
+  return values;
+}
+
+function withoutStaticStyles(source, file) {
   let parsed;
   try { parsed = parseSync(file, source); } catch { return undefined; }
   if (parsed.errors.length) return undefined;
+  // 仅屏蔽实际主题对象中白名单颜色的静态值；字段、调用与其余源码仍逐项比较。
+  const colors = staticThemeColors(parsed.program, file);
   const normalize = node => {
     if (Array.isArray(node)) return node.map(normalize);
     if (!node || typeof node !== 'object') return node;
+    if (colors.has(node)) return { type: 'Literal', value: '__static_theme_color__' };
     if (node.type === 'JSXAttribute' && node.name?.name === 'className') {
       const expression = node.value?.type === 'JSXExpressionContainer' ? node.value.expression : node.value;
-      if ((expression?.type === 'Literal' && typeof expression.value === 'string') ||
-          (expression?.type === 'TemplateLiteral' && expression.expressions.length === 0)) {
+      if (isStaticString(expression)) {
         return { type: 'JSXAttribute', name: 'className', value: '__static_style__' };
       }
     }
@@ -43,8 +81,8 @@ function withoutStaticClasses(source, file) {
 export function isStaticStyleChange(path, before, after) {
   if (before === undefined || after === undefined || before === after) return false;
   if (path.startsWith('src/panel/') && path.endsWith('.tsx')) {
-    const previous = withoutStaticClasses(before, path);
-    return previous !== undefined && previous === withoutStaticClasses(after, path);
+    const previous = withoutStaticStyles(before, path);
+    return previous !== undefined && previous === withoutStaticStyles(after, path);
   }
   if (path.startsWith('src/panel/') && path.endsWith('.css')) {
     const imports = source => source.match(/@(?:import|source|config|plugin)[^;]*;|source\([^)]*\)/g) ?? [];
