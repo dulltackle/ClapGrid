@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { test } from './helpers/playwright-browser.js';
 import { chrome } from './helpers/browser.js';
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
 
 const script = String.raw`
 import { act } from 'react';
@@ -69,8 +68,9 @@ const action = async fn => { await act(async () => { await fn(); await new Promi
 } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; } })();
 `;
 for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) {
-  test(`表格紧凑操作主题与虚拟行（${width}×${height}）`, {timeout: 30000}, t => {
+  test(`表格紧凑操作主题与虚拟行（${width}×${height}）`, async ({ panel }) => {
+    test.setTimeout(30000);
     assert.ok(chrome, '需要 Chrome/Chromium，不能跳过表格主题验收');
-    return checkInteractiveBrowser(t, script.replace('HEIGHT', String(height)), fixture, width, height);
+    return panel.check( script.replace('HEIGHT', String(height)), fixture, width, height);
   });
 }

@@ -19,7 +19,12 @@ export function requireChrome(env = process.env) {
 }
 
 export async function checkUi(root, options = {}) {
-  return withCheckRun(root, 'ui-development', context => executeUi(root, options, context), { signal: options.signal });
+  const started = performance.now();
+  const summary = await withCheckRun(root, 'ui-development', context => executeUi(root, options, context), { signal: options.signal });
+  summary.lifecycleCompletedAt = new Date().toISOString();
+  summary.totalMs = performance.now() - started;
+  atomicJson(join(summary.directory, 'summary.json'), summary);
+  return summary;
 }
 
 async function executeUi(root, { base = 'HEAD', scope = 'extended', concurrency = 2, native = false, directory = join(root, 'logs/check-ui', `${new Date().toISOString().replaceAll(':', '-')}-${process.pid}`) }, context) {
@@ -45,9 +50,10 @@ async function executeUi(root, { base = 'HEAD', scope = 'extended', concurrency 
     const testPlan = executionPlan(root, native ? { suite: 'native-ui' } : { suite: 'ui', files: summary.plan.tests });
     summary.comparisonOnly = native;
     if (native) summary.plan.tests = testPlan.files;
+    const dispatch = testPlan.executor !== 'node';
     const stages = [
       { name: 'typecheck', args: ['run', 'typecheck'] },
-      { name: 'ui-tests', args: ['exec', '--', 'tsx', '--test', `--test-concurrency=${summary.effectiveConcurrency}`,
+      { name: 'ui-tests', command: dispatch ? process.execPath : npm, args: dispatch ? [fileURLToPath(new URL('./test-runner.mjs', import.meta.url)), '--files', JSON.stringify(testPlan.files), '--suite', 'ui', '--concurrency', String(summary.effectiveConcurrency)] : ['exec', '--', 'tsx', '--test', `--test-concurrency=${summary.effectiveConcurrency}`,
         '--test-reporter=tap', '--test-reporter-destination=stdout', `--test-reporter=${fileURLToPath(new URL('./test-reporter.mjs', import.meta.url))}`, `--test-reporter-destination=${nativeReport}`, ...summary.plan.tests] },
       { name: 'build', args: ['run', 'build'] },
     ];
@@ -56,17 +62,17 @@ async function executeUi(root, { base = 'HEAD', scope = 'extended', concurrency 
       const testExecutionId = stage.name === 'ui-tests' ? randomUUID() : undefined;
       const identity = testExecutionId ? executionIdentity(root, testExecutionId) : null;
       const startedAt = new Date().toISOString();
-      const result = await runLogged(npm, stage.args, root, join(directory, `${stage.name}.log`), context, testExecutionId ? { CLAPGRID_TEST_EXECUTION_ID: testExecutionId } : {});
+      const result = await runLogged(stage.command ?? npm, stage.args, root, join(directory, `${stage.name}.log`), context, { CHROME_BIN: summary.browser.command, CLAPGRID_BROWSER_TIMINGS: process.env.CLAPGRID_BROWSER_TIMINGS, ...(testExecutionId ? { CLAPGRID_TEST_EXECUTION_ID: testExecutionId, CLAPGRID_TEST_REPORT: testReport, CLAPGRID_TEST_CONCURRENCY: String(summary.effectiveConcurrency) } : {}) });
       if (result.status === 'cancelled') { summary.results.push({ name: stage.name, ...result, ...(testExecutionId ? { testExecutionId, testPlan } : {}), startedAt, completedAt: new Date().toISOString() }); summary.status = 'cancelled'; break; }
       if (stage.name === 'ui-tests') {
         try {
-          const report = nodeEvidence(root, testPlan, nativeReport, identity, { strict: true, logPath: join(directory, 'ui-tests.log') });
+          const report = dispatch ? JSON.parse(readFileSync(testReport, 'utf8')) : nodeEvidence(root, testPlan, nativeReport, identity, { strict: true, logPath: join(directory, 'ui-tests.log') });
           writeFileSync(testReport, JSON.stringify(report, null, 2) + '\n');
           result.testReport = testReport;
-          summary.failures = report.failures;
+          summary.failures = [...report.failures, ...(report.actual?.cases ?? []).filter(item => item.status !== 'passed').map(item => ({ file: item.file, name: item.name, status: item.status, message: 'UI 场景必须实际通过' }))];
           const counts = report.summary?.counts ?? {};
           summary.testTotals = { tests: counts.tests, passed: counts.passed, failed: counts.failed, skipped: counts.skipped, cancelled: counts.cancelled, todo: counts.todo };
-          validateExecution(root, report, testPlan, identity, { checkSource: true });
+          validateExecution(root, report, testPlan, identity, { checkSource: true, strict: true });
         } catch (error) { result.status = 'failed'; result.error = `无法读取 UI 测试事件报告：${error.message}`; if (!summary.failures.length) summary.failures.push({ name: result.error }); }
       }
       summary.results.push({ name: stage.name, ...result, ...(testExecutionId ? { testExecutionId, testPlan } : {}), startedAt, completedAt: new Date().toISOString() });

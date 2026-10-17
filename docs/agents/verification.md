@@ -61,7 +61,7 @@ CI 复用正式验收入口并沿用既有日志上传。修改检查工具或 C
 
 ## 执行清单与统一测试证据（#149）
 
-`scripts/test-inventory.json` 明确每个 `.test.*` 的唯一执行者及 `all`、`tooling`、`rows`、`ui-core`、`ui-extended` 范围。新增文件须登记，删除文件须同步移除；未登记、丢失、重复归属、错误执行者或空集合直接失败。UI 组件映射仍由 `ui-check-plan.mjs` 决定实际子集，执行前与清单核对。当前普通检查仍由 Node 执行，预检与完整阶段保持原有重复执行；本工单不提前启用新框架或去重。
+`scripts/test-inventory.json` 明确每个 `.test.*` 的唯一执行者及 `all`、`tooling`、`rows`、`ui-core`、`ui-extended` 范围。新增文件须登记，删除文件须同步移除；未登记、丢失、重复归属、错误执行者或空集合直接失败。UI 组件映射仍由 `ui-check-plan.mjs` 决定实际子集，执行前与清单核对。普通检查按清单分别调度 Node、Vitest 和 Playwright；预检与完整阶段保持原有重复执行，累计去重另行实施。
 
 测试入口先输出预期文件列表。`CLAPGRID_TEST_REPORT` 指定统一记录路径；默认位于 `logs/tests/`。同目录保存 `*-native.json` 原生事件报告及 `*.json.tap.log` 可读 TAP，UI 快检保留 `ui-tests.log`。统一记录采用 `schemaVersion:2`、`kind:test-execution`，包括：
 
@@ -95,3 +95,15 @@ Vitest 同时保存可读日志、官方 JSON 及生命周期原始事件。`onT
 混合范围输出 `kind:test-aggregate`，逐个引用同 `executionId` 的子报告及原生来源；文件并集必须等于预期且没有重复，逐项/汇总、源码、配置和环境均重新核对。单一执行者沿用 `kind:test-execution`。缺报告、旧运行替换、收集/未捕获错误、文件或用例缺口与取消不能通过，所有失败按当前归属进入待办并集中复验。运行与 worker 保持在已有受控进程组，取消后先回收本次后代再释放锁。
 
 上述命令只提供所选范围的开发证据；最终同机三次性能对照、完整固定提交验收以及插件安装/实际宿主验收分别记录，不能由试点通过代替。
+
+## Playwright UI 固定核心（#151）
+
+固定 `@playwright/test` 1.64.1，迁移五个文件、14 项原场景，其中两项样式碰撞无需浏览器，另外 12 项实际运行本机 Chrome。`npm run check:ui -- --scope row --concurrency 1|2` 保留类型检查、固定核心、构建与生命周期清理；`npm run test:ui:core -- --concurrency 1|2` 只运行固定核心，不能当作完整入口预算。默认 UI 快检并发 2，含扩大范围或无法证明为静态样式的变更仍沿用计划器降为 1；最终并发选择与预算由同机三次对照证据决定。`npm run check:ui:native` 保留原生 14 场景对照。普通 all、rows、styles、failed 按清单分派，保留既有预检重复范围，不提前去重。
+
+`playwright.config.ts` 关闭重试、禁止 only。worker 手动启动 Chrome 并通过 CDP 连接，浏览器及其后代留在已有受控进程组；不会下载或改用 bundled Chromium。一个 worker 顺序复用一个 Chrome，每例新建 context/page、实际视口与窗口、DOM/storage、独立编译目录；保留原生鼠标/键盘传输、原脚本等待与断言、AG Grid 及生产同源 CSS，仅保留既有 HTTP 客户端替身边界。缺浏览器、skip、取消、零收集及未捕获错误都不能作为 UI 通过。
+
+官方 Playwright JSON 与可读输出保留在统一报告旁，适配器从 suites/specs 收集预期场景并核对每项实际结果；统一身份与原生 metadata.executionId 绑定。混合 UI 快检仍逐项检查所有实际场景必须 passed。失败按实际声明文件进入待办，在当前源码集中复验，固定提交 verify 使用同一证据校验器。
+
+`browser-timings.jsonl` / 可读日志记实际 Chrome 命令、版本、PID、worker 启停；逐例记录 context/target ID、目录、视口及物理窗口、编译/样式准备、缓存身份、交互和清理耗时。`check-ui/summary.json` 的 totalMs 从入口至生命周期清理完成，不能用并发用例耗时相加代替端到端时间。
+
+资源登记在当前及祖先检查的 active 中，以 owner token、随机 resourceId、精确专属根和目录内 marker 绑定。正常清理与显式 stop 均先确认本次组结束，再核对非符号链接路径与 marker，删除成功后写根外完成证据并解除登记。worker 被强杀也由外层检查回收 profile；marker 或路径被替换则保留现场及检查锁，修复身份后通过显式 stop 恢复。另一同身份清理须有完成证据才能幂等结束，不能按目录名前缀扫描删除。

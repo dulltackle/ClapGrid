@@ -152,7 +152,7 @@ export async function startVerification(root, revision, outputRoot = join(root, 
   root = realpathSync(root); outputRoot = resolve(outputRoot);
   const commit = git(root, ['rev-parse', '--verify', '--end-of-options', `${revision}^{commit}`]);
   const runner = createHash('sha256');
-  for (const name of ['verify.mjs', 'verification-jobs.mjs', 'verification-worker.mjs', 'check-source.mjs', 'check-runner.mjs', 'check-lifecycle.mjs', 'test-runner.mjs', 'test-reporter.mjs', 'test-evidence.mjs', 'vitest-evidence.mjs', 'vitest-reporter.mjs', 'vitest-runner.mjs']) runner.update(readFileSync(fileURLToPath(new URL(name, import.meta.url))));
+  for (const name of ['verify.mjs', 'verification-jobs.mjs', 'verification-worker.mjs', 'check-source.mjs', 'check-runner.mjs', 'check-lifecycle.mjs', 'test-runner.mjs', 'test-reporter.mjs', 'test-evidence.mjs', 'vitest-evidence.mjs', 'vitest-reporter.mjs', 'vitest-runner.mjs', 'playwright-runner.mjs', 'playwright-evidence.mjs', 'playwright-resources.mjs']) runner.update(readFileSync(fileURLToPath(new URL(name, import.meta.url))));
   const identity = { schema: 1, runnerFingerprint: `sha256:${runner.digest('hex')}`, repository: root, commit, tree: git(root, ['rev-parse', `${commit}^{tree}`]), environment: options.environment ?? verificationEnvironment() };
   const key = createHash('sha256').update(JSON.stringify(identity)).digest('hex');
   mkdirSync(outputRoot, { recursive: true });

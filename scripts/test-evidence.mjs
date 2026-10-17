@@ -3,6 +3,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve, relative } from 'node:path';
 import { sourceIdentity, sameSource } from './check-source.mjs';
 import { normalizeNative as vitestNative } from './vitest-evidence.mjs';
+import { normalizeNative as playwrightNative } from './playwright-evidence.mjs';
 
 export const inventoryPath = 'scripts/test-inventory.json';
 const read = path => JSON.parse(readFileSync(path, 'utf8'));
@@ -70,7 +71,7 @@ export function executionPlan(root, { suite = 'all', files, executor } = {}) {
 }
 
 export function executionIdentity(root, executionId = process.env.CLAPGRID_TEST_EXECUTION_ID) {
-  const inputs = ['package.json', 'package-lock.json', inventoryPath, 'scripts/test-runner.mjs', 'scripts/test-reporter.mjs', 'scripts/test-evidence.mjs', 'scripts/vitest-runner.mjs', 'scripts/vitest-reporter.mjs', 'scripts/vitest-evidence.mjs', 'vitest.config.ts'];
+  const inputs = ['package.json', 'package-lock.json', inventoryPath, 'scripts/test-runner.mjs', 'scripts/test-reporter.mjs', 'scripts/test-evidence.mjs', 'scripts/vitest-runner.mjs', 'scripts/vitest-reporter.mjs', 'scripts/vitest-evidence.mjs', 'vitest.config.ts', 'scripts/playwright-runner.mjs', 'scripts/playwright-evidence.mjs', 'scripts/playwright-resources.mjs', 'playwright.config.ts'];
   return { executionId, source: sourceIdentity(root), config: inputs.map(file => [file, existsSync(join(root, file)) ? digest(join(root, file)) : null]), environment: { node: process.version, platform: process.platform, arch: process.arch, chrome: process.env.CHROME_BIN ?? null, nodeOptions: process.env.NODE_OPTIONS ?? null } };
 }
 const caseKey = item => JSON.stringify([item.file, item.name, item.nesting, item.line, item.column]);
@@ -78,13 +79,13 @@ const sameIdentity = (a, b) => a.executionId === b.executionId && sameSource(a.s
 const portable = (root, item) => ({ ...item, ...(item.file ? { file: relativeFile(root, item.file) } : {}) });
 
 /** 执行者适配层只解释报告；是否完整由同一校验器判断。 */
-const normalizeNative = (root, native, executor) => executor === 'vitest' ? vitestNative(root, native) : native;
+const normalizeNative = (root, native, executor) => executor === 'vitest' ? vitestNative(root, native) : executor === 'playwright' ? playwrightNative(root, native) : native;
 
 export function executorEvidence(root, plan, nativePath, identity, { strict = false, logPath, additionalSources = [] } = {}) {
   const native = normalizeNative(root, read(nativePath), plan.executor);
   const report = { schemaVersion: 2, kind: 'test-execution', executor: native.executor, plan, identity, identityAfter: executionIdentity(root, identity.executionId),
     startedAt: native.startedAt, completedAt: native.completedAt, complete: native.complete,
-    expected: { files: plan.files, cases: (native.expectedCases ?? []).map(item => portable(root, item)), caseDiscovery: plan.executor === 'node' ? 'native test:enqueue events' : 'Vitest onTestModuleCollected events' },
+    expected: { files: plan.files, cases: (native.expectedCases ?? []).map(item => portable(root, item)), caseDiscovery: plan.executor === 'node' ? 'native test:enqueue events' : plan.executor === 'playwright' ? 'Playwright official JSON suites/specs' : 'Vitest onTestModuleCollected events' },
     actual: { files: (native.files ?? []).map(item => portable(root, item)), cases: (native.cases ?? []).map(item => portable(root, item)) },
     failures: (native.failures ?? []).map(item => portable(root, item)), errors: native.errors ?? [], summary: native.summary,
     policy: { strict }, sources: { native: { path: nativePath, sha256: digest(nativePath) }, ...(logPath ? { log: { path: logPath, sha256: digest(logPath) } } : {}), ...(additionalSources.length ? { additional: additionalSources.map(path => ({ path, sha256: digest(path) })) } : {}) } };
@@ -97,8 +98,8 @@ export function executorEvidence(root, plan, nativePath, identity, { strict = fa
 export const nodeEvidence = executorEvidence;
 
 /** 在开发检查、固定提交验收和历史复用时执行相同完整性检查。 */
-export function validateExecution(root, report, plan, identity, { checkSource = false } = {}) {
-  if (plan.executor === 'mixed') return validateAggregate(root, report, plan, identity, { checkSource });
+export function validateExecution(root, report, plan, identity, { checkSource = false, strict = false } = {}) {
+  if (plan.executor === 'mixed') return validateAggregate(root, report, plan, identity, { checkSource, strict });
   if (report.schemaVersion !== 2 || report.kind !== 'test-execution' || !report.complete || report.errors?.length || report.failures?.length) throw Error('测试证据不完整或包含失败/未捕获错误');
   if (report.executor?.name !== plan.executor || !report.executor.version || (plan.executor === 'node' && report.executor.version !== process.version)) throw Error('测试执行者身份不符');
   const dependency = plan.executor === 'vitest' ? 'vitest' : plan.executor === 'playwright' ? '@playwright/test' : null;
@@ -111,7 +112,7 @@ export function validateExecution(root, report, plan, identity, { checkSource = 
   if (plan.files.some(file => !cases.some(item => item.file === file))) throw Error('测试文件未收集任何用例');
   const counts = report.summary?.counts;
   if (!report.summary?.success || !counts || counts.failed !== 0 || counts.cancelled !== 0 || counts.tests + counts.suites !== cases.length || counts.passed + counts.skipped + counts.todo !== counts.tests) throw Error('测试原生汇总与逐项执行不符');
-  if (report.policy?.strict && cases.some(item => item.status !== 'passed')) throw Error('UI 测试跳过或 todo 不能通过');
+  if ((strict || report.policy?.strict) && cases.some(item => item.status !== 'passed')) throw Error('UI 测试跳过或 todo 不能通过');
   const source = report.sources?.native;
   if (!source || digest(source.path) !== source.sha256) throw Error('测试原生证据缺失或改变');
   if (report.sources.log && digest(report.sources.log.path) !== report.sources.log.sha256) throw Error('测试原始日志缺失或改变');

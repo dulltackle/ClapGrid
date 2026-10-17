@@ -1,6 +1,5 @@
-import { test } from 'node:test';
+import { test } from './helpers/playwright-browser.js';
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
 
 const script = String.raw`
 import { act } from 'react';
@@ -61,5 +60,5 @@ const cell = () => document.querySelector('[row-id="segment"] [col-id="text"]');
 } catch(error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; } })();
 `;
 for (const [width, height] of [[1200, 800], [780, 579]]) {
-  test(`宽面板文案优先与详情联动（${width}）`, { timeout: 40000 }, t => checkInteractiveBrowser(t, script, fixture, width, height));
+  test(`宽面板文案优先与详情联动（${width}）`, async ({ panel }) => { test.setTimeout(40000); await panel.check( script, fixture, width, height); });
 }

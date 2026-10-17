@@ -17,6 +17,7 @@ export async function runLogged(command, args, cwd, logPath, context, env = {}) 
     const childEnv = { ...context.env, ...env };
     // 普通检查命令不是外层原生测试器的子测试，不能继承其内部报告协议。
     delete childEnv.NODE_TEST_CONTEXT;
+    childEnv.CLAPGRID_CHECK_COMMAND_ROOT = cwd;
     const child = spawn(command, args, { cwd, detached: process.platform !== 'win32', env: childEnv, stdio: ['ignore', 'pipe', 'pipe'] });
     let errorMessage, group, stopping;
     let tail = '', remainder = '';

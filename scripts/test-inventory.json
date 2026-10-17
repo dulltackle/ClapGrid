@@ -262,6 +262,14 @@
       ]
     },
     {
+      "file": "tests/playwright-runner.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ]
+    },
+    {
       "file": "tests/plugin-source-update.test.ts",
       "executor": "node",
       "scopes": [
@@ -490,7 +498,7 @@
     },
     {
       "file": "tests/segment-note-layout-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "rows",
@@ -544,7 +552,7 @@
     },
     {
       "file": "tests/speech-cell-layout-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "rows",
@@ -597,7 +605,7 @@
     },
     {
       "file": "tests/style-collisions.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "ui-core",
@@ -606,7 +614,7 @@
     },
     {
       "file": "tests/table-controls-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "ui-core",
@@ -728,7 +736,7 @@
     },
     {
       "file": "tests/wide-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "rows",

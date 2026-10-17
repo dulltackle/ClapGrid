@@ -55,6 +55,12 @@ export function checkRunProcessesEnded(root, token, evidenceDirectory) {
   return groups(lockDirectory(root)).every(group => !groupAlive(group));
 }
 
+export function checkRunGroupsEnded(root, token) {
+  const owner = currentCheckRun(root);
+  if (!owner || owner.token !== token || owner.namespace !== namespace() || owner.reservation) return null;
+  return groups(lockDirectory(root)).every(group => !groupAlive(group));
+}
+
 function requestStop(owner) {
   return new Promise((resolveRequest, reject) => {
     const client = createConnection(owner.socket);
@@ -225,6 +231,7 @@ export async function withCheckRun(root, kind, work, options = {}) {
     if (owns) {
       // 包括组长提前退出但孙进程仍运行的情况，退出确认前不释放锁。
       for (const group of groups(directory)) await stopGroup(group);
+      if (readdirSync(directory).some(name => name.startsWith('resource-'))) await (await import('./playwright-resources.mjs')).cleanupCheckResources(directory, owner.token, checkRunGroupsEnded);
       await new Promise(resolveClose => server.close(resolveClose));
       if (owner.verificationDirectory) atomicJson(join(owner.verificationDirectory, 'lifecycle-ended.json'), { token: owner.token, endedAt: new Date().toISOString() });
       rmSync(directory, { recursive: true });
@@ -266,6 +273,7 @@ export async function stopCheckRun(root, options = {}) {
       if (acknowledged || birth(owner.pid) === owner.birth) throw Error(`检查 ${owner.pid} 尚未完成停止，保留锁；请查看日志`);
       for (const group of groups(directory)) await stopGroup(group);
       if (read(join(directory, 'owner.json')).token !== owner.token) throw Error('运行身份已变化，拒绝清理');
+      if (readdirSync(directory).some(name => name.startsWith('resource-'))) await (await import('./playwright-resources.mjs')).cleanupCheckResources(directory, owner.token, checkRunGroupsEnded);
       if (owner.verificationDirectory) atomicJson(join(owner.verificationDirectory, 'lifecycle-ended.json'), { token: owner.token, endedAt: new Date().toISOString() });
       rmSync(directory, { recursive: true });
       if (process.platform !== 'win32' && owner.socket) rmSync(owner.socket, { force: true });
