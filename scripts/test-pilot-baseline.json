@@ -1,0 +1,264 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "9508667c35b34a68c97c6312dc45348f01737b5c",
+  "note": "原生快照保留既有全部断言；candidate 由迁移工单逐场景补齐。UI 14 项中 12 项运行浏览器；常规检查不执行 .native.ts。",
+  "groups": {
+    "logic": {
+      "expectedCases": 16,
+      "scenarios": [
+        {
+          "source": "tests/text-search.test.ts",
+          "native": "tests/text-search.native.ts",
+          "name": "文案查找按连续输入匹配，保留空格和原文偏移",
+          "candidate": null
+        },
+        {
+          "source": "tests/text-search.test.ts",
+          "native": "tests/text-search.native.ts",
+          "name": "重复和重叠命中高亮所有涉及的原文且不解释正则",
+          "candidate": null
+        },
+        {
+          "source": "tests/project-editing.test.ts",
+          "native": "tests/project-editing.native.ts",
+          "name": "单次保存先关闭连接再返回成功仍确认保存，释放后旧连接不影响新编辑",
+          "candidate": null
+        },
+        {
+          "source": "tests/project-editing.test.ts",
+          "native": "tests/project-editing.native.ts",
+          "name": "设置连续保存持有同一修改权，保存时断线等待请求结果但不恢复旧会话",
+          "candidate": null
+        },
+        {
+          "source": "tests/project-editing.test.ts",
+          "native": "tests/project-editing.native.ts",
+          "name": "旧查询成功或失败均不能覆盖设置编辑；同轮查询按最新请求接受",
+          "candidate": null
+        },
+        {
+          "source": "tests/project-editing.test.ts",
+          "native": "tests/project-editing.native.ts",
+          "name": "离页后迟到的修改权立即释放，重新激活后旧响应不打开编辑器",
+          "candidate": null
+        },
+        {
+          "source": "tests/project-editing.test.ts",
+          "native": "tests/project-editing.native.ts",
+          "name": "取消保存后旧回调、错误和释放都不能影响后续编辑，未知结果不重试",
+          "candidate": null
+        },
+        {
+          "source": "tests/project-editing.test.ts",
+          "native": "tests/project-editing.native.ts",
+          "name": "查询慢于轮询间隔时仍接收已完成结果，新查询完成后忽略旧失败",
+          "candidate": null
+        },
+        {
+          "source": "tests/project-editing.test.ts",
+          "native": "tests/project-editing.native.ts",
+          "name": "单次保存结果未知时释放修改权、只报告一次失败且不重试",
+          "candidate": null
+        },
+        {
+          "source": "tests/speech-provider.test.ts",
+          "native": "tests/speech-provider.native.ts",
+          "name": "跨网络分块拼接 SSE，只有完成标记后才返回完整音频",
+          "candidate": null
+        },
+        {
+          "source": "tests/speech-provider.test.ts",
+          "native": "tests/speech-provider.native.ts",
+          "name": "HTTP 401 返回原因与下一步且不泄露响应正文",
+          "candidate": null
+        },
+        {
+          "source": "tests/speech-provider.test.ts",
+          "native": "tests/speech-provider.native.ts",
+          "name": "HTTP 402 返回原因与下一步且不泄露响应正文",
+          "candidate": null
+        },
+        {
+          "source": "tests/speech-provider.test.ts",
+          "native": "tests/speech-provider.native.ts",
+          "name": "HTTP 429 返回原因与下一步且不泄露响应正文",
+          "candidate": null
+        },
+        {
+          "source": "tests/speech-provider.test.ts",
+          "native": "tests/speech-provider.native.ts",
+          "name": "HTTP 503 返回原因与下一步且不泄露响应正文",
+          "candidate": null
+        },
+        {
+          "source": "tests/speech-provider.test.ts",
+          "native": "tests/speech-provider.native.ts",
+          "name": "部分音频与断流标记结果未知，空成功响应不算成功",
+          "candidate": null
+        },
+        {
+          "source": "tests/speech-provider.test.ts",
+          "native": "tests/speech-provider.native.ts",
+          "name": "供应商缺失或非法状态码不能确认为失败，必须提示可能已计费",
+          "candidate": null
+        }
+      ]
+    },
+    "service": {
+      "expectedCases": 4,
+      "scenarios": [
+        {
+          "source": "tests/service.test.ts",
+          "native": "tests/service.native.ts",
+          "name": "HTTP 查询共享业务层，静态面板与项目数据隔离，拒绝向查询接口写入",
+          "candidate": null
+        },
+        {
+          "source": "tests/service.test.ts",
+          "native": "tests/service.native.ts",
+          "name": "异常请求路径返回 400，服务仍能查询项目状态",
+          "candidate": null
+        },
+        {
+          "source": "tests/service.test.ts",
+          "native": "tests/service.native.ts",
+          "name": "HTTP 完成编辑才返回已提交快照，数据库占用时保存失败且重开保留原值",
+          "candidate": null
+        },
+        {
+          "source": "tests/service.test.ts",
+          "native": "tests/service.native.ts",
+          "name": "旧服务实例的绑定地址不能在其他服务读取或修改项目",
+          "candidate": null
+        }
+      ]
+    },
+    "ui": {
+      "expectedCases": 14,
+      "scenarios": [
+        {
+          "source": "tests/style-collisions.test.ts",
+          "native": "tests/style-collisions.native.ts",
+          "name": "解析生成工具类的转义与嵌套，拒绝同名冲突和无效例外",
+          "candidate": null
+        },
+        {
+          "source": "tests/style-collisions.test.ts",
+          "native": "tests/style-collisions.native.ts",
+          "name": "生产同源 CSS 的工具类不得覆盖既有业务类名",
+          "candidate": null
+        },
+        {
+          "source": "tests/table-controls-panel.test.ts",
+          "native": "tests/table-controls-panel.native.ts",
+          "name": "表格紧凑操作主题与虚拟行（1600×1000）",
+          "candidate": null
+        },
+        {
+          "source": "tests/table-controls-panel.test.ts",
+          "native": "tests/table-controls-panel.native.ts",
+          "name": "表格紧凑操作主题与虚拟行（420×800）",
+          "candidate": null
+        },
+        {
+          "source": "tests/table-controls-panel.test.ts",
+          "native": "tests/table-controls-panel.native.ts",
+          "name": "表格紧凑操作主题与虚拟行（420×360）",
+          "candidate": null
+        },
+        {
+          "source": "tests/segment-note-layout-panel.test.ts",
+          "native": "tests/segment-note-layout-panel.native.ts",
+          "name": "文案主导行布局与说明展开（1200×800）",
+          "candidate": null
+        },
+        {
+          "source": "tests/segment-note-layout-panel.test.ts",
+          "native": "tests/segment-note-layout-panel.native.ts",
+          "name": "文案主导行布局与说明展开（780×579）",
+          "candidate": null
+        },
+        {
+          "source": "tests/segment-note-layout-panel.test.ts",
+          "native": "tests/segment-note-layout-panel.native.ts",
+          "name": "文案主导行布局与说明展开（420×800）",
+          "candidate": null
+        },
+        {
+          "source": "tests/segment-note-layout-panel.test.ts",
+          "native": "tests/segment-note-layout-panel.native.ts",
+          "name": "文案主导行布局与说明展开（420×360）",
+          "candidate": null
+        },
+        {
+          "source": "tests/speech-cell-layout-panel.test.ts",
+          "native": "tests/speech-cell-layout-panel.native.ts",
+          "name": "配音主按钮与状态横向排列及双层行边界（780×579）",
+          "candidate": null
+        },
+        {
+          "source": "tests/speech-cell-layout-panel.test.ts",
+          "native": "tests/speech-cell-layout-panel.native.ts",
+          "name": "配音主按钮与状态横向排列及双层行边界（541×579）",
+          "candidate": null
+        },
+        {
+          "source": "tests/speech-cell-layout-panel.test.ts",
+          "native": "tests/speech-cell-layout-panel.native.ts",
+          "name": "配音主按钮与状态横向排列及双层行边界（420×360）",
+          "candidate": null
+        },
+        {
+          "source": "tests/wide-panel.test.ts",
+          "native": "tests/wide-panel.native.ts",
+          "name": "宽面板文案优先与详情联动（1200）",
+          "candidate": null
+        },
+        {
+          "source": "tests/wide-panel.test.ts",
+          "native": "tests/wide-panel.native.ts",
+          "name": "宽面板文案优先与详情联动（780）",
+          "candidate": null
+        }
+      ]
+    }
+  },
+  "snapshots": [
+    {
+      "file": "tests/text-search.native.ts",
+      "sha256": "261c977cbb143dfe6cf258f3bb86a5eae953b1427f080c501cf065603d48923d"
+    },
+    {
+      "file": "tests/project-editing.native.ts",
+      "sha256": "4072a63d65bdc77da749c0ce6932c005ee4fe7c97006be60c525abe8cfbff714"
+    },
+    {
+      "file": "tests/speech-provider.native.ts",
+      "sha256": "45cfb554636b49ff93c89fb6238c3373eb71864c568690d9cb92661b8b3fa628"
+    },
+    {
+      "file": "tests/service.native.ts",
+      "sha256": "19fa092818649ac41fcce3f16d3f07e732f540ac1f9c798ee614daafe114a767"
+    },
+    {
+      "file": "tests/style-collisions.native.ts",
+      "sha256": "894c951ef6805a99464315c9ff624e96d4af06090d31e2cbbf36f1d349be9940"
+    },
+    {
+      "file": "tests/table-controls-panel.native.ts",
+      "sha256": "77a993d2a68c69366528f4dd7b5857b1976cfa04c275bd257141791882708f48"
+    },
+    {
+      "file": "tests/segment-note-layout-panel.native.ts",
+      "sha256": "f051dcc13777e63c8c74a6faf6411b23ea67ece362e99f25282d3bdbed87fae8"
+    },
+    {
+      "file": "tests/speech-cell-layout-panel.native.ts",
+      "sha256": "24121934f0208d00581788cabdecbefc8b4ea0c0bf7c9e7e432ea29d1a24115e"
+    },
+    {
+      "file": "tests/wide-panel.native.ts",
+      "sha256": "77448008c64c43dfa6c7826ea06c77735327950737a1ababcce4412f1b65cf19"
+    }
+  ]
+}

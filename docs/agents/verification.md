@@ -58,3 +58,26 @@ UI 测试同时保存 TAP 和原生事件 JSON；失败文件写入同一失败�
 全套测试包含样式冲突和主题矩阵；定向运行使用 `npm run styles:check`。主题矩阵必须实际启动 Chrome，缺失浏览器不能视为通过。其他测试的环境跳过仍以 test.log 为准，脚本退出零不表示所有验收条款均已运行。
 
 CI 复用正式验收入口并沿用既有日志上传。修改检查工具或 CI 时，优先用隔离小仓库回归取消子进程、互斥、提交隔离、源码失效、预检阻塞与失败清单，再固定候选提交运行全套。开发阶段先跑受影响检查，修复与审查稳定后开始完整正式验收；完整测试收集全部失败后统一复验，避免逐项修正就重开全套。
+
+## 执行清单与统一测试证据（#149）
+
+`scripts/test-inventory.json` 明确每个 `.test.*` 的唯一执行者及 `all`、`tooling`、`rows`、`ui-core`、`ui-extended` 范围。新增文件须登记，删除文件须同步移除；未登记、丢失、重复归属、错误执行者或空集合直接失败。UI 组件映射仍由 `ui-check-plan.mjs` 决定实际子集，执行前与清单核对。当前普通检查仍由 Node 执行，预检与完整阶段保持原有重复执行；本工单不提前启用新框架或去重。
+
+测试入口先输出预期文件列表。`CLAPGRID_TEST_REPORT` 指定统一记录路径；默认位于 `logs/tests/`。同目录保存 `*-native.json` 原生事件报告及 `*.json.tap.log` 可读 TAP，UI 快检保留 `ui-tests.log`。统一记录采用 `schemaVersion:2`、`kind:test-execution`，包括：
+
+- `executor` 名称/版本，`plan` 及清单哈希，源码、配置与环境的起止身份。检查阶段创建随机 `testExecutionId`，经受控环境绑定原生与统一报告，汇总保留该原身份；默认检查拒绝复制旧报告，显式历史复用校验原阶段身份而不伪造新运行。
+- `expected.files` 为执行前清单，`expected.cases` 为原生 `test:enqueue` 的运行时注册集合，`caseDiscovery` 明确其来源；它不能证明未被注册的业务场景，试点行为另由场景映射审阅。
+- `actual.files` 为逐文件原生摘要，`actual.cases` 记录逐例状态、名称、位置和耗时；全局摘要必须与注册/完成集合及文件集合对应。
+- 全部 `failures`、`errors`、起止时间、`complete/status`，原生来源及可读日志路径与 SHA256。
+
+`test-evidence.mjs` 的同一校验器用于开发完整检查、UI 检查、固定提交正式验收及显式 `--reuse-passed`。成功退出不足以证明通过：报告丢失/不完整、零用例、文件/用例集合缺口、来源损坏、收集/未捕获错误、取消以及身份不符均不能通过。UI 使用严格政策，skip/todo 均失败；普通 Node 范围沿用既有 skip/todo 政策，必须明确呈现。无法定位的报告错误以未知失败进入待办，复验保守扩大到完整测试，并集保留所有已知原生对照。待办的 `referenceFiles` 来自失败阶段的原 `testPlan`，报告丢失时仍保留对照范围；复验在当前清单和快照哈希校验后执行，不能清待办漏掉原范围。所有测试执行者的失败统一按当前源码集中复验。
+
+## 原生试点对照
+
+`scripts/test-pilot-baseline.json` 固定原生快照哈希与 16/4/14 个原场景，逐项记录原测试、原生对照及候选对应。`tests/*.native.ts` 保留既有断言及相对 imports，清单标为 `comparison-only`；常规完整检查不运行它们，修改快照需明确重建基准。
+
+- `npm run test:native:logic`：文本搜索 2、编辑状态 7、配音供应商协议 7，共 16 项。
+- `npm run test:native:service`：真实 HTTP/SQLite 4 项。
+- `npm run check:ui:native -- --concurrency 2`：固定核心完整入口，14 项含 12 项真实浏览器；另用 `--concurrency 1` 比较并发。
+
+迁移后在同一固定试点源码、同机、相同浏览器 channel 和相同行为断言下显式运行原生/候选各至少三次；记录源码/环境、冷热缓存、并发、端到端与分项耗时。原生快照与候选不是两套常规验收。预算、并发/缓存/生命周期边界见 [ADR 0009](../adr/0009-test-executors-and-cumulative-evidence.md)。当前设计与原生基线准备不代表框架迁移、性能达标、固定提交正式验收或实际宿主交付完成。

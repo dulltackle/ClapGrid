@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, lstatSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, existsSync, readdirSync, lstatSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -69,6 +69,10 @@ export async function executeVerification(root, revision, outputRoot = join(root
       if (!sameSource(summary.source, summary.sourceAfter) || summary.sourceAfter.dirty || !check.source || !check.sourceAfter || !sameSource(summary.source, check.source) || !sameSource(summary.source, check.sourceAfter)) throw Error('受验源码或项目检查证据发生变化');
       if (!check.preflight || check.preflight.status !== 'passed' || !sameSource(summary.source, check.preflight.source) || !sameSource(summary.source, check.preflight.sourceAfter)) throw Error('固定提交的强制预检未通过或证据不匹配');
       if (result.status !== 'passed' || check.status !== 'passed' || check.pending?.length !== 0 || !Array.isArray(check.results) || check.results.length !== 3 || !['typecheck', 'test', 'build'].every(name => check.results.some(step => step.name === name && step.status === 'passed' && step.exitCode === 0))) throw Error('项目检查未全部通过');
+      if (existsSync(join(checkout, 'scripts/test-inventory.json'))) {
+        const { validateCheckEvidence } = await import('./test-evidence.mjs');
+        validateCheckEvidence(checkout, check, summary.source);
+      }
       summary.phase = 'cleanup'; save();
     }, { reservation: job?.token, metadata: job ? { verificationKey: job.key, verificationDirectory: directory } : {} });
     summary.status = 'passed';

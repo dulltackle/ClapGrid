@@ -1,0 +1,837 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "file": "tests/agent-tools.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/audio-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/browser-build-cache.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ]
+    },
+    {
+      "file": "tests/browser-startup.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ]
+    },
+    {
+      "file": "tests/build-identity.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/business.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/check-runner.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ]
+    },
+    {
+      "file": "tests/delete-confirm-focus.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/diagnose-identity.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/dialog-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/drag-feedback-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/drag-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/drag-scroll-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "rows"
+      ]
+    },
+    {
+      "file": "tests/editing-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "rows"
+      ]
+    },
+    {
+      "file": "tests/export-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/export-service.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/export-settings-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/export-settings.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/export-tasks.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/layout-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/lifecycle-export.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/lifecycle-runtime.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/lifecycle.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/linux-components.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/long-text-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "rows",
+        "ui-extended"
+      ]
+    },
+    {
+      "file": "tests/mcp.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/media-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/modification.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/more-tasks-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/ordinary-add-focus-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/organization.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/panel-release.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/panel-targets.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "rows"
+      ]
+    },
+    {
+      "file": "tests/panel-update-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/panel-update.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/paste-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/plugin-source-update.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/plugin-update.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/process-trace-command.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/production-archive-baseline.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/production-archive-node.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/production-archive-publication.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/production-document.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/production-evidence-recheck.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/production-evidence.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/production-impact.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/production-manifest-encoding.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/production-package-restore.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/production-package.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/production-reference-encoding.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/production-references.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/production-report-identity.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/production-sample.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/production.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/project-access.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/project-editing.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/project-import.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/relative-insert-lifecycle-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/relative-insert-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/relative-insert.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/review-contract.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/row-hover-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "ui-extended"
+      ]
+    },
+    {
+      "file": "tests/row-menu-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "rows"
+      ]
+    },
+    {
+      "file": "tests/row-selection-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/search-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/segment-details-focus-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/segment-draft-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/segment-focus-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/segment-note-layout-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "rows",
+        "ui-core",
+        "ui-extended"
+      ]
+    },
+    {
+      "file": "tests/selection-menu-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/selection-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/service-exit-wait.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ]
+    },
+    {
+      "file": "tests/service.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/shell-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/speech-batch.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/speech-cell-layout-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "rows",
+        "ui-core",
+        "ui-extended"
+      ]
+    },
+    {
+      "file": "tests/speech-config.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/speech-export-lock.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/speech-provider.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/speech-retention.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/speech-service.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/speech.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/style-collisions.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "ui-core",
+        "ui-extended"
+      ]
+    },
+    {
+      "file": "tests/table-controls-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "ui-core",
+        "ui-extended"
+      ]
+    },
+    {
+      "file": "tests/test-evidence.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ]
+    },
+    {
+      "file": "tests/test-reporting.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ]
+    },
+    {
+      "file": "tests/text-search.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/thread-selection.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/ui-check-plan.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ]
+    },
+    {
+      "file": "tests/ui-check-runner.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ]
+    },
+    {
+      "file": "tests/verification-jobs.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ]
+    },
+    {
+      "file": "tests/video-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/video-preview-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/video-service.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/video.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/visual-note-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "ui-extended"
+      ]
+    },
+    {
+      "file": "tests/visual-note.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/voice-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/wide-panel.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "rows",
+        "ui-core",
+        "ui-extended"
+      ]
+    },
+    {
+      "file": "tests/workspace-heartbeat.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/workspace-inflight-edit.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/workspace-runtime.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/workspace-sharing.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "file": "tests/workspace-task-continuity.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "file": "tests/text-search.native.ts",
+      "executor": "node",
+      "scopes": [
+        "comparison-only"
+      ],
+      "group": "logic"
+    },
+    {
+      "file": "tests/project-editing.native.ts",
+      "executor": "node",
+      "scopes": [
+        "comparison-only"
+      ],
+      "group": "logic"
+    },
+    {
+      "file": "tests/speech-provider.native.ts",
+      "executor": "node",
+      "scopes": [
+        "comparison-only"
+      ],
+      "group": "logic"
+    },
+    {
+      "file": "tests/service.native.ts",
+      "executor": "node",
+      "scopes": [
+        "comparison-only"
+      ],
+      "group": "service"
+    },
+    {
+      "file": "tests/style-collisions.native.ts",
+      "executor": "node",
+      "scopes": [
+        "comparison-only"
+      ],
+      "group": "ui"
+    },
+    {
+      "file": "tests/table-controls-panel.native.ts",
+      "executor": "node",
+      "scopes": [
+        "comparison-only"
+      ],
+      "group": "ui"
+    },
+    {
+      "file": "tests/segment-note-layout-panel.native.ts",
+      "executor": "node",
+      "scopes": [
+        "comparison-only"
+      ],
+      "group": "ui"
+    },
+    {
+      "file": "tests/speech-cell-layout-panel.native.ts",
+      "executor": "node",
+      "scopes": [
+        "comparison-only"
+      ],
+      "group": "ui"
+    },
+    {
+      "file": "tests/wide-panel.native.ts",
+      "executor": "node",
+      "scopes": [
+        "comparison-only"
+      ],
+      "group": "ui"
+    }
+  ]
+}

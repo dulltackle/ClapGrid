@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { release } from 'node:os';
 import { setTimeout } from 'node:timers/promises';
+import { validateCheckEvidence } from './test-evidence.mjs';
 import { git, sameSource, sourceIdentity } from './check-source.mjs';
 import { atomicJson, reserveCheckRun, releaseCheckReservation, currentCheckRun, checkRunProcessesEnded, stopCheckRun, stateDirectory } from './check-lifecycle.mjs';
 export { atomicJson } from './check-lifecycle.mjs';
@@ -125,6 +126,7 @@ function reusableEvidence(summary) {
     const current = sourceIdentity(summary.checkout);
     const preflight = check.preflight;
     const pkg = read(join(summary.checkout, 'package.json'));
+    if (existsSync(join(summary.checkout, 'scripts/test-inventory.json'))) validateCheckEvidence(summary.checkout, check, summary.source);
     const expectedPreflight = pkg.checkPreflight ?? ['typecheck'];
     const evidenceComplete = result => {
       if (!result.log || !existsSync(result.log)) return false;

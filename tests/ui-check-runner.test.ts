@@ -23,6 +23,9 @@ function repository(t: TestContext, typecheck = 'process.exit(0)', extraThemePan
   for (const path of extendedTests) writeFileSync(join(root, path), 'import {test} from "node:test"; test("fixture stage", () => {});');
   if (extraThemePanel) writeFileSync(join(root, 'tests/theme-extra-panel.test.ts'), 'import {test} from "node:test"; test("theme fixture stage", () => {});');
   symlinkSync(fileURLToPath(new URL('../node_modules', import.meta.url)), join(root, 'node_modules'), 'dir');
+  mkdirSync(join(root, 'scripts'));
+  const files = [...extendedTests, ...(extraThemePanel ? ['tests/theme-extra-panel.test.ts'] : [])];
+  writeFileSync(join(root, 'scripts/test-inventory.json'), JSON.stringify({ schemaVersion: 1, files: files.map(file => ({ file, executor: 'node', scopes: ['all'] })) }));
   git('add', '.'); git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'fixture');
   // 本组验证调度与证据；真实 Chrome 运行另由 panel 用例覆盖。
   const previous = process.env.CHROME_BIN; process.env.CHROME_BIN = process.execPath;

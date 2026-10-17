@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { createWriteStream, mkdirSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { resolve, relative, join } from 'node:path';
@@ -49,15 +50,17 @@ export async function runLogged(command, args, cwd, logPath, context, env = {}) 
 
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const read = path => JSON.parse(readFileSync(path, 'utf8'));
+const usesEvidence = root => existsSync(join(root, 'scripts/test-inventory.json')) || (existsSync(join(root, 'tests')) && existsSync(join(root, 'scripts/test-evidence.mjs')));
 const nextDirectory = (root, mode) => resolve(root, `logs/${mode}`, new Date().toISOString().replaceAll(':', '-') + `-${process.pid}`);
 
 export function recordCheckFailures(context, summary) {
   if (summary.status !== 'failed' || !summary.results.some(result => result.status === 'failed')) return;
   const path = join(stateDirectory(context.root), 'failures.json');
   const previous = existsSync(path) ? read(path) : { stages: [], failures: [] };
-  const stages = [...new Set([...previous.stages, ...summary.results.filter(result => result.status === 'failed').map(result => ['test:rows', 'test:failed', 'ui-tests'].includes(result.name) ? 'test' : result.name)])];
+  const stages = [...new Set([...previous.stages, ...summary.results.filter(result => result.status === 'failed').map(result => (result.name.startsWith('test') || result.name === 'ui-tests') ? 'test' : result.name)])];
   const failures = [...previous.failures, ...summary.failures];
-  atomicJson(path, { schemaVersion: 1, source: summary.source, stages, failures, observedAt: summary.completedAt, directory: summary.directory });
+  const referenceFiles = [...new Set([...(previous.referenceFiles ?? []), ...summary.results.filter(result => result.status === 'failed').flatMap(result => result.testPlan?.files.filter(file => file.endsWith('.native.ts')) ?? [])])];
+  atomicJson(path, { schemaVersion: 1, source: summary.source, stages, failures, referenceFiles, observedAt: summary.completedAt, directory: summary.directory });
 }
 
 async function phases(root, directory, names, mode, context, env = {}) {
@@ -75,15 +78,21 @@ async function phases(root, directory, names, mode, context, env = {}) {
       const slug = name.replaceAll(':', '-');
       const report = resolve(directory, `${slug}-tests.json`), log = resolve(directory, `${slug}.log`);
       const startedAt = new Date().toISOString();
-      const result = await runLogged(npm, ['run', name], root, log, context, { ...env, CLAPGRID_TEST_REPORT: report });
-      summary.results.push({ name, ...result, log, startedAt, completedAt: new Date().toISOString() });
-      if (existsSync(report) && result.status !== 'cancelled') {
+      const evidence = usesEvidence(root) ? await import('./test-evidence.mjs') : null;
+      const plan = evidence?.stagePlan(root, name, env);
+      const testExecutionId = plan ? randomUUID() : undefined;
+      const identity = plan ? evidence.executionIdentity(root, testExecutionId) : null;
+      const result = await runLogged(npm, ['run', name], root, log, context, { ...env, CLAPGRID_TEST_REPORT: report, ...(testExecutionId ? { CLAPGRID_TEST_EXECUTION_ID: testExecutionId } : {}) });
+      summary.results.push({ name, ...result, ...(testExecutionId ? { testExecutionId, testPlan: plan } : {}), log, startedAt, completedAt: new Date().toISOString() });
+      if ((plan || existsSync(report)) && result.status !== 'cancelled') {
         summary.results.at(-1).testReport = report;
         try {
           const tests = read(report);
           summary.failures.push(...(tests.failures ?? []).map(item => ({ ...item, file: item.file ? relative(root, resolve(root, item.file)).replaceAll('\\', '/') : undefined })));
+          if (plan) evidence.validateExecution(root, tests, plan, identity, { checkSource: true });
           if (!tests.complete) { result.status = 'failed'; result.error = '测试事件报告不完整'; }
         } catch (error) { result.status = 'failed'; result.error = `无法读取测试事件报告：${error.message}`; }
+        if (result.status === 'failed' && !summary.failures.length) summary.failures.push({ name: result.error ?? '测试执行失败，位置未知' });
         Object.assign(summary.results.at(-1), result);
       }
       summary.pending = names.filter(step => !summary.results.some(result => result.name === step && result.status !== 'cancelled'));
@@ -138,6 +147,14 @@ export async function runCheck(root, directory, options = {}) {
     result.preflight = preflight;
     result.recheck = recheck;
     if (!sameSource(preflight.source, result.source)) result.status = 'invalidated';
+    if (result.status === 'passed' && usesEvidence(root)) {
+      try { (await import('./test-evidence.mjs')).validateCheckEvidence(root, result, result.source); }
+      catch (error) {
+        result.status = 'failed'; result.error = error.message;
+        Object.assign(result.results.find(step => step.name === 'test'), { status: 'failed', error: error.message });
+        recordCheckFailures(context, result);
+      }
+    }
     atomicJson(join(directory, 'summary.json'), result);
     return result;
   }, options);
