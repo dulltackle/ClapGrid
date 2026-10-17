@@ -25,14 +25,23 @@ export async function checkRelated(root, options = {}) {
 async function executeRelated(root, { base = 'HEAD', all = false, concurrency = 2, directory = join(root, 'logs/check-related', `${new Date().toISOString().replaceAll(':', '-')}-${process.pid}`) }, context) {
   mkdirSync(directory, { recursive: true }); context.recordLog(directory);
   const summary = { schemaVersion: 1, mode: 'related-development', directory, startedAt: new Date().toISOString(), source: sourceIdentity(root), status: 'running', relatedFeedback: 'not-run', uiLocalFeedback: 'not-certified', completeForLocalUi: false, completeForFullCheck: false, completeForFormalVerification: false, strictTestFiles: [], results: [], failures: [], expected: { files: [] }, actual: { files: [], cases: [] }, pending: [], note: '相关测试反馈仅证明本次选中范围；完整开发检查及固定提交正式验收仍必需。阶段指纹能发现变化，不证明期间从未修改后恢复。' };
+  if (process.env.CLAPGRID_RELATED_ROUND_ID) summary.watchRoundId = process.env.CLAPGRID_RELATED_ROUND_ID;
   const save = () => { summary.heartbeatAt = new Date().toISOString(); atomicJson(join(directory, 'summary.json'), summary); };
   const previousChrome = process.env.CHROME_BIN;
   checks.checkProgress(`日常检查日志：${directory}`); save();
+  let boundMainId;
   try {
     if (![1, 2].includes(Number(concurrency))) throw Error('--concurrency 仅支持 1 或 2');
+    let recheckContext = context;
+    if (process.env.CLAPGRID_RELATED_ROUND_ID) {
+      boundMainId = process.env.CLAPGRID_RELATED_TEST_EXECUTION_ID;
+      const ids = JSON.parse(process.env.CLAPGRID_RELATED_RECHECK_IDS ?? '{}'), values = [boundMainId, ...Object.values(ids)];
+      if (values.some(id => typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) || new Set(values.map(id => id.toLowerCase())).size !== values.length) throw Error('watch父拥有者须提供独立合法测试nonce');
+      recheckContext = { ...context, testExecutionId(name) { if (!ids[name]) throw Error(`父拥有者未分配复验nonce：${name}`); return ids[name]; } };
+    }
     if (existsSync(join(stateDirectory(root), 'failures.json'))) {
       // 失败政策由公共runner维护；后续独立运行不取得旧run的累计资格。
-      summary.recheck = await checks.recheckFailures(root, join(directory, 'recheck'), context);
+      summary.recheck = await checks.recheckFailures(root, join(directory, 'recheck'), recheckContext);
       if (summary.recheck && summary.recheck.status !== 'passed') { summary.status = summary.recheck.status; summary.blocked = true; return summary; }
     }
     summary.sourceAfter = sourceIdentity(root);
@@ -53,7 +62,7 @@ async function executeRelated(root, { base = 'HEAD', all = false, concurrency = 
       summary.phase = name; const startedAt = new Date().toISOString();
       const log = join(directory, `${name}.log`), testReport = join(directory, 'tests.json');
       let result, identity, testPlan;
-      const testExecutionId = name === 'test' ? randomUUID() : undefined;
+      const testExecutionId = name === 'test' ? boundMainId ?? randomUUID() : undefined;
       try {
         if (name === 'test') {
           testPlan = executionPlan(root, { suite: 'all', files: summary.plan.selected });
@@ -108,15 +117,19 @@ async function executeRelated(root, { base = 'HEAD', all = false, concurrency = 
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    const { values } = parseArgs({ options: { base: { type: 'string', default: 'HEAD' }, all: { type: 'boolean', default: false }, plan: { type: 'boolean', default: false }, concurrency: { type: 'string', default: '2' } } });
+    const { values } = parseArgs({ options: { base: { type: 'string', default: 'HEAD' }, all: { type: 'boolean', default: false }, plan: { type: 'boolean', default: false }, watch: { type: 'boolean', default: false }, concurrency: { type: 'string', default: '2' } } });
     if (!['1', '2'].includes(values.concurrency)) throw Error('--concurrency 仅支持 1 或 2');
     const root = fileURLToPath(new URL('../', import.meta.url));
-    if (values.plan) {
+    if (values.watch) {
+      if (values.plan) throw Error('--watch 不与 --plan 同用');
+      const summary = await (await import('./check-watch.mjs')).watchRelated(root, values);
+      process.exitCode = summary.state === 'cancelled' ? 130 : 1;
+    } else if (values.plan) {
       const source = sourceIdentity(root), plan = createRelatedPlan(root, values), sourceAfter = sourceIdentity(root);
       if (!sameSource(source, sourceAfter)) throw Error('计划期间源码变化，选择已失效');
       console.log(JSON.stringify({ ...plan, source, sourceAfter, planOnly: true }, null, 2));
     } else {
-      const summary = await checkRelated(root, values);
+      const summary = await checkRelated(root, { ...values, ...(process.env.CLAPGRID_RELATED_DIRECTORY ? { directory: process.env.CLAPGRID_RELATED_DIRECTORY } : {}) });
       checks.checkProgress(`实际测试：${summary.actual.files.map(item => item.file).join(', ') || '无'}；日常反馈：${summary.status}；UI本地反馈：${summary.uiLocalFeedback}；完整检查/正式验收：未完成；总耗时：${summary.totalMs.toFixed(1)}ms`);
       process.exitCode = summary.status === 'passed' ? 0 : summary.status === 'cancelled' ? 130 : ['no-changes', 'no-tests-selected'].includes(summary.status) ? 2 : 1;
     }

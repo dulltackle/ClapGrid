@@ -63,6 +63,14 @@
       ]
     },
     {
+      "file": "tests/check-watch.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ]
+    },
+    {
       "file": "tests/delete-confirm-focus.test.ts",
       "executor": "node",
       "scopes": [

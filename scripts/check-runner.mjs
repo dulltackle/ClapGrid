@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { createWriteStream, mkdirSync, readFileSync, existsSync, rmSync } from 'node:fs';
+import { createWriteStream, mkdirSync, readFileSync, existsSync, rmSync, realpathSync } from 'node:fs';
 import { resolve, relative, join } from 'node:path';
 import { sameSource, sourceIdentity } from './check-source.mjs';
-import { withCheckRun, stopGroup, stateDirectory, atomicJson } from './check-lifecycle.mjs';
+import { withCheckRun, stopGroup, stateDirectory, atomicJson, currentCheckRun } from './check-lifecycle.mjs';
 
 // Node 22 的测试子进程以 stdout 传输 V8 事件；混入中文原始输出可能破坏帧边界。
 // https://github.com/nodejs/node/issues/65934
@@ -55,7 +55,7 @@ const usesEvidence = root => existsSync(join(root, 'scripts/test-inventory.json'
 const nextDirectory = (root, mode) => resolve(root, `logs/${mode}`, new Date().toISOString().replaceAll(':', '-') + `-${process.pid}`);
 
 export function recordCheckFailures(context, summary) {
-  if (summary.status !== 'failed') return;
+  if (summary.status !== 'failed' && !summary.testEvidenceInvalid) return;
   const path = join(stateDirectory(context.root), 'failures.json');
   const previous = existsSync(path) ? read(path) : { stages: [], failures: [] };
   const phaseResults = [summary, summary.preflight, summary.recheck].filter(Boolean).flatMap(phase => phase.results ?? []);
@@ -63,12 +63,37 @@ export function recordCheckFailures(context, summary) {
   const strictTestFiles = [...new Set([...(previous.strictTestFiles ?? []), ...[summary, summary.preflight, summary.recheck].filter(Boolean).flatMap(phase => phase.strictTestFiles ?? []), ...phaseResults.flatMap(result => [...(result.strictTestFiles ?? []), ...(result.testPlan?.strictFiles ?? []), ...(['ui', 'ui-core', 'ui-extended', 'native-ui'].includes(result.testPlan?.suite) ? result.testPlan.files : [])])])];
   const failedNames = summary.results.filter(result => result.status === 'failed').map(result => result.name);
   if (!failedNames.length) failedNames.push(summary.phase ?? 'test');
-  const stages = [...new Set([...previous.stages, ...failedNames.map(name => (name.startsWith('test') || name === 'ui-tests') ? 'test' : name), ...(referenceFiles.length || strictTestFiles.length ? ['test'] : [])])];
+  const stages = [...new Set([...previous.stages, ...failedNames.map(name => (name.startsWith('test') || name === 'ui-tests') ? 'test' : name), ...(referenceFiles.length || strictTestFiles.length || summary.testEvidenceInvalid ? ['test'] : [])])];
   const failures = [...previous.failures, ...summary.failures];
   atomicJson(path, { schemaVersion: 1, source: summary.source, stages, failures, referenceFiles, strictTestFiles, observedAt: summary.completedAt, directory: summary.directory });
 }
 
 const ledgers = new WeakMap();
+const suppliedExecutionIds = new WeakMap();
+function testExecutionIdFor(context, name) {
+  if (context.testExecutionId === undefined) return randomUUID();
+  if (typeof context.testExecutionId !== 'function') throw Error('测试执行nonce工厂必须是函数');
+  const id = context.testExecutionId(name);
+  if (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) throw Error('测试执行nonce工厂必须返回合法UUID');
+  let used = suppliedExecutionIds.get(context);
+  if (!used) { used = new Set(); suppliedExecutionIds.set(context, used); }
+  if (used.has(id.toLowerCase())) throw Error('同一检查context不得重复测试执行nonce');
+  used.add(id.toLowerCase()); return id;
+}
+
+async function revalidatePassedProofs(root, context, summary) {
+  const ledger = ledgers.get(context);
+  if (!ledger?.proofs.length) return;
+  try {
+    const { validateStageProof } = await import('./check-evidence.mjs');
+    const current = (await import('./test-evidence.mjs')).executionIdentity(root);
+    for (const reference of ledger.proofs) validateStageProof(root, reference, ledger.runId, current);
+  } catch (error) {
+    summary.testEvidenceInvalid = true; summary.evidenceError = error.message;
+    if (summary.status === 'passed') summary.status = 'failed';
+    summary.failures.push({ name: `已通过来源链失效，须复验测试：${error.message}` });
+  }
+}
 
 async function phases(root, directory, names, mode, context, env = {}) {
   mkdirSync(directory, { recursive: true });
@@ -88,7 +113,7 @@ async function phases(root, directory, names, mode, context, env = {}) {
       const startedAt = new Date().toISOString();
       const evidence = usesEvidence(root) ? await import('./test-evidence.mjs') : null;
       const plan = evidence?.stagePlan(root, name, env);
-      const testExecutionId = plan ? randomUUID() : undefined;
+      const testExecutionId = plan ? testExecutionIdFor(context, name) : undefined;
       const identity = evidence ? evidence.executionIdentity(root, testExecutionId ?? randomUUID()) : null;
       const effectiveStrictFiles = [...new Set([...strictTestFiles, ...(plan ? evidence.strictTestFiles(root, plan.files) : [])])];
       const countedType = name === 'typecheck' ? ledger?.typecheck(identity) : null;
@@ -133,7 +158,7 @@ async function phases(root, directory, names, mode, context, env = {}) {
       summary.sourceAfter = sourceIdentity(root);
       if (result.status === 'cancelled') { summary.status = 'cancelled'; break; }
       if (!sameSource(summary.source, summary.sourceAfter)) {
-        summary.status = 'invalidated'; summary.completedAt = new Date().toISOString(); save(); return summary;
+        summary.status = 'invalidated'; summary.completedAt = new Date().toISOString(); await revalidatePassedProofs(root, context, summary); save(); recordCheckFailures(context, summary); return summary;
       }
       save();
       if (mode === 'preflight' && result.status === 'failed') break;
@@ -143,19 +168,34 @@ async function phases(root, directory, names, mode, context, env = {}) {
     summary.status = context.signal.aborted ? 'cancelled' : 'failed'; summary.error = String(error);
     if (summary.status === 'failed') summary.failures.push({ name: `检查证据失效，位置未知：${error.message}` });
   }
+  await revalidatePassedProofs(root, context, summary);
   summary.completedAt = new Date().toISOString(); save();
   recordCheckFailures(context, summary);
   return summary;
+}
+
+function failuresRetainedByWatch(root, context) {
+  const marker = context.env.CLAPGRID_WATCH_FAILURE_OWNER;
+  if (!marker) return false;
+  const binding = JSON.parse(marker), canonicalRoot = realpathSync(root);
+  if (typeof binding.root !== 'string' || binding.root !== realpathSync(binding.root)) throw Error('watch待办保留根身份无效');
+  if (binding.root !== canonicalRoot) return false;
+  const registry = JSON.parse(context.env.CLAPGRID_CHECK_REGISTRY ?? 'null');
+  const associated = [registry, ...(registry?.ancestors ?? [])].some(scope => scope?.root === binding.root && scope?.token === binding.token);
+  const owner = currentCheckRun(canonicalRoot);
+  if (!associated || !owner || owner.root !== canonicalRoot || owner.token !== binding.token || owner.kind !== 'related-watch' || owner.reservation) throw Error('watch待办保留拥有者已失效，拒绝清单');
+  return true;
 }
 
 /** 独立定向检查只集中复验；累计资格仅由当前完整检查的私有 context 提供。 */
 export async function recheckFailures(root, directory, context) {
   const manifest = join(stateDirectory(context.root), 'failures.json');
   if (!existsSync(manifest)) return;
+  const retained = failuresRetainedByWatch(root, context);
   const previous = read(manifest);
   const names = previous.stages.map(name => name === 'test' ? 'test:failed' : name);
   const recheck = await phases(root, join(directory, 'recheck'), names, 'recheck', context, { CLAPGRID_FAILURE_MANIFEST: manifest });
-  if (recheck.status === 'passed') rmSync(manifest);
+  if (recheck.status === 'passed' && !retained) rmSync(manifest);
   return recheck;
 }
 
@@ -165,7 +205,13 @@ export async function runCheck(root, directory, options = {}) {
     directory ??= nextDirectory(root, mode === 'development' ? 'check' : mode);
     if (usesEvidence(root)) {
       const { CheckEvidenceLedger } = await import('./check-evidence.mjs');
-      ledgers.set(context, new CheckEvidenceLedger(root, directory));
+      const ledger = new CheckEvidenceLedger(root, directory), manifest = join(stateDirectory(context.root), 'failures.json');
+      if (existsSync(manifest)) {
+        const previous = read(manifest);
+        for (const file of previous.referenceFiles ?? []) ledger.referenceFiles.add(file);
+        for (const file of previous.strictTestFiles ?? []) ledger.strictTestFiles.add(file);
+      }
+      ledgers.set(context, ledger);
     }
     const recheck = await recheckFailures(root, directory, context);
     if (recheck && recheck.status !== 'passed') {
