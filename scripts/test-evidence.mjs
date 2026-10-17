@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve, relative } from 'node:path';
 import { sourceIdentity, sameSource } from './check-source.mjs';
+import { normalizeNative as vitestNative } from './vitest-evidence.mjs';
 
 export const inventoryPath = 'scripts/test-inventory.json';
 const read = path => JSON.parse(readFileSync(path, 'utf8'));
@@ -57,18 +58,19 @@ export function failureFiles(root, failures, { referenceFiles = [] } = {}) {
   return [...new Set([...files, ...references])];
 }
 
-export function executionPlan(root, { suite = 'all', files, executor = 'node' } = {}) {
+export function executionPlan(root, { suite = 'all', files, executor } = {}) {
   const all = testInventory(root);
   const nativeGroup = suite.startsWith('native-') ? suite.slice(7) : null;
   const inventory = nativeGroup ? read(join(root, inventoryPath)).references.filter(entry => entry.group === nativeGroup) : suite === 'failed' ? ownedTests(root) : all;
-  const selected = files ? files.map(file => relativeFile(root, file)) : inventory.filter(entry => nativeGroup || entry.scopes.includes(suite)).map(entry => entry.file);
+  const selected = files ? files.map(file => relativeFile(root, file)) : inventory.filter(entry => (nativeGroup || entry.scopes.includes(suite)) && (!executor || entry.executor === executor)).map(entry => entry.file);
   if (!selected.length || new Set(selected).size !== selected.length) throw Error('测试范围为空或重复');
-  for (const file of selected) if (!inventory.some(entry => entry.file === file && entry.executor === executor)) throw Error(`测试执行者或范围不符：${file}`);
+  executor ??= [...new Set(selected.map(file => inventory.find(entry => entry.file === file)?.executor))].length === 1 ? inventory.find(entry => entry.file === selected[0])?.executor : 'mixed';
+  for (const file of selected) if (!inventory.some(entry => entry.file === file && (executor === 'mixed' || entry.executor === executor))) throw Error(`测试执行者或范围不符：${file}`);
   return { schemaVersion: 1, suite, executor, files: selected.sort(), inventory: digest(join(root, inventoryPath)) };
 }
 
 export function executionIdentity(root, executionId = process.env.CLAPGRID_TEST_EXECUTION_ID) {
-  const inputs = ['package.json', 'package-lock.json', inventoryPath, 'scripts/test-runner.mjs', 'scripts/test-reporter.mjs', 'scripts/test-evidence.mjs'];
+  const inputs = ['package.json', 'package-lock.json', inventoryPath, 'scripts/test-runner.mjs', 'scripts/test-reporter.mjs', 'scripts/test-evidence.mjs', 'scripts/vitest-runner.mjs', 'scripts/vitest-reporter.mjs', 'scripts/vitest-evidence.mjs', 'vitest.config.ts'];
   return { executionId, source: sourceIdentity(root), config: inputs.map(file => [file, existsSync(join(root, file)) ? digest(join(root, file)) : null]), environment: { node: process.version, platform: process.platform, arch: process.arch, chrome: process.env.CHROME_BIN ?? null, nodeOptions: process.env.NODE_OPTIONS ?? null } };
 }
 const caseKey = item => JSON.stringify([item.file, item.name, item.nesting, item.line, item.column]);
@@ -76,23 +78,31 @@ const sameIdentity = (a, b) => a.executionId === b.executionId && sameSource(a.s
 const portable = (root, item) => ({ ...item, ...(item.file ? { file: relativeFile(root, item.file) } : {}) });
 
 /** 执行者适配层只解释报告；是否完整由同一校验器判断。 */
-export function nodeEvidence(root, plan, nativePath, identity, { strict = false, logPath } = {}) {
-  const native = read(nativePath);
+const normalizeNative = (root, native, executor) => executor === 'vitest' ? vitestNative(root, native) : native;
+
+export function executorEvidence(root, plan, nativePath, identity, { strict = false, logPath, additionalSources = [] } = {}) {
+  const native = normalizeNative(root, read(nativePath), plan.executor);
   const report = { schemaVersion: 2, kind: 'test-execution', executor: native.executor, plan, identity, identityAfter: executionIdentity(root, identity.executionId),
     startedAt: native.startedAt, completedAt: native.completedAt, complete: native.complete,
-    expected: { files: plan.files, cases: (native.expectedCases ?? []).map(item => portable(root, item)), caseDiscovery: 'native test:enqueue events' },
+    expected: { files: plan.files, cases: (native.expectedCases ?? []).map(item => portable(root, item)), caseDiscovery: plan.executor === 'node' ? 'native test:enqueue events' : 'Vitest onTestModuleCollected events' },
     actual: { files: (native.files ?? []).map(item => portable(root, item)), cases: (native.cases ?? []).map(item => portable(root, item)) },
     failures: (native.failures ?? []).map(item => portable(root, item)), errors: native.errors ?? [], summary: native.summary,
-    policy: { strict }, sources: { native: { path: nativePath, sha256: digest(nativePath) }, ...(logPath ? { log: { path: logPath, sha256: digest(logPath) } } : {}) } };
-  try { validateExecution(root, report, plan, identity, { checkSource: true }); report.status = 'passed'; }
+    policy: { strict }, sources: { native: { path: nativePath, sha256: digest(nativePath) }, ...(logPath ? { log: { path: logPath, sha256: digest(logPath) } } : {}), ...(additionalSources.length ? { additional: additionalSources.map(path => ({ path, sha256: digest(path) })) } : {}) } };
+  // identityAfter 刚在本次同步构造中采集；仅读原始报告/写忽略日志，不重复扫描同一边界。
+  try { validateExecution(root, report, plan, identity); report.status = 'passed'; }
   catch (error) { report.status = 'failed'; report.validationError = error.message; }
   return report;
 }
 
+export const nodeEvidence = executorEvidence;
+
 /** 在开发检查、固定提交验收和历史复用时执行相同完整性检查。 */
 export function validateExecution(root, report, plan, identity, { checkSource = false } = {}) {
+  if (plan.executor === 'mixed') return validateAggregate(root, report, plan, identity, { checkSource });
   if (report.schemaVersion !== 2 || report.kind !== 'test-execution' || !report.complete || report.errors?.length || report.failures?.length) throw Error('测试证据不完整或包含失败/未捕获错误');
   if (report.executor?.name !== plan.executor || !report.executor.version || (plan.executor === 'node' && report.executor.version !== process.version)) throw Error('测试执行者身份不符');
+  const dependency = plan.executor === 'vitest' ? 'vitest' : plan.executor === 'playwright' ? '@playwright/test' : null;
+  if (dependency && report.executor.version !== read(join(root, 'node_modules', dependency, 'package.json')).version) throw Error('测试执行者版本与实际安装不符');
   if (!identity.executionId || JSON.stringify(report.plan) !== JSON.stringify(plan) || !sameIdentity(report.identity, identity) || !sameIdentity(report.identityAfter, identity) || (checkSource && !sameIdentity(executionIdentity(root, identity.executionId), identity))) throw Error('测试源码、配置、环境或执行范围身份不符');
   if (!report.startedAt || !report.completedAt || !(Date.parse(report.startedAt) <= Date.parse(report.completedAt))) throw Error('测试起止时间缺失或无效');
   const files = report.actual?.files ?? [], cases = report.actual?.cases ?? [], expected = report.expected;
@@ -105,7 +115,8 @@ export function validateExecution(root, report, plan, identity, { checkSource = 
   const source = report.sources?.native;
   if (!source || digest(source.path) !== source.sha256) throw Error('测试原生证据缺失或改变');
   if (report.sources.log && digest(report.sources.log.path) !== report.sources.log.sha256) throw Error('测试原始日志缺失或改变');
-  const native = read(source.path);
+  for (const artifact of report.sources.additional ?? []) if (digest(artifact.path) !== artifact.sha256) throw Error('测试补充原始报告缺失或改变');
+  const native = normalizeNative(root, read(source.path), plan.executor);
   if (JSON.stringify(native.cases.map(item => portable(root, item))) !== JSON.stringify(cases) || JSON.stringify(native.files.map(item => portable(root, item))) !== JSON.stringify(files)
     || JSON.stringify(native.expectedCases.map(item => portable(root, item))) !== JSON.stringify(expected.cases)
     || JSON.stringify(native.summary) !== JSON.stringify(report.summary) || JSON.stringify(native.failures.map(item => portable(root, item))) !== JSON.stringify(report.failures)
@@ -142,5 +153,45 @@ export function validateCheckEvidence(root, check, source) {
       if (report.status !== 'passed') throw Error('测试统一报告未通过');
     }
   }
+  return true;
+}
+
+export function aggregateEvidence(root, plan, paths, identity) {
+  const executions = paths.map(path => read(path));
+  const merge = key => executions.flatMap(report => report[key] ?? []);
+  const cases = executions.flatMap(report => report.actual.cases), files = executions.flatMap(report => report.actual.files);
+  const counts = { tests: 0, suites: 0, passed: 0, failed: 0, skipped: 0, todo: 0, cancelled: 0 };
+  for (const report of executions) for (const key of Object.keys(counts)) counts[key] += report.summary?.counts?.[key] ?? 0;
+  const report = { schemaVersion: 2, kind: 'test-aggregate', executor: { name: 'mixed', version: '1' }, plan, identity, identityAfter: executions.at(-1)?.identityAfter,
+    startedAt: executions[0]?.startedAt, completedAt: executions.at(-1)?.completedAt, complete: executions.every(report => report.complete), executions,
+    expected: { files: plan.files, cases: executions.flatMap(report => report.expected.cases), caseDiscovery: '各执行者原生收集事件并集' }, actual: { files, cases },
+    failures: merge('failures'), errors: merge('errors'), summary: { success: executions.every(report => report.status === 'passed'), counts },
+    sources: { executions: paths.map(path => ({ path, sha256: digest(path) })) } };
+  // 末个子执行提供本次真实 after；聚合只读取报告和忽略日志，保留各子执行的完整核对。
+  try { validateExecution(root, report, plan, identity); report.status = 'passed'; }
+  catch (error) { report.status = 'failed'; report.validationError = error.message; }
+  return report;
+}
+function validateAggregate(root, report, plan, identity, options) {
+  if (report.schemaVersion !== 2 || report.kind !== 'test-aggregate' || !report.complete || !report.summary?.success || report.failures?.length || report.errors?.length
+    || JSON.stringify(report.plan) !== JSON.stringify(plan) || !sameIdentity(report.identity, identity) || !sameIdentity(report.identityAfter, identity)
+    || (options.checkSource && !sameIdentity(executionIdentity(root, identity.executionId), identity))) throw Error('聚合测试证据不完整或身份不符');
+  if (!report.executions?.length || report.executions.length !== report.sources?.executions?.length) throw Error('聚合缺少执行者证据');
+  const seen = [];
+  report.executions.forEach((execution, index) => {
+    const source = report.sources.executions[index];
+    if (digest(source.path) !== source.sha256 || JSON.stringify(read(source.path)) !== JSON.stringify(execution)) throw Error('聚合子报告来源不符');
+    const childPlan = executionPlan(root, { suite: plan.suite, files: execution.plan.files, executor: execution.executor.name });
+    validateExecution(root, execution, childPlan, identity, options);
+    if (execution.status !== 'passed') throw Error('聚合包含失败子执行');
+    seen.push(...execution.actual.files.map(item => item.file));
+  });
+  if (new Set(seen).size !== seen.length || !equalSet(seen, plan.files) || !equalSet(report.expected.files, plan.files)
+    || JSON.stringify(report.actual.files) !== JSON.stringify(report.executions.flatMap(item => item.actual.files))
+    || JSON.stringify(report.actual.cases) !== JSON.stringify(report.executions.flatMap(item => item.actual.cases))
+    || JSON.stringify(report.expected.cases) !== JSON.stringify(report.executions.flatMap(item => item.expected.cases))) throw Error('聚合测试范围遗漏、重复或逐项不符');
+  if (report.startedAt !== report.executions[0].startedAt || report.completedAt !== report.executions.at(-1).completedAt || report.executor?.name !== 'mixed' || report.executor.version !== '1') throw Error('聚合执行者或起止时间不符');
+  const counts = Object.fromEntries(['tests', 'suites', 'passed', 'failed', 'skipped', 'todo', 'cancelled'].map(key => [key, report.executions.reduce((sum, item) => sum + item.summary.counts[key], 0)]));
+  if (JSON.stringify(counts) !== JSON.stringify(report.summary.counts)) throw Error('聚合计数不符');
   return true;
 }

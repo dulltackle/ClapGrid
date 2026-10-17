@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { projectEditing } from '../src/panel/project-editing.js';
 import type { EditSession } from '../src/shared/client.js';

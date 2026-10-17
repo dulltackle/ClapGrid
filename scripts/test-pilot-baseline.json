@@ -10,97 +10,161 @@
           "source": "tests/text-search.test.ts",
           "native": "tests/text-search.native.ts",
           "name": "文案查找按连续输入匹配，保留空格和原文偏移",
-          "candidate": null
+          "candidate": {
+            "file": "tests/text-search.test.ts",
+            "name": "文案查找按连续输入匹配，保留空格和原文偏移",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/text-search.test.ts",
           "native": "tests/text-search.native.ts",
           "name": "重复和重叠命中高亮所有涉及的原文且不解释正则",
-          "candidate": null
+          "candidate": {
+            "file": "tests/text-search.test.ts",
+            "name": "重复和重叠命中高亮所有涉及的原文且不解释正则",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/project-editing.test.ts",
           "native": "tests/project-editing.native.ts",
           "name": "单次保存先关闭连接再返回成功仍确认保存，释放后旧连接不影响新编辑",
-          "candidate": null
+          "candidate": {
+            "file": "tests/project-editing.test.ts",
+            "name": "单次保存先关闭连接再返回成功仍确认保存，释放后旧连接不影响新编辑",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/project-editing.test.ts",
           "native": "tests/project-editing.native.ts",
           "name": "设置连续保存持有同一修改权，保存时断线等待请求结果但不恢复旧会话",
-          "candidate": null
+          "candidate": {
+            "file": "tests/project-editing.test.ts",
+            "name": "设置连续保存持有同一修改权，保存时断线等待请求结果但不恢复旧会话",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/project-editing.test.ts",
           "native": "tests/project-editing.native.ts",
           "name": "旧查询成功或失败均不能覆盖设置编辑；同轮查询按最新请求接受",
-          "candidate": null
+          "candidate": {
+            "file": "tests/project-editing.test.ts",
+            "name": "旧查询成功或失败均不能覆盖设置编辑；同轮查询按最新请求接受",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/project-editing.test.ts",
           "native": "tests/project-editing.native.ts",
           "name": "离页后迟到的修改权立即释放，重新激活后旧响应不打开编辑器",
-          "candidate": null
+          "candidate": {
+            "file": "tests/project-editing.test.ts",
+            "name": "离页后迟到的修改权立即释放，重新激活后旧响应不打开编辑器",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/project-editing.test.ts",
           "native": "tests/project-editing.native.ts",
           "name": "取消保存后旧回调、错误和释放都不能影响后续编辑，未知结果不重试",
-          "candidate": null
+          "candidate": {
+            "file": "tests/project-editing.test.ts",
+            "name": "取消保存后旧回调、错误和释放都不能影响后续编辑，未知结果不重试",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/project-editing.test.ts",
           "native": "tests/project-editing.native.ts",
           "name": "查询慢于轮询间隔时仍接收已完成结果，新查询完成后忽略旧失败",
-          "candidate": null
+          "candidate": {
+            "file": "tests/project-editing.test.ts",
+            "name": "查询慢于轮询间隔时仍接收已完成结果，新查询完成后忽略旧失败",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/project-editing.test.ts",
           "native": "tests/project-editing.native.ts",
           "name": "单次保存结果未知时释放修改权、只报告一次失败且不重试",
-          "candidate": null
+          "candidate": {
+            "file": "tests/project-editing.test.ts",
+            "name": "单次保存结果未知时释放修改权、只报告一次失败且不重试",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/speech-provider.test.ts",
           "native": "tests/speech-provider.native.ts",
           "name": "跨网络分块拼接 SSE，只有完成标记后才返回完整音频",
-          "candidate": null
+          "candidate": {
+            "file": "tests/speech-provider.test.ts",
+            "name": "跨网络分块拼接 SSE，只有完成标记后才返回完整音频",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/speech-provider.test.ts",
           "native": "tests/speech-provider.native.ts",
           "name": "HTTP 401 返回原因与下一步且不泄露响应正文",
-          "candidate": null
+          "candidate": {
+            "file": "tests/speech-provider.test.ts",
+            "name": "HTTP 401 返回原因与下一步且不泄露响应正文",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/speech-provider.test.ts",
           "native": "tests/speech-provider.native.ts",
           "name": "HTTP 402 返回原因与下一步且不泄露响应正文",
-          "candidate": null
+          "candidate": {
+            "file": "tests/speech-provider.test.ts",
+            "name": "HTTP 402 返回原因与下一步且不泄露响应正文",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/speech-provider.test.ts",
           "native": "tests/speech-provider.native.ts",
           "name": "HTTP 429 返回原因与下一步且不泄露响应正文",
-          "candidate": null
+          "candidate": {
+            "file": "tests/speech-provider.test.ts",
+            "name": "HTTP 429 返回原因与下一步且不泄露响应正文",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/speech-provider.test.ts",
           "native": "tests/speech-provider.native.ts",
           "name": "HTTP 503 返回原因与下一步且不泄露响应正文",
-          "candidate": null
+          "candidate": {
+            "file": "tests/speech-provider.test.ts",
+            "name": "HTTP 503 返回原因与下一步且不泄露响应正文",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/speech-provider.test.ts",
           "native": "tests/speech-provider.native.ts",
           "name": "部分音频与断流标记结果未知，空成功响应不算成功",
-          "candidate": null
+          "candidate": {
+            "file": "tests/speech-provider.test.ts",
+            "name": "部分音频与断流标记结果未知，空成功响应不算成功",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/speech-provider.test.ts",
           "native": "tests/speech-provider.native.ts",
           "name": "供应商缺失或非法状态码不能确认为失败，必须提示可能已计费",
-          "candidate": null
+          "candidate": {
+            "file": "tests/speech-provider.test.ts",
+            "name": "供应商缺失或非法状态码不能确认为失败，必须提示可能已计费",
+            "executor": "vitest"
+          }
         }
       ]
     },
@@ -111,25 +175,41 @@
           "source": "tests/service.test.ts",
           "native": "tests/service.native.ts",
           "name": "HTTP 查询共享业务层，静态面板与项目数据隔离，拒绝向查询接口写入",
-          "candidate": null
+          "candidate": {
+            "file": "tests/service.test.ts",
+            "name": "HTTP 查询共享业务层，静态面板与项目数据隔离，拒绝向查询接口写入",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/service.test.ts",
           "native": "tests/service.native.ts",
           "name": "异常请求路径返回 400，服务仍能查询项目状态",
-          "candidate": null
+          "candidate": {
+            "file": "tests/service.test.ts",
+            "name": "异常请求路径返回 400，服务仍能查询项目状态",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/service.test.ts",
           "native": "tests/service.native.ts",
           "name": "HTTP 完成编辑才返回已提交快照，数据库占用时保存失败且重开保留原值",
-          "candidate": null
+          "candidate": {
+            "file": "tests/service.test.ts",
+            "name": "HTTP 完成编辑才返回已提交快照，数据库占用时保存失败且重开保留原值",
+            "executor": "vitest"
+          }
         },
         {
           "source": "tests/service.test.ts",
           "native": "tests/service.native.ts",
           "name": "旧服务实例的绑定地址不能在其他服务读取或修改项目",
-          "candidate": null
+          "candidate": {
+            "file": "tests/service.test.ts",
+            "name": "旧服务实例的绑定地址不能在其他服务读取或修改项目",
+            "executor": "vitest"
+          }
         }
       ]
     },

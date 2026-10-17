@@ -39,7 +39,7 @@ function repository(t: TestContext, task = "require('node:assert/strict').equal(
   const git = (...args: string[]) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
   git('init', '-q');
   mkdirSync(join(root, 'scripts'));
-  for (const file of ['check.mjs', 'check-runner.mjs', 'check-source.mjs', 'check-lifecycle.mjs', 'test-runner.mjs', 'test-reporter.mjs', 'test-evidence.mjs', 'verification-jobs.mjs', 'verify.mjs', 'verification-worker.mjs']) cpSync(join(scripts, file), join(root, 'scripts', file));
+  for (const file of ['check.mjs', 'check-runner.mjs', 'check-source.mjs', 'check-lifecycle.mjs', 'test-runner.mjs', 'test-reporter.mjs', 'test-evidence.mjs', 'vitest-evidence.mjs', 'vitest-reporter.mjs', 'vitest-runner.mjs', 'verification-jobs.mjs', 'verify.mjs', 'verification-worker.mjs']) cpSync(join(scripts, file), join(root, 'scripts', file));
   writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 'check-fixture', version: '1.0.0', private: true, scripts: { check: 'node scripts/check.mjs', typecheck: 'node task.cjs', test: 'node task.cjs', build: 'node task.cjs' } }));
   writeFileSync(join(root, 'package-lock.json'), JSON.stringify({ name: 'check-fixture', version: '1.0.0', lockfileVersion: 3, packages: { '': { name: 'check-fixture', version: '1.0.0' } } }));
   writeFileSync(join(root, '.gitignore'), 'logs/\nnode_modules/\n');

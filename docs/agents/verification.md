@@ -81,3 +81,17 @@ CI 复用正式验收入口并沿用既有日志上传。修改检查工具或 C
 - `npm run check:ui:native -- --concurrency 2`：固定核心完整入口，14 项含 12 项真实浏览器；另用 `--concurrency 1` 比较并发。
 
 迁移后在同一固定试点源码、同机、相同浏览器 channel 和相同行为断言下显式运行原生/候选各至少三次；记录源码/环境、冷热缓存、并发、端到端与分项耗时。原生快照与候选不是两套常规验收。预算、并发/缓存/生命周期边界见 [ADR 0009](../adr/0009-test-executors-and-cumulative-evidence.md)。当前设计与原生基线准备不代表框架迁移、性能达标、固定提交正式验收或实际宿主交付完成。
+
+## Vitest 逻辑与 HTTP/SQLite 试点（#150）
+
+`npm run test:logic` 单次执行文本搜索、编辑状态计算与配音供应商协议的 16 项；`npm run test:service` 单次执行真实 HTTP/SQLite 的 4 项。固定 Vitest 5.0.5，使用项目 Node 22.23.3、Node 环境、一个 threads worker、文件隔离、零重试，拒绝 only 和零收集。迁移只替换测试器与测试结束清理钩子，场景名称和行为断言继续对应 `test-pilot-baseline.json`；原生 16/4 对照入口保留。
+
+`vitest.config.ts` 显式采用仓库根，沿用生产 `@` alias，include 仅四个试点文件。生产 Vite 的 `src/panel` 根和 Tailwind CSS 插件继续用于面板构建；Node 试点不加载该 CSS 插件。框架配置纳入类型检查，框架不替代类型检查和生产构建。
+
+`test-runner.mjs` 根据唯一文件归属顺序调用 Node、Vitest（及后续浏览器执行者），未迁移测试、生命周期及原生报告专项保留 Node。显式 `--files '["tests/text-search.test.ts"]'` 可交付精确集合；错误归属、遗漏、重复与空集合仍失败。默认 all、预检、集中失败复验与正式验收使用同一分派；本工单保持预检/完整原有重复执行，不提前累计去重。
+
+Vitest 同时保存可读日志、官方 JSON 及生命周期原始事件。`onTestModuleCollected` 登记的用例与完成事件分别留证，报告区分收集失败、未捕获错误、失败、中断、skip/todo，原始来源均保存摘要。普通 Node/Vitest 范围沿用非 UI 的 skip/todo 政策，逐项明确显示；浏览器严格政策不因此放宽。执行者版本须与实际安装一致。
+
+混合范围输出 `kind:test-aggregate`，逐个引用同 `executionId` 的子报告及原生来源；文件并集必须等于预期且没有重复，逐项/汇总、源码、配置和环境均重新核对。单一执行者沿用 `kind:test-execution`。缺报告、旧运行替换、收集/未捕获错误、文件或用例缺口与取消不能通过，所有失败按当前归属进入待办并集中复验。运行与 worker 保持在已有受控进程组，取消后先回收本次后代再释放锁。
+
+上述命令只提供所选范围的开发证据；最终同机三次性能对照、完整固定提交验收以及插件安装/实际宿主验收分别记录，不能由试点通过代替。

@@ -396,9 +396,10 @@
     },
     {
       "file": "tests/project-editing.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -521,9 +522,10 @@
     },
     {
       "file": "tests/service.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "service"
       ]
     },
     {
@@ -566,9 +568,10 @@
     },
     {
       "file": "tests/speech-provider.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -628,9 +631,10 @@
     },
     {
       "file": "tests/text-search.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -705,6 +709,14 @@
       "executor": "node",
       "scopes": [
         "all"
+      ]
+    },
+    {
+      "file": "tests/vitest-runner.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
       ]
     },
     {
