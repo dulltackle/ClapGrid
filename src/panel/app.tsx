@@ -26,6 +26,7 @@ import { textMatches } from './text-search.js';
 import { TextEditor } from './text-editor.js';
 import './style.css';
 import { useSegmentDrag } from './segment-drag.js';
+import { panelCompatibility, panelNeedsRefresh, panelRestoreKey, readPanelRestore, restoredSelection, useMediaBusy, usePanelActivity, writePanelRestore } from './panel-update.js';
 
 // 页面与表格共享语义变量；固定亮色，不跟随宿主主题。
 const theme = themeQuartz.withParams({
@@ -79,6 +80,7 @@ export function App() {
   const [speech, setSpeech] = useState<SpeechStatus>();
   const [inlineAudio, setInlineAudio] = useState<SpeechStatus['audio'][number] | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
+  const mediaBusy = useMediaBusy();
   const audioPlayer = useRef<HTMLAudioElement>(null);
   useEffect(() => {
     const coordinate = (event: Event) => {
@@ -103,6 +105,13 @@ export function App() {
   const searchAnchor = useRef(0);
   const [paste, setPaste] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [panelRestore, setPanelRestore] = useState(() => {
+    try { return readPanelRestore(sessionStorage, panelRestoreKey(panelServiceUrl())); } catch { return null; }
+  });
+  const [panelUpdateError, setPanelUpdateError] = useState('');
+  const restoringPanelSelection = useRef(false);
+  const panelRestoreCancelled = useRef(false);
+  const [panelReadyVersion, setPanelReadyVersion] = useState(0);
   const [rowMenu, setRowMenu] = useState<{ anchor: Segment; expectedIds: string[]; origin: FocusReturn } | null>(null);
   const [rowMenuOpen, setRowMenuOpen] = useState(false);
   const menuRestore = useRef(true);
@@ -180,7 +189,7 @@ export function App() {
     failed(new Error('编辑连接已断开，未提交输入已取消；请重新读取后编辑。'));
   };
   const startEdit = (id: string, field: 'text' | 'visualNote' = 'text', intent?: FocusIntent) => {
-    if ((intent && !intent.valid()) || status?.taskLocked || speech?.locked || exports.exports?.locked) return Promise.resolve();
+    if ((intent && !intent.valid()) || panelRestore || status?.taskLocked || speech?.locked || exports.exports?.locked) return Promise.resolve();
     return editing.begin('segments', next => {
       if (intent && !intent.valid()) {
         focusReturns.acceptGridUpdate(() => setStatus(next));
@@ -325,6 +334,7 @@ export function App() {
     } finally { action.apply(() => focusReturns.close(origin, () => { setVideoEditor(null); setImporting(false); })); }
   }, failed);
   const synchronizeSelection = (ids: string[]) => {
+    if (restoringPanelSelection.current) return;
     setSelectedIds(ids);
     const connection = table.current;
     if (!connection) return;
@@ -346,7 +356,9 @@ export function App() {
     void connectTable(panelServiceUrl()).then(next => {
       if (!active) { void next.close(); return; }
       connection = next; table.current = next;
-      grid.current?.deselectAll(); setSelectedIds([]); setSelectionState('勾选已同步');
+      if (panelRestoreCancelled.current) synchronizeSelection(grid.current?.getSelectedRows().map(segment => segment.id) ?? []);
+      else { grid.current?.deselectAll(); setSelectedIds([]); setSelectionState('勾选已同步'); }
+      setPanelReadyVersion(version => version + 1);
       void next.closed.then(() => {
         if (!active || table.current !== next) return;
         table.current = null; grid.current?.deselectAll(); setSelectedIds([]);
@@ -357,6 +369,20 @@ export function App() {
     window.addEventListener('pagehide', leave);
     return () => { active = false; window.removeEventListener('pagehide', leave); leave(); };
   }, [connectionVersion]);
+  useEffect(() => {
+    if (panelRestoreCancelled.current || !panelRestore || !status || !table.current || !grid.current || error) return;
+    const ids = restoredSelection(panelRestore, status.snapshot.project.id, status.instanceId, buildIdentity, status.snapshot.segments.map(segment => segment.id));
+    if (ids?.some(id => !grid.current!.getRowNode(id))) return;
+    setPanelRestore(null);
+    if (ids === null) { setPanelUpdateError('面板更新后的项目或版本已改变，请重新核对并勾选片段。'); return; }
+    restoringPanelSelection.current = true;
+    try {
+      grid.current.deselectAll();
+      const nodes = ids.map(id => grid.current!.getRowNode(id)).filter(node => !!node);
+      grid.current.setNodesSelected({ nodes, newValue: true });
+    } finally { restoringPanelSelection.current = false; }
+    synchronizeSelection(ids);
+  }, [panelRestore, status, connectionVersion, error, panelReadyVersion, displayOrder.join('\0')]);
   useEffect(() => {
     editing.activate();
     const refresh = () => editing.refresh(
@@ -375,7 +401,26 @@ export function App() {
   useEffect(() => {
     if (!editState.busy && !editState.editing) void editing.refresh(() => Promise.all([queryStatus(panelServiceUrl()), querySpeech(panelServiceUrl())]), ([next, nextSpeech]) => { setStatus(next); setSpeech(nextSpeech); }, () => {});
   }, [editState.busy, editState.editing, editing]);
-  const disabled = !status || !speech || speech.locked || status.taskLocked || editState.busy || editState.editing || !!status.modification;
+  const disabled = !status || !speech || speech.locked || status.taskLocked || editState.busy || editState.editing || !!status.modification || !!panelRestore;
+  const panelBusy = disabled || mediaBusy || !!playing || !!detail || exportSettingsOpen || !!segmentDetail.id || !!audioHistory
+    || !!videoEditor || importing || !!preview || rowMenuOpen || !!deleteTargets || !!reorderPreview || !!panelRestore
+    || saveState !== 'saved' || selectionState !== '勾选已同步';
+  const latestPanel = useRef({ busy: panelBusy, selectedIds });
+  latestPanel.current = { busy: panelBusy, selectedIds };
+  usePanelActivity(table, status?.activePanelIdentity?.state === 'known' && status.activePanelIdentity.schemaVersion === 2, panelBusy);
+  const refreshPanel = async () => {
+    const connection = table.current;
+    if (!connection || latestPanel.current.busy) return;
+    try {
+      const next = await queryStatus(panelServiceUrl());
+      const target = next.activePanelIdentity;
+      if (latestPanel.current.busy || table.current !== connection || next.instanceId !== status?.instanceId || next.taskLocked || next.modification
+        || !panelNeedsRefresh(buildIdentity, target) || target?.state !== 'known' || !target.panelFingerprint) return;
+      if (!writePanelRestore(sessionStorage, panelRestoreKey(panelServiceUrl()), { projectId: next.snapshot.project.id, instanceId: next.instanceId,
+        panelFingerprint: target.panelFingerprint, selectedIds: latestPanel.current.selectedIds, createdAt: Date.now() })) throw new Error('无法保存本次勾选，已保留当前面板。');
+      window.location.reload();
+    } catch (cause) { setPanelUpdateError(cause instanceof Error ? cause.message : '刷新未确认，请稍后重试。'); }
+  };
   const drag = useSegmentDrag({ segments: status?.snapshot.segments ?? [], disabled, grid, element: gridElement,
     submit: (expectedIds, ids) => {
       if (!status || editing.getState().busy || editing.getState().editing) return;
@@ -433,7 +478,7 @@ export function App() {
     history: (id: string, trigger: HTMLElement) => { rememberOrigin(trigger, 'history'); setAudioHistory(id); }, onError: audioError };
   const columns: ColDef<Segment>[] = [
     { headerName: '序号', field: 'order', width: orderWidth, minWidth: orderWidth, maxWidth: orderWidth, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="relative flex h-full items-center pl-3"><button className="rounded-md border border-solid border-input bg-background text-foreground hover:bg-ui-accent absolute -left-3 top-1/2 -translate-y-1/2 shrink-0 cursor-grab touch-none p-[3px] leading-5 opacity-0 group-[:hover]/segment:opacity-100 focus-visible:opacity-100 active:cursor-grabbing disabled:opacity-0 group-[:hover]/segment:disabled:opacity-50" aria-label={`拖动片段 ${data.order}`} disabled={disabled} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}><DragHandleDots2Icon aria-hidden className="size-3" /></button><span>{data.order}</span></span> },
-    { headerName: '口播片段', field: 'text', flex: 1, minWidth: 400, resizable: false, editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
+    { headerName: '口播片段', field: 'text', flex: 1, minWidth: 360, resizable: false, editable: () => editing.getState().owner === 'segments' && editing.getState().editing && saveState !== 'saving' && !error,
       cellRenderer: SegmentRowCell, cellStyle: params => ({ height: mainRowHeight(params.data?.id), paddingRight: 0 }),
       cellRendererParams: { ...rowControls, query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: Math.max(102, searchRowHeight), toggleNote, expandedId: expandedNote, assets: status?.snapshot.assets ?? [],
         preview: (segment: Segment, trigger: HTMLButtonElement) => { rememberOrigin(trigger, 'preview'); setPreview(segment.video); }, suppressMouseEventHandling: cellControlMouse },
@@ -443,8 +488,8 @@ export function App() {
         if (params.editing && params.event.key === 'Tab') { params.api.stopEditing(); return true; }
         return !params.editing && (['Enter', 'F2', 'Backspace', 'Delete'].includes(params.event.key) || params.event.key.length === 1);
       } },
-    { headerName: '', colId: 'noteToggle', pinned: 'right', lockPinned: true, width: 56, minWidth: 56, maxWidth: 56, resizable: false,
-      suppressKeyboardEvent: cellControlKeyboard, cellStyle: params => ({ height: mainRowHeight(params.data?.id), paddingLeft: 0, paddingRight: 4 }),
+    { headerName: '', colId: 'noteToggle', pinned: 'right', lockPinned: true, width: 48, minWidth: 48, maxWidth: 48, resizable: false,
+      suppressKeyboardEvent: cellControlKeyboard, cellStyle: params => ({ height: mainRowHeight(params.data?.id), paddingLeft: 0, paddingRight: 0 }),
       cellRenderer: SegmentRowActions,
       cellRendererParams: { ...rowControls, suppressMouseEventHandling: cellControlMouse, expandedId: expandedNote, toggleNote,
         open: (id: string, trigger: HTMLButtonElement) => segmentDetail.navigate({ id }, focusReturns.capture(trigger)) } },
@@ -511,9 +556,7 @@ export function App() {
       {status && <dl className="m-0 rounded-md border border-solid border-input bg-muted p-3 text-[12px] [&_dt]:font-semibold [&_dd]:m-0 [&_dd]:mb-2 [&_dd:last-child]:mb-0">
         <dt>面板版本</dt><dd>{buildIdentity.state === 'known' ? `${buildIdentity.version} (${buildIdentity.contentFingerprint})` : '未知（开发构建或旧版本）'}</dd>
         <dt>服务版本</dt><dd>{status.buildIdentity?.state === 'known' ? `${status.buildIdentity.version} (${status.buildIdentity.contentFingerprint})` : '未知（开发构建或旧版本）'}</dd>
-        <dt>版本核对</dt><dd>{buildIdentity.state === 'known' && status.buildIdentity?.state === 'known'
-          ? buildIdentity.contentFingerprint === status.buildIdentity.contentFingerprint ? '面板与服务一致' : '版本不一致，请更新插件并重新打开'
-          : '尚未验证版本一致性'}</dd>
+        <dt>版本核对</dt><dd>{panelCompatibility(buildIdentity, status.buildIdentity, status.activePanelIdentity)}</dd>
         <dt>项目路径</dt><dd>{status.snapshot.project.directory}</dd>
         <dt>服务实例</dt><dd>{status.instanceId}</dd>
         <dt>PID</dt><dd>{status.pid}</dd>
@@ -600,8 +643,13 @@ export function App() {
       readOnlyEdit stopEditingWhenCellsLoseFocus suppressClickEdit popupParent={document.body}
       selectionColumnDef={{ width: 34, minWidth: 34, maxWidth: 34, cellStyle: params => ({ height: mainRowHeight(params.data?.id) }) }}
       rowSelection={{ mode: 'multiRow', selectAll: 'all', enableClickSelection: true }}
-      onSelectionChanged={event => synchronizeSelection(event.api.getSelectedRows().map(segment => segment.id))}
-      onGridReady={event => { grid.current = event.api; }}
+      onSelectionChanged={event => {
+        if (panelRestore && ['checkboxSelected', 'rowClicked', 'spaceKey', 'keyboardSelectAll', 'uiSelectAll', 'uiSelectAllFiltered', 'uiSelectAllCurrentPage'].includes(event.source)) {
+          panelRestoreCancelled.current = true; setPanelRestore(null);
+        }
+        synchronizeSelection(event.api.getSelectedRows().map(segment => segment.id));
+      }}
+      onGridReady={event => { grid.current = event.api; setPanelReadyVersion(version => version + 1); }}
       onModelUpdated={event => {
         const ids: string[] = []; event.api.forEachNodeAfterFilterAndSort(node => { if (node.data) ids.push(node.data.id); });
         setDisplayOrder(previous => previous.join('\0') === ids.join('\0') ? previous : ids);
@@ -645,6 +693,11 @@ export function App() {
         <span className="min-w-0 flex-1 truncate">{batchTask && batchTask.summary.pending > 0 ? `配音 ${batchTask.summary.completed}/${batchTask.summary.completed + batchTask.summary.pending}` : speechTask && (speechTask.state === 'running' || speechTask.state === 'accepted') ? '配音生成中' : exportTask && exports.exports?.locked ? `${exportStateLabel[exportTask.state]} ${exportTask.completed}/${exportTask.total}` : ''}</span>
         <Button variant="outline" size="xs" className="border-input text-foreground px-1.5 py-0.5 text-[12px]" onClick={event => openDetail('tasks', event.currentTarget)}>任务详情</Button>
       </div>
+      {panelNeedsRefresh(buildIdentity, status?.activePanelIdentity) && <p className="flex items-center gap-2 pt-1" role="status">
+        <span>{panelBusy ? '新版面板已准备，当前编辑或播放结束后可刷新。' : '新版面板已准备。'}</span>
+        <Button variant="outline" size="xs" disabled={panelBusy} onClick={() => { void refreshPanel(); }}>刷新面板</Button>
+      </p>}
+      {panelUpdateError && <p role="alert">{panelUpdateError}</p>}
       {lock && <p className="pt-1" role="status">{lock}</p>}
       {(error || saveError || exports.connectionError || exports.operationError || speechProblems.length > 0 || exportProblems.length > 0 || selectionState.includes('断开')) && <div className="max-h-[22dvh] overflow-auto bg-[var(--color-error-surface)] text-destructive" aria-label="操作异常">
         {error && <p role="alert">{error}</p>}

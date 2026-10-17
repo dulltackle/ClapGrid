@@ -38,7 +38,7 @@ const contentVersion = `${version.split('+')[0]}+git.${source.commit?.slice(0, 1
 manifest.version = contentVersion;
 await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 await writeFile(`${destination}/package.json`, JSON.stringify({ name: 'clapgrid', version: contentVersion, private: true, type: 'module' }));
-const identity = { schemaVersion: 1, state: 'known', version: contentVersion, source, contentFingerprint: await pluginFingerprint(destination) };
+const identity = { schemaVersion: 2, state: 'known', version: contentVersion, source, contentFingerprint: await pluginFingerprint(destination), runtimeFingerprint: await pluginFingerprint(destination, { partition: 'runtime' }), panelFingerprint: await pluginFingerprint(destination, { partition: 'panel' }), protocolVersion: 1 };
 for (const entry of identityEntries) {
   const file = `${destination}/${entry}`;
   await writeFile(file, identityBanner(identity) + await readFile(file, 'utf8'));

@@ -1,8 +1,8 @@
 import { spawn } from 'node:child_process';
-import { createWriteStream, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
+import { createWriteStream, mkdirSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { resolve, relative, join } from 'node:path';
 import { sameSource, sourceIdentity } from './check-source.mjs';
-import { withCheckRun, stopGroup, stateDirectory } from './check-lifecycle.mjs';
+import { withCheckRun, stopGroup, stateDirectory, atomicJson } from './check-lifecycle.mjs';
 
 // Node 22 的测试子进程以 stdout 传输 V8 事件；混入中文原始输出可能破坏帧边界。
 // https://github.com/nodejs/node/issues/65934
@@ -18,14 +18,21 @@ export async function runLogged(command, args, cwd, logPath, context, env = {}) 
     delete childEnv.NODE_TEST_CONTEXT;
     const child = spawn(command, args, { cwd, detached: process.platform !== 'win32', env: childEnv, stdio: ['ignore', 'pipe', 'pipe'] });
     let errorMessage, group, stopping;
+    let tail = '', remainder = '';
+    const diagnostics = [];
+    const capture = chunk => {
+      const text = chunk.toString(); tail = (tail + text).slice(-8000); log.write(chunk);
+      const lines = (remainder + text).split('\n'); remainder = lines.pop();
+      for (const line of lines) if (/not ok |error TS\d|^✖|^FAIL|Error:/.test(line)) { diagnostics.push(line.slice(0, 500)); if (diagnostics.length > 12) diagnostics.shift(); }
+    };
     const cancel = () => { if (group && !stopping) stopping = stopGroup(group).catch(error => { errorMessage = error.message; }); };
     child.on('spawn', () => {
       group = context.register(child.pid);
       if (context.signal.aborted) cancel();
     });
     context.signal.addEventListener('abort', cancel, { once: true });
-    child.stdout.on('data', chunk => { output.write(chunk); log.write(chunk); });
-    child.stderr.on('data', chunk => { process.stderr.write(chunk); log.write(chunk); });
+    child.stdout.on('data', chunk => { output.write(chunk); capture(chunk); });
+    child.stderr.on('data', chunk => { process.stderr.write(chunk); capture(chunk); });
     child.on('error', error => { errorMessage = error.message; log.write(`${error.message}\n`); });
     child.on('close', async (exitCode, signal) => {
       context.signal.removeEventListener('abort', cancel);
@@ -34,7 +41,8 @@ export async function runLogged(command, args, cwd, logPath, context, env = {}) 
         try { await stopGroup(group); context.unregister(group); }
         catch (error) { errorMessage = error.message; }
       }
-      log.end(() => resolveResult({ status: context.signal.aborted ? 'cancelled' : exitCode === 0 && !errorMessage ? 'passed' : 'failed', exitCode, signal, error: errorMessage }));
+      log.end(() => resolveResult({ status: context.signal.aborted ? 'cancelled' : exitCode === 0 && !errorMessage ? 'passed' : 'failed', exitCode, signal, error: errorMessage,
+        ...(exitCode !== 0 || errorMessage ? { failureSummary: [...diagnostics, ...tail.trim().split('\n').slice(-6)].join('\n').slice(-4000) } : {}) }));
     });
   });
 }
@@ -43,13 +51,13 @@ const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const read = path => JSON.parse(readFileSync(path, 'utf8'));
 const nextDirectory = (root, mode) => resolve(root, `logs/${mode}`, new Date().toISOString().replaceAll(':', '-') + `-${process.pid}`);
 
-function saveFailures(context, summary) {
-  if (summary.status !== 'failed') return;
+export function recordCheckFailures(context, summary) {
+  if (summary.status !== 'failed' || !summary.results.some(result => result.status === 'failed')) return;
   const path = join(stateDirectory(context.root), 'failures.json');
   const previous = existsSync(path) ? read(path) : { stages: [], failures: [] };
-  const stages = [...new Set([...previous.stages, ...summary.results.filter(result => result.status === 'failed').map(result => result.name === 'test:rows' || result.name === 'test:failed' ? 'test' : result.name)])];
+  const stages = [...new Set([...previous.stages, ...summary.results.filter(result => result.status === 'failed').map(result => ['test:rows', 'test:failed', 'ui-tests'].includes(result.name) ? 'test' : result.name)])];
   const failures = [...previous.failures, ...summary.failures];
-  writeFileSync(path, JSON.stringify({ schemaVersion: 1, source: summary.source, stages, failures, observedAt: summary.completedAt, directory: summary.directory }, null, 2));
+  atomicJson(path, { schemaVersion: 1, source: summary.source, stages, failures, observedAt: summary.completedAt, directory: summary.directory });
 }
 
 async function phases(root, directory, names, mode, context, env = {}) {
@@ -57,11 +65,12 @@ async function phases(root, directory, names, mode, context, env = {}) {
   context.recordLog(directory);
   checkProgress(`检查日志：${directory}`);
   const summary = { mode, directory, startedAt: new Date().toISOString(), node: process.version, source: sourceIdentity(root), status: 'running', results: [], failures: [], pending: [...names], note: '阶段指纹只用于发现变化，不证明期间从未修改。跳过不代表通过，详见测试原始日志及结构化报告。' };
-  const save = () => writeFileSync(resolve(directory, 'summary.json'), JSON.stringify(summary, null, 2) + '\n');
+  const save = () => { summary.heartbeatAt = new Date().toISOString(); atomicJson(resolve(directory, 'summary.json'), summary); };
   save();
   try {
     for (const name of names) {
       if (context.signal.aborted) { summary.status = 'cancelled'; break; }
+      summary.phase = name; save();
       checkProgress(`开始 ${name}`);
       const slug = name.replaceAll(':', '-');
       const report = resolve(directory, `${slug}-tests.json`), log = resolve(directory, `${slug}.log`);
@@ -89,7 +98,7 @@ async function phases(root, directory, names, mode, context, env = {}) {
     if (summary.status === 'running') summary.status = summary.results.every(result => result.status === 'passed') ? 'passed' : 'failed';
   } catch (error) { summary.status = context.signal.aborted ? 'cancelled' : 'failed'; summary.error = String(error); }
   summary.completedAt = new Date().toISOString(); save();
-  saveFailures(context, summary);
+  recordCheckFailures(context, summary);
   return summary;
 }
 
@@ -105,7 +114,7 @@ export async function runCheck(root, directory, options = {}) {
       recheck = await phases(root, join(directory, 'recheck'), names, 'recheck', context, { CLAPGRID_FAILURE_MANIFEST: manifest });
       if (recheck.status !== 'passed') {
         const blocked = { ...recheck, blocked: true, recheck };
-        writeFileSync(join(directory, 'summary.json'), JSON.stringify(blocked, null, 2) + '\n');
+        atomicJson(join(directory, 'summary.json'), blocked);
         return blocked;
       }
       rmSync(manifest);
@@ -117,19 +126,19 @@ export async function runCheck(root, directory, options = {}) {
     const preflight = await phases(root, mode === 'preflight' ? directory : join(directory, 'preflight'), preflightNames, 'preflight', context);
     if (preflight.status !== 'passed' || mode === 'preflight') {
       const result = { ...preflight, preflight, recheck };
-      if (mode !== 'preflight') writeFileSync(join(directory, 'summary.json'), JSON.stringify(result, null, 2) + '\n');
+      if (mode !== 'preflight') atomicJson(join(directory, 'summary.json'), result);
       return result;
     }
     if (!sameSource(preflight.source, sourceIdentity(root))) {
       const result = { mode, status: 'invalidated', source: preflight.source, sourceAfter: sourceIdentity(root), preflight, recheck, results: [], pending: ['typecheck', 'test', 'build'], directory, completedAt: new Date().toISOString() };
-      writeFileSync(join(directory, 'summary.json'), JSON.stringify(result, null, 2) + '\n');
+      atomicJson(join(directory, 'summary.json'), result);
       return result;
     }
     const result = await phases(root, directory, ['typecheck', 'test', 'build'], mode, context);
     result.preflight = preflight;
     result.recheck = recheck;
     if (!sameSource(preflight.source, result.source)) result.status = 'invalidated';
-    writeFileSync(join(directory, 'summary.json'), JSON.stringify(result, null, 2) + '\n');
+    atomicJson(join(directory, 'summary.json'), result);
     return result;
   }, options);
 }

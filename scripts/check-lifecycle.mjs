@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync, realpathSync, existsSync, openSync, closeSync, readlinkSync, chmodSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync, realpathSync, existsSync, openSync, closeSync, readlinkSync, chmodSync, renameSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
@@ -11,6 +11,49 @@ const read = path => JSON.parse(readFileSync(path, 'utf8'));
 export const stateDirectory = root => join(realpathSync(root), 'logs/check-state');
 const lockDirectory = root => join(stateDirectory(root), 'active');
 const namespace = () => process.platform === 'linux' ? readlinkSync('/proc/self/ns/pid') : process.platform;
+
+export function atomicJson(path, value) {
+  const temporary = `${path}.${process.pid}.${randomUUID()}.tmp`;
+  writeFileSync(temporary, JSON.stringify(value, null, 2) + '\n');
+  renameSync(temporary, path);
+}
+
+export function currentCheckRun(root) {
+  try { return read(join(lockDirectory(root), 'owner.json')); }
+  catch (error) { if (error.code === 'ENOENT') return null; throw error; }
+}
+
+/** 启动器先预约唯一工作树锁，后台执行者凭同一令牌接管，避免启动窗口重复执行。 */
+export function reserveCheckRun(root, kind, metadata = {}) {
+  root = realpathSync(root);
+  const directory = lockDirectory(root);
+  mkdirSync(stateDirectory(root), { recursive: true });
+  if (existsSync(join(stateDirectory(root), 'stopping'))) throw Error('旧检查正在停止，请等待退出后再启动');
+  try { mkdirSync(directory); }
+  catch (error) { if (error.code === 'EEXIST') throw Error('已有检查运行或待清理；请查询原任务或运行 npm run check:stop'); throw error; }
+  const token = randomUUID();
+  const owner = { ...metadata, token, pid: process.pid, birth: birth(process.pid), namespace: namespace(), root, kind, reservation: true, startedAt: new Date().toISOString(),
+    socket: process.platform === 'win32' ? `\\\\.\\pipe\\clapgrid-${token}` : join(tmpdir(), `clapgrid-${token}.sock`) };
+  atomicJson(join(directory, 'owner.json'), owner);
+  return owner;
+}
+
+export function releaseCheckReservation(root, token) {
+  const owner = currentCheckRun(root);
+  if (owner?.reservation && owner.token === token) rmSync(lockDirectory(root), { recursive: true });
+}
+
+/** 使用登记的全部进程组核对结束；子命令可能拥有不同 session，不能只扫描 worker 的 session。 */
+export function checkRunProcessesEnded(root, token, evidenceDirectory) {
+  const owner = currentCheckRun(root);
+  if (!owner || owner.token !== token) {
+    try { return evidenceDirectory && read(join(evidenceDirectory, 'lifecycle-ended.json')).token === token ? true : null; }
+    catch { return null; }
+  }
+  if (owner.namespace !== namespace() || owner.reservation) return null;
+  if (birth(owner.pid) === owner.birth) return false;
+  return groups(lockDirectory(root)).every(group => !groupAlive(group));
+}
 
 function requestStop(owner) {
   return new Promise((resolveRequest, reject) => {
@@ -84,11 +127,15 @@ export async function withCheckRun(root, kind, work, options = {}) {
   const inherited = process.env.CLAPGRID_CHECK_SCOPE;
   const token = process.env.CLAPGRID_CHECK_TOKEN;
   let upstream;
+  let ancestors = [];
   if (process.env.CLAPGRID_CHECK_REGISTRY) {
     upstream = JSON.parse(process.env.CLAPGRID_CHECK_REGISTRY);
-    const registryOwner = read(join(lockDirectory(upstream.root), 'owner.json'));
-    if (registryOwner.token !== upstream.token) throw Error('上游检查身份已失效');
-    if (existsSync(join(lockDirectory(upstream.root), 'cancelled'))) throw Error('上游检查已取消，不启动新的子检查');
+    ancestors = [{ root: upstream.root, token: upstream.token }, ...(upstream.ancestors ?? [])];
+    for (const ancestor of ancestors) {
+      const registryOwner = read(join(lockDirectory(ancestor.root), 'owner.json'));
+      if (registryOwner.token !== ancestor.token) throw Error('上游检查身份已失效');
+      if (existsSync(join(lockDirectory(ancestor.root), 'cancelled'))) throw Object.assign(Error('上游检查已取消，不启动新的子检查'), { cancelled: true });
+    }
   }
   let directory, owner, owns = false;
   if (inherited && token && process.env.CLAPGRID_CHECK_CHILD_ROOT === root) {
@@ -98,8 +145,10 @@ export async function withCheckRun(root, kind, work, options = {}) {
   } else {
     directory = lockDirectory(root);
     mkdirSync(stateDirectory(root), { recursive: true });
-    if (existsSync(join(stateDirectory(root), 'stopping'))) throw Error('旧检查正在停止，请等待退出后再启动');
-    try { mkdirSync(directory); }
+    if (!options.reservation && existsSync(join(stateDirectory(root), 'stopping'))) throw Error('旧检查正在停止，请等待退出后再启动');
+    const reserved = options.reservation ? currentCheckRun(root) : null;
+    if (options.reservation && (!reserved?.reservation || reserved.token !== options.reservation)) throw Error('后台检查预约身份已失效');
+    try { if (!reserved) mkdirSync(directory); }
     catch (error) {
       if (error.code !== 'EEXIST') throw error;
       let active;
@@ -107,13 +156,22 @@ export async function withCheckRun(root, kind, work, options = {}) {
       throw Error(`已有检查运行或待清理：${JSON.stringify(active ?? { directory })}；运行记录：${directory}；请先运行 npm run check:stop`);
     }
     owns = true;
-    const token = randomUUID();
-    owner = { token, pid: process.pid, birth: birth(process.pid), namespace: namespace(), root, kind, startedAt: new Date().toISOString(),
+    const token = reserved?.token ?? randomUUID();
+    owner = { ...reserved, ...options.metadata, token, pid: process.pid, birth: birth(process.pid), namespace: namespace(), root, kind, reservation: false, startedAt: reserved?.startedAt ?? new Date().toISOString(),
       socket: process.platform === 'win32' ? `\\\\.\\pipe\\clapgrid-${token}` : join(tmpdir(), `clapgrid-${token}.sock`) };
-    writeFileSync(join(directory, 'owner.json'), JSON.stringify(owner, null, 2));
+    atomicJson(join(directory, 'owner.json'), owner);
   }
   const controller = new AbortController();
-  const cancel = () => { writeFileSync(join(directory, 'cancelled'), 'requested'); controller.abort(); };
+  const cancel = () => {
+    if (controller.signal.aborted) return;
+    try { writeFileSync(join(directory, 'cancelled'), 'requested'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    controller.abort();
+  };
+  const ancestorActive = ancestor => {
+    try { return read(join(lockDirectory(ancestor.root), 'owner.json')).token === ancestor.token && !existsSync(join(lockDirectory(ancestor.root), 'cancelled')); }
+    catch { return false; }
+  };
+  ancestors = ancestors.filter(ancestor => ancestor.root !== owner.root || ancestor.token !== owner.token);
   let server;
   if (owns) {
     server = createServer(client => {
@@ -138,43 +196,63 @@ export async function withCheckRun(root, kind, work, options = {}) {
   }
   process.on('SIGINT', cancel); process.on('SIGTERM', cancel);
   options.signal?.addEventListener('abort', cancel, { once: true });
-  if (options.signal?.aborted) cancel();
+  if (options.signal?.aborted || existsSync(join(directory, 'cancelled'))) cancel();
+  // 后台 worker 可以脱离观察终端，但仍属于启动它的检查范围；祖先取消不能遗留新 session。
+  const watcher = setInterval(() => { if (existsSync(join(directory, 'cancelled')) || ancestors.some(ancestor => !ancestorActive(ancestor))) cancel(); }, 100);
+  watcher.unref();
   const context = {
     root: owner.root, signal: controller.signal,
     env: { ...process.env, CLAPGRID_CHECK_SCOPE: owner.root, CLAPGRID_CHECK_TOKEN: owner.token, CLAPGRID_CHECK_CHILD_ROOT: '',
-      CLAPGRID_CHECK_REGISTRY: JSON.stringify(upstream ?? { root: owner.root, token: owner.token }) },
-    recordLog(path) { writeFileSync(join(directory, `activity-${process.pid}.json`), JSON.stringify({ pid: process.pid, directory: path })); },
+      CLAPGRID_CHECK_REGISTRY: JSON.stringify({ root: owner.root, token: owner.token, ancestors }) },
+    recordLog(path) { atomicJson(join(directory, `activity-${process.pid}.json`), { pid: process.pid, directory: path }); },
     register(pid) {
       const group = { pid, birth: birth(pid) };
       if (!group.birth) throw Error(`无法确认检查子进程 ${pid} 的身份`);
       // 独立工作树的子检查仍是本次命令的后代，取消时也必须覆盖其新进程组。
-      group.paths = [...new Set([directory, ...(upstream ? [lockDirectory(upstream.root)] : [])])].map(path => join(path, `group-${pid}.json`));
-      for (const path of group.paths) writeFileSync(path, JSON.stringify(group));
+      const activeAncestors = ancestors.filter(ancestorActive);
+      if (activeAncestors.length !== ancestors.length) cancel();
+      group.paths = [...new Set([directory, ...activeAncestors.map(ancestor => lockDirectory(ancestor.root))])].map(path => join(path, `group-${pid}.json`));
+      for (const path of group.paths) atomicJson(path, group);
       return group;
     },
     unregister(group) { for (const path of group.paths) rmSync(path, { force: true }); },
   };
   try { return await work(context); }
   finally {
+    clearInterval(watcher);
     process.off('SIGINT', cancel); process.off('SIGTERM', cancel);
     options.signal?.removeEventListener('abort', cancel);
     if (owns) {
       // 包括组长提前退出但孙进程仍运行的情况，退出确认前不释放锁。
       for (const group of groups(directory)) await stopGroup(group);
       await new Promise(resolveClose => server.close(resolveClose));
+      if (owner.verificationDirectory) atomicJson(join(owner.verificationDirectory, 'lifecycle-ended.json'), { token: owner.token, endedAt: new Date().toISOString() });
       rmSync(directory, { recursive: true });
     }
   }
 }
 
-export async function stopCheckRun(root) {
+export async function stopCheckRun(root, options = {}) {
   const state = stateDirectory(root), directory = lockDirectory(root);
   mkdirSync(state, { recursive: true });
   const stopping = join(state, 'stopping');
   const fd = openSync(stopping, 'wx'); closeSync(fd);
   try {
     if (!existsSync(directory)) return { status: 'idle' };
-    const owner = read(join(directory, 'owner.json'));
+    let owner = read(join(directory, 'owner.json'));
+    if (options.token && owner.token !== options.token) throw Error('运行身份已变化，拒绝取消其他任务');
+    if (owner.reservation) {
+      writeFileSync(join(directory, 'cancelled'), 'requested');
+      const ready = Date.now() + 3000;
+      while (owner.reservation && Date.now() < ready) {
+        await delay(25);
+        if (!existsSync(directory)) return { status: 'cancelled', run: owner };
+        const next = read(join(directory, 'owner.json'));
+        if (next.token !== owner.token) throw Error('运行身份已变化，拒绝取消其他任务');
+        owner = next;
+      }
+      if (owner.reservation) throw Error('后台执行者尚未接管取消请求，保留预约锁和现场');
+    }
     let acknowledged = false;
     try { if (owner.socket) { await requestStop(owner); acknowledged = true; } }
     catch {
@@ -188,6 +266,7 @@ export async function stopCheckRun(root) {
       if (acknowledged || birth(owner.pid) === owner.birth) throw Error(`检查 ${owner.pid} 尚未完成停止，保留锁；请查看日志`);
       for (const group of groups(directory)) await stopGroup(group);
       if (read(join(directory, 'owner.json')).token !== owner.token) throw Error('运行身份已变化，拒绝清理');
+      if (owner.verificationDirectory) atomicJson(join(owner.verificationDirectory, 'lifecycle-ended.json'), { token: owner.token, endedAt: new Date().toISOString() });
       rmSync(directory, { recursive: true });
       if (process.platform !== 'win32' && owner.socket) rmSync(owner.socket, { force: true });
     }

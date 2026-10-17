@@ -1,6 +1,6 @@
 import { verifyLoadedPlugin } from '../plugin-release.js';
 import { preparePanel } from '../prepare-panel.js';
-import { buildIdentity } from '../build-identity.js';
+import { buildIdentity, compatibleRuntime } from '../build-identity.js';
 import { readHostWorkspace, hostThreadId } from '../host-workspace.js';
 import { bindWorkspace } from '../workspace-service.js';
 import { exportTaskRequestSchema, submitExportSchema, speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
@@ -17,7 +17,7 @@ export function createBusinessMcp(url?: string) {
     const bound = await bindWorkspace(await readHostWorkspace(threadId), threadId);
     if (buildIdentity.state === 'known') {
       const current = (await queryStatus(bound)).buildIdentity;
-      if (current?.state !== 'known' || current.contentFingerprint !== buildIdentity.contentFingerprint) throw new Error('服务版本与插件不一致，请执行插件更新流程后重试。');
+      if (current?.state !== 'known' || !compatibleRuntime(current, buildIdentity)) throw new Error('服务版本与插件不一致，请执行插件更新流程后重试。');
     }
     return bound;
   };

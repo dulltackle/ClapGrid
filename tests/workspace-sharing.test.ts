@@ -13,6 +13,7 @@ import { startService } from '../src/service/server.js';
 import { createBusinessMcp } from '../src/mcp/server.js';
 import { beginEdit, queryStatus, querySpeech, submitSpeech, connectTable } from '../src/shared/client.js';
 import type { ServiceStatus, SpeechTask, SpeechStatus } from '../src/shared/contracts.js';
+import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 
 // 只替代宿主协议和外部配音供应商；真实入口、服务、绑定、HTTP、MCP 与持久化均参与。
 test('同工作空间并发打开复用项目与服务，不同工作空间独立', { timeout: 60000 }, async t => {
@@ -26,18 +27,16 @@ test('同工作空间并发打开复用项目与服务，不同工作空间独�
   writeFileSync(host, `#!/usr/bin/env node\nconst roots=${JSON.stringify({ [threads[0]!]: first, [threads[1]!]: first, [threads[2]!]: second })};require('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:{id:r.params.threadId,cwd:roots[r.params.threadId]}}}));});`, { mode: 0o700 });
   await build({ entryPoints: ['src/runtime.ts', 'src/service/main.ts', 'src/business/media-worker.ts'], outbase: 'src', outdir: dist, bundle: true, platform: 'node', format: 'esm', target: 'node22', external: ['vite'], banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" } });
   const cli = async (action: string, workspace: string, thread: string) => JSON.parse((await promisify(execFile)(process.execPath, [join(dist, 'runtime.js'), action, '--workspace', workspace, '--thread', thread], { env: { ...process.env, CLAPGRID_CODEX_BIN: host } })).stdout);
-  const opened: { workspace: string; thread: string; result: ServiceStatus & { url: string } }[] = [];
+  const opened: { workspace: string; thread: string; result: ServiceStatus & { url: string }; process: ReturnType<typeof serviceProcess> }[] = [];
   t.after(async () => {
-    for (const entry of [...new Map(opened.map(item => [item.result.instanceId, item])).values()]) await cli('workspace-stop', entry.workspace, entry.thread);
-    for (const entry of opened) for (let i = 0; i < 100; i++) {
-      try { await fetch(`${new URL(entry.result.url).origin}/api/identity`); } catch { break; }
-      await new Promise(resolve => setTimeout(resolve, 20));
-    }
+    const services = [...new Map(opened.map(item => [item.result.instanceId, item])).values()];
+    for (const entry of services) await cli('workspace-stop', entry.workspace, entry.thread);
+    await Promise.all(services.map(entry => waitForServiceExit(entry.process)));
     rmSync(root, { recursive: true, force: true });
   });
   const results = await Promise.allSettled(threads.map(async (thread, i) => {
     const workspace = i === 2 ? second : first;
-    const result = await cli('open', workspace, thread); opened.push({ workspace, thread, result }); return result;
+    const result = await cli('open', workspace, thread); opened.push({ workspace, thread, result, process: serviceProcess(result.pid) }); return result;
   }));
   for (const result of results) assert.equal(result.status, 'fulfilled', result.status === 'rejected' ? String(result.reason) + '\n' + [first, second].map(workspace => { try { return readFileSync(join(workspace, 'clapgrid', 'service.log'), 'utf8'); } catch { return ''; } }).join('\n') : undefined);
   const [a, b, c] = results.map(result => (result as PromiseFulfilledResult<ServiceStatus & { url: string }>).value);

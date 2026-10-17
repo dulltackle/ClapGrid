@@ -1,4 +1,4 @@
-import { buildIdentity } from './build-identity.js';
+import { buildIdentity, compatibleRuntime } from './build-identity.js';
 import { verifyLoadedPlugin } from './plugin-release.js';
 import { spawn } from 'node:child_process';
 import { openSync, closeSync } from 'node:fs';
@@ -46,7 +46,7 @@ export async function workspaceRuntime(action: 'open' | 'workspace-status' | 'wo
   }
   const url = await bindWorkspace(workspace, values.thread);
   const status = await queryStatus(url);
-  if (action === 'open' && buildIdentity.state === 'known' && (status.buildIdentity?.state !== 'known' || status.buildIdentity.contentFingerprint !== buildIdentity.contentFingerprint)) throw new Error('服务版本与插件不一致，请执行插件更新流程；保留运行中的任务。');
+  if (action === 'open' && buildIdentity.state === 'known' && (status.buildIdentity?.state !== 'known' || !compatibleRuntime(status.buildIdentity, buildIdentity))) throw new Error('服务版本与插件不一致，请执行插件更新流程；保留运行中的任务。');
   if (action === 'workspace-stop') {
     if (values['idle-only'] && (status.taskLocked || status.modification)) return { outcome: 'kept', message: '项目忙碌，更新等待任务和编辑结束。' };
     const response = await fetch(`${url}/api/service/stop`, { method: 'POST',

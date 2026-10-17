@@ -1,3 +1,4 @@
+import { loadPanelRelease, panelDocument, type PanelRelease } from './panel-releases.js';
 import { buildIdentity } from '../build-identity.js';
 import { readHostWorkspace } from '../host-workspace.js';
 import { workspaceProject } from '../workspace-service.js';
@@ -78,13 +79,18 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       }
       if (!files.has('/index.html')) throw new Error('面板构建缺失，请先运行 npm run build。');
     }
+    let activePanelIdentity = buildIdentity;
+    const releases = new Map<string, PanelRelease>();
+    if (buildIdentity.state === 'known' && buildIdentity.panelFingerprint) releases.set(buildIdentity.panelFingerprint.slice(7), { identity: buildIdentity, files: new Map(files) });
+    const panelActivity = new Map<string, { busy: boolean; at: number }>();
     const status = (): ServiceStatus => ({
-      application: 'clapgrid', apiVersion: 1, instanceId, pid: process.pid, buildIdentity, idleStopSupported: true,
+      application: 'clapgrid', apiVersion: 1, instanceId, pid: process.pid, buildIdentity, activePanelIdentity, idleStopSupported: true,
       startedAt, snapshot: business.getSnapshot(), ...business.getActivity(),
     });
     const tableSessions = new Map<string, { binding: string; close: () => void }>();
     const finishTable = (id: string) => {
       business.disconnectTable(id);
+      panelActivity.delete(id);
       const close = tableSessions.get(id);
       tableSessions.delete(id);
       close?.close();
@@ -164,7 +170,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
         tableOwner = threadId;
         path = match[2] ?? '/';
       }
-      if (workspace && !bindingPrefix && path !== '/api/identity' && path !== '/api/binding' && !path.startsWith('/assets/')) {
+      if (workspace && !bindingPrefix && path !== '/api/identity' && path !== '/api/binding' && !path.startsWith('/assets/') && !path.startsWith('/panel-release/')) {
         reject(409, '缺少工作空间绑定，请通过插件入口重新打开。'); return;
       }
       const json = (body: unknown) => {
@@ -173,7 +179,7 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       };
       if (path === '/api/identity' && request.method === 'GET') {
         json({ application: 'clapgrid', workspace, projectDirectory: business.getSnapshot().project.directory,
-          projectId: business.getSnapshot().project.id, instanceId, buildIdentity }); return;
+          projectId: business.getSnapshot().project.id, instanceId, buildIdentity, activePanelIdentity }); return;
       }
       if (path === '/api/binding') {
         if (!workspace || request.method !== 'POST') { reject(409, '此服务不支持工作空间绑定。'); return; }
@@ -189,6 +195,39 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
           const value = `${input.threadId}.${generation}`;
           json({ binding: `${value}.${signature(value)}` });
         } catch { reject(409, '无法核对工作空间绑定，请关闭重开。'); }
+        finally { clearTimeout(timeout); }
+        return;
+      }
+      if (path === '/api/panel-activity' || path === '/api/panel-release') {
+        if (request.method !== 'POST' || !bindingPrefix) { reject(405, '需要当前工作空间绑定的 POST'); return; }
+        if (stopping) { reject(503, '服务正在退出，不能更新面板'); return; }
+        if (request.headers['content-type']?.split(';')[0]?.trim() !== 'application/json') { reject(415, '请使用 application/json。'); return; }
+        const timeout = setTimeout(() => request.destroy(), 5000);
+        try {
+          let text = ''; for await (const chunk of request) { text += chunk; if (text.length > 8192) throw new Error('请求过大'); }
+          const input = JSON.parse(text);
+          if (path === '/api/panel-activity') {
+            const value = z.object({ tableId: z.uuid(), busy: z.boolean() }).strict().parse(input);
+            business.assertTableOwner(value.tableId, tableOwner);
+            panelActivity.set(value.tableId, { busy: value.busy, at: Date.now() });
+            json({ accepted: true }); return;
+          }
+          const value = z.object({ packageDirectory: z.string().optional(), rollbackFingerprint: z.string().regex(/^sha256:[a-f0-9]{64}$/).optional(), instanceId: z.uuid(), expectedPanelFingerprint: z.string() }).strict().refine(value => !!value.packageDirectory !== !!value.rollbackFingerprint).parse(input);
+          if (value.instanceId !== instanceId || activePanelIdentity.state !== 'known' || activePanelIdentity.panelFingerprint !== value.expectedPanelFingerprint) throw new Error('面板代次或服务实例已改变');
+          const next = value.packageDirectory ? await loadPanelRelease(value.packageDirectory, business.getSnapshot().project.directory) : releases.get(value.rollbackFingerprint!.slice(7));
+          if (!next) throw new Error('回滚面板代次不存在');
+          await verifyBinding();
+          const busy = () => business.getActivity().taskLocked || !!business.getActivity().modification || [...tableSessions.keys()].some(id => {
+            const activity = panelActivity.get(id); return !activity || activity.busy || Date.now() - activity.at > 6000;
+          });
+          if (busy()) { json({ outcome: 'pending', reason: '项目有任务、编辑、播放或面板状态尚未确认', activePanelIdentity }); return; }
+          if (activePanelIdentity.state !== 'known' || activePanelIdentity.panelFingerprint !== value.expectedPanelFingerprint) throw new Error('面板代次已改变');
+          if (next.identity.state !== 'known' || !next.identity.panelFingerprint) throw new Error('面板身份无效');
+          releases.set(next.identity.panelFingerprint.slice(7), next);
+          files.clear(); for (const [path, bytes] of next.files) files.set(path, bytes);
+          activePanelIdentity = next.identity;
+          json({ outcome: 'applied', activePanelIdentity, instanceId }); return;
+        } catch (error) { if (!response.destroyed) reject(409, error instanceof Error ? error.message : '面板更新未确认'); }
         finally { clearTimeout(timeout); }
         return;
       }
@@ -449,7 +488,12 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       } else if (vite) {
         vite.middlewares(request, response);
       } else {
-        const file = files.get(path === '/' ? '/index.html' : path);
+        const generation = /^\/panel-release\/([a-f0-9]{64})(\/.*)$/.exec(path);
+        const release = generation ? releases.get(generation[1]!) : undefined;
+        const selectedFiles = generation ? release?.files : files;
+        const filePath = generation ? generation[2]! : path === '/' ? '/index.html' : path;
+        const raw = selectedFiles?.get(filePath);
+        const file = raw && /\.(html|js|css)$/.test(filePath) ? panelDocument(raw, release?.identity ?? activePanelIdentity) : raw;
         if (!file) { reject(404, '文件不存在。'); return; }
         const types: Record<string, string> = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
         response.writeHead(200, { 'Content-Type': `${types[extname(path === '/' ? 'index.html' : path)] ?? 'application/octet-stream'}; charset=utf-8` });

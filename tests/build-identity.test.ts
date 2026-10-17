@@ -141,14 +141,17 @@ test('真实 MCP 和 HTTP 报告加载身份，覆盖磁盘更新、缺失身份
   const second = build(root);
   assert.notEqual(first.contentFingerprint, second.contentFingerprint);
   assert.notEqual(first.version, second.version);
+  assert.equal(first.runtimeFingerprint, second.runtimeFingerprint, '纯面板变化保持运行时身份');
+  assert.notEqual(first.panelFingerprint, second.panelFingerprint);
   const oldInstall = await summary();
   assert.equal(oldInstall.installed.status, 'mismatch');
   cpSync(plugin, installed, { recursive: true });
   const outdated = await summary();
-  assert.deepEqual([outdated.installed.status, outdated.mcp.status, outdated.service.status], ['match', 'mismatch', 'mismatch']);
+  assert.deepEqual([outdated.installed.status, outdated.mcp.status, outdated.service.status], ['match', 'match', 'match']);
+  assert.equal(outdated.service.panelStatus, 'mismatch', '服务运行时相容不表示旧面板已升级');
   assert.equal(outdated.mcp.identity.contentFingerprint, first.contentFingerprint);
-  assert.equal(outdated.mcp.referenceFingerprint, second.contentFingerprint);
-  assert.ok(outdated.nextSteps.some((step: string) => step.includes('重载')));
+  assert.equal(outdated.mcp.referenceFingerprint, second.runtimeFingerprint);
+  assert.equal(outdated.complete, false);
   assert.equal(service.exitCode, null);
 
   assert.deepEqual((await diagnose()).buildIdentity, first);

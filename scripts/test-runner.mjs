@@ -25,7 +25,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const root = resolve(import.meta.dirname, '..');
     let files = values.suite === 'rows' ? rowTests.map(name => `tests/${name}.test.ts`)
       : readdirSync(resolve(root, 'tests')).filter(name => name.endsWith('.test.ts')).sort().map(name => `tests/${name}`);
-    if (values.suite === 'tooling') files = ['tests/check-runner.test.ts', 'tests/test-reporting.test.ts', 'tests/browser-startup.test.ts'];
+    if (values.suite === 'tooling') files = ['tests/check-runner.test.ts', 'tests/verification-jobs.test.ts', 'tests/test-reporting.test.ts', 'tests/browser-startup.test.ts', 'tests/service-exit-wait.test.ts', 'tests/ui-check-plan.test.ts', 'tests/ui-check-runner.test.ts', 'tests/browser-build-cache.test.ts'];
     if (values.suite === 'failed') {
       const manifest = JSON.parse(readFileSync(process.env.CLAPGRID_FAILURE_MANIFEST ?? resolve(root, 'logs/check-state/failures.json'), 'utf8'));
       const failed = failureFiles(root, manifest.failures ?? []);
