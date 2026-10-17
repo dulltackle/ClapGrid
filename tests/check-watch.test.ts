@@ -251,7 +251,11 @@ test('父检查取消嵌套watch的真实Chrome，完整ancestor登记与profile
 });
 
 test('watch空闲拒绝完整和UI检查，另一真实Git工作树仍能实际检查', async t => {
-  const r = repository(t), w = r.start(); await w.wait(() => r.summary()?.state === 'idle');
+  const r = repository(t);
+  // 拒锁探针仍可继承外层测试child的默认cache；watch夹具也须隔离可写安装目录。
+  rmSync(join(r.root, 'node_modules')); mkdirSync(join(r.root, 'node_modules'));
+  for (const name of readdirSync(join(project, 'node_modules'))) if (name !== '.cache') symlinkSync(join(project, 'node_modules', name), join(r.root, 'node_modules', name));
+  const w = r.start(); await w.wait(() => r.summary()?.state === 'idle');
   for (const args of [['scripts/check.mjs'], ['scripts/check-ui.mjs', '--scope', 'row']]) {
     const conflict = spawnSync(process.execPath, args, { cwd: r.root, encoding: 'utf8', timeout: 10000 });
     assert.equal(conflict.status, 1); assert.match(conflict.stderr, /已有检查/);
