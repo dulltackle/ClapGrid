@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { test, type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, cpSync, symlinkSync, readdirSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, cpSync, symlinkSync, readdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -66,7 +66,8 @@ test('真实入口保存逐用例统一证据、原生来源与已登记预期�
 test('完整命令拒绝零退出的缺报告/不完整执行/篡改来源，失败进入待办并集中复验', t => {
   const { root, command } = repository(t);
   const reportPath = join(root, 'logs/report.json');
-  // 先证明正常完整入口沿用预检与完整执行（本工单不去重）。
+  // 留下 all-only 文件，故障必须进入真实剩余阶段，不能被预检覆盖。
+  addRemaining(root);
   const normal = command('scripts/check.mjs');
   assert.equal(normal.status, 0, normal.stderr);
   const pkgPath = join(root, 'package.json');
@@ -166,6 +167,7 @@ test('真实收集错误和迟到的未捕获异常不能被成功用例掩盖',
 
 test('默认完整检查拒绝同源码历史成功报告，执行身份绑定当次阶段与原生来源', t => {
   const { root, command } = repository(t);
+  addRemaining(root);
   const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
   pkg.scripts.test = 'node replay.cjs';
   writeFileSync(join(root, 'package.json'), JSON.stringify(pkg));
@@ -224,4 +226,132 @@ test('原生报告缺失仍保留对照范围，复验不能只运行普通全�
   assert.notEqual(command('scripts/check.mjs', '--failed').status, 0, '报告恢复后仍失败的原生场景必须实际复验');
   writeFileSync(join(root, 'fixed'), '修复被测行为');
   assert.equal(command('scripts/check.mjs', '--failed').status, 0);
+});
+
+function addRemaining(root: string) {
+  const inventoryPath = join(root, 'scripts/test-inventory.json');
+  const inventory = JSON.parse(readFileSync(inventoryPath, 'utf8'));
+  inventory.files.push({ file: 'tests/remaining.test.ts', executor: 'node', scopes: ['all'] });
+  writeFileSync(join(root, 'tests/remaining.test.ts'), `import {test} from 'node:test';test('剩余场景',()=>{});`);
+  writeFileSync(inventoryPath, JSON.stringify(inventory));
+}
+
+test('同次真实预检按文件去重并累计完整证据，独立检查没有历史资格', t => {
+  const { root, command } = repository(t);
+  addRemaining(root);
+  const inventory = JSON.parse(readFileSync(join(root, 'scripts/test-inventory.json'), 'utf8'));
+  inventory.files.push({ file: 'tests/rows.test.ts', executor: 'node', scopes: ['all', 'rows'] });
+  writeFileSync(join(root, 'scripts/test-inventory.json'), JSON.stringify(inventory));
+  for (const [file, name] of [['sample', 'tooling'], ['rows', 'rows'], ['remaining', 'remaining']]) {
+    writeFileSync(join(root, `tests/${file}.test.ts`), `import {test} from 'node:test';import {appendFileSync}from'node:fs';test('${name}',()=>appendFileSync('logs/observed.jsonl',JSON.stringify('${name}')+'\\n'));`);
+  }
+  const pkgPath = join(root, 'package.json');
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+  pkg.checkPreflight.push('test:rows');
+  pkg.scripts['test:rows'] = 'node scripts/test-runner.mjs --suite rows';
+  pkg.scripts.typecheck = `node -e "require('fs').appendFileSync('logs/observed.jsonl',JSON.stringify('typecheck')+'\\n')"`;
+  writeFileSync(pkgPath, JSON.stringify(pkg));
+  for (let round = 0; round < 2; round++) {
+    const result = command('scripts/check.mjs');
+    assert.equal(result.status, 0, result.stderr + result.stdout);
+    const observed = readFileSync(join(root, 'logs/observed.jsonl'), 'utf8').trim().split('\n').map(line => JSON.parse(line));
+    for (const name of ['typecheck', 'tooling', 'rows', 'remaining']) assert.equal(observed.filter(item => item === name).length, round + 1, `${name} 每个完整检查只实际执行一次`);
+    const dirs = readdirSync(join(root, 'logs/check')).sort();
+    const summary = JSON.parse(readFileSync(join(root, 'logs/check', dirs.at(-1)!, 'summary.json'), 'utf8'));
+    assert.equal(summary.results[0].execution, 'counted');
+    const report = JSON.parse(readFileSync(summary.results[1].testReport, 'utf8'));
+    assert.equal(report.kind, 'test-cumulative');
+    assert.equal(report.actual.cases.length, 3);
+    assert.equal(new Set(report.actual.files.map((item: any) => item.file)).size, 3);
+    assert.equal(report.runId, summary.runId);
+    assert.match(result.stdout, /计入.*未再次执行/);
+  }
+});
+
+test('预检覆盖全部文件时不启动空集合，完整报告明确引用原来源', t => {
+  const { root, command } = repository(t);
+  const result = command('scripts/check.mjs');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  const dirs = readdirSync(join(root, 'logs/check')).sort();
+  const summary = JSON.parse(readFileSync(join(root, 'logs/check', dirs.at(-1)!, 'summary.json'), 'utf8'));
+  assert.equal(summary.results.find((step: any) => step.name === 'test').execution, 'counted');
+  const report = JSON.parse(readFileSync(summary.results.find((step: any) => step.name === 'test').testReport, 'utf8'));
+  assert.equal(report.kind, 'test-cumulative');
+  assert.equal(report.sources.stages.length, 1);
+});
+
+test('正式复用逐项拒绝累计运行身份、来源、集合和阶段日志故障', t => {
+  const { root, command } = repository(t);
+  const verify = () => {
+    const result = command('scripts/verify.mjs', '--revision', 'HEAD', '--reuse-passed');
+    assert.equal(result.status, 0, result.stderr + result.stdout);
+    return JSON.parse(result.stdout.slice(result.stdout.indexOf('{')));
+  };
+  let current = verify();
+  const mutations = [
+    (report: any) => { report.runId = 'other-run'; },
+    (report: any) => { report.sources.stages.push(report.sources.stages[0]); },
+    (report: any) => { report.sources.stages[0].files = []; },
+    (report: any) => { report.actual.files = []; },
+    (report: any) => { report.expected.cases = []; },
+    (report: any) => { report.status = 'cancelled'; },
+    (report: any) => { report.sources.stages[0].proof.sha256 = 'wrong'; },
+    (report: any) => { const proof = JSON.parse(readFileSync(report.sources.stages[0].proof.path, 'utf8')); writeFileSync(proof.result.log, '改写原始日志'); },
+  ];
+  for (const mutate of mutations) {
+    const summary = JSON.parse(readFileSync(current.checkSummary, 'utf8'));
+    const path = summary.results.find((item: any) => item.name === 'test').testReport;
+    const report = JSON.parse(readFileSync(path, 'utf8'));
+    mutate(report); writeFileSync(path, JSON.stringify(report));
+    const next = verify();
+    assert.notEqual(next.runId, current.runId, '累计故障不能被 --reuse-passed 放行');
+    current = next;
+  }
+});
+
+for (const [faultStage, strict] of [['build',false],['typecheck',false],['build',true],['typecheck',true]] as const) test(`累计链 ${faultStage} 损坏原生复验来源后，未知待办仍保留${strict?'严格跳过':'失败'}原生范围并阻塞`, t => {
+  const {root,command,files}=repository(t);
+  const nativeFile='tests/reference.native.ts';
+  const source=`import{test}from'node:test';import assert from'node:assert/strict';import{existsSync}from'node:fs';test('原生对照仍须复验',${strict?"{skip:existsSync('logs/native-fails')},":''}()=>assert.ok(!existsSync('logs/native-fails')));`;
+  writeFileSync(join(root,nativeFile),source);
+  writeFileSync(join(root,'scripts/test-inventory.json'),JSON.stringify({schemaVersion:1,files,references:[{file:nativeFile,executor:'node',scopes:['comparison-only'],group:'ui'}]}));
+  writeFileSync(join(root,'scripts/test-pilot-baseline.json'),JSON.stringify({snapshots:[{file:nativeFile,sha256:createHash('sha256').update(source).digest('hex')}]}));
+  mkdirSync(join(root,'logs/check-state'),{recursive:true});
+  writeFileSync(join(root,'logs/check-state/failures.json'),JSON.stringify({stages:['test'],failures:[{name:'未知原报告错误'}],referenceFiles:[nativeFile],strictTestFiles:strict?[nativeFile]:[]}));
+  writeFileSync(join(root,'break-native.cjs'),`const fs=require('fs'),path=require('path');const dir=fs.readdirSync('logs/check').sort().at(-1);const report=JSON.parse(fs.readFileSync(path.join('logs/check',dir,'recheck/test-failed-tests.json'),'utf8'));fs.rmSync(report.sources.native.path);fs.writeFileSync('logs/native-fails','原始证据失效后此行为也失败');`);
+  const pkgPath=join(root,'package.json'),pkg=JSON.parse(readFileSync(pkgPath,'utf8'));pkg.scripts[faultStage]='node break-native.cjs';writeFileSync(pkgPath,JSON.stringify(pkg));
+  const result=command('scripts/check.mjs');assert.notEqual(result.status,0,result.stdout+result.stderr);
+  const manifest=JSON.parse(readFileSync(join(root,'logs/check-state/failures.json'),'utf8'));
+  assert.deepEqual(manifest.referenceFiles,[nativeFile]);if(strict)assert.deepEqual(manifest.strictTestFiles,[nativeFile]);assert.ok(manifest.failures.some((item:any)=>!item.file),'累计链失效必须作为未知失败');
+  const recheck=command('scripts/check.mjs','--failed');assert.notEqual(recheck.status,0,'仍失败的原生场景不能被普通all复验漏掉');
+  assert.ok(recheck.stdout.includes('原生对照仍须复验'));assert.ok(readFileSync(join(root,'logs/check-state/failures.json'),'utf8').includes(nativeFile));
+});
+
+test('UI 严格政策随原生失败待办保留，跳过不能被普通复验清空', t => {
+  const {root,command,files,env}=repository(t);
+  symlinkSync(join(project,'node_modules'),join(root,'node_modules'),'dir');env.CHROME_BIN=process.execPath;
+  const nativeFile='tests/strict.native.ts',source=`import{test}from'node:test';import{existsSync}from'node:fs';test('严格UI场景',{skip:!existsSync('logs/fixed')},()=>{});`;
+  writeFileSync(join(root,nativeFile),source);
+  writeFileSync(join(root,'scripts/test-inventory.json'),JSON.stringify({schemaVersion:1,files,references:[{file:nativeFile,executor:'node',scopes:['comparison-only'],group:'ui'}]}));
+  writeFileSync(join(root,'scripts/test-pilot-baseline.json'),JSON.stringify({snapshots:[{file:nativeFile,sha256:createHash('sha256').update(source).digest('hex')}]}));
+  const failed=command('scripts/check-ui.mjs','--scope','row','--native');assert.notEqual(failed.status,0);
+  assert.notEqual(command('scripts/check.mjs','--failed').status,0,'UI缺执行不能通过非UI默认skip政策解除阻塞');
+  const manifestPath=join(root,'logs/check-state/failures.json');
+  assert.deepEqual(JSON.parse(readFileSync(manifestPath,'utf8')).strictTestFiles,[nativeFile]);
+  writeFileSync(join(root,'logs/fixed'),'实际执行可用');
+  assert.equal(command('scripts/check.mjs','--failed').status,0);assert.equal(existsSync(manifestPath),false);
+});
+
+test('普通严格 UI 来源在 main 类型阶段失效，后续仍须复验 UI 并阻塞', t => {
+  const {root,command}=repository(t);
+  writeFileSync(join(root,'tests/sample.test.ts'),`import{test}from'node:test';import{existsSync}from'node:fs';test('普通严格UI',{skip:existsSync('logs/unavailable')},()=>{});`);
+  mkdirSync(join(root,'logs/check-state'),{recursive:true});
+  writeFileSync(join(root,'logs/check-state/failures.json'),JSON.stringify({stages:['test'],failures:[{name:'原UI未知错误'}],strictTestFiles:['tests/sample.test.ts']}));
+  writeFileSync(join(root,'erase.cjs'),`const fs=require('fs'),path=require('path');const dir=fs.readdirSync('logs/check').sort().at(-1);const report=JSON.parse(fs.readFileSync(path.join('logs/check',dir,'recheck/test-failed-tests.json'),'utf8'));fs.rmSync(report.sources.native.path);fs.writeFileSync('logs/unavailable','UI尚未实际执行');`);
+  const pkgPath=join(root,'package.json'),pkg=JSON.parse(readFileSync(pkgPath,'utf8'));pkg.checkPreflight=['typecheck','erase'];pkg.scripts.erase='node erase.cjs';writeFileSync(pkgPath,JSON.stringify(pkg));
+  const result=command('scripts/check.mjs');assert.notEqual(result.status,0,result.stdout+result.stderr);
+  const manifestPath=join(root,'logs/check-state/failures.json'),manifest=JSON.parse(readFileSync(manifestPath,'utf8'));
+  assert.deepEqual(manifest.strictTestFiles,['tests/sample.test.ts']);assert.ok(manifest.stages.includes('test'),'严格范围必须产生测试待办阶段');
+  const recheck=command('scripts/check.mjs','--failed');assert.notEqual(recheck.status,0,'只复验typecheck不能解除严格UI阻塞');assert.ok(recheck.stdout.includes('普通严格UI'));
+  rmSync(join(root,'logs/unavailable'));assert.equal(command('scripts/check.mjs','--failed').status,0);assert.equal(existsSync(manifestPath),false);
 });

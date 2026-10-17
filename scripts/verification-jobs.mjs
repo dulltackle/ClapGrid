@@ -139,8 +139,7 @@ function reusableEvidence(summary) {
       && preflight.pending?.length === 0 && preflight.results?.length === expectedPreflight.length
       && expectedPreflight.every(name => preflight.results.some(result => result.name === name && result.status === 'passed' && result.exitCode === 0))
       && Array.isArray(check.failures) && check.failures.length === 0
-      && ['typecheck', 'test', 'build'].every(name => check.results.some(result => result.name === name && result.status === 'passed' && result.exitCode === 0)
-        && existsSync(join(summary.checkout, 'logs/check', summary.checkSummary.split(/[\\/]/).at(-2), `${name}.log`)))
+      && ['typecheck', 'test', 'build'].every(name => check.results.some(result => result.name === name && result.status === 'passed' && result.exitCode === 0))
       && [...preflight.results, ...check.results].every(evidenceComplete)
       && sameSource(summary.source, check.source) && sameSource(summary.source, check.sourceAfter)
       && sameSource(summary.source, summary.sourceAfter) && sameSource(summary.source, current);
@@ -152,7 +151,7 @@ export async function startVerification(root, revision, outputRoot = join(root, 
   root = realpathSync(root); outputRoot = resolve(outputRoot);
   const commit = git(root, ['rev-parse', '--verify', '--end-of-options', `${revision}^{commit}`]);
   const runner = createHash('sha256');
-  for (const name of ['verify.mjs', 'verification-jobs.mjs', 'verification-worker.mjs', 'check-source.mjs', 'check-runner.mjs', 'check-lifecycle.mjs', 'test-runner.mjs', 'test-reporter.mjs', 'test-evidence.mjs', 'vitest-evidence.mjs', 'vitest-reporter.mjs', 'vitest-runner.mjs', 'playwright-runner.mjs', 'playwright-evidence.mjs', 'playwright-resources.mjs']) runner.update(readFileSync(fileURLToPath(new URL(name, import.meta.url))));
+  for (const name of ['verify.mjs', 'verification-jobs.mjs', 'verification-worker.mjs', 'check-source.mjs', 'check-runner.mjs', 'check-lifecycle.mjs', 'test-runner.mjs', 'test-reporter.mjs', 'test-evidence.mjs', 'check-evidence.mjs', 'vitest-evidence.mjs', 'vitest-reporter.mjs', 'vitest-runner.mjs', 'playwright-runner.mjs', 'playwright-evidence.mjs', 'playwright-resources.mjs']) runner.update(readFileSync(fileURLToPath(new URL(name, import.meta.url))));
   const identity = { schema: 1, runnerFingerprint: `sha256:${runner.digest('hex')}`, repository: root, commit, tree: git(root, ['rev-parse', `${commit}^{tree}`]), environment: options.environment ?? verificationEnvironment() };
   const key = createHash('sha256').update(JSON.stringify(identity)).digest('hex');
   mkdirSync(outputRoot, { recursive: true });

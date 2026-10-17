@@ -4,6 +4,7 @@ import { join, resolve, relative } from 'node:path';
 import { sourceIdentity, sameSource } from './check-source.mjs';
 import { normalizeNative as vitestNative } from './vitest-evidence.mjs';
 import { normalizeNative as playwrightNative } from './playwright-evidence.mjs';
+import { validateStageProof, validateCumulativeEvidence } from './check-evidence.mjs';
 
 export const inventoryPath = 'scripts/test-inventory.json';
 const read = path => JSON.parse(readFileSync(path, 'utf8'));
@@ -39,7 +40,7 @@ export function ownedTests(root) {
 }
 
 /** 未知失败扩大完整集合，仍保留已知对照；任何已知越界/缺失先拒绝。 */
-export function failureFiles(root, failures, { referenceFiles = [] } = {}) {
+export function failureFiles(root, failures, { referenceFiles = [], strictTestFiles = [] } = {}) {
   const owned = existsSync(join(root, inventoryPath)) ? ownedTests(root) : null;
   let unknown = false;
   const validate = input => {
@@ -53,10 +54,11 @@ export function failureFiles(root, failures, { referenceFiles = [] } = {}) {
     return [validate(item.file)];
   }))];
   const references = [...new Set(referenceFiles.map(validate))];
+  const strictFiles = [...new Set(strictTestFiles.map(validate))];
   if (references.some(file => !owned?.some(entry => entry.file === file && entry.scopes.includes('comparison-only')))) throw Error('原生待复验范围归属无效');
-  const retained = [...new Set([...references, ...files.filter(file => owned?.some(entry => entry.file === file && entry.scopes.includes('comparison-only')))])];
+  const retained = [...new Set([...references, ...files.filter(file => owned?.some(entry => entry.file === file && entry.scopes.includes('comparison-only'))), ...strictFiles])];
   if (unknown) return retained.length ? [...new Set([...owned.filter(entry => entry.scopes.includes('all')).map(entry => entry.file), ...retained])] : [];
-  return [...new Set([...files, ...references])];
+  return [...new Set([...files, ...references, ...strictFiles])];
 }
 
 export function executionPlan(root, { suite = 'all', files, executor } = {}) {
@@ -71,7 +73,7 @@ export function executionPlan(root, { suite = 'all', files, executor } = {}) {
 }
 
 export function executionIdentity(root, executionId = process.env.CLAPGRID_TEST_EXECUTION_ID) {
-  const inputs = ['package.json', 'package-lock.json', inventoryPath, 'scripts/test-runner.mjs', 'scripts/test-reporter.mjs', 'scripts/test-evidence.mjs', 'scripts/vitest-runner.mjs', 'scripts/vitest-reporter.mjs', 'scripts/vitest-evidence.mjs', 'vitest.config.ts', 'scripts/playwright-runner.mjs', 'scripts/playwright-evidence.mjs', 'scripts/playwright-resources.mjs', 'playwright.config.ts'];
+  const inputs = ['package.json', 'package-lock.json', inventoryPath, 'scripts/test-runner.mjs', 'scripts/test-reporter.mjs', 'scripts/test-evidence.mjs', 'scripts/check-evidence.mjs', 'scripts/check-runner.mjs', 'scripts/check-lifecycle.mjs', 'scripts/vitest-runner.mjs', 'scripts/vitest-reporter.mjs', 'scripts/vitest-evidence.mjs', 'vitest.config.ts', 'scripts/playwright-runner.mjs', 'scripts/playwright-evidence.mjs', 'scripts/playwright-resources.mjs', 'playwright.config.ts'];
   return { executionId, source: sourceIdentity(root), config: inputs.map(file => [file, existsSync(join(root, file)) ? digest(join(root, file)) : null]), environment: { node: process.version, platform: process.platform, arch: process.arch, chrome: process.env.CHROME_BIN ?? null, nodeOptions: process.env.NODE_OPTIONS ?? null } };
 }
 const caseKey = item => JSON.stringify([item.file, item.name, item.nesting, item.line, item.column]);
@@ -98,8 +100,8 @@ export function executorEvidence(root, plan, nativePath, identity, { strict = fa
 export const nodeEvidence = executorEvidence;
 
 /** 在开发检查、固定提交验收和历史复用时执行相同完整性检查。 */
-export function validateExecution(root, report, plan, identity, { checkSource = false, strict = false } = {}) {
-  if (plan.executor === 'mixed') return validateAggregate(root, report, plan, identity, { checkSource, strict });
+export function validateExecution(root, report, plan, identity, { checkSource = false, strict = false, strictFiles = [] } = {}) {
+  if (plan.executor === 'mixed') return validateAggregate(root, report, plan, identity, { checkSource, strict, strictFiles });
   if (report.schemaVersion !== 2 || report.kind !== 'test-execution' || !report.complete || report.errors?.length || report.failures?.length) throw Error('测试证据不完整或包含失败/未捕获错误');
   if (report.executor?.name !== plan.executor || !report.executor.version || (plan.executor === 'node' && report.executor.version !== process.version)) throw Error('测试执行者身份不符');
   const dependency = plan.executor === 'vitest' ? 'vitest' : plan.executor === 'playwright' ? '@playwright/test' : null;
@@ -112,7 +114,7 @@ export function validateExecution(root, report, plan, identity, { checkSource = 
   if (plan.files.some(file => !cases.some(item => item.file === file))) throw Error('测试文件未收集任何用例');
   const counts = report.summary?.counts;
   if (!report.summary?.success || !counts || counts.failed !== 0 || counts.cancelled !== 0 || counts.tests + counts.suites !== cases.length || counts.passed + counts.skipped + counts.todo !== counts.tests) throw Error('测试原生汇总与逐项执行不符');
-  if ((strict || report.policy?.strict) && cases.some(item => item.status !== 'passed')) throw Error('UI 测试跳过或 todo 不能通过');
+  if (cases.some(item => item.status !== 'passed' && (strict || report.policy?.strict || strictFiles.includes(item.file)))) throw Error('UI 测试跳过或 todo 不能通过');
   const source = report.sources?.native;
   if (!source || digest(source.path) !== source.sha256) throw Error('测试原生证据缺失或改变');
   if (report.sources.log && digest(report.sources.log.path) !== report.sources.log.sha256) throw Error('测试原始日志缺失或改变');
@@ -132,7 +134,7 @@ export function stagePlan(root, name, env = {}) {
   let files;
   if (name === 'test:failed') {
     const manifest = read(env.CLAPGRID_FAILURE_MANIFEST ?? join(root, 'logs/check-state/failures.json'));
-    const failed = failureFiles(root, manifest.failures ?? [], { referenceFiles: manifest.referenceFiles ?? [] });
+    const failed = failureFiles(root, manifest.failures ?? [], { referenceFiles: manifest.referenceFiles ?? [], strictTestFiles: manifest.strictTestFiles ?? [] });
     files = failed.length ? failed : testInventory(root).map(entry => entry.file);
   }
   return executionPlan(root, { suite: name === 'test:failed' ? 'failed' : suites[name], ...(files ? { files } : name === 'test:failed' ? { files: testInventory(root).map(entry => entry.file) } : {}) });
@@ -140,17 +142,34 @@ export function stagePlan(root, name, env = {}) {
 
 export function validateCheckEvidence(root, check, source) {
   const pkg = read(join(root, 'package.json'));
-  for (const [phase, required] of [[check.preflight, pkg.checkPreflight ?? ['typecheck']], [check, ['typecheck', 'test', 'build']]]) {
+  const phases = [[check.preflight, pkg.checkPreflight ?? ['typecheck']], [check, ['typecheck', 'test', 'build']]];
+  if (check.recheck) phases.unshift([check.recheck, check.recheck.results.map(result => result.name)]);
+  const current = executionIdentity(root);
+  if (!check.runId || !Array.isArray(check.proofs) || !check.proofs.length) throw Error('缺少同次累计运行身份与阶段证明');
+  for (const reference of check.proofs) validateStageProof(root, reference, check.runId, current);
+  for (const [phase, required] of phases) {
     if (!Array.isArray(phase?.results) || !equalSet(phase.results.map(result => result.name), required)) throw Error('检查阶段集合不完整或重复');
-    if (!phase || phase.status !== 'passed' || phase.pending?.length || !sameSource(phase.source, source) || !sameSource(phase.sourceAfter, source)) throw Error('检查阶段证据缺失或源码不符');
+    if (phase.runId !== check.runId || phase.status !== 'passed' || phase.pending?.length || !sameSource(phase.source, source) || !sameSource(phase.sourceAfter, source)) throw Error('检查阶段证据缺失或源码不符');
     for (const result of phase.results) {
-      const plan = stagePlan(root, result.name);
       if (!result.log || !existsSync(result.log) || result.status !== 'passed' || result.exitCode !== 0) throw Error('阶段日志缺失或未通过');
+      if (result.countedFrom) {
+        if (result.name !== 'typecheck' || result.execution !== 'counted' || !check.proofs.some(ref => JSON.stringify(ref) === JSON.stringify(result.countedFrom))) throw Error('计入阶段来源不符');
+        const proof = validateStageProof(root, result.countedFrom, check.runId, current);
+        const { execution, countedAt, countedFrom, ...actual } = result;
+        const { execution: originalExecution, ...original } = proof.result;
+        if (JSON.stringify(actual) !== JSON.stringify(original) || proof.result.name !== 'typecheck') throw Error('类型检查计入记录与原执行不符');
+      } else if (result.execution === 'executed') {
+        if (!check.proofs.some(ref => JSON.stringify(ref) === JSON.stringify(result.actualProof))) throw Error('实际阶段缺少本次证明');
+        const proof = validateStageProof(root, result.actualProof, check.runId, current);
+        if (proof.result.name !== result.name || proof.result.log !== result.log || proof.result.startedAt !== result.startedAt || proof.result.completedAt !== result.completedAt) throw Error('阶段与实际执行证明不符');
+      }
+      if (result.execution !== 'executed' && !(result.execution === 'counted' && (result.countedFrom || result.testReport))) throw Error('阶段未提供真实执行或计入来源');
+      const plan = result.name === 'test:failed' ? result.testPlan : stagePlan(root, result.name);
       if (!plan) continue;
       if (!result.testReport) throw Error('测试报告缺失');
       const report = read(result.testReport);
-      const identity = executionIdentity(root, result.testExecutionId);
-      validateExecution(root, report, plan, identity, { checkSource: true });
+      if (report.kind === 'test-cumulative') validateCumulativeEvidence(root, report, plan, check.runId, check.proofs, current);
+      else validateExecution(root, report, plan, { ...current, executionId: result.testExecutionId }, { strictFiles: result.strictTestFiles ?? [] });
       if (report.status !== 'passed') throw Error('测试统一报告未通过');
     }
   }

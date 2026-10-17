@@ -91,8 +91,9 @@ test('完整检查聚合 Vitest，交付校验拒绝已改变的原始证据', t
   const summary=JSON.parse(readFileSync(join(root,'logs/check',String(summaries.find(file=>!String(file).includes('preflight')))),'utf8'));
   const stage=summary.results.find((item:any)=>item.name==='test');
   const report=JSON.parse(readFileSync(stage.testReport,'utf8'));
-  assert.equal(report.kind,'test-aggregate');
-  const v=report.executions.find((item:any)=>item.executor.name==='vitest');
+  assert.equal(report.kind,'test-cumulative');
+  const originals=report.sources.stages.map((item:any)=>JSON.parse(readFileSync(JSON.parse(readFileSync(item.proof.path,'utf8')).result.testReport,'utf8')));
+  const v=originals.find((item:any)=>item.executor.name==='vitest');
   rmSync(v.sources.native.path);
   const validate=command('--input-type=module','-e',`import {readFileSync} from 'node:fs';import {validateCheckEvidence} from './scripts/test-evidence.mjs';const check=JSON.parse(readFileSync(${JSON.stringify(stage.testReport.replace(/test-tests\.json$/,'summary.json'))},'utf8'));validateCheckEvidence(process.cwd(),check,check.source);`);
   assert.notEqual(validate.status,0,validate.stdout+validate.stderr);

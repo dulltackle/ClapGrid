@@ -61,7 +61,7 @@ CI 复用正式验收入口并沿用既有日志上传。修改检查工具或 C
 
 ## 执行清单与统一测试证据（#149）
 
-`scripts/test-inventory.json` 明确每个 `.test.*` 的唯一执行者及 `all`、`tooling`、`rows`、`ui-core`、`ui-extended` 范围。新增文件须登记，删除文件须同步移除；未登记、丢失、重复归属、错误执行者或空集合直接失败。UI 组件映射仍由 `ui-check-plan.mjs` 决定实际子集，执行前与清单核对。普通检查按清单分别调度 Node、Vitest 和 Playwright；预检与完整阶段保持原有重复执行，累计去重另行实施。
+`scripts/test-inventory.json` 明确每个 `.test.*` 的唯一执行者及 `all`、`tooling`、`rows`、`ui-core`、`ui-extended` 范围。新增文件须登记，删除文件须同步移除；未登记、丢失、重复归属、错误执行者或空集合直接失败。UI 组件映射仍由 `ui-check-plan.mjs` 决定实际子集，执行前与清单核对。普通检查按清单分别调度 Node、Vitest 和 Playwright；完整检查在同次运行内累计已通过预检，后续仅执行剩余文件。
 
 测试入口先输出预期文件列表。`CLAPGRID_TEST_REPORT` 指定统一记录路径；默认位于 `logs/tests/`。同目录保存 `*-native.json` 原生事件报告及 `*.json.tap.log` 可读 TAP，UI 快检保留 `ui-tests.log`。统一记录采用 `schemaVersion:2`、`kind:test-execution`，包括：
 
@@ -88,7 +88,7 @@ CI 复用正式验收入口并沿用既有日志上传。修改检查工具或 C
 
 `vitest.config.ts` 显式采用仓库根，沿用生产 `@` alias，include 仅四个试点文件。生产 Vite 的 `src/panel` 根和 Tailwind CSS 插件继续用于面板构建；Node 试点不加载该 CSS 插件。框架配置纳入类型检查，框架不替代类型检查和生产构建。
 
-`test-runner.mjs` 根据唯一文件归属顺序调用 Node、Vitest（及后续浏览器执行者），未迁移测试、生命周期及原生报告专项保留 Node。显式 `--files '["tests/text-search.test.ts"]'` 可交付精确集合；错误归属、遗漏、重复与空集合仍失败。默认 all、预检、集中失败复验与正式验收使用同一分派；本工单保持预检/完整原有重复执行，不提前累计去重。
+`test-runner.mjs` 根据唯一文件归属顺序调用 Node、Vitest（及后续浏览器执行者），未迁移测试、生命周期及原生报告专项保留 Node。显式 `--files '["tests/text-search.test.ts"]'` 可交付精确集合；错误归属、遗漏、重复与空集合仍失败。默认 all、预检、集中失败复验与正式验收使用同一分派；预检与完整范围按下述同次累计规则去重。
 
 Vitest 同时保存可读日志、官方 JSON 及生命周期原始事件。`onTestModuleCollected` 登记的用例与完成事件分别留证，报告区分收集失败、未捕获错误、失败、中断、skip/todo，原始来源均保存摘要。普通 Node/Vitest 范围沿用非 UI 的 skip/todo 政策，逐项明确显示；浏览器严格政策不因此放宽。执行者版本须与实际安装一致。
 
@@ -98,7 +98,7 @@ Vitest 同时保存可读日志、官方 JSON 及生命周期原始事件。`onT
 
 ## Playwright UI 固定核心（#151）
 
-固定 `@playwright/test` 1.64.1，迁移五个文件、14 项原场景，其中两项样式碰撞无需浏览器，另外 12 项实际运行本机 Chrome。`npm run check:ui -- --scope row --concurrency 1|2` 保留类型检查、固定核心、构建与生命周期清理；`npm run test:ui:core -- --concurrency 1|2` 只运行固定核心，不能当作完整入口预算。默认 UI 快检并发 2，含扩大范围或无法证明为静态样式的变更仍沿用计划器降为 1；最终并发选择与预算由同机三次对照证据决定。`npm run check:ui:native` 保留原生 14 场景对照。普通 all、rows、styles、failed 按清单分派，保留既有预检重复范围，不提前去重。
+固定 `@playwright/test` 1.64.1，迁移五个文件、14 项原场景，其中两项样式碰撞无需浏览器，另外 12 项实际运行本机 Chrome。`npm run check:ui -- --scope row --concurrency 1|2` 保留类型检查、固定核心、构建与生命周期清理；`npm run test:ui:core -- --concurrency 1|2` 只运行固定核心，不能当作完整入口预算。默认 UI 快检并发 2，含扩大范围或无法证明为静态样式的变更仍沿用计划器降为 1；最终并发选择与预算由同机三次对照证据决定。`npm run check:ui:native` 保留原生 14 场景对照。普通 all、rows、styles、failed 按清单分派，同次完整检查按累计规则去重。
 
 `playwright.config.ts` 关闭重试、禁止 only。worker 手动启动 Chrome 并通过 CDP 连接，浏览器及其后代留在已有受控进程组；不会下载或改用 bundled Chromium。一个 worker 顺序复用一个 Chrome，每例新建 context/page、实际视口与窗口、DOM/storage、独立编译目录；保留原生鼠标/键盘传输、原脚本等待与断言、AG Grid 及生产同源 CSS，仅保留既有 HTTP 客户端替身边界。缺浏览器、skip、取消、零收集及未捕获错误都不能作为 UI 通过。
 
@@ -107,3 +107,15 @@ Vitest 同时保存可读日志、官方 JSON 及生命周期原始事件。`onT
 `browser-timings.jsonl` / 可读日志记实际 Chrome 命令、版本、PID、worker 启停；逐例记录 context/target ID、目录、视口及物理窗口、编译/样式准备、缓存身份、交互和清理耗时。`check-ui/summary.json` 的 totalMs 从入口至生命周期清理完成，不能用并发用例耗时相加代替端到端时间。
 
 资源登记在当前及祖先检查的 active 中，以 owner token、随机 resourceId、精确专属根和目录内 marker 绑定。正常清理与显式 stop 均先确认本次组结束，再核对非符号链接路径与 marker，删除成功后写根外完成证据并解除登记。worker 被强杀也由外层检查回收 profile；marker 或路径被替换则保留现场及检查锁，修复身份后通过显式 stop 恢复。另一同身份清理须有完成证据才能幂等结束，不能按目录名前缀扫描删除。
+
+## 同次累计覆盖（#152）
+
+完整 `check` 为本次生命周期创建随机公开 `runId` 和内存账本。集中失败复验仍先阻塞；实际通过且当前源码、配置与环境匹配的复验及预检记录可计入本次后续阶段。`typecheck` 同次实际执行一次；预检范围可以重叠，每个已通过文件只计一次。三种执行者收到精确剩余文件，零剩余不启动空测试。独立 `check:preflight`、`check:failed`、定向检查及历史日志不会自动向另一个完整运行提供累计资格。
+
+`stage-proof-N.json` 是不可变原执行证明，含本次 runId、实际命令阶段、原 nonce、源码/配置/环境、原始日志及原测试报告 SHA256。计入的类型阶段使用 `execution:counted`、`countedAt` 与 `countedFrom`，沿用原执行时间/日志；控制台明确标示“计入…未再次执行”。真实剩余执行标为 `execution:executed`，有自己的原始报告及阶段证明，累计结果单独保存，避免覆盖来源。
+
+`kind:test-cumulative` 保存 required plan、预期/实际文件与用例并集，以及 `sources.stages` 中的原证明和计入子集。同一个来源跨 scope 可以只计其所需文件，文件并集必须完整且无重复，每例仍对应原生注册和完成事件；来源各自的 nonce、版本、政策、全部原始报告/日志与摘要均重新校验。源证明缺失或改变、其他 runId、未登记来源、失败/取消、严格范围 skip/todo、零收集和集合缺口都不能通过。累计表示覆盖来源，不能称为再次运行测试。
+
+固定提交验收继续独立检出、`npm ci`、生产构建及源码变化检查；默认运行只累计当前账本。显式 `--reuse-passed` 用同一校验器检查完整累计链，保留原正式 runId 和完成时间；来源损坏时重新执行，不能只凭旧退出零或某个固定日志文件名放行。最终性能与完整固定提交正式验收仍需要集成提交证据。
+
+严格 UI 失败还保留 `strictTestFiles`，集中复验必须对原 UI 文件逐例实际 passed；不能利用普通 Node 范围允许 skip/todo 的政策清空 UI 待办。未知失败保守扩大，同时保留原生对照和严格文件；这些政策随原阶段证明参与累计与正式复用校验。累计链在最终校验或中间准备时失效，也登记未知失败并保留本次已知对照/政策范围。

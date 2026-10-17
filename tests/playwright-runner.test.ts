@@ -230,3 +230,32 @@ test('中断恢复拒绝 broken symlink 与结构未知的清理锁，保留原�
     const fixed=command('scripts/check-lifecycle.mjs');assert.equal(fixed.status,0,fixed.stdout+fixed.stderr);
   }
 });
+
+test('完整检查仅向三种执行者分派剩余文件，累计仍包含全部原场景', t => {
+  const {root,command}=repository(t, `import {appendFileSync}from'node:fs';test('浏览器预检',async({panel})=>{await panel.check("document.getElementById('result').dataset.state='passed';",'');appendFileSync('logs/observed.jsonl',JSON.stringify('pw-covered')+'\\n');});`);
+  const files=[{file:'tests/sample.test.ts',executor:'playwright',scopes:['all','tooling']}];
+  const helper=pathToFileURL(join(project,'tests/helpers/playwright-browser.ts')).href;
+  writeFileSync(join(root,'tests/pw-remaining.test.ts'),`import {test}from ${JSON.stringify(helper)};import {appendFileSync}from'node:fs';test('浏览器剩余',async({panel})=>{await panel.check("document.getElementById('result').dataset.state='passed';",'');appendFileSync('logs/observed.jsonl',JSON.stringify('pw-remaining')+'\\n');});`);
+  files.push({file:'tests/pw-remaining.test.ts',executor:'playwright',scopes:['all']});
+  for(const executor of ['node','vitest'])for(const suffix of ['covered','remaining']){
+    const name=`${executor}-${suffix}`;
+    files.push({file:`tests/${name}.test.ts`,executor,scopes:suffix==='covered'?['all','tooling']:['all']});
+    writeFileSync(join(root,`tests/${name}.test.ts`),`import {test}from'${executor==='node'?'node:test':'vitest'}';import {appendFileSync}from'node:fs';test('${name}',()=>appendFileSync('logs/observed.jsonl',JSON.stringify('${name}')+'\\n'));`);
+  }
+  writeFileSync(join(root,'scripts/test-inventory.json'),JSON.stringify({schemaVersion:1,files}));
+  writeFileSync(join(root,'vitest.config.ts'),`export default {root:'.',test:{environment:'node',include:['tests/vitest-*.test.ts'],maxWorkers:1,fileParallelism:false,retry:0}};`);
+  const pkg=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
+  pkg.checkPreflight.push('test:tooling');pkg.scripts.test='node scripts/test-runner.mjs';pkg.scripts['test:tooling']='node scripts/test-runner.mjs --suite tooling';
+  writeFileSync(join(root,'package.json'),JSON.stringify(pkg));
+  const result=command('scripts/check.mjs');assert.equal(result.status,0,result.stdout+result.stderr);
+  const events=readFileSync(join(root,'logs/observed.jsonl'),'utf8').trim().split('\n').map(line=>JSON.parse(line));
+  assert.deepEqual(events.sort(),['pw-covered','pw-remaining','node-covered','node-remaining','vitest-covered','vitest-remaining'].sort());
+  const dirs=readdirSync(join(root,'logs/check')).sort();
+  const summary=JSON.parse(readFileSync(join(root,'logs/check',dirs.at(-1)!,'summary.json'),'utf8'));
+  const cumulative=JSON.parse(readFileSync(summary.results.find((item:any)=>item.name==='test').testReport,'utf8'));
+  assert.equal(cumulative.kind,'test-cumulative');assert.equal(cumulative.actual.files.length,6);assert.equal(cumulative.actual.cases.length,6);
+  const actualReports=cumulative.sources.stages.map((item:any)=>JSON.parse(readFileSync(JSON.parse(readFileSync(item.proof.path,'utf8')).result.testReport,'utf8')));
+  assert.ok(actualReports.every((item:any)=>item.kind==='test-aggregate'&&item.executions.length===3));
+  assert.deepEqual(actualReports[1].actual.files.map((item:any)=>item.file).sort(),files.filter(item=>!item.scopes.includes('tooling')).map(item=>item.file).sort());
+  assert.equal(summary.proofs.map((ref:any)=>JSON.parse(readFileSync(ref.path,'utf8'))).filter((proof:any)=>proof.result.name==='typecheck').length,1);
+});

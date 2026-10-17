@@ -38,7 +38,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     let files = values.files ? JSON.parse(values.files) : undefined;
     if (values.suite === 'failed') {
       const manifest = JSON.parse(readFileSync(process.env.CLAPGRID_FAILURE_MANIFEST ?? resolve(root, 'logs/check-state/failures.json'), 'utf8'));
-      const failed = failureFiles(root, manifest.failures ?? [], { referenceFiles: manifest.referenceFiles ?? [] });
+      const failed = failureFiles(root, manifest.failures ?? [], { referenceFiles: manifest.referenceFiles ?? [], strictTestFiles: manifest.strictTestFiles ?? [] });
       files = failed.length ? failed : testInventory(root).map(entry => entry.file);
     }
     const plan = executionPlan(root, { suite: values.suite, ...(files ? { files } : {}) });
