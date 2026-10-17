@@ -46,6 +46,14 @@
       ]
     },
     {
+      "file": "tests/check-related.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ]
+    },
+    {
       "file": "tests/check-runner.test.ts",
       "executor": "node",
       "scopes": [

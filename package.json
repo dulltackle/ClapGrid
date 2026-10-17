@@ -35,7 +35,8 @@
     "production": "node scripts/production.mjs",
     "test:logic": "node scripts/test-runner.mjs --suite logic",
     "test:service": "node scripts/test-runner.mjs --suite service",
-    "test:ui:core": "node scripts/test-runner.mjs --suite ui-core --concurrency 2"
+    "test:ui:core": "node scripts/test-runner.mjs --suite ui-core --concurrency 2",
+    "check:related": "node scripts/check-related.mjs"
   },
   "checkPreflight": [
     "typecheck",
