@@ -29,7 +29,7 @@ export function testInventory(root) {
   if (new Set(files).size !== files.length) throw Error('测试文件重复归属');
   if (!equalSet(files, found)) throw Error(`测试执行清单与源码不符：未登记 ${found.filter(file => !files.includes(file)).join(', ')}；已丢失 ${files.filter(file => !found.includes(file)).join(', ')}`);
   for (const entry of inventory.files) {
-    if (!/^tests\/(?!.*(?:^|\/)\.\.\/)[\w./-]+\.test\.[cm]?[jt]sx?$/.test(entry.file) || !['node', 'vitest', 'playwright'].includes(entry.executor) || !Array.isArray(entry.scopes) || !entry.scopes.includes('all') || new Set(entry.scopes).size !== entry.scopes.length) throw Error(`测试执行者或范围无效：${entry.file}`);
+    if (!/^tests\/(?!.*(?:^|\/)\.\.\/)[\w./-]+\.test\.[cm]?[jt]sx?$/.test(entry.file) || !['node', 'vitest', 'playwright'].includes(entry.executor) || (entry.policy !== undefined && entry.policy !== 'ui') || !Array.isArray(entry.scopes) || !entry.scopes.includes('all') || new Set(entry.scopes).size !== entry.scopes.length) throw Error(`测试执行者或范围无效：${entry.file}`);
   }
   return inventory.files;
 }
@@ -37,6 +37,48 @@ export function testInventory(root) {
 export function ownedTests(root) {
   const files = testInventory(root);
   return [...files, ...(read(join(root, inventoryPath)).references ?? [])];
+}
+
+// a0558ff 以前的清单尚未声明policy；固定已确认的业务UI身份供旧检出验证。
+// 新清单采用policy后以其声明为准，允许文件职责随后明确改变。
+const legacyUiFiles = new Set([
+  "tests/audio-panel.test.ts",
+  "tests/delete-confirm-focus.test.ts",
+  "tests/dialog-panel.test.ts",
+  "tests/drag-feedback-panel.test.ts",
+  "tests/drag-panel.test.ts",
+  "tests/drag-scroll-panel.test.ts",
+  "tests/editing-panel.test.ts",
+  "tests/export-panel.test.ts",
+  "tests/export-settings-panel.test.ts",
+  "tests/layout-panel.test.ts",
+  "tests/long-text-panel.test.ts",
+  "tests/media-panel.test.ts",
+  "tests/more-tasks-panel.test.ts",
+  "tests/ordinary-add-focus-panel.test.ts",
+  "tests/panel-targets.test.ts",
+  "tests/panel-update-panel.test.ts",
+  "tests/paste-panel.test.ts",
+  "tests/relative-insert-lifecycle-panel.test.ts",
+  "tests/relative-insert-panel.test.ts",
+  "tests/row-hover-panel.test.ts",
+  "tests/row-menu-panel.test.ts",
+  "tests/row-selection-panel.test.ts",
+  "tests/search-panel.test.ts",
+  "tests/segment-details-focus-panel.test.ts",
+  "tests/segment-draft-panel.test.ts",
+  "tests/segment-focus-panel.test.ts",
+  "tests/selection-menu-panel.test.ts",
+  "tests/selection-panel.test.ts",
+  "tests/shell-panel.test.ts",
+  "tests/video-panel.test.ts",
+  "tests/video-preview-panel.test.ts",
+  "tests/visual-note-panel.test.ts",
+  "tests/voice-panel.test.ts"
+]);
+export function strictTestFiles(root, files) {
+  const entries = ownedTests(root), legacy = !entries.some(entry => entry.policy !== undefined);
+  return files.filter(file => { const entry = entries.find(entry => entry.file === file); return entry && (entry.policy === 'ui' || entry.executor === 'playwright' || entry.group === 'ui' || entry.scopes.some(scope => ['ui', 'ui-core', 'ui-extended'].includes(scope)) || (legacy && legacyUiFiles.has(file))); }).sort();
 }
 
 /** 未知失败扩大完整集合，仍保留已知对照；任何已知越界/缺失先拒绝。 */
@@ -69,7 +111,10 @@ export function executionPlan(root, { suite = 'all', files, executor } = {}) {
   if (!selected.length || new Set(selected).size !== selected.length) throw Error('测试范围为空或重复');
   executor ??= [...new Set(selected.map(file => inventory.find(entry => entry.file === file)?.executor))].length === 1 ? inventory.find(entry => entry.file === selected[0])?.executor : 'mixed';
   for (const file of selected) if (!inventory.some(entry => entry.file === file && (executor === 'mixed' || entry.executor === executor))) throw Error(`测试执行者或范围不符：${file}`);
-  return { schemaVersion: 1, suite, executor, files: selected.sort(), inventory: digest(join(root, inventoryPath)) };
+  const strictFiles = strictTestFiles(root, selected);
+  // 旧执行器没有此plan字段；旧检出保留原形状，政策仍由校验器独立强制。
+  const declaredPolicy = all.some(entry => entry.policy !== undefined);
+  return { schemaVersion: 1, suite, executor, files: selected.sort(), inventory: digest(join(root, inventoryPath)), ...(declaredPolicy && strictFiles.length ? { strictFiles } : {}) };
 }
 
 export function executionIdentity(root, executionId = process.env.CLAPGRID_TEST_EXECUTION_ID) {
@@ -101,6 +146,7 @@ export const nodeEvidence = executorEvidence;
 
 /** 在开发检查、固定提交验收和历史复用时执行相同完整性检查。 */
 export function validateExecution(root, report, plan, identity, { checkSource = false, strict = false, strictFiles = [] } = {}) {
+  strictFiles = [...new Set([...strictFiles, ...(plan.strictFiles ?? []), ...strictTestFiles(root, plan.files)])];
   if (plan.executor === 'mixed') return validateAggregate(root, report, plan, identity, { checkSource, strict, strictFiles });
   if (report.schemaVersion !== 2 || report.kind !== 'test-execution' || !report.complete || report.errors?.length || report.failures?.length) throw Error('测试证据不完整或包含失败/未捕获错误');
   if (report.executor?.name !== plan.executor || !report.executor.version || (plan.executor === 'node' && report.executor.version !== process.version)) throw Error('测试执行者身份不符');

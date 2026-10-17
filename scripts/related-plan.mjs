@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { git } from './check-source.mjs';
-import { testInventory } from './test-evidence.mjs';
+import { testInventory, strictTestFiles } from './test-evidence.mjs';
 import { relatedDependencies } from './related-dependencies.mjs';
 import { isStaticStyleChange, extendedTests, componentTests } from './ui-check-plan.mjs';
 
@@ -39,7 +39,7 @@ export function createRelatedPlan(root, { base = 'HEAD', all = false } = {}) {
   const dependencies = changes.length && !all ? relatedDependencies(root, commit, baseFiles) : { diagnostics: [], dependents: file => new Set([file]), opaqueTests: [], inputs: [] };
   const selected = new Set(), reasons = [];
   let requiresBuild = all, completeForLocalUi = changes.length > 0 && !all;
-  const uiFiles = inventory.filter(entry => /-panel\.test\./.test(entry.file) || extendedTests.includes(entry.file) || entry.scopes.some(scope => ['ui-core', 'ui-extended'].includes(scope))).map(entry => entry.file);
+  const uiFiles = [...new Set([...strictTestFiles(root, allFiles), ...inventory.filter(entry => /-panel\.test\./.test(entry.file) || extendedTests.includes(entry.file) || entry.scopes.some(scope => ['ui-core', 'ui-extended'].includes(scope))).map(entry => entry.file)])];
   const add = (path, rule, tests, detail) => {
     for (const file of tests) selected.add(file);
     reasons.push({ path, rule, description: descriptions[rule], tests, ...(detail ? { detail } : {}) });
@@ -94,7 +94,7 @@ export function createRelatedPlan(root, { base = 'HEAD', all = false } = {}) {
     executors: [...new Set(files.map(file => inventory.find(entry => entry.file === file).executor))].map(executor => ({ executor, files: files.filter(file => inventory.find(entry => entry.file === file).executor === executor) })),
     reasons, requiresBuild, completeForLocalUi: files.length > 0 && completeForLocalUi,
     uiFiles: files.filter(file => uiFiles.includes(file)),
-    browserRequired: files.some(file => /-panel\.test\./.test(file) || (inventory.find(entry => entry.file === file).executor === 'playwright' && file !== 'tests/style-collisions.test.ts')),
+    browserRequired: files.some(file => uiFiles.includes(file) && file !== 'tests/style-collisions.test.ts'),
     maxConcurrency: completeForLocalUi && files.every(file => extendedTests.includes(file)) ? 2 : 1, notCovered: allFiles.filter(file => !selected.has(file)),
     completeForFullCheck: false, completeForFormalVerification: false, requiredFollowup: 'full-check-and-verify',
     note: '静态图及显式映射用于保守选测，不能证明所有潜在影响；未覆盖项需完整检查及固定提交验收。',

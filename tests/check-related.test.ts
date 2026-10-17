@@ -401,3 +401,13 @@ test('字符串执行、动态模块与其别名能力不能遗漏静态图之�
   }
   assert.deepEqual(observed, variants.map(([variant, extension]) => ({ variant, code: 1, files: [`tests/dynamic.test${extension}`, 'tests/number.test.ts'], failedOwner: true })));
 });
+
+test('可信 UI 政策覆盖无 panel 后缀的文件，浏览器要求与严格待办一致', t => {
+  const r=repository(t),file='tests/widget.test.ts';
+  r.put(file,'import{test}from"node:test";test.skip("必须实际执行的业务UI",()=>{});');
+  r.put('scripts/test-inventory.json',JSON.stringify({...r.inventory,files:[...r.inventory.files,{file,executor:'node',scopes:['all'],policy:'ui'}]}));r.commit();r.put(file,readFileSync(join(r.root,file),'utf8')+'\n// 本次改动\n');
+  const plan=r.plan();assert.deepEqual(plan.uiFiles,[file]);assert.equal(plan.browserRequired,true);
+  const first=r.cli();assert.notEqual(first.status,0,first.stdout+first.stderr);
+  const manifest=JSON.parse(readFileSync(join(r.root,'logs/check-state/failures.json'),'utf8'));assert.deepEqual(manifest.strictTestFiles,[file]);
+  const next=r.cli();assert.notEqual(next.status,0);assert.equal(r.summary().blocked,true);assert.equal(r.summary().recheck.status,'failed');
+});

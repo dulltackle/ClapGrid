@@ -60,7 +60,7 @@ export function recordCheckFailures(context, summary) {
   const previous = existsSync(path) ? read(path) : { stages: [], failures: [] };
   const phaseResults = [summary, summary.preflight, summary.recheck].filter(Boolean).flatMap(phase => phase.results ?? []);
   const referenceFiles = [...new Set([...(previous.referenceFiles ?? []), ...(summary.referenceFiles ?? []), ...phaseResults.flatMap(result => result.testPlan?.files.filter(file => file.endsWith('.native.ts')) ?? [])])];
-  const strictTestFiles = [...new Set([...(previous.strictTestFiles ?? []), ...[summary, summary.preflight, summary.recheck].filter(Boolean).flatMap(phase => phase.strictTestFiles ?? []), ...phaseResults.flatMap(result => [...(result.strictTestFiles ?? []), ...(['ui', 'ui-core', 'ui-extended', 'native-ui'].includes(result.testPlan?.suite) ? result.testPlan.files : [])])])];
+  const strictTestFiles = [...new Set([...(previous.strictTestFiles ?? []), ...[summary, summary.preflight, summary.recheck].filter(Boolean).flatMap(phase => phase.strictTestFiles ?? []), ...phaseResults.flatMap(result => [...(result.strictTestFiles ?? []), ...(result.testPlan?.strictFiles ?? []), ...(['ui', 'ui-core', 'ui-extended', 'native-ui'].includes(result.testPlan?.suite) ? result.testPlan.files : [])])])];
   const failedNames = summary.results.filter(result => result.status === 'failed').map(result => result.name);
   if (!failedNames.length) failedNames.push(summary.phase ?? 'test');
   const stages = [...new Set([...previous.stages, ...failedNames.map(name => (name.startsWith('test') || name === 'ui-tests') ? 'test' : name), ...(referenceFiles.length || strictTestFiles.length ? ['test'] : [])])];
@@ -90,6 +90,7 @@ async function phases(root, directory, names, mode, context, env = {}) {
       const plan = evidence?.stagePlan(root, name, env);
       const testExecutionId = plan ? randomUUID() : undefined;
       const identity = evidence ? evidence.executionIdentity(root, testExecutionId ?? randomUUID()) : null;
+      const effectiveStrictFiles = [...new Set([...strictTestFiles, ...(plan ? evidence.strictTestFiles(root, plan.files) : [])])];
       const countedType = name === 'typecheck' ? ledger?.typecheck(identity) : null;
       const selection = plan && ledger ? ledger.selection(plan, identity) : null;
       const remaining = selection?.remaining ?? plan?.files;
@@ -107,13 +108,13 @@ async function phases(root, directory, names, mode, context, env = {}) {
         checkProgress(`开始 ${name}${selection?.origins.length ? `（仅剩余 ${remaining.length} 文件）` : ''}`);
         result = { name, ...await runLogged(npm, ['run', name, ...(selection?.origins.length ? ['--', '--files', JSON.stringify(remaining)] : [])], root, log, context,
           { ...env, CLAPGRID_TEST_REPORT: actualReport, ...(testExecutionId ? { CLAPGRID_TEST_EXECUTION_ID: testExecutionId } : {}) }),
-          execution: 'executed', ...(testExecutionId ? { testExecutionId, testPlan: executedPlan, ...(strictTestFiles.length ? { strictTestFiles: strictTestFiles.filter(file => executedPlan.files.includes(file)) } : {}) } : {}), log, startedAt, completedAt: new Date().toISOString() };
+          execution: 'executed', ...(testExecutionId ? { testExecutionId, testPlan: executedPlan, ...(effectiveStrictFiles.length ? { strictTestFiles: effectiveStrictFiles.filter(file => executedPlan.files.includes(file)) } : {}) } : {}), log, startedAt, completedAt: new Date().toISOString() };
         if ((plan || existsSync(actualReport)) && result.status !== 'cancelled') {
           result.testReport = actualReport;
           try {
             const tests = read(actualReport);
             summary.failures.push(...(tests.failures ?? []).map(item => ({ ...item, file: item.file ? relative(root, resolve(root, item.file)).replaceAll('\\', '/') : undefined })));
-            if (plan) evidence.validateExecution(root, tests, executedPlan, identity, { checkSource: true, strictFiles: strictTestFiles });
+            if (plan) evidence.validateExecution(root, tests, executedPlan, identity, { checkSource: true, strictFiles: effectiveStrictFiles });
             if (!tests.complete) { result.status = 'failed'; result.error = '测试事件报告不完整'; }
           } catch (error) { result.status = 'failed'; result.error = `无法读取测试事件报告：${error.message}`; }
           if (result.status === 'failed' && !summary.failures.length) summary.failures.push({ name: result.error ?? '测试执行失败，位置未知' });

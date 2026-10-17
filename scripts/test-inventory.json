@@ -13,7 +13,8 @@
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/browser-build-cache.test.ts",
@@ -66,7 +67,8 @@
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/diagnose-identity.test.ts",
@@ -80,21 +82,24 @@
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/drag-feedback-panel.test.ts",
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/drag-panel.test.ts",
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/drag-scroll-panel.test.ts",
@@ -102,7 +107,8 @@
       "scopes": [
         "all",
         "rows"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/editing-panel.test.ts",
@@ -110,14 +116,16 @@
       "scopes": [
         "all",
         "rows"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/export-panel.test.ts",
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/export-service.test.ts",
@@ -131,7 +139,8 @@
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/export-settings.test.ts",
@@ -152,7 +161,8 @@
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/lifecycle-export.test.ts",
@@ -189,7 +199,8 @@
         "all",
         "rows",
         "ui-extended"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/mcp.test.ts",
@@ -203,7 +214,8 @@
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/modification.test.ts",
@@ -217,14 +229,16 @@
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/ordinary-add-focus-panel.test.ts",
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/organization.test.ts",
@@ -246,14 +260,16 @@
       "scopes": [
         "all",
         "rows"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/panel-update-panel.test.ts",
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/panel-update.test.ts",
@@ -267,7 +283,8 @@
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/playwright-runner.test.ts",
@@ -430,14 +447,16 @@
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/relative-insert-panel.test.ts",
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/relative-insert.test.ts",
@@ -459,7 +478,8 @@
       "scopes": [
         "all",
         "ui-extended"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/row-menu-panel.test.ts",
@@ -467,42 +487,48 @@
       "scopes": [
         "all",
         "rows"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/row-selection-panel.test.ts",
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/search-panel.test.ts",
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/segment-details-focus-panel.test.ts",
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/segment-draft-panel.test.ts",
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/segment-focus-panel.test.ts",
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/segment-note-layout-panel.test.ts",
@@ -519,14 +545,16 @@
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/selection-panel.test.ts",
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/service-exit-wait.test.ts",
@@ -549,7 +577,8 @@
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/speech-batch.test.ts",
@@ -689,14 +718,16 @@
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/video-preview-panel.test.ts",
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/video-service.test.ts",
@@ -718,7 +749,8 @@
       "scopes": [
         "all",
         "ui-extended"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/visual-note.test.ts",
@@ -740,7 +772,8 @@
       "executor": "node",
       "scopes": [
         "all"
-      ]
+      ],
+      "policy": "ui"
     },
     {
       "file": "tests/wide-panel.test.ts",

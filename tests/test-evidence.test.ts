@@ -355,3 +355,41 @@ test('普通严格 UI 来源在 main 类型阶段失效，后续仍须复验 UI 
   const recheck=command('scripts/check.mjs','--failed');assert.notEqual(recheck.status,0,'只复验typecheck不能解除严格UI阻塞');assert.ok(recheck.stdout.includes('普通严格UI'));
   rmSync(join(root,'logs/unavailable'));assert.equal(command('scripts/check.mjs','--failed').status,0);assert.equal(existsSync(manifestPath),false);
 });
+
+test('完整 all/rows 的业务 UI 文件保持严格，非 UI skip 政策仍按文件保留', t => {
+  const {root,command}=repository(t);addRemaining(root);
+  const path=join(root,'scripts/test-inventory.json'),inventory=JSON.parse(readFileSync(path,'utf8'));
+  inventory.files.find((item:any)=>item.file==='tests/sample.test.ts').policy='ui';writeFileSync(path,JSON.stringify(inventory));
+  writeFileSync(join(root,'tests/sample.test.ts'),`import{test}from'node:test';test.skip('业务UI必须实际执行',()=>{});`);
+  writeFileSync(join(root,'tests/remaining.test.ts'),`import{test}from'node:test';test.skip('普通非UI沿用skip政策',()=>{});`);
+  for(const policy of ['skip','todo']) {
+    writeFileSync(join(root,'tests/sample.test.ts'),`import{test}from'node:test';test.${policy}('业务UI必须实际执行',()=>{});`);
+    for(const suite of ['all','rows'])assert.notEqual(command('scripts/test-runner.mjs','--suite',suite).status,0,`${suite} UI ${policy}不能假绿`);
+  }
+  assert.notEqual(command('scripts/check.mjs').status,0,'完整预检也必须拒绝UI skip');
+  const manifestPath=join(root,'logs/check-state/failures.json');assert.deepEqual(JSON.parse(readFileSync(manifestPath,'utf8')).strictTestFiles,['tests/sample.test.ts']);
+  assert.notEqual(command('scripts/check.mjs','--failed').status,0);
+  writeFileSync(join(root,'tests/sample.test.ts'),`import{test}from'node:test';test('业务UI实际执行',()=>{});`);
+  assert.equal(command('scripts/check.mjs').status,0,'真实UI恢复后普通非UI skip仍合法');
+  const dirs=readdirSync(join(root,'logs/check')).sort(),summary=JSON.parse(readFileSync(join(root,'logs/check',dirs.at(-1)!,'summary.json'),'utf8'));
+  const cumulative=JSON.parse(readFileSync(summary.results.find((item:any)=>item.name==='test').testReport,'utf8'));
+  assert.equal(cumulative.actual.cases.find((item:any)=>item.name==='业务UI实际执行').status,'passed');
+  assert.equal(cumulative.actual.cases.find((item:any)=>item.name==='普通非UI沿用skip政策').status,'skipped');
+});
+
+test('新宿主校验旧执行器原 plan，已通过的旧业务 UI 可验而 skip/todo 仍拒绝', t => {
+  const {root,command}=repository(t);
+  for(const file of ['test-evidence.mjs','check-runner.mjs'])writeFileSync(join(root,'scripts',file),readFileSync(new URL(`./fixtures/legacy-a0558ff/${file}`,import.meta.url)));
+  rmSync(join(root,'tests/sample.test.ts'));
+  const ui='tests/drag-scroll-panel.test.ts',ordinary='tests/ordinary.test.ts';
+  writeFileSync(join(root,'scripts/test-inventory.json'),JSON.stringify({schemaVersion:1,files:[{file:ui,executor:'node',scopes:['all','tooling','rows']},{file:ordinary,executor:'node',scopes:['all','tooling','rows']}]}));
+  writeFileSync(join(root,ordinary),`import{test}from'node:test';test.skip('普通OS skip合法',()=>{});`);
+  const host=new URL('scripts/test-evidence.mjs',new URL('../',import.meta.url)).href;
+  for(const state of ['pass','skip','todo']){
+    writeFileSync(join(root,ui),`import{test}from'node:test';test${state==='pass'?'':'.'+state}('旧业务UI',()=>{});`);
+    const old=command('scripts/check.mjs');assert.equal(old.status,0,old.stdout+old.stderr);
+    const dirs=readdirSync(join(root,'logs/check')).sort(),path=join(root,'logs/check',dirs.at(-1)!,'summary.json');
+    const validate=command('--input-type=module','-e',`import{readFileSync}from'node:fs';import{validateCheckEvidence}from ${JSON.stringify(host)};const check=JSON.parse(readFileSync(${JSON.stringify(path)},'utf8'));validateCheckEvidence(${JSON.stringify(root)},check,check.source);`);
+    if(state==='pass')assert.equal(validate.status,0,validate.stderr+validate.stdout);else assert.notEqual(validate.status,0,`旧${state}也不能被新宿主放行`);
+  }
+});
