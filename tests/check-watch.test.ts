@@ -226,18 +226,26 @@ test('取消round先收尾同拥有者登记的跨组孙进程，再写cancelled
   t.diagnostic(JSON.stringify({ event: 'registered-descendant-drained', group, processGroup, owner, termAt: readFileSync(join(r.root, 'logs/detached-term'), 'utf8'), endedAt: readFileSync(join(r.root, 'logs/detached-ended'), 'utf8'), state: r.summary().state, roundStatus: r.summary().rounds[0].status, lifecycleCompletedAt: r.summary().lifecycleCompletedAt }));
 });
 
-test('父检查取消嵌套watch的真实Chrome，两个ancestor登记与profile均清理后释放锁', { skip: process.platform !== 'linux' }, async t => {
+test('父检查取消嵌套watch的真实Chrome，完整ancestor登记与profile均清理后释放锁', { skip: process.platform !== 'linux' }, async t => {
   const parent = repository(t), r = repository(t); browserFixture(r, 'await new Promise(()=>{});');
   parent.put('parent.mjs', `import{withCheckRun}from'./scripts/check-lifecycle.mjs';import{runLogged}from'./scripts/check-runner.mjs';await withCheckRun(process.cwd(),'watch-chrome-parent',async context=>{const result=await runLogged(process.execPath,[${JSON.stringify(join(r.root, 'scripts/check-related.mjs'))},'--watch'],${JSON.stringify(r.root)},'logs/watch-parent.log',context);process.exitCode=context.signal.aborted?130:result.exitCode;});`);
   const child = spawn(process.execPath, ['parent.mjs'], { cwd: parent.root, env: { ...process.env, NODE_TEST_CONTEXT: undefined }, stdio: 'ignore' }), closed = parent.own(child);
   await until(() => browserRecords(r).some((x: any) => x.event === 'case'), '嵌套watch实际Chrome场景应启动');
   const worker = browserRecords(r).find((x: any) => x.event === 'worker-start'), active = join(r.root, 'logs/check-state/active');
   const resource = JSON.parse(readFileSync(join(active, readdirSync(active).find(name => name.startsWith('resource-'))!), 'utf8'));
-  assert.deepEqual(resource.registrations.map((x: any) => x.root).sort(), [r.root, parent.root].sort());
+  const parentOwner = JSON.parse(readFileSync(join(parent.root, 'logs/check-state/active/owner.json'), 'utf8'));
+  const upstream = process.env.CLAPGRID_CHECK_REGISTRY ? JSON.parse(process.env.CLAPGRID_CHECK_REGISTRY) : undefined;
+  assert.deepEqual(parentOwner.ancestors, upstream ? [{ root: upstream.root, token: upstream.token }, ...(upstream.ancestors ?? [])] : []);
+  const scopes = [{ root: r.root, token: r.summary().owner.token }, { root: parent.root, token: parentOwner.token }, ...parentOwner.ancestors];
+  const expectedRegistrations = scopes.map(scope => ({ ...scope, path: join(scope.root, 'logs/check-state/active', `resource-${resource.resourceId}.json`) }));
+  const byRoot = (a: { root: string }, b: { root: string }) => a.root.localeCompare(b.root);
+  assert.deepEqual([...resource.registrations].sort(byRoot), expectedRegistrations.sort(byRoot));
   child.kill('SIGTERM'); assert.equal(await closed, 130);
   assert.equal(alive(worker.workerPid), false); assert.equal(alive(worker.chromePid), false); assert.equal(existsSync(resource.directory), false);
   assert.equal(existsSync(active), false); assert.equal(existsSync(join(parent.root, 'logs/check-state/active')), false);
   const cleanup = JSON.parse(readFileSync(resource.cleanupEvidence, 'utf8')); assert.equal(cleanup.status, 'removed'); assert.equal(cleanup.groupsEnded, true);
+  assert.ok(expectedRegistrations.every(registration => !existsSync(registration.path)));
+  for (const ancestor of parentOwner.ancestors) assert.equal(JSON.parse(readFileSync(join(ancestor.root, 'logs/check-state/active/owner.json'), 'utf8')).token, ancestor.token);
   assert.equal(r.summary().state, 'cancelled'); assert.ok(r.summary().lifecycleCompletedAt);
   t.diagnostic(JSON.stringify({ event: 'ancestor-browser-cancelled', worker, registrations: resource.registrations, cleanup }));
 });
@@ -249,10 +257,18 @@ test('watch空闲拒绝完整和UI检查，另一真实Git工作树仍能实际�
     assert.equal(conflict.status, 1); assert.match(conflict.stderr, /已有检查/);
   }
   const other = mkdtempSync(join(tmpdir(), 'clapgrid-watch-worktree-')); t.after(() => rmSync(other, { recursive: true, force: true }));
-  r.git('worktree', 'add', '--quiet', '--detach', other, r.base); symlinkSync(join(project, 'node_modules'), join(other, 'node_modules'), 'dir');
+  r.git('worktree', 'add', '--quiet', '--detach', other, r.base);
+  // 包只读共享；另一独立任务的默认字节码输出不能写回watch正在观察的安装。
+  mkdirSync(join(other, 'node_modules'));
+  for (const name of readdirSync(join(project, 'node_modules'))) if (name !== '.cache') symlinkSync(join(project, 'node_modules', name), join(other, 'node_modules', name));
+  const independentCache = join(other, 'node_modules/.cache/clapgrid-node-compile-v1');
+  assert.equal(existsSync(independentCache), false);
   writeFileSync(join(other, 'src/value.ts'), 'export const value=8;\n');
-  const independent = spawnSync(process.execPath, ['scripts/check-related.mjs'], { cwd: other, encoding: 'utf8', timeout: 15000, env: { ...process.env, NODE_TEST_CONTEXT: undefined } });
-  assert.equal(independent.status, 0, independent.stderr); assert.equal(w.child.exitCode, null);
+  const independent = spawnSync(process.execPath, ['scripts/check-related.mjs'], { cwd: other, encoding: 'utf8', timeout: 15000, env: { ...process.env, NODE_TEST_CONTEXT: undefined, NODE_COMPILE_CACHE: undefined, NODE_DISABLE_COMPILE_CACHE: undefined, CLAPGRID_NODE_COMPILE_CACHE_DEFAULT: undefined, CLAPGRID_NODE_COMPILE_CACHE_WATCH: undefined } });
+  assert.equal(independent.status, 0, independent.stderr); assert.equal(existsSync(independentCache), true);
+  await delay(500);
+  assert.equal(r.summary().state, 'idle', w.output()); assert.equal(r.summary().rounds.length, 1);
+  assert.equal(w.child.exitCode, null);
   assert.equal(existsSync(join(other, 'logs/check-state/active')), false);
   w.child.kill('SIGTERM'); assert.equal(await w.closed, 130);
 });
