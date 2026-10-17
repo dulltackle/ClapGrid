@@ -117,8 +117,15 @@ export function executionPlan(root, { suite = 'all', files, executor } = {}) {
   return { schemaVersion: 1, suite, executor, files: selected.sort(), inventory: digest(join(root, inventoryPath)), ...(declaredPolicy && strictFiles.length ? { strictFiles } : {}) };
 }
 
+const usesCumulativeEvidence = root => existsSync(join(root, 'scripts/check-evidence.mjs'));
+
 export function executionIdentity(root, executionId = process.env.CLAPGRID_TEST_EXECUTION_ID) {
-  const inputs = ['package.json', 'package-lock.json', inventoryPath, 'scripts/test-runner.mjs', 'scripts/test-reporter.mjs', 'scripts/test-evidence.mjs', 'scripts/check-evidence.mjs', 'scripts/check-runner.mjs', 'scripts/check-lifecycle.mjs', 'scripts/vitest-runner.mjs', 'scripts/vitest-reporter.mjs', 'scripts/vitest-evidence.mjs', 'vitest.config.ts', 'scripts/playwright-runner.mjs', 'scripts/playwright-evidence.mjs', 'scripts/playwright-resources.mjs', 'playwright.config.ts'];
+  // 协议由目标检出决定；新目标缺证明不能因报告自称旧版而降级。
+  const cumulative = usesCumulativeEvidence(root);
+  const inputs = ['package.json', 'package-lock.json', inventoryPath, 'scripts/test-runner.mjs', 'scripts/test-reporter.mjs', 'scripts/test-evidence.mjs',
+    ...(cumulative ? ['scripts/check-evidence.mjs', 'scripts/check-runner.mjs', 'scripts/check-lifecycle.mjs'] : []),
+    ...(cumulative || existsSync(join(root, 'scripts/vitest-runner.mjs')) ? ['scripts/vitest-runner.mjs', 'scripts/vitest-reporter.mjs', 'scripts/vitest-evidence.mjs', 'vitest.config.ts'] : []),
+    ...(cumulative || existsSync(join(root, 'scripts/playwright-runner.mjs')) ? ['scripts/playwright-runner.mjs', 'scripts/playwright-evidence.mjs', 'scripts/playwright-resources.mjs', 'playwright.config.ts'] : [])];
   return { executionId, source: sourceIdentity(root), config: inputs.map(file => [file, existsSync(join(root, file)) ? digest(join(root, file)) : null]), environment: { node: process.version, platform: process.platform, arch: process.arch, chrome: process.env.CHROME_BIN ?? null, nodeOptions: process.env.NODE_OPTIONS ?? null } };
 }
 const caseKey = item => JSON.stringify([item.file, item.name, item.nesting, item.line, item.column]);
@@ -186,7 +193,31 @@ export function stagePlan(root, name, env = {}) {
   return executionPlan(root, { suite: name === 'test:failed' ? 'failed' : suites[name], ...(files ? { files } : name === 'test:failed' ? { files: testInventory(root).map(entry => entry.file) } : {}) });
 }
 
+function validateLegacyCheckEvidence(root, check, source) {
+  const pkg = read(join(root, 'package.json')), current = executionIdentity(root);
+  if (!sameSource(current.source, source)) throw Error('旧检查源码身份不符');
+  const phases = [[check.preflight, pkg.checkPreflight ?? ['typecheck']], [check, ['typecheck', 'test', 'build']]];
+  if (check.recheck) phases.unshift([check.recheck, check.recheck.results.map(result => result.name)]);
+  for (const [phase, required] of phases) {
+    if (!Array.isArray(phase?.results) || !equalSet(phase.results.map(result => result.name), required)) throw Error('旧检查阶段集合不完整或重复');
+    if (phase.status !== 'passed' || phase.pending?.length || !sameSource(phase.source, source) || !sameSource(phase.sourceAfter, source)) throw Error('旧检查阶段证据缺失或源码不符');
+    for (const result of phase.results) {
+      if (!result.log || !existsSync(result.log) || result.status !== 'passed' || result.exitCode !== 0 || result.execution === 'counted' || result.countedFrom || result.actualProof) throw Error('旧检查阶段日志缺失或混入累计证明');
+      const plan = result.name === 'test:failed'
+        ? executionPlan(root, { suite: 'failed', files: result.testPlan?.files ?? [] })
+        : stagePlan(root, result.name);
+      if (!plan) continue;
+      if (!result.testExecutionId || !result.testReport || result.testPlan && JSON.stringify(result.testPlan) !== JSON.stringify(plan)) throw Error('旧测试执行身份、范围或报告缺失');
+      const report = read(result.testReport);
+      validateExecution(root, report, plan, { ...current, executionId: result.testExecutionId }, { strictFiles: result.strictTestFiles ?? [] });
+      if (report.status !== 'passed') throw Error('旧测试统一报告未通过');
+    }
+  }
+  return true;
+}
+
 export function validateCheckEvidence(root, check, source) {
+  if (!usesCumulativeEvidence(root)) return validateLegacyCheckEvidence(root, check, source);
   const pkg = read(join(root, 'package.json'));
   const phases = [[check.preflight, pkg.checkPreflight ?? ['typecheck']], [check, ['typecheck', 'test', 'build']]];
   if (check.recheck) phases.unshift([check.recheck, check.recheck.results.map(result => result.name)]);

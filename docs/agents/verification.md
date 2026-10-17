@@ -126,6 +126,8 @@ JS/CSS helper 默认把完整编译字节保存在当前真实工作树的 `.cac
 `browser-timings.jsonl` 保留 bundle/styles 的 `CacheHit`、`CacheReason`、完整 `CacheKey`、`CacheLookupMs`、`BuildMs`、`CachePublishMs`；lookup 包含输入枚举与内容核对，build 包含真实编译、编译前后工具核对及首次依赖确认重建，原子发布单列；模块载入和输出前的工具绑定复核仍包含在 bundle/styles 准备总耗时中。原有交互、清理、worker/Chrome 启停及检查入口 totalMs 继续独立记录；并发场景耗时之和不能代替端到端时间。冷热对照都必须呈现实际选中用例、当次执行身份及完整清理结果。
 ## 同次累计覆盖（#152）
 
+宿主验收器按目标检出的 `scripts/check-evidence.mjs` 区分累计协议与此前的逐阶段协议。旧协议仍核对强制预检、完整类型/测试/构建、实际执行 nonce、目标版本的配置身份、全部原始报告、源码和严格 UI 政策；兼容旧格式不提供累计资格。已采用累计协议的目标始终要求完整 runId/proofs，不能删除报告字段后降级。固定提交验收和显式历史复用使用同一选择与校验。
+
 完整 `check` 为本次生命周期创建随机公开 `runId` 和内存账本。集中失败复验仍先阻塞；实际通过且当前源码、配置与环境匹配的复验及预检记录可计入本次后续阶段。`typecheck` 同次实际执行一次；预检范围可以重叠，每个已通过文件只计一次。三种执行者收到精确剩余文件，零剩余不启动空测试。独立 `check:preflight`、`check:failed`、定向检查及历史日志不会自动向另一个完整运行提供累计资格。
 
 `stage-proof-N.json` 是不可变原执行证明，含本次 runId、实际命令阶段、原 nonce、源码/配置/环境、原始日志及原测试报告 SHA256。计入的类型阶段使用 `execution:counted`、`countedAt` 与 `countedFrom`，沿用原执行时间/日志；控制台明确标示“计入…未再次执行”。真实剩余执行标为 `execution:executed`，有自己的原始报告及阶段证明，累计结果单独保存，避免覆盖来源。

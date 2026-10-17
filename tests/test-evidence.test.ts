@@ -393,3 +393,58 @@ test('新宿主校验旧执行器原 plan，已通过的旧业务 UI 可验而 s
     if(state==='pass')assert.equal(validate.status,0,validate.stderr+validate.stdout);else assert.notEqual(validate.status,0,`旧${state}也不能被新宿主放行`);
   }
 });
+
+function legacyRepository(t: TestContext, revision: string, framework: string) {
+  const fixture=repository(t),{root}=fixture;
+  // 冻结旧生产者源码，兼容回归不依赖 CI 提供历史 Git objects。
+  for(const file of ['check-runner.mjs','test-runner.mjs'])cpSync(new URL(`./fixtures/legacy-d1e740a/${file}`,import.meta.url),join(root,'scripts',file));
+  cpSync(new URL(`./fixtures/legacy-${revision}/test-evidence.mjs`,import.meta.url),join(root,'scripts/test-evidence.mjs'));
+  rmSync(join(root,'scripts/check-evidence.mjs'));
+  if(framework==='node')rmSync(join(root,'scripts/vitest-runner.mjs'));
+  if(framework!=='playwright')rmSync(join(root,'scripts/playwright-runner.mjs'));
+  return fixture;
+}
+
+for (const [revision, framework] of [['d1e740a', 'node'], ['18c9678', 'vitest'], ['ad5573a', 'playwright']] as const) test(`新宿主兼容累计账本之前的 ${framework} 配置身份并拒绝旧原始证据损坏`, t => {
+  const {root,command}=legacyRepository(t,revision,framework);
+  const old=command('scripts/check.mjs');assert.equal(old.status,0,old.stdout+old.stderr);
+  const dirs=readdirSync(join(root,'logs/check')).sort(),path=join(root,'logs/check',dirs.at(-1)!,'summary.json');
+  const check=JSON.parse(readFileSync(path,'utf8'));assert.equal(check.runId,undefined);
+  const host=new URL('../scripts/test-evidence.mjs',import.meta.url).href;
+  const validate=()=>command('--input-type=module','-e',`import{readFileSync}from'node:fs';import{validateCheckEvidence}from ${JSON.stringify(host)};const check=JSON.parse(readFileSync(${JSON.stringify(path)},'utf8'));validateCheckEvidence(${JSON.stringify(root)},check,check.source);`);
+  const passed=validate();assert.equal(passed.status,0,passed.stdout+passed.stderr);
+  for(const mutate of [
+    (value:any)=>{value.results.pop();},
+    (value:any)=>{value.results.find((item:any)=>item.name==='test').testExecutionId='other-run';},
+    (value:any)=>{value.results.find((item:any)=>item.name==='test').execution='counted';},
+  ]){
+    const changed=structuredClone(check);mutate(changed);writeFileSync(path,JSON.stringify(changed));assert.notEqual(validate().status,0,'旧协议仍核对全部阶段、nonce及真实执行');
+  }
+  writeFileSync(path,JSON.stringify(check));
+  const report=JSON.parse(readFileSync(check.results.find((item:any)=>item.name==='test').testReport,'utf8'));
+  writeFileSync(report.sources.native.path,readFileSync(report.sources.native.path,'utf8')+' ');
+  assert.notEqual(validate().status,0,'兼容旧协议仍须校验原 raw 摘要');
+});
+
+test('旧版完整检查的真实验收与显式复用保持可用，损坏 raw 必须新验收', async t=>{
+  const {root,git}=legacyRepository(t,'d1e740a','node');git('add','.');git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','-c','commit.gpgsign=false','commit','-qm','legacy-producer');
+  const {verify}=await import(new URL('../scripts/verify.mjs',import.meta.url).href);
+  const first=await verify(root,'HEAD',undefined,{reusePassed:true});assert.equal(first.status,'passed',JSON.stringify(first));
+  const same=await verify(root,'HEAD',undefined,{reusePassed:true});assert.equal(same.runId,first.runId);assert.equal(same.reused,true);assert.equal(same.completedAt,first.completedAt);
+  const check=JSON.parse(readFileSync(first.checkSummary,'utf8')),report=JSON.parse(readFileSync(check.results.find((item:any)=>item.name==='test').testReport,'utf8'));
+  writeFileSync(report.sources.native.path,readFileSync(report.sources.native.path,'utf8')+' ');
+  const fresh=await verify(root,'HEAD',undefined,{reusePassed:true});assert.equal(fresh.status,'passed');assert.notEqual(fresh.runId,first.runId);assert.notEqual(fresh.reused,true);
+});
+
+test('新目标不能删除累计证明后降级旧协议，旧 UI skip 也不能放行',t=>{
+  const current=repository(t);assert.equal(current.command('scripts/check.mjs').status,0);
+  const host=new URL('../scripts/test-evidence.mjs',import.meta.url).href;
+  const validate=(root:string,path:string)=>spawnSync(process.execPath,['--input-type=module','-e',`import{readFileSync}from'node:fs';import{validateCheckEvidence}from ${JSON.stringify(host)};const check=JSON.parse(readFileSync(${JSON.stringify(path)},'utf8'));validateCheckEvidence(${JSON.stringify(root)},check,check.source);`],{cwd:root,env:current.env,encoding:'utf8'});
+  const dirs=readdirSync(join(current.root,'logs/check')).sort(),path=join(current.root,'logs/check',dirs.at(-1)!,'summary.json'),check=JSON.parse(readFileSync(path,'utf8'));
+  delete check.runId;delete check.proofs;writeFileSync(path,JSON.stringify(check));assert.notEqual(validate(current.root,path).status,0);
+  const old=legacyRepository(t,'d1e740a','node'),file='tests/drag-scroll-panel.test.ts';rmSync(join(old.root,'tests/sample.test.ts'));
+  writeFileSync(join(old.root,'scripts/test-inventory.json'),JSON.stringify({schemaVersion:1,files:[{file,executor:'node',scopes:['all','tooling','rows']}]}));
+  writeFileSync(join(old.root,file),`import{test}from'node:test';test.skip('旧UI没有实际执行',()=>{});`);
+  assert.equal(old.command('scripts/check.mjs').status,0,'旧生产者确实允许该skip，拒绝来自新宿主政策');
+  const oldDirs=readdirSync(join(old.root,'logs/check')).sort();assert.notEqual(validate(old.root,join(old.root,'logs/check',oldDirs.at(-1)!,'summary.json')).status,0);
+});
