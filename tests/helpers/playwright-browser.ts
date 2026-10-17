@@ -113,10 +113,10 @@ class Panel {
     try {
       let stage = performance.now();
       const bundle = await buildBrowserScript(directory, script, fixture);
-      Object.assign(timings, { bundleMs: performance.now() - stage, bundleCacheHit: bundle.cacheHit, bundleIdentity: bundle.identity });
+      Object.assign(timings, { bundleMs: performance.now() - stage, bundleCacheHit: bundle.cacheHit, bundleIdentity: bundle.identity, bundleCacheLookupMs: bundle.cacheLookupMs, bundleBuildMs: bundle.buildMs, bundleCachePublishMs: bundle.cachePublishMs, bundleCacheReason: bundle.cacheReason, bundleCacheKey: bundle.cacheKey ?? 'unverified' });
       stage = performance.now();
       const styles = await buildPanelStyles(directory);
-      Object.assign(timings, { stylesMs: performance.now() - stage, stylesCacheHit: styles.cacheHit, stylesIdentity: styles.identity });
+      Object.assign(timings, { stylesMs: performance.now() - stage, stylesCacheHit: styles.cacheHit, stylesIdentity: styles.identity, stylesCacheLookupMs: styles.cacheLookupMs, stylesBuildMs: styles.buildMs, stylesCachePublishMs: styles.cachePublishMs, stylesCacheReason: styles.cacheReason, stylesCacheKey: styles.cacheKey ?? 'unverified' });
       if (this.abort.signal.aborted) throw Error('用例已取消');
       writeFileSync(join(directory, 'index.html'), '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="test.css"><div id="root"></div><pre id="result" data-state="pending"></pre><script src="test.js"></script></html>');
       stage = performance.now();
