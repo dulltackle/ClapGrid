@@ -91,19 +91,24 @@ async function dispatch(session: CDPSession, options: any, width: number) {
   }
 }
 
+export type PanelOptions = {
+  colorScheme?: 'light' | 'dark';
+  buildDefine?: Record<string, string>;
+};
+
 class Panel {
   private contexts = new Set<BrowserContext>();
   private operations = new Set<Promise<void>>();
   private abort = new AbortController();
   private failures: unknown[] = [];
   constructor(private worker: ManagedBrowser, private info: TestInfo) {}
-  check(script: string, fixture: string, width = 1600, height = 1000) {
-    const operation = this.execute(script, fixture, width, height);
+  check(script: string, fixture: string, width = 1600, height = 1000, options: PanelOptions = {}) {
+    const operation = this.execute(script, fixture, width, height, options);
     this.operations.add(operation);
     void operation.catch(error => { this.failures.push(error); }).finally(() => this.operations.delete(operation));
     return operation;
   }
-  private async execute(script: string, fixture: string, width: number, height: number) {
+  private async execute(script: string, fixture: string, width: number, height: number, options: PanelOptions) {
     const started = performance.now();
     const timings: Record<string, unknown> = { event: 'case', test: this.info.title, workerIndex: this.worker.workerIndex, chromePid: this.worker.chromePid, width, height };
     const directory = mkdtempSync(join(process.env.CLAPGRID_PLAYWRIGHT_RESOURCE_ROOT!, 'case-'));
@@ -112,7 +117,7 @@ class Panel {
     let context: BrowserContext | undefined;
     try {
       let stage = performance.now();
-      const bundle = await buildBrowserScript(directory, script, fixture);
+      const bundle = await buildBrowserScript(directory, script, fixture, options.buildDefine);
       Object.assign(timings, { bundleMs: performance.now() - stage, bundleCacheHit: bundle.cacheHit, bundleIdentity: bundle.identity, bundleCacheLookupMs: bundle.cacheLookupMs, bundleBuildMs: bundle.buildMs, bundleCachePublishMs: bundle.cachePublishMs, bundleCacheReason: bundle.cacheReason, bundleCacheKey: bundle.cacheKey ?? 'unverified' });
       stage = performance.now();
       const styles = await buildPanelStyles(directory);
@@ -128,7 +133,7 @@ class Panel {
       const { windowId } = await session.send('Browser.getWindowForTarget');
       await session.send('Browser.setWindowBounds', { windowId, bounds: { width, height } });
       await session.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
-      await session.send('Emulation.setEmulatedMedia', { features: [] });
+      await session.send('Emulation.setEmulatedMedia', { features: options.colorScheme ? [{ name: 'prefers-color-scheme', value: options.colorScheme }] : [] });
       timings.nativeInputDispatchMs = 0;
       timings.nativeInputDispatchCount = 0;
       await page.exposeBinding('browserInput', async (_, options) => {

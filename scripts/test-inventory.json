@@ -179,7 +179,7 @@
     },
     {
       "file": "tests/layout-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -249,7 +249,7 @@
     },
     {
       "file": "tests/more-tasks-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -288,7 +288,7 @@
     },
     {
       "file": "tests/panel-targets.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "rows"
@@ -297,7 +297,7 @@
     },
     {
       "file": "tests/panel-update-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -508,7 +508,7 @@
     },
     {
       "file": "tests/row-hover-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "ui-extended"
@@ -550,7 +550,7 @@
     },
     {
       "file": "tests/segment-draft-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -608,7 +608,7 @@
     },
     {
       "file": "tests/shell-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],

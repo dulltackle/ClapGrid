@@ -1,6 +1,6 @@
-import { test } from 'node:test';
+import { test } from './helpers/playwright-browser.js';
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
 
 const script = String.raw`
 import { createRoot } from 'react-dom/client';
@@ -37,5 +37,5 @@ const check = (ok, message) => { if (!ok) throw Error(message); };
 } catch(error) {document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=error.stack;} })();
 `;
 for (const count of [2, 7]) {
-  test(`笔与鼠标悬浮时口播片段高亮及时跟随（${count} 行）`, {timeout:30000}, t => checkInteractiveBrowser(t, script.replace('ROW_COUNT', String(count)), fixture, 1200, 800));
+  test(`笔与鼠标悬浮时口播片段高亮及时跟随（${count} 行）`, async ({ panel }) => { test.setTimeout(30000); await (panel.check(script.replace('ROW_COUNT', String(count)), fixture, 1200, 800)); });
 }

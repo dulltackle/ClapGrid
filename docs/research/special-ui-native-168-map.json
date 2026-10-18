@@ -1,0 +1,323 @@
+{
+  "schemaVersion": 1,
+  "baselineCommit": "0a7fb4009cd7ff3a21e22511cc7d70d997d4bc23",
+  "reference": "native-execution-163/scenario-map.tsv",
+  "scenarioCount": 16,
+  "scenarios": [
+    {
+      "oldFile": "tests/layout-panel.test.ts",
+      "oldName": "主视图入口迁移与剩余空间布局（1600px）",
+      "oldLocation": "58:33",
+      "newFile": "tests/layout-panel.test.ts",
+      "newName": "主视图入口迁移与剩余空间布局（1600px）",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 65,
+        "column": 3
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/layout-panel.test.ts",
+      "oldName": "主视图入口迁移与剩余空间布局（420px）",
+      "oldLocation": "58:33",
+      "newFile": "tests/layout-panel.test.ts",
+      "newName": "主视图入口迁移与剩余空间布局（420px）",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 65,
+        "column": 3
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/layout-panel.test.ts",
+      "oldName": "读取状态及迁移表单保留保存、取消与互斥规则",
+      "oldLocation": "58:286",
+      "newFile": "tests/layout-panel.test.ts",
+      "newName": "读取状态及迁移表单保留保存、取消与互斥规则",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 68,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/more-tasks-panel.test.ts",
+      "oldName": "更多到任务与诊断的完整键盘链（1600×1000）",
+      "oldLocation": "1:287",
+      "newFile": "tests/more-tasks-panel.test.ts",
+      "newName": "更多到任务与诊断的完整键盘链（1600×1000）",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 7,
+        "column": 71
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/more-tasks-panel.test.ts",
+      "oldName": "更多到任务与诊断的完整键盘链（420×800）",
+      "oldLocation": "1:287",
+      "newFile": "tests/more-tasks-panel.test.ts",
+      "newName": "更多到任务与诊断的完整键盘链（420×800）",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 7,
+        "column": 71
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/more-tasks-panel.test.ts",
+      "oldName": "更多到任务与诊断的完整键盘链（420×360）",
+      "oldLocation": "1:287",
+      "newFile": "tests/more-tasks-panel.test.ts",
+      "newName": "更多到任务与诊断的完整键盘链（420×360）",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 7,
+        "column": 71
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/panel-targets.test.ts",
+      "oldName": "定位助手适应行高变化和覆盖区，实际就绪晚于固定延时仍可等待",
+      "oldLocation": "1:179",
+      "newFile": "tests/panel-targets.test.ts",
+      "newName": "定位助手适应行高变化和覆盖区，实际就绪晚于固定延时仍可等待",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 6,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/panel-update-panel.test.ts",
+      "oldName": "面板快更新在编辑、播放与任务期间保持草稿并禁止刷新",
+      "oldLocation": "53:3",
+      "newFile": "tests/panel-update-panel.test.ts",
+      "newName": "面板快更新在编辑、播放与任务期间保持草稿并禁止刷新",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 66,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/panel-update-panel.test.ts",
+      "oldName": "面板刷新后的真实表格重连恢复稳定勾选且断线仍清除",
+      "oldLocation": "53:300",
+      "newFile": "tests/panel-update-panel.test.ts",
+      "newName": "面板刷新后的真实表格重连恢复稳定勾选且断线仍清除",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 67,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/panel-update-panel.test.ts",
+      "oldName": "迟到的刷新恢复让位于用户的新勾选",
+      "oldLocation": "66:3",
+      "newFile": "tests/panel-update-panel.test.ts",
+      "newName": "迟到的刷新恢复让位于用户的新勾选",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 83,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-hover-panel.test.ts",
+      "oldName": "笔与鼠标悬浮时口播片段高亮及时跟随（2 行）",
+      "oldLocation": "34:28",
+      "newFile": "tests/row-hover-panel.test.ts",
+      "newName": "笔与鼠标悬浮时口播片段高亮及时跟随（2 行）",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "ui-extended"
+      ],
+      "actualLocation": {
+        "line": 40,
+        "column": 3
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-hover-panel.test.ts",
+      "oldName": "笔与鼠标悬浮时口播片段高亮及时跟随（7 行）",
+      "oldLocation": "34:28",
+      "newFile": "tests/row-hover-panel.test.ts",
+      "newName": "笔与鼠标悬浮时口播片段高亮及时跟随（7 行）",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "ui-extended"
+      ],
+      "actualLocation": {
+        "line": 40,
+        "column": 3
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/segment-draft-panel.test.ts",
+      "oldName": "片段草稿、连续行内编辑与新增共享真实保存结果",
+      "oldLocation": "66:3",
+      "newFile": "tests/segment-draft-panel.test.ts",
+      "newName": "片段草稿、连续行内编辑与新增共享真实保存结果",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 71,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/shell-panel.test.ts",
+      "oldName": "页头和状态栏紧凑主题、键盘与任务锁（1600×1000）",
+      "oldLocation": "1:287",
+      "newFile": "tests/shell-panel.test.ts",
+      "newName": "页头和状态栏紧凑主题、键盘与任务锁（1600×1000）",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 7,
+        "column": 71
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/shell-panel.test.ts",
+      "oldName": "页头和状态栏紧凑主题、键盘与任务锁（420×800）",
+      "oldLocation": "1:287",
+      "newFile": "tests/shell-panel.test.ts",
+      "newName": "页头和状态栏紧凑主题、键盘与任务锁（420×800）",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 7,
+        "column": 71
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/shell-panel.test.ts",
+      "oldName": "页头和状态栏紧凑主题、键盘与任务锁（420×360）",
+      "oldLocation": "1:287",
+      "newFile": "tests/shell-panel.test.ts",
+      "newName": "页头和状态栏紧凑主题、键盘与任务锁（420×360）",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 7,
+        "column": 71
+      },
+      "actualStatus": "passed"
+    }
+  ],
+  "sourcePreservation": [
+    {
+      "file": "tests/layout-panel.test.ts",
+      "registrations": 2,
+      "sourceSha256": "52fd12e110a0d38106bcc0b8465397726c96dc198e136f3788dafdc59394524a",
+      "targetSha256": "7c298759cfd4a28efdb59aacfe7982c7720217cfc90cfcb995645a7daa19b0dc",
+      "templateLiteralsUnchanged": true
+    },
+    {
+      "file": "tests/more-tasks-panel.test.ts",
+      "registrations": 1,
+      "sourceSha256": "7614e551cd2c341cf25567d552e738c71d7f279aa01f23d089e5fb3bbf3aa97d",
+      "targetSha256": "5841d91a2453c7cdf5caf51cc3292134efc342586d8cde053f0a2c48800ad307",
+      "templateLiteralsUnchanged": true
+    },
+    {
+      "file": "tests/panel-targets.test.ts",
+      "registrations": 1,
+      "sourceSha256": "d19b5d64cc9003da43d4065d38d28ecf4598cfeaf266917694c0186c271ab915",
+      "targetSha256": "aa5d814cb90de8e47547388d283f6efad6a87948addc9a2f369ecd2dbfcf9bfa",
+      "templateLiteralsUnchanged": true
+    },
+    {
+      "file": "tests/panel-update-panel.test.ts",
+      "registrations": 3,
+      "sourceSha256": "c52eefa96c467cfbaed9ca72fb4fef5a66c1bf6125d684c0e96351486bb5b44e",
+      "targetSha256": "6215db26abb2fabc09da5dc85cc37889fc13aacf9f035f868ba3d463f43c5bd9",
+      "templateLiteralsUnchanged": true
+    },
+    {
+      "file": "tests/row-hover-panel.test.ts",
+      "registrations": 1,
+      "sourceSha256": "c86cb91ea1ddb67c5080e34717240fcc99296f875a17c5c1ebc11a2f80806865",
+      "targetSha256": "9927694142f43f4cd7b90e418458784063e18395a89ea5158c9522496c172d5f",
+      "templateLiteralsUnchanged": true
+    },
+    {
+      "file": "tests/segment-draft-panel.test.ts",
+      "registrations": 1,
+      "sourceSha256": "0473359bd84c4aa488ba259edcb9e08a8ae00406282c0d52f9e68f0bcba1c03b",
+      "targetSha256": "57bacd6cccbfb5c20dc0dcd00def4ccac88f2e5ff2d122b9f4d370ff3f447389",
+      "templateLiteralsUnchanged": true
+    },
+    {
+      "file": "tests/shell-panel.test.ts",
+      "registrations": 1,
+      "sourceSha256": "fa073876d3c444f3ff89522ee14ca3b8245c89c49a4fb9e4d3ca7f49f0a8289c",
+      "targetSha256": "6c0f2a169ada284b9078d50dd9ee8ffb2d18e2b79f146740e0877631960f7a8c",
+      "templateLiteralsUnchanged": true
+    }
+  ],
+  "pending": [
+    "同一脚本切换不同define的缓存隔离专项实际复验",
+    "候选代表热点三次测量",
+    "固定提交正式全量验收和跨票审查"
+  ]
+}
