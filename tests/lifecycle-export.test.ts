@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -9,8 +9,13 @@ import { mkdtempSync, rmSync, readFileSync, readdirSync, existsSync, mkdirSync, 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 import { openBusiness } from '../src/business/index.js';
 import { queryStatus, queryExports, submitExport, modifyBatch, connectTable, querySpeech } from '../src/shared/client.js';
+
+// 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+const { ownerAlive, processIdentity } = await import(new URL('../scripts/verification-jobs.mjs', import.meta.url).href);
 
 async function until<T>(read: () => Promise<T>, accept: (value: T) => boolean, timeout = 60000) {
   const deadline = Date.now() + timeout;
@@ -21,7 +26,8 @@ async function until<T>(read: () => Promise<T>, accept: (value: T) => boolean, t
   throw new Error('等待生命周期状态超时');
 }
 
-test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体再清理，保留成片并从最新输入重新导出', { timeout: 120000, skip: process.platform === 'linux' ? false : '此验证需要 Linux 运行环境' }, async t => {
+test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体再清理，保留成片并从最新输入重新导出', { timeout: 120000 }, async t => {
+  if (process.platform !== 'linux') t.skip('此验证需要 Linux 运行环境');
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-crash-'));
   const workspace = join(root, 'workspace'); const otherWorkspace = join(root, 'other'); mkdirSync(otherWorkspace);
   const directory = join(workspace, 'clapgrid'); const video = join(root, 'video.mp4'); const audio = join(root, 'voice.mp3');
@@ -51,11 +57,21 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
   const host = join(root, 'host.cjs');
   writeFileSync(host, `#!/usr/bin/env node\nconst fs=require('node:fs');require('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:{id:r.params.threadId,cwd:JSON.parse(fs.readFileSync(${JSON.stringify(hostState)},'utf8'))[r.params.threadId]}}}));});`, { mode: 0o700 });
   const env = { ...process.env, CLAPGRID_CODEX_BIN: host };
+  const owners = new Map<number, ReturnType<typeof serviceProcess>>();
+  const remember = (pid: number) => { owners.set(pid, serviceProcess(pid)); };
+  const signalOwned = (pid: number, signal: NodeJS.Signals) => {
+    const owner = owners.get(pid);
+    if (!owner) throw new Error(`进程 ${pid} 未登记，保留现场`);
+    const state = ownerAlive(owner);
+    if (state === false) return;
+    if (state !== true) throw new Error(`进程 ${pid} 出生身份不明，保留现场`);
+    process.kill(pid, signal);
+  };
   const pids: number[] = []; const residualMedia: number[] = []; const clients: Client[] = [];
   let url = '';
   const start = async (id = thread) => {
     const status = JSON.parse((await promisify(execFile)(process.execPath, [join(dist, 'runtime.js'), 'open', '--workspace', workspace, '--thread', id], { env })).stdout);
-    pids.push(status.pid); if (id === thread) url = status.url;
+    remember(status.pid); pids.push(status.pid); if (id === thread) url = status.url;
     return { status, url: status.url as string };
   };
   const connectMcp = async () => {
@@ -68,14 +84,14 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
     assert.notEqual(response.isError, true);
     return response.structuredContent as import('../src/shared/contracts.js').ExportTasksStatus;
   };
-  const alive = (pid: number) => {
-    try { return !readFileSync(`/proc/${pid}/stat`, 'utf8').split(') ')[1]!.startsWith('Z'); } catch { return false; }
+  const kill = async (pid: number) => {
+    signalOwned(pid, 'SIGKILL');
+    await waitForServiceExit(owners.get(pid)!, { timeoutMs: 60000, intervalMs: 25 });
   };
-  const kill = async (pid: number) => { process.kill(pid, 'SIGKILL'); await until(async () => alive(pid), value => !value); };
-  t.after(async () => {
+  t.onTestFinished(async () => {
     await Promise.all(clients.map(client => client.close()));
-    for (const pid of residualMedia) { try { process.kill(pid, 'SIGKILL'); } catch { /* 已退出。 */ } }
-    for (const pid of new Set(pids)) if (alive(pid)) await kill(pid);
+    for (const pid of new Set(residualMedia)) await kill(pid);
+    for (const pid of new Set(pids)) await kill(pid);
     rmSync(root, { recursive: true, force: true });
   });
   const first = await start();
@@ -103,14 +119,27 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
   await until(() => queryExports(url), value => value.tasks.some(task => task.id === next.id && task.state === 'rendering'));
   // 从操作系统观察本次真实 FFmpeg，重开解锁时它必须已停止。
   const descendants = (pid: number): number[] => {
+    const parent = owners.get(pid);
+    if (ownerAlive(parent) !== true) return [];
     const children = readFileSync(`/proc/${pid}/task/${pid}/children`, 'utf8').trim().split(/\s+/).filter(Boolean).map(Number);
-    return children.flatMap(child => [child, ...descendants(child)]);
+    return children.flatMap(child => {
+      // 只从本次活跃父进程的真实亲子边登记；marker裸PID不能建立拥有权。
+      try {
+        const identity = processIdentity(child);
+        if (!identity) return [];
+        const stat = readFileSync(`/proc/${child}/stat`, 'utf8');
+        const fields = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
+        if (Number(fields[1]) !== pid || ownerAlive(parent) !== true || ownerAlive(identity) !== true) return [];
+        owners.set(child, identity);
+        return [child, ...descendants(child)];
+      } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []; throw error; }
+    });
   };
   const mediaPids = await until(async () => descendants(first.status.pid).filter(pid => {
     try { return readFileSync(`/proc/${pid}/comm`, 'utf8').trim() === 'ffmpeg'; } catch { return false; }
   }), value => value.length > 0);
   residualMedia.push(...mediaPids);
-  for (const pid of mediaPids) process.kill(pid, 'SIGSTOP');
+  for (const pid of mediaPids) signalOwned(pid, 'SIGSTOP');
   const oldUrl = url;
   setWorkspace(otherWorkspace);
   assert.equal((await fetch(`${oldUrl}/api/status`)).status, 409);
@@ -121,11 +150,11 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
   const returned = await start();
   assert.equal(returned.status.instanceId, first.status.instanceId);
   assert.equal((await queryExports(url)).tasks.find(task => task.id === next.id)!.state, 'rendering');
-  process.kill(first.status.pid, 'SIGTERM');
+  signalOwned(first.status.pid, 'SIGTERM');
   await new Promise(resolve => setTimeout(resolve, 50));
   assert.equal((await queryStatus(url)).instanceId, first.status.instanceId);
   assert.equal((await queryStatus(url)).taskLocked, true);
-  for (const pid of mediaPids) process.kill(pid, 'SIGCONT');
+  for (const pid of mediaPids) signalOwned(pid, 'SIGCONT');
   const previousBinding = url;
   await kill(first.status.pid);
   const second = await start();
@@ -164,9 +193,10 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
     try { return readFileSync(`/proc/${pid}/comm`, 'utf8').trim() === 'ffmpeg'; } catch { return false; }
   }), value => value.length > 0);
   residualMedia.push(...active);
-  for (const pid of active) process.kill(pid, 'SIGSTOP');
+  for (const pid of active) signalOwned(pid, 'SIGSTOP');
   const guardianPid = Number(readFileSync(join(directory, 'media-active.json'), 'utf8').match(/"guardianPid":(\d+)/)![1]);
-  process.kill(guardianPid, 'SIGKILL');
+  if (!owners.has(guardianPid)) throw new Error('媒体守护进程缺少原亲子拥有者登记，保留现场');
+  signalOwned(guardianPid, 'SIGKILL');
   await new Promise(resolve => setTimeout(resolve, 100));
   assert.equal((await queryStatus(url)).taskLocked, true);
   assert.equal(existsSync(join(directory, 'exports', `.work-${guarded.id}`)), true);

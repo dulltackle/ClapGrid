@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -11,7 +11,11 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createBusinessMcp } from '../src/mcp/server.js';
 import { startService } from '../src/service/server.js';
+import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 import { connectTable, querySegments, querySpeech, queryStatus, submitSpeech } from '../src/shared/client.js';
+
+// 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 test('工作空间往返与宿主不可查询使旧绑定失效，原后台任务持续且不重复提交', { timeout: 60000 }, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-binding-task-'));
@@ -24,7 +28,7 @@ test('工作空间往返与宿主不可查询使旧绑定失效，原后台任�
   setWorkspace(first);
   writeFileSync(host, `#!/usr/bin/env node\nconst fs=require('node:fs');const rl=require('node:readline').createInterface({input:process.stdin});rl.on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:JSON.parse(fs.readFileSync(${JSON.stringify(state)},'utf8'))}}));});`, { mode: 0o700 });
   const previousHost = process.env.CLAPGRID_CODEX_BIN; process.env.CLAPGRID_CODEX_BIN = host;
-  t.after(() => { if (previousHost === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = previousHost; });
+  t.onTestFinished(() => { if (previousHost === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = previousHost; });
   await build({ entryPoints: ['src/runtime.ts', 'src/service/main.ts', 'src/business/media-worker.ts'], outbase: 'src', outdir: dist,
     bundle: true, platform: 'node', format: 'esm', target: 'node22', external: ['vite'],
     banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" } });
@@ -32,15 +36,16 @@ test('工作空间往返与宿主不可查询使旧绑定失效，原后台任�
   const service = await startService({ workspaceDirectory: first, projectDirectory: join(first, 'clapgrid'), panelDirectory: join(dist, 'panel'), port: 0,
     speechRuntime: { configPath: join(root, 'test.env'), key: () => '测试替身密钥', fetch: (async () => { calls++; return new Promise<Response>(resolve => { finish = resolve; }); }) as typeof fetch } });
   const cli = async (workspace: string) => JSON.parse((await promisify(execFile)(process.execPath, [join(dist, 'runtime.js'), 'open', '--workspace', workspace, '--thread', threadId], { env: process.env })).stdout);
-  let other: { url: string; instanceId: string } | undefined;
-  t.after(async () => {
-    if (other) { setWorkspace(second); await fetch(`${other.url}/api/service/stop`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instanceId: other.instanceId, interrupt: true }) }); }
+  let other: { url: string; instanceId: string; pid: number } | undefined;
+  let otherProcess: ReturnType<typeof serviceProcess> | undefined;
+  t.onTestFinished(async () => {
+    if (other) { setWorkspace(second); await fetch(`${other.url}/api/service/stop`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instanceId: other.instanceId, interrupt: true }) }); await waitForServiceExit(otherProcess!); }
     await service.close(); rmSync(root, { recursive: true, force: true });
   });
   const opened = await cli(first);
   const server = createBusinessMcp(); const client = new Client({ name: '任务工作空间往返', version: '1' });
   const [a, b] = InMemoryTransport.createLinkedPair(); await server.connect(b); await client.connect(a);
-  t.after(async () => { await client.close(); await server.close(); });
+  t.onTestFinished(async () => { await client.close(); await server.close(); });
   const tool = (name: string, args = {}) => client.callTool({ name, arguments: args, _meta: { threadId } });
   await tool('clapgrid_modify', { changes: [{ kind: 'add', text: '继续完成旧工作空间任务' }] });
   const before = await queryStatus(opened.url);
@@ -61,7 +66,7 @@ test('工作空间往返与宿主不可查询使旧绑定失效，原后台任�
     assert.equal(rejected.status, 409);
   }
   assert.equal((await tool('clapgrid_status')).isError, true, '未打开新项目不能沿用旧服务');
-  other = await cli(second);
+  other = await cli(second); otherProcess = serviceProcess(other!.pid);
   const newStatus = await queryStatus(other!.url);
   assert.notEqual(newStatus.snapshot.project.id, before.snapshot.project.id);
   assert.equal(newStatus.taskLocked, false);
