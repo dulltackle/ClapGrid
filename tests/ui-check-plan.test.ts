@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import { readdirSync } from 'node:fs';
+
+// 原 Node 默认未限时；保留原计划与缺浏览器断言。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const planner = await import(new URL('../scripts/ui-check-plan.mjs', import.meta.url).href);
 const checker = await import(new URL('../scripts/check-ui.mjs', import.meta.url).href);

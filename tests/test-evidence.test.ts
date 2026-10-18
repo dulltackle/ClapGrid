@@ -1,16 +1,20 @@
 import { createHash } from 'node:crypto';
-import { test, type TestContext } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, cpSync, symlinkSync, readdirSync, existsSync, statSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { dependencyView } from './helpers/temporary-repository.js';
+
+// 保留原 Node 外层文件未显式设置的测试及清理无限时语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const project = fileURLToPath(new URL('../', import.meta.url));
 function repository(t: TestContext) {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-evidence-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, 'scripts')); mkdirSync(join(root, 'tests'));
   for (const name of readdirSync(join(project, 'scripts')).filter(name => name.endsWith('.mjs'))) cpSync(join(project, 'scripts', name), join(root, 'scripts', name));
   const files = [{ file: 'tests/sample.test.ts', executor: 'node', scopes: ['all', 'tooling', 'rows'] }];
@@ -190,7 +194,7 @@ test('清单允许的嵌套文件在修复后可以从真实失败待办集中�
 
 test('显式原生 UI 对照失败可集中复验，常规完整范围仍排除对照', t => {
   const { root, command, files, env } = repository(t);
-  symlinkSync(join(project, 'node_modules'), join(root, 'node_modules'), 'dir');
+  dependencyView(root, join(project, 'node_modules'));
   env.CHROME_BIN = process.execPath; // 只验证命令调度；真实浏览器场景由原生试点覆盖。
   const nativeFile = 'tests/sample.native.ts';
   const source = `import {test} from 'node:test';import assert from 'node:assert/strict';import{existsSync}from'node:fs';test('原生对照',()=>assert.ok(existsSync('fixed')));`;
@@ -211,7 +215,7 @@ test('显式原生 UI 对照失败可集中复验，常规完整范围仍排除�
 
 test('原生报告缺失仍保留对照范围，复验不能只运行普通全量后清空待办', t => {
   const { root, command, files, env } = repository(t);
-  symlinkSync(join(project, 'node_modules'), join(root, 'node_modules'), 'dir');
+  dependencyView(root, join(project, 'node_modules'));
   env.CHROME_BIN = process.execPath;
   const nativeFile = 'tests/sample.native.ts';
   const source = `import {test} from 'node:test';import assert from 'node:assert/strict';import{existsSync}from'node:fs';test('原生对照',()=>assert.ok(existsSync('fixed')));`;
@@ -335,7 +339,7 @@ for (const [faultStage, strict] of [['build',false],['typecheck',false],['build'
 
 test('UI 严格政策随原生失败待办保留，跳过不能被普通复验清空', t => {
   const {root,command,files,env}=repository(t);
-  symlinkSync(join(project,'node_modules'),join(root,'node_modules'),'dir');env.CHROME_BIN=process.execPath;
+  dependencyView(root, join(project,'node_modules'));env.CHROME_BIN=process.execPath;
   const nativeFile='tests/strict.native.ts',source=`import{test}from'node:test';import{existsSync}from'node:fs';test('严格UI场景',{skip:!existsSync('logs/fixed')},()=>{});`;
   writeFileSync(join(root,nativeFile),source);
   writeFileSync(join(root,'scripts/test-inventory.json'),JSON.stringify({schemaVersion:1,files,references:[{file:nativeFile,executor:'node',scopes:['comparison-only'],group:'ui'}]}));

@@ -1,4 +1,4 @@
-import { test, type TestContext } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, cpSync, rmSync, writeFileSync, readFileSync, readdirSync, statSync, utimesSync, symlinkSync, existsSync } from 'node:fs';
 import { spawnSync, execFileSync } from 'node:child_process';
@@ -6,13 +6,17 @@ import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { dependencyView } from './helpers/temporary-repository.js';
+// 原 Node 默认未限时；保留每例显式测试及下游准备/清理时限。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 const { nodeCompileCacheEnvironment, nodeCompileCachePolicy, nodeCompileCacheVerificationControls, withNodeCompileCacheWatch } = await import(new URL('../scripts/node-compile-cache.mjs', import.meta.url).href);
 const { runLogged } = await import(new URL('../scripts/check-runner.mjs', import.meta.url).href);
 const { withCheckRun } = await import(new URL('../scripts/check-lifecycle.mjs', import.meta.url).href);
 
 const project = fileURLToPath(new URL('../', import.meta.url));
 function target(t: TestContext, current = true) {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-node-cache-')); t.after(() => rmSync(root, { recursive: true, force: true }));
+  const root = mkdtempSync(join(tmpdir(), 'clapgrid-node-cache-')); t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, 'scripts'));
   if (current) cpSync(join(project, 'scripts/node-compile-cache.mjs'), join(root, 'scripts/node-compile-cache.mjs'));
   return root;
@@ -95,7 +99,7 @@ test('显式empty与disable真实Node不启用默认cache，custom在当前cwd�
 
 test('UI快检原生与候选入口给实际测试child同样默认，非测试stage不默认开启', t => {
   const root=target(t);for(const file of readdirSync(join(project,'scripts')).filter(name=>name.endsWith('.mjs')))cpSync(join(project,'scripts',file),join(root,'scripts',file));
-  symlinkSync(join(project,'node_modules'),join(root,'node_modules'),'dir');mkdirSync(join(root,'tests'));
+  dependencyView(root, join(project, 'node_modules'));mkdirSync(join(root,'tests'));
   const names=['style-collisions','table-controls-panel','segment-note-layout-panel','speech-cell-layout-panel','wide-panel'];
   const files=names.map(name=>({file:`tests/${name}.test.ts`,executor:'node',policy:'ui',scopes:['all','ui-core']}));
   const references=names.map(name=>({file:`tests/${name}.native.ts`,executor:'node',group:'ui',scopes:['comparison-only']}));
