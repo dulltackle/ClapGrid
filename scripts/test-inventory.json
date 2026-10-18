@@ -49,7 +49,7 @@
     },
     {
       "file": "tests/check-related.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -57,7 +57,7 @@
     },
     {
       "file": "tests/check-runner.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling",
@@ -745,7 +745,7 @@
     },
     {
       "file": "tests/verification-jobs.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling",

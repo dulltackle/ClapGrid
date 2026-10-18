@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { test, type TestContext } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
 import { execFileSync, spawnSync, spawn } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -9,9 +9,12 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 import { dependencyView, temporaryRepository } from './helpers/temporary-repository.js';
 
+// 原 Node 未显式设置测试/收尾时限；保留各真实命令及业务等待上限。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 const project = fileURLToPath(new URL('../', import.meta.url));
 function repository(t: TestContext) {
-  const { root, put, git, own, environment } = temporaryRepository(cleanup => t.after(cleanup), { project, prefix: 'clapgrid-related-' });
+  const { root, put, git, own, environment } = temporaryRepository(cleanup => t.onTestFinished(cleanup), { project, prefix: 'clapgrid-related-' });
   put('.gitignore', 'logs/\nnode_modules\n');
   put('package.json', JSON.stringify({ name: 'related-fixture', private: true, type: 'module', scripts: { 'check:related': 'node scripts/check-related.mjs', check: 'node scripts/check.mjs', 'test:failed': 'node scripts/test-runner.mjs --suite failed', typecheck: 'node task.mjs', build: 'node task.mjs' }, devDependencies: { tsx: '4.23.15', vitest: '5.0.5', '@playwright/test': '1.64.1' } }));
   put('task.mjs', 'console.log("fixture non-test stage");');
@@ -217,13 +220,13 @@ test('真实日常命令与完整检查互斥；显式取消清理孙进程而�
   r.put('tests/number.test.ts', `import{test}from"node:test";import{spawn}from"node:child_process";test("running",async()=>{spawn(process.execPath,['-e','setInterval(()=>require("node:fs").appendFileSync("logs/heartbeat","x"),20)'],{stdio:'ignore'});await new Promise(()=>{});});`);
   const child = spawn(process.execPath, ['scripts/check-related.mjs'], { cwd: r.root, env: { ...process.env, NODE_TEST_CONTEXT: undefined }, stdio: 'ignore' });
   const closed = r.own(child);
-  t.after(() => { try { child.kill('SIGTERM'); } catch {} });
+  t.onTestFinished(() => { try { child.kill('SIGTERM'); } catch {} });
   await until(() => existsSync(join(r.root, 'logs/heartbeat')), '真实孙进程应开始写心跳');
   try {
     assert.equal(r.cli().status, 1);
     const full = spawnSync(process.execPath, ['scripts/check.mjs'], { cwd: r.root, encoding: 'utf8', env: { ...process.env, NODE_TEST_CONTEXT: undefined }, timeout: 5000 });
     assert.equal(full.status, 1); assert.match(full.stderr, /已有检查/);
-    const other = mkdtempSync(join(tmpdir(), 'clapgrid-related-worktree-')); t.after(() => rmSync(other, { recursive: true, force: true }));
+    const other = mkdtempSync(join(tmpdir(), 'clapgrid-related-worktree-')); t.onTestFinished(() => rmSync(other, { recursive: true, force: true }));
     r.git('worktree', 'add', '--quiet', '--detach', other, r.base);
     dependencyView(other, join(project, 'node_modules'));
     writeFileSync(join(other, 'tests/number.test.ts'), readFileSync(join(other, 'tests/number.test.ts'), 'utf8') + '// independent edit\n');

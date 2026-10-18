@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
-import { test, type TestContext } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, cpSync, rmSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+// 原 Node 未显式设置测试/收尾时限；保留各真实命令及业务等待上限。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const scripts = fileURLToPath(new URL('../scripts/', import.meta.url));
 const runnerUrl = new URL('../scripts/check-runner.mjs', import.meta.url).href;
@@ -35,7 +38,7 @@ async function until(check: () => boolean, message: string) {
 
 function repository(t: TestContext, task = "require('node:assert/strict').equal(require('node:fs').readFileSync('value','utf8'),'original')") {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-check-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   const git = (...args: string[]) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
   git('init', '-q');
   mkdirSync(join(root, 'scripts'));
@@ -135,6 +138,8 @@ test('相同身份并发启动只创建一个任务，状态包含稳定身份�
 });
 
 test('独立检查不继承node:test父进程标记，嵌套测试实际执行', async t => {
+  vi.stubEnv('NODE_TEST_CONTEXT', 'child-v8');
+  t.onTestFinished(() => { vi.unstubAllEnvs(); });
   const { root } = repository(t, 'process.exit(0)');
   writeFileSync(join(root, 'nested.test.mjs'), "import {test} from 'node:test';import{writeFileSync}from'node:fs';test('真实执行',()=>writeFileSync('nested-ran','yes'));");
   const result = await withCheckRun(root, 'fixture', (context: any) => runLogged(process.execPath, ['--test', 'nested.test.mjs'], root, join(root, 'nested.log'), context));
@@ -151,13 +156,15 @@ test('等待连接退出后后台验收继续，再次启动连接原任务', as
     console.log(JSON.stringify({ directory: job.directory }));
     await waitVerification(job.directory);
   `], { stdio: ['ignore', 'pipe', 'pipe'] });
+  const observerClosed = new Promise(resolve => observer.once('close', resolve));
+  t.onTestFinished(async () => { if (observer.exitCode === null && observer.signalCode === null) observer.kill('SIGTERM'); await observerClosed; });
   const observed: any = await new Promise((resolve, reject) => {
     let text = '';
     observer.stdout.on('data', chunk => { text += chunk; if (text.includes('\n')) resolve(JSON.parse(text.split('\n')[0]!)); });
     observer.once('error', reject);
     observer.once('exit', code => { if (!text) reject(Error(`观察者提前退出 ${code}`)); });
   });
-  observer.kill('SIGTERM');
+  observer.kill('SIGTERM'); await observerClosed;
   const same = await startVerification(root, commit, undefined, { environment: knownEnvironment });
   assert.equal(same.directory, observed.directory);
   assert.equal(same.attached, true);
@@ -282,7 +289,7 @@ test('跨PID命名空间和新鲜心跳拥有者不可见时不判中断、不�
 
 test('字体配置或NODE_ENV改变会改变有效验收环境，测试上下文标记被剥离', t => {
   const before = { node: process.env.NODE_ENV, font: process.env.FONTCONFIG_FILE, context: process.env.NODE_TEST_CONTEXT };
-  t.after(() => {
+  t.onTestFinished(() => {
     for (const [key, value] of [['NODE_ENV', before.node], ['FONTCONFIG_FILE', before.font], ['NODE_TEST_CONTEXT', before.context]] as const) {
       if (value === undefined) delete process.env[key]; else process.env[key] = value;
     }

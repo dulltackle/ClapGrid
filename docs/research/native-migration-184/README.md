@@ -1,0 +1,11 @@
+# 完整检查、相关检查与固定提交任务迁移（#184）
+
+三个原文件、83个原场景完整迁入既有Vitest forks串行基线；[逐项映射](scenario-map.json)保存原file/name/nesting，新增场景为空。清单仅更改这三项executor，原scopes与平台政策保留。文件级原生vi.setConfig将未显式设置的test/hook时限保持0，原CLI timeout、业务等待、取消宽限与实际故障后果不变。
+
+原Node多个after为FIFO，原生onTestFinished为LIFO。需要父检查先完成、再删除嵌套或外部仓库的三类场景逆序建立fixture，保持依赖顺序；原try/finally继续通过原token恢复和取消真正拥有者。单个callback内仍按原await顺序收尾，观察者原close事件被明确等待；取消失败例先等原child关闭和原生命周期登记组收尾，再清理目录。原diagnostic改原生annotation，真实观察内容不变。
+
+原父Node测试上下文的两个保障不能因外层换Vitest变为空断言：分别用原生vi.stubEnv真实设置NODE_TEST_CONTEXT=child-v8，并在本例结束原生unstub。stdout原生事件通道例在标记设置之后加载同一真实check-runner源码的新原生模块实例，因为其输出通道在import时绑定；不mock业务module，不改被测CLI。进度/输出仍检查stderr边界，nested Node测试仍必须真实产出文件并报告pass。
+
+相关检查继续使用#175公共temporaryRepository、dependencyView和独立缓存视图。另两类仓库有意保留无第三方依赖的最小package-lock与指定检查脚本集，真实npm ci、独立检出及依赖安装改变源码仍按原例执行；不强加依赖安装视图或把故障owner元数据交给通用自动stop。跨树仍是真实Git worktree。字体/NODE_ENV/NODE_TEST_CONTEXT以及CHROME_BIN故障注入保持逐例恢复，原值undefined仍delete。
+
+所有嵌入的Node/TAP/Vitest/Playwright夹具保持原宿主与真实命令；故障身份替换、错误socket、缺报告/原始来源损坏、旧证据复用和未知组状态仍保留原断言。实际后台任务仍经原正式入口、原owner/token/命名空间与出生身份核对，同身份连接及观察者退出不取消worker的行为不变。局部结果不能称为固定候选完整验收或性能/并发资格。
