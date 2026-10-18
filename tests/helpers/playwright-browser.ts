@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
+import { createServer, type Server } from 'node:http';
 import { test as base, chromium, type Browser, type BrowserContext, type CDPSession, type TestInfo } from '@playwright/test';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
-import { appendFileSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -91,25 +92,27 @@ async function dispatch(session: CDPSession, options: any, width: number) {
   }
 }
 
+export type PanelOptions = { reducedMotion?: boolean; resources?: Record<string, { body: Uint8Array; type: string }> };
+
 class Panel {
   private contexts = new Set<BrowserContext>();
   private operations = new Set<Promise<void>>();
   private abort = new AbortController();
   private failures: unknown[] = [];
   constructor(private worker: ManagedBrowser, private info: TestInfo) {}
-  check(script: string, fixture: string, width = 1600, height = 1000) {
-    const operation = this.execute(script, fixture, width, height);
+  check(script: string, fixture: string, width = 1600, height = 1000, options: PanelOptions = {}) {
+    const operation = this.execute(script, fixture, width, height, options);
     this.operations.add(operation);
     void operation.catch(error => { this.failures.push(error); }).finally(() => this.operations.delete(operation));
     return operation;
   }
-  private async execute(script: string, fixture: string, width: number, height: number) {
+  private async execute(script: string, fixture: string, width: number, height: number, options: PanelOptions) {
     const started = performance.now();
     const timings: Record<string, unknown> = { event: 'case', test: this.info.title, workerIndex: this.worker.workerIndex, chromePid: this.worker.chromePid, width, height };
     const directory = mkdtempSync(join(process.env.CLAPGRID_PLAYWRIGHT_RESOURCE_ROOT!, 'case-'));
     record({ event: 'case-start', test: this.info.title, directory, workerIndex: this.worker.workerIndex, chromePid: this.worker.chromePid });
     timings.directory = directory;
-    let context: BrowserContext | undefined;
+    let context: BrowserContext | undefined, server: Server | undefined;
     try {
       let stage = performance.now();
       const bundle = await buildBrowserScript(directory, script, fixture);
@@ -119,6 +122,31 @@ class Panel {
       Object.assign(timings, { stylesMs: performance.now() - stage, stylesCacheHit: styles.cacheHit, stylesIdentity: styles.identity, stylesCacheLookupMs: styles.cacheLookupMs, stylesBuildMs: styles.buildMs, stylesCachePublishMs: styles.cachePublishMs, stylesCacheReason: styles.cacheReason, stylesCacheKey: styles.cacheKey ?? 'unverified' });
       if (this.abort.signal.aborted) throw Error('用例已取消');
       writeFileSync(join(directory, 'index.html'), '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="test.css"><div id="root"></div><pre id="result" data-state="pending"></pre><script src="test.js"></script></html>');
+      let pageUrl = pathToFileURL(join(directory, 'index.html')).href;
+      if (options.resources) {
+        server = createServer((request, response) => {
+          const resource = options.resources?.[request.url ?? ''];
+          if (resource) {
+            record({ event: 'media-request', test: this.info.title, directory, url: request.url });
+            response.setHeader('Content-Type', resource.type); response.setHeader('Accept-Ranges', 'bytes');
+            const range = /^bytes=(\d+)-(\d*)$/.exec(request.headers.range ?? '');
+            const start = range ? Number(range[1]) : 0;
+            const end = range?.[2] ? Math.min(Number(range[2]), resource.body.length - 1) : resource.body.length - 1;
+            if (range) { response.statusCode = 206; response.setHeader('Content-Range', `bytes ${start}-${end}/${resource.body.length}`); }
+            response.setHeader('Content-Length', end - start + 1); response.end(resource.body.subarray(start, end + 1)); return;
+          }
+          const file = ({ '/': 'index.html', '/test.js': 'test.js', '/test.css': 'test.css' } as Record<string, string>)[request.url ?? ''];
+          if (!file) { response.statusCode = 404; response.end(); return; }
+          response.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : 'text/html');
+          response.end(readFileSync(join(directory, file)));
+        });
+        await new Promise<void>((resolve, reject) => {
+          server!.once('error', reject);
+          server!.listen(0, '127.0.0.1', () => { server!.off('error', reject); resolve(); });
+        });
+        pageUrl = `http://127.0.0.1:${(server.address() as { port: number }).port}/`;
+        record({ event: 'media-server-start', test: this.info.title, directory, address: server.address() });
+      }
       stage = performance.now();
       context = await this.worker.browser.newContext({ viewport: null }); this.contexts.add(context);
       const page = await context.newPage();
@@ -128,7 +156,7 @@ class Panel {
       const { windowId } = await session.send('Browser.getWindowForTarget');
       await session.send('Browser.setWindowBounds', { windowId, bounds: { width, height } });
       await session.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
-      await session.send('Emulation.setEmulatedMedia', { features: [] });
+      await session.send('Emulation.setEmulatedMedia', { features: options.reducedMotion ? [{ name: 'prefers-reduced-motion', value: 'reduce' }] : [] });
       timings.nativeInputDispatchMs = 0;
       timings.nativeInputDispatchCount = 0;
       await page.exposeBinding('browserInput', async (_, options) => {
@@ -142,7 +170,7 @@ class Panel {
       page.on('crash', () => errors.push(Error('浏览器页面崩溃')));
       timings.contextMs = performance.now() - stage;
       stage = performance.now();
-      await page.goto(pathToFileURL(join(directory, 'index.html')).href, { waitUntil: 'load' });
+      await page.goto(pageUrl, { waitUntil: 'load' });
       timings.navigationMs = performance.now() - stage;
       const viewportStarted = performance.now();
       const metrics = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
@@ -167,10 +195,27 @@ class Panel {
       assert.match(result ?? '浏览器未返回结果', /data-state="passed"/, result);
     } finally {
       const stage = performance.now();
-      if (context) { await context.close(); this.contexts.delete(context); timings.contextClosed = true; }
-      await removeDirectory(directory);
-      Object.assign(timings, { cleanupMs: performance.now() - stage, totalMs: performance.now() - started });
-      record(timings);
+      const cleanupErrors: unknown[] = [];
+      try {
+        if (context) { await context.close(); this.contexts.delete(context); timings.contextClosed = true; }
+      } catch (error) { cleanupErrors.push(error); }
+      try {
+        if (server?.listening) {
+          server.closeAllConnections();
+          await new Promise<void>((resolve, reject) => server!.close(error => error ? reject(error) : resolve()));
+          timings.mediaServerClosed = true;
+          record({ event: 'media-server-stop', test: this.info.title, directory, serverClosed: true });
+        }
+      } catch (error) { cleanupErrors.push(error); }
+      finally {
+        try { await removeDirectory(directory); }
+        catch (error) { cleanupErrors.push(error); }
+        finally {
+          Object.assign(timings, { cleanupMs: performance.now() - stage, totalMs: performance.now() - started });
+          record(timings);
+        }
+      }
+      if (cleanupErrors.length) throw new AggregateError(cleanupErrors, '用例资源清理失败');
     }
   }
   async dispose() {

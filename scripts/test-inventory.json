@@ -10,7 +10,7 @@
     },
     {
       "file": "tests/audio-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -139,7 +139,7 @@
     },
     {
       "file": "tests/export-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -154,7 +154,7 @@
     },
     {
       "file": "tests/export-settings-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -229,7 +229,7 @@
     },
     {
       "file": "tests/media-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -742,7 +742,7 @@
     },
     {
       "file": "tests/video-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -750,7 +750,7 @@
     },
     {
       "file": "tests/video-preview-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -772,7 +772,7 @@
     },
     {
       "file": "tests/visual-note-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "ui-extended"
@@ -796,7 +796,7 @@
     },
     {
       "file": "tests/voice-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],

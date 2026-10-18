@@ -1,10 +1,8 @@
-import { test } from 'node:test';
+import { test } from './helpers/playwright-browser.js';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
 
 const script = String.raw`
 import { act } from 'react';
@@ -43,14 +41,15 @@ const action=async fn=>{await act(async()=>{await fn();await settle();});await s
 }catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
 `;
 for (const [width, height] of [[1200, 800], [780, 579], [420, 800], [420, 360]]) {
-  test(`缩略图实际播放与侧栏可达性（${width}×${height}）`, { timeout: 40000 }, async t => {
-    const directory = mkdtempSync(join(tmpdir(), 'clapgrid-video-94-'));
-    t.after(() => rmSync(directory, { recursive: true, force: true }));
+  test(`缩略图实际播放与侧栏可达性（${width}×${height}）`, async ({ panel }) => { test.setTimeout(40000);
+    const directory = mkdtempSync(join(process.env.CLAPGRID_PLAYWRIGHT_RESOURCE_ROOT!, 'media-'));
+    try {
     execFileSync('ffmpeg', ['-loglevel', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=160x90:r=10', '-t', '8', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', join(directory, 'clip.mp4')]);
     execFileSync('ffmpeg', ['-loglevel', 'error', '-i', join(directory, 'clip.mp4'), '-frames:v', '1', join(directory, 'thumb.png')]);
-    await checkInteractiveBrowser(t, script, fixture, width, height, { reducedMotion: width === 420, resources: {
+    await panel.check(script, fixture, width, height, { reducedMotion: width === 420, resources: {
       '/api/media/asset/thumbnail': { body: readFileSync(join(directory, 'thumb.png')), type: 'image/png' },
       '/api/media/asset/preview': { body: readFileSync(join(directory, 'clip.mp4')), type: 'video/mp4' },
     } });
+    } finally { rmSync(directory, { recursive: true, force: true }); }
   });
 }
