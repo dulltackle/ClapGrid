@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -6,11 +6,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// 保留原 Node 文件未显式设置的测试与清理无限时语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 const { failureFiles } = await import(new URL('../scripts/test-runner.mjs', import.meta.url).href);
 
 test('原生测试报告收齐不同文件及嵌套失败，不把父级汇总重复算作失败', t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-reporter-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   writeFileSync(join(root, 'a.test.mjs'), `import {test} from 'node:test'; test('父级',async t=>{await t.test('失败一',()=>{throw Error('first')})});`);
   writeFileSync(join(root, 'b.test.mjs'), `import {test} from 'node:test'; test('失败二',()=>{throw Error('second')});test('成功',()=>{});`);
   const report = join(root, 'result.json');
@@ -24,7 +27,7 @@ test('原生测试报告收齐不同文件及嵌套失败，不把父级汇总�
 
 test('失败复验使用新检出中的全部失败文件，拒绝丢失文件和越界路径', t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-failure-files-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, 'tests'));
   for (const file of ['a.test.ts', 'b.test.ts']) writeFileSync(join(root, 'tests', file), '');
   assert.deepEqual(failureFiles(root, [{ file: 'tests/a.test.ts' }, { file: 'tests/b.test.ts' }, { file: 'tests/a.test.ts' }]), ['tests/a.test.ts', 'tests/b.test.ts']);

@@ -66,7 +66,7 @@
     },
     {
       "file": "tests/check-source.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -321,7 +321,7 @@
     },
     {
       "file": "tests/playwright-runner.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -698,7 +698,7 @@
     },
     {
       "file": "tests/test-evidence.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -706,7 +706,7 @@
     },
     {
       "file": "tests/test-reporting.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -801,7 +801,7 @@
     },
     {
       "file": "tests/vitest-runner.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"

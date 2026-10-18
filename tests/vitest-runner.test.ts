@@ -1,4 +1,4 @@
-import { test, type TestContext } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync, spawn } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, cpSync, symlinkSync, readdirSync, utimesSync } from 'node:fs';
@@ -6,11 +6,15 @@ import { tmpdir } from 'node:os';
 import { setTimeout as delay } from 'node:timers/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { dependencyView } from './helpers/temporary-repository.js';
+
+// 保留原 Node 外层文件未显式设置的测试及清理无限时语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const project = fileURLToPath(new URL('../', import.meta.url));
 function repository(t: TestContext) {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-vitest-'));
-  t.after(() => {
+  t.onTestFinished(() => {
     if(process.env.CLAPGRID_VITEST_TEST_EVIDENCE){
       const archive=join(process.env.CLAPGRID_VITEST_TEST_EVIDENCE,root.split('/').at(-1)!);mkdirSync(archive,{recursive:true});
       for(const name of ['logs','scripts','tests','package.json','vitest.config.ts'])if(existsSync(join(root,name)))cpSync(join(root,name),join(archive,name),{recursive:true});
@@ -20,7 +24,7 @@ function repository(t: TestContext) {
   });
   mkdirSync(join(root, 'scripts')); mkdirSync(join(root, 'tests'));
   for (const name of readdirSync(join(project, 'scripts')).filter(name => name.endsWith('.mjs'))) cpSync(join(project, 'scripts', name), join(root, 'scripts', name));
-  symlinkSync(join(project, 'node_modules'), join(root, 'node_modules'));
+  dependencyView(root, join(project, 'node_modules'));
   writeFileSync(join(root, 'vitest.config.ts'), `export default {root:'.',test:{environment:'node',include:['tests/*.test.ts'],maxWorkers:1,fileParallelism:false,retry:0}};`);
   const files = [
     { file: 'tests/node.test.ts', executor: 'node', scopes: ['all', 'tooling', 'rows'] },
@@ -185,8 +189,8 @@ test('配置、setup 与用例加载前完成全部实际源码读取，异步�
 test('完整 fresh 边界后的受控子进程使用公共 API，未知 Node 选项仍沿原 CLI', t => {
   const {root,command,env}=repository(t);
   writeFileSync(join(root,'scripts/source-identity.json'),readFileSync(join(project,'scripts/source-identity.json')));
-  rmSync(join(root,'node_modules'));mkdirSync(join(root,'node_modules'));
-  for(const name of readdirSync(join(project,'node_modules')))if(name!=='vitest')symlinkSync(join(project,'node_modules',name),join(root,'node_modules',name),'dir');
+  rmSync(join(root,'node_modules'),{recursive:true});mkdirSync(join(root,'node_modules'));
+  for(const name of readdirSync(join(project,'node_modules')))if(!['vitest','.cache','.vite','.vite-temp','.vitest-cache'].includes(name))symlinkSync(join(project,'node_modules',name),join(root,'node_modules',name),'dir');
   const packageRoot=join(root,'node_modules/vitest'),cliUsed=join(root,'logs/cli-used');mkdirSync(packageRoot);
   writeFileSync(join(packageRoot,'package.json'),readFileSync(join(project,'node_modules/vitest/package.json')));
   symlinkSync(join(project,'node_modules/vitest/dist'),join(packageRoot,'dist'),'dir');
@@ -282,8 +286,8 @@ test('取消真实 Vitest worker 回收本次孙进程，另一工作树继续�
   const {root,sample,command,env}=repository(t);
   const other=mkdtempSync(join(tmpdir(),'clapgrid-vitest-other-'));
   execFileSync('git',['-C',root,'worktree','add','--quiet','--detach',other,'HEAD']);
-  symlinkSync(join(project,'node_modules'),join(other,'node_modules'));
-  t.after(()=>rmSync(other,{recursive:true,force:true}));
+  dependencyView(other, join(project,'node_modules'));
+  t.onTestFinished(()=>rmSync(other,{recursive:true,force:true}));
   const source=`import {test} from 'vitest';import {spawn} from 'node:child_process';import {writeFileSync} from 'node:fs';test('持有任务',{timeout:15000},async()=>{const child=spawn(process.execPath,['-e','setInterval(()=>require("node:fs").appendFileSync("logs/heartbeat","x"),20)'],{stdio:'ignore',detached:false});writeFileSync('logs/worker-child',String(child.pid));await new Promise(r=>setTimeout(r,14000));});`;
   writeFileSync(sample,source);writeFileSync(join(other,'tests/sample.test.ts'),source);
   const running=[root,other].map(cwd=>spawn(process.execPath,['scripts/check.mjs'],{cwd,env:{...env,CLAPGRID_TEST_REPORT:join(cwd,'logs/report.json')},stdio:'ignore'}));
@@ -370,7 +374,7 @@ const r=spawnSync('/usr/bin/git',process.argv.slice(2),{stdio:'inherit'});proces
   const child=spawn(process.execPath,['scripts/test-runner.mjs','--suite','logic'],{cwd:root,env:{...env,PATH:join(root,'logs/bin')+':'+process.env.PATH},stdio:'pipe'});
   let output='';child.stdout.on('data',chunk=>output+=chunk);child.stderr.on('data',chunk=>output+=chunk);
   const ended=new Promise<number|null>(done=>child.once('close',done));
-  t.after(async()=>{if(child.exitCode===null)child.kill('SIGTERM');await ended;});
+  t.onTestFinished(async()=>{if(child.exitCode===null)child.kill('SIGTERM');await ended;});
   const until=Date.now()+5000;while(!existsSync(marker)&&Date.now()<until)await delay(10);
   assert.ok(existsSync(marker),'应观察到实际源码读取');
   const pid=Number(readFileSync(marker,'utf8'));assert.ok(Number.isInteger(pid)&&pid>0);
