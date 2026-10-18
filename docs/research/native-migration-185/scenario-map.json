@@ -1,0 +1,406 @@
+{
+  "baselineCommit": "5db2f24afe5376f4c7259bdd1d3a1f829f429f8f",
+  "sourceSha256": "3d517bd665115806993de91c58c3da9049c984bf21c9fa301f023be5cee46bf1",
+  "originalCases": 39,
+  "addedCases": [
+    {
+      "file": "tests/check-watch.test.ts",
+      "name": "公共夹具恢复环境，收尾失败保留现场且不删除另一夹具",
+      "introducedBy": "#175 / 6a73bdc",
+      "role": "保留原新增回归，不替代39原场景"
+    }
+  ],
+  "mapping": [
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "watch夹具独立可写缓存且包仍只读共享",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "公共夹具隔离同名缓存，共享完整安装的软链接反例会外泄",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "#175增强共享完整安装软链接泄漏反例并改名；保留原隔离断言"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "默认日常命令单次退出，显式watch空闲仍持锁且停止后释放",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "默认日常命令单次退出，显式watch空闲仍持锁且停止后释放",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "历史材料事件与周期探测不触发watch，模板输入仍执行新轮",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "历史材料事件与周期探测不触发watch，模板输入仍执行新轮",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "watch默认不创建字节码cache，首冷执行后idle且真实外部依赖仍要求重启",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "watch默认不创建字节码cache，首冷执行后idle且真实外部依赖仍要求重启",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "默认字节码namespace内部真实导入的JS依赖变更必须要求重启",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "默认字节码namespace内部真实导入的JS依赖变更必须要求重启",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "默认字节码8hex形状的已解析真实依赖优先于产物白名单",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "默认字节码8hex形状的已解析真实依赖优先于产物白名单",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "默认字节码namespace内部unknown.cache仍作为依赖变化要求重启",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "默认字节码namespace内部unknown.cache仍作为依赖变化要求重启",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "默认字节码namespace内部nested/node_modules/foreign/index.js仍作为依赖变化要求重启",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "默认字节码namespace内部nested/node_modules/foreign/index.js仍作为依赖变化要求重启",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "watch跨进程嵌套工作树共享安装也保持自动cache关闭，不触发自身新轮",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "watch跨进程嵌套工作树共享安装也保持自动cache关闭，不触发自身新轮",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "执行中显式停止watch先回收真实worker、Chrome和目录再释放锁",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "执行中显式停止watch先回收真实worker、Chrome和目录再释放锁",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "watch拥有者被强杀保留锁，显式恢复回收Chrome；旧token不能取消后来会话",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "watch拥有者被强杀保留锁，显式恢复回收Chrome；旧token不能取消后来会话",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "上游真实检查取消覆盖watch及孙进程，不遗留两层工作树锁",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "上游真实检查取消覆盖watch及孙进程，不遗留两层工作树锁",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "取消round先收尾同拥有者登记的跨组孙进程，再写cancelled并释放锁",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "取消round先收尾同拥有者登记的跨组孙进程，再写cancelled并释放锁",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "父检查取消嵌套watch的真实Chrome，完整ancestor登记与profile均清理后释放锁",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "父检查取消嵌套watch的真实Chrome，完整ancestor登记与profile均清理后释放锁",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "watch空闲拒绝完整和UI检查，另一真实Git工作树仍能实际检查",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "watch空闲拒绝完整和UI检查，另一真实Git工作树仍能实际检查",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "真实Playwright worker骤死后watch先回收Chrome及profile，再idle保留失败且不重试",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "真实Playwright worker骤死后watch先回收Chrome及profile，再idle保留失败且不重试",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "watch的严格UI skip待办在新轮集中复验仍阻塞，实际raw使用父预分配复验nonce",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "watch的严格UI skip待办在新轮集中复验仍阻塞，实际raw使用父预分配复验nonce",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "首次失败原样进入待办，watch不会自动重试；新输入先集中复验再产生新证据",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "首次失败原样进入待办，watch不会自动重试；新输入先集中复验再产生新证据",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "单轮子入口退出零却缺少完成记录也必须失败并保存未知失败待办",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "单轮子入口退出零却缺少完成记录也必须失败并保存未知失败待办",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "相同源码事件也不能把上一轮通过记录重放成本轮执行证据",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "相同源码事件也不能把上一轮通过记录重放成本轮执行证据",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "真实集中复验采用拥有者nonce；非法或同context重复nonce在执行前拒绝",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "真实集中复验采用拥有者nonce；非法或同context重复nonce在执行前拒绝",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "通过摘要删掉主测试阶段不能以空遍历绕过本轮完整性校验",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "通过摘要删掉主测试阶段不能以空遍历绕过本轮完整性校验",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "父预期需要复验时，丢失阶段或重放旧复验raw都不能清待办",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "父预期需要复验时，丢失阶段或重放旧复验raw都不能清待办",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "负状态永远保留原待办，复验缺失截断或隐藏状态都不能清原范围",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "负状态永远保留原待办，复验缺失截断或隐藏状态都不能清原范围",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "复验通过后停止主阶段，cancelled轮仍恢复父捕获的原待办",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "复验通过后停止主阶段，cancelled轮仍恢复父捕获的原待办",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "连续negative轮次只补缺失完整失败记录，不倍增原范围或丢失不同位置和身份",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "连续negative轮次只补缺失完整失败记录，不倍增原范围或丢失不同位置和身份",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "原待办在嵌套完整check及cleanup异常窗口始终留盘，owner强杀恢复后普通复验仍可清单",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "原待办在嵌套完整check及cleanup异常窗口始终留盘，owner强杀恢复后普通复验仍可清单",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "父最终通过前失败清单被新未知待办替换，不能清掉新身份或原范围",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "父最终通过前失败清单被新未知待办替换，不能清掉新身份或原范围",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "watch保留标记核对当前拥有者，旧token非watch或别名拒绝，跨树不取得保留资格",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "watch保留标记核对当前拥有者，旧token非watch或别名拒绝，跨树不取得保留资格",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "主阶段失败仍核验全部claimedpassed raw，损坏链保留父捕获native与strict待办",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "主阶段失败仍核验全部claimedpassed raw，损坏链保留父捕获native与strict待办",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "普通完整check后续失败也重验已通过proof，未知来源要求实际重跑原普通测试",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "普通完整check后续失败也重验已通过proof，未知来源要求实际重跑原普通测试",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "单轮测试后准备步骤损坏原始报告也不能留下watch通过结论",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "单轮测试后准备步骤损坏原始报告也不能留下watch通过结论",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "模板与配置按单次规则扩大重跑，Vite临时输出无自循环；实际依赖恢复要求重启",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "模板与配置按单次规则扩大重跑，Vite临时输出无自循环；实际依赖恢复要求重启",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "真实scandir删除race只忽略范围外历史、无tracked输入的已忽略目录和Vite临时目录",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "真实scandir删除race只忽略范围外历史、无tracked输入的已忽略目录和Vite临时目录",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "嵌套依赖普通更新也要求重启，不被Git忽略规则吞掉或沿旧会话继续测试",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "嵌套依赖普通更新也要求重启，不被Git忽略规则吞掉或沿旧会话继续测试",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "watch每轮重新执行；运行中连续编辑使旧轮失效并只处理最新输入",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "watch每轮重新执行；运行中连续编辑使旧轮失效并只处理最新输入",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "运行中已观察到修改再恢复相同bytes，旧子记录通过仍被watch判失效并实际重跑",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "运行中已观察到修改再恢复相同bytes，旧子记录通过仍被watch判失效并实际重跑",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "watch两轮真实Chrome均实际执行，浏览器和目录逐轮隔离且idle前清理",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "watch两轮真实Chrome均实际执行，浏览器和目录逐轮隔离且idle前清理",
+      "newNesting": 0,
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/check-watch.test.ts",
+      "oldName": "watch沿单次清单分派拒绝零收集，不产生局部或完整通过证据",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/check-watch.test.ts",
+      "newName": "watch沿单次清单分派拒绝零收集，不产生局部或完整通过证据",
+      "newNesting": 0,
+      "executor": "vitest"
+    }
+  ]
+}

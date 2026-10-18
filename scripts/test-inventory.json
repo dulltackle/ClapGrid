@@ -74,7 +74,7 @@
     },
     {
       "file": "tests/check-watch.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling",
