@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test, type TestContext } from 'node:test';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, cpSync, rmSync, existsSync, readdirSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, cpSync, rmSync, existsSync, readdirSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -44,6 +44,17 @@ test('开发检查接受未提交内容，输出身份但不宣称正式验收',
   const before = sourceIdentity(root);
   writeFileSync(join(root, 'new-file'), 'changed');
   assert.notEqual(sourceIdentity(root).fingerprint, before.fingerprint);
+});
+
+test('Linux检查的已结束进程组通过原生接口确认，不依赖额外ps命令', { skip: process.platform !== 'linux' }, async t => {
+  const { root } = repository(t, 'process.exit(0)');
+  mkdirSync(join(root, 'bin'));
+  const ps = join(root, 'bin/ps');
+  writeFileSync(ps, '#!/bin/sh\necho unexpected-process-scan >&2\nexit 73\n'); chmodSync(ps, 0o755);
+  const result = spawnSync(process.execPath, ['scripts/check.mjs'], { cwd: root,
+    env: { ...process.env, NODE_TEST_CONTEXT: undefined, PATH: `${join(root, 'bin')}:${process.env.PATH}` }, encoding: 'utf8', timeout: 15000 });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(existsSync(join(root, 'logs/check-state/active')), false, '全部子进程已退出才释放运行锁');
 });
 
 test('检查进度及命令输出不混入原生测试器的 V8 stdout 通道', async t => {

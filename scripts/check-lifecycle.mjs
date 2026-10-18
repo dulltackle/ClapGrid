@@ -97,6 +97,12 @@ function groupAlive(group) {
   const current = birth(group.pid);
   if (current && current !== group.birth) return false;
   if (process.platform === 'win32') return !!current;
+  if (process.platform === 'linux') {
+    // 原生负 PGID 查询确认整组已不存在；组长退出不等于孙进程退出。
+    // 调用者已核对拥有者命名空间；未知错误仍拒绝清理。存活/僵尸组沿原完整扫描。
+    try { process.kill(-group.pid, 0); }
+    catch (error) { if (error.code === 'ESRCH') return false; throw error; }
+  }
   // 排除已退出但尚待父进程回收的僵尸；不能只检查组长是否仍在。
   const rows = execFileSync('ps', ['-A', '-o', 'pid=,pgid=,stat='], { encoding: 'utf8' });
   return rows.split('\n').some(row => {
