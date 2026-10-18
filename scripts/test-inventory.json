@@ -82,7 +82,7 @@
     },
     {
       "file": "tests/delete-confirm-focus.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -97,7 +97,7 @@
     },
     {
       "file": "tests/dialog-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -260,7 +260,7 @@
     },
     {
       "file": "tests/ordinary-add-focus-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -470,7 +470,7 @@
     },
     {
       "file": "tests/relative-insert-lifecycle-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -478,7 +478,7 @@
     },
     {
       "file": "tests/relative-insert-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -534,7 +534,7 @@
     },
     {
       "file": "tests/segment-details-focus-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -550,7 +550,7 @@
     },
     {
       "file": "tests/segment-focus-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],

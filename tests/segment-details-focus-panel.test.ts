@@ -1,8 +1,7 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
+
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
 
 const setup = String.raw`
 import { act } from 'react';
@@ -26,9 +25,8 @@ const poll = () => action(() => [...timers.values()].forEach(callback => callbac
 const mount = () => action(() => { state.status.snapshot.segments=[{id:'a',order:1,text:'片段 A',visualNote:'说明 A',video:null},{id:'b',order:2,text:'片段 B',visualNote:'说明 B',video:null},{id:'c',order:3,text:'片段 C',visualNote:'说明 C',video:null}]; createRoot(document.getElementById('root')).render(<App/>); });
 `;
 function page(name: string, body: string) {
-  test(name, {timeout: 40000}, t => {
-    assert.ok(chrome, '必须实际启动 Chrome 验证详情焦点');
-    return checkInteractiveBrowser(t, setup + `(async()=>{try { await mount(); ${body} document.getElementById('result').dataset.state='passed'; } catch(error) {document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=error.stack;} })();`, fixture, 1200, 800);
+  test(name, async ({ panel }) => { test.setTimeout(40000);
+    return panel.check(setup + `(async()=>{try { await mount(); ${body} document.getElementById('result').dataset.state='passed'; } catch(error) {document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=error.stack;} })();`, fixture, 1200, 800);
   });
 }
 page('详情取消表格导航保留原来源和原文案字段', String.raw`
