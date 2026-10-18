@@ -1,0 +1,621 @@
+{
+  "targets": {
+    "baseline": {
+      "normal": {
+        "samples": 2,
+        "noncachedInputMedian": 10543.0,
+        "durationMedian": 25.423656493999943,
+        "outputMedian": 533.0,
+        "modelCallsMedian": 1
+      },
+      "low-gain": {
+        "samples": 2,
+        "noncachedInputMedian": 11132.0,
+        "durationMedian": 22.38861966499985,
+        "outputMedian": 610.0,
+        "modelCallsMedian": 1
+      },
+      "interruption": {
+        "samples": 2,
+        "noncachedInputMedian": 10565.0,
+        "durationMedian": 19.914568743500013,
+        "outputMedian": 387.0,
+        "modelCallsMedian": 1
+      }
+    },
+    "model": {
+      "model": "gpt-6.1-sol",
+      "model_provider": null,
+      "model_reasoning_effort": "high"
+    },
+    "codexVersion": "codex-cli 0.163.0-alpha.10.2",
+    "targets": {
+      "noncachedInputRatioMax": 0.9,
+      "durationRatioMax": 1.2,
+      "outputRatioMax": 1.2,
+      "modelCallsRatioMax": 1
+    },
+    "conditions": "同一 Codex 默认模型/推理配置/宿主、三个固定场景、每场景原版/新版各两次、同一文档包的全核心协议覆盖；缓存单列；无用户等待。完整包测量不声称等于按需读取实际节省；小样本不外推整场任务。",
+    "rollout": "行为覆盖通过且重复达到目标才推广；其他保持试点。"
+  },
+  "samples": [
+    {
+      "variant": "baseline",
+      "scenario": "interruption",
+      "repeat": "1",
+      "returncode": 0,
+      "durationSeconds": 18.04713398900003,
+      "usage": [
+        {
+          "input_tokens": 23749,
+          "cached_input_tokens": 13184,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 394,
+          "reasoning_output_tokens": 174
+        }
+      ],
+      "modelCalls": null,
+      "tools": [],
+      "sourceFiles": [
+        "SKILL.md",
+        "task-discovery.md",
+        "resource-management.md",
+        "acceptance.md"
+      ],
+      "raw": "/home/forclaw/tmp/clapgrid-158-run/eval-baseline-interruption-1.jsonl",
+      "rawSha256": "67fca159847a69d78bb285fca98ba5a8665b47a82deef3987dab3ea913869556",
+      "promptSha256": "533a11bfadbbd29db0fbf2f21833e485d200963a5deb020394958e59124d9932",
+      "answer": "关系 API 503 使恢复发现不完整；旧完整快照、body 列表成功均不能替代本次完整查询。即使 43 已分配且依赖满足，也须通知并暂停其本地开发及全部实施者，停止新调度、协调者集成合并、验收写回和交接；仅继续查询恢复、只读调查与恢复证据保全。\n\n资源按注册表经原管理接口核对实际宿主。宿主原查询失败，本地 Python `returncode=0` 不能证明宿主操作成功、资源不存在、无人使用或清理完成；应记 `hostScope: unverified`、`activeUse: unknown`，保留资源。\n\n恢复后重新完成全部适用来源查询并保存快照，对比事项、关系和依赖，核对分支、提交、评审、验收证据、授权及实际写回状态，重算 frontier 后才恢复；仅补缺失操作。",
+      "metrics": {
+        "noncachedInput": 10565,
+        "cachedInput": 13184,
+        "output": 394,
+        "modelCalls": null,
+        "completedTurns": 1,
+        "executionSeconds": 18.04713398900003,
+        "waitingSeconds": 0,
+        "externalBlockSeconds": 0
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "interruption",
+      "repeat": "2",
+      "returncode": 0,
+      "durationSeconds": 21.782003497999995,
+      "usage": [
+        {
+          "input_tokens": 23749,
+          "cached_input_tokens": 13184,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 380,
+          "reasoning_output_tokens": 149
+        }
+      ],
+      "modelCalls": null,
+      "tools": [],
+      "sourceFiles": [
+        "SKILL.md",
+        "task-discovery.md",
+        "resource-management.md",
+        "acceptance.md"
+      ],
+      "raw": "/home/forclaw/tmp/clapgrid-158-run/eval-baseline-interruption-2.jsonl",
+      "rawSha256": "8bcb1e1e04ca745508f892a18d72f079c4db7e987d774e1178abb436ae6d7329",
+      "promptSha256": "533a11bfadbbd29db0fbf2f21833e485d200963a5deb020394958e59124d9932",
+      "answer": "应通知并暂停43的本地开发；虽已分配且原依赖满足，恢复查询不完整仍触发全局停止：暂停新调度、集成合并、验收写回和交付，仅继续查询恢复、只读调查及保存恢复证据。旧完整快照与成功的 body 列表不能替代失败的关系查询。\n\n资源应按注册表经原宿主接口核对，保存原始结果；宿主查询失败时记 `hostScope: unverified`、`activeUse: unknown`，保留资源。Python 的 `returncode=0` 不能证明宿主查询成功、资源空闲、已停止或已清理。\n\n恢复后应补齐所有适用来源及分页，保存新快照，与旧记录核对事项、关系、依赖、提交、评审、验收、写回及授权；完成资源核对，查询完整后再重算前沿、恢复调度。当前不能认定43可继续、已验收或整体完成。",
+      "metrics": {
+        "noncachedInput": 10565,
+        "cachedInput": 13184,
+        "output": 380,
+        "modelCalls": null,
+        "completedTurns": 1,
+        "executionSeconds": 21.782003497999995,
+        "waitingSeconds": 0,
+        "externalBlockSeconds": 0
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "low-gain",
+      "repeat": "1",
+      "returncode": 0,
+      "durationSeconds": 24.004083146000085,
+      "usage": [
+        {
+          "input_tokens": 23741,
+          "cached_input_tokens": 13184,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 744,
+          "reasoning_output_tokens": 516
+        }
+      ],
+      "modelCalls": null,
+      "tools": [],
+      "sourceFiles": [
+        "SKILL.md",
+        "task-discovery.md",
+        "resource-management.md",
+        "acceptance.md"
+      ],
+      "raw": "/home/forclaw/tmp/clapgrid-158-run/eval-baseline-low-gain-1.jsonl",
+      "rawSha256": "349dd0f3ba0a6cceef0fca99e8d30cdf63386d3540decd2457923a5cea6f4131",
+      "promptSha256": "2aaf7ef8ac0620f6623842a4598a737d6869797035ee7435c9ea88bcedca85ad",
+      "answer": "新 agent 先核对运行记录、资源、授权和完整票据集合；35 分钟计入累计耗时，交接不重置预算。文档未定时限，应核实既有预算，不能自行宣称耗尽。\n\n三次 100、98、97 秒不能证明达标、显著改善或已无优化空间。下一步提出有明确假设、时间上限和停止条件的实验，保持测量条件一致并记录证据；向用户集中说明继续投入、调整指标或范围、延期的取舍，未经确认不降低标准。\n\n性能条款仍未通过，不得勾选；用户认可不能替代原可执行条款的通过证据。功能结果也须匹配最终提交的正式验收证据。必要收尾包括保存工作与证据、记录阻塞、完成必要独立复审和正式检查；未全绿不关票、不宣称完整交付，PR 保持草稿，成功交付后再按条件清理。",
+      "metrics": {
+        "noncachedInput": 10557,
+        "cachedInput": 13184,
+        "output": 744,
+        "modelCalls": null,
+        "completedTurns": 1,
+        "executionSeconds": 24.004083146000085,
+        "waitingSeconds": 0,
+        "externalBlockSeconds": 0
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "low-gain",
+      "repeat": "2",
+      "returncode": 0,
+      "durationSeconds": 20.773156183999617,
+      "usage": [
+        {
+          "input_tokens": 24891,
+          "cached_input_tokens": 13184,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 476,
+          "reasoning_output_tokens": 248
+        }
+      ],
+      "modelCalls": null,
+      "tools": [],
+      "sourceFiles": [
+        "SKILL.md",
+        "task-discovery.md",
+        "resource-management.md",
+        "acceptance.md"
+      ],
+      "raw": "/home/forclaw/tmp/clapgrid-158-run/eval-baseline-low-gain-2.jsonl",
+      "rawSha256": "e987ff5ea1703994e351870a27180c54060290c71990367ef1ac943b03a52e19",
+      "promptSha256": "2aaf7ef8ac0620f6623842a4598a737d6869797035ee7435c9ea88bcedca85ad",
+      "answer": "新 agent 应核对运行记录、资源和任务发现，累计性能耗时仍为 35 分钟，不能因交接重置。文档未规定硬上限，不能认定预算已耗尽；应核实已有预算与授权。\n\n记录 100、98、97 秒，只能说明三次观测下降，不能认定稳定收益、优化耗尽或性能达标。下一轮围绕可验证瓶颈假设，明确耗时预算和停止条件，保持完整入口、源码范围、模型、环境及冷热条件一致，单变量对照。\n\n由用户决定追加投入、暂停或明确修改性能要求；用户确认不能替代可执行条款的通过证据。\n\n功能通过仍须核对最终提交的正式证据。必要收尾包括独立复审、固定提交验收、记录与写回已获证据。性能条款保持未勾选，相关票据及 spec 未完成，PR 保持草稿；成功交付后再按条件清理。",
+      "metrics": {
+        "noncachedInput": 11707,
+        "cachedInput": 13184,
+        "output": 476,
+        "modelCalls": null,
+        "completedTurns": 1,
+        "executionSeconds": 20.773156183999617,
+        "waitingSeconds": 0,
+        "externalBlockSeconds": 0
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "normal",
+      "repeat": "1",
+      "returncode": 0,
+      "durationSeconds": 21.23421409299999,
+      "usage": [
+        {
+          "input_tokens": 23727,
+          "cached_input_tokens": 13184,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 599,
+          "reasoning_output_tokens": 389
+        }
+      ],
+      "modelCalls": null,
+      "tools": [],
+      "sourceFiles": [
+        "SKILL.md",
+        "task-discovery.md",
+        "resource-management.md",
+        "acceptance.md"
+      ],
+      "raw": "/home/forclaw/tmp/clapgrid-158-run/eval-baseline-normal-1.jsonl",
+      "rawSha256": "13adb1c0554f4e9d110e05afb9652138431f768a207d398ea0e8db50fd475cd7",
+      "promptSha256": "8b16c2e1a8437744637004952e316f223356349dd14cf09a2b1af3ac02b7b61e",
+      "answer": "下一步：复核完整任务发现及逐票当前验收标准；独立只读审查者按 OCR 全量清单核对累计覆盖，复用匹配的审查证据，补查跨票交互与缺口。\n\n若 abc 是最终交付提交，正式验收覆盖当前标准、完整检查范围及相同环境且仍有效，则复用，仅补缺失或失效检查。若审查导致代码修复，须对新提交补审并取得完整正式检查证据。\n\n写回前重读，仅修改匹配的验收框并评论；此类远端写回不使 abc 证据失效。全部验收及写回成功后，确认最新任务集，推送成功再按配置将 PR 转为待审或直接关闭。\n\n现有信息不能证明最终审查、发现、写回、推送、关闭或交付已完成；本次不执行动作。",
+      "metrics": {
+        "noncachedInput": 10543,
+        "cachedInput": 13184,
+        "output": 599,
+        "modelCalls": null,
+        "completedTurns": 1,
+        "executionSeconds": 21.23421409299999,
+        "waitingSeconds": 0,
+        "externalBlockSeconds": 0
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "normal",
+      "repeat": "2",
+      "returncode": 0,
+      "durationSeconds": 29.613098894999894,
+      "usage": [
+        {
+          "input_tokens": 23727,
+          "cached_input_tokens": 13184,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 467,
+          "reasoning_output_tokens": 222
+        }
+      ],
+      "modelCalls": null,
+      "tools": [],
+      "sourceFiles": [
+        "SKILL.md",
+        "task-discovery.md",
+        "resource-management.md",
+        "acceptance.md"
+      ],
+      "raw": "/home/forclaw/tmp/clapgrid-158-run/eval-baseline-normal-2.jsonl",
+      "rawSha256": "ee204b3eb32fbbd90a1216e9af149e11d0c6e0c624c56df34adc5a9784477e94",
+      "promptSha256": "8b16c2e1a8437744637004952e316f223356349dd14cf09a2b1af3ac02b7b61e",
+      "answer": "下一步：完成最新票据发现与核对，独立审查基线至集成提交的完整差异；逐项匹配既有审查覆盖，补审跨票据交互及缺口。\n\n若正式验收 abc 的记录匹配锁定交付提交、当前条款、检查范围及环境，且满足时效要求，可直接复用；不因进入写回或交付阶段重跑。若审查产生代码修复，则须验证新提交。\n\n写回前重读票据，仅修改验收区精确匹配且已获证据的勾选框，并补充评论；这类远端写入不使原验收失效。任一写入失败即暂停后续写入与交付。\n\n全部条款、审查及写回满足后，交付前再次发现核对，按配置先推送，再将 PR 转为待审或直接关闭。仅凭“功能已实现、abc 已通过”不能认定写回成功、已推送、已关闭或完整交付；本次未执行任何动作。",
+      "metrics": {
+        "noncachedInput": 10543,
+        "cachedInput": 13184,
+        "output": 467,
+        "modelCalls": null,
+        "completedTurns": 1,
+        "executionSeconds": 29.613098894999894,
+        "waitingSeconds": 0,
+        "externalBlockSeconds": 0
+      }
+    },
+    {
+      "variant": "candidate",
+      "scenario": "interruption",
+      "repeat": "3",
+      "returncode": 0,
+      "durationSeconds": 16.073871359000805,
+      "usage": [
+        {
+          "input_tokens": 27245,
+          "cached_input_tokens": 13184,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 362,
+          "reasoning_output_tokens": 153
+        }
+      ],
+      "modelCalls": null,
+      "tools": [],
+      "sourceFiles": [
+        "SKILL.md",
+        "task-discovery.md",
+        "resource-management.md",
+        "acceptance.md",
+        "collaboration.md",
+        "run-record.md",
+        "implementation.md",
+        "integration-review.md",
+        "evidence-plan.md",
+        "maintenance.md"
+      ],
+      "raw": "/home/forclaw/tmp/clapgrid-158-run/eval-candidate-interruption-3.jsonl",
+      "rawSha256": "b4467d76cea40aca5e560fc748070b15b59c2594bd7ee44a36901e2dde1fdb3b",
+      "promptSha256": "38cda996ca926c936bd3f9c9ee0a4b83d5d09c3f4faa7fc44b97ea2ae7b2d625",
+      "answer": "43 已分配且依赖满足，可继续原快照范围内的本地开发、测试；暂停新调度、集成、验收写回及交付。保存关系 API 503 的来源、时间、范围和原始结果；body 列表成功不足以证明完整发现，也不能认定关系功能不受支持。\n\n恢复先核对运行记录、资源登记表及原管理接口。宿主查询失败应记 hostScope:unverified、activeUse:unknown，保留资源、句柄及证据，不重复启动或清理。Python returncode=0 仅证明本地子进程退出，不能认定宿主会话、后代或正式任务结束。\n\n恢复三类来源的完整分页查询，对比事项增删、条款、关系及依赖，逐项再评估受影响工作后解除门禁；写回前重读条款，交付前再次完整核对。",
+      "metrics": {
+        "noncachedInput": 14061,
+        "cachedInput": 13184,
+        "output": 362,
+        "modelCalls": null,
+        "completedTurns": 1,
+        "executionSeconds": 16.073871359000805,
+        "waitingSeconds": 0,
+        "externalBlockSeconds": 0
+      }
+    },
+    {
+      "variant": "candidate",
+      "scenario": "interruption",
+      "repeat": "4",
+      "returncode": 0,
+      "durationSeconds": 15.767593159999706,
+      "usage": [
+        {
+          "input_tokens": 26111,
+          "cached_input_tokens": 13184,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 340,
+          "reasoning_output_tokens": 112
+        }
+      ],
+      "modelCalls": null,
+      "tools": [],
+      "sourceFiles": [
+        "SKILL.md",
+        "task-discovery.md",
+        "resource-management.md",
+        "acceptance.md",
+        "collaboration.md",
+        "run-record.md",
+        "implementation.md",
+        "integration-review.md",
+        "evidence-plan.md",
+        "maintenance.md"
+      ],
+      "raw": "/home/forclaw/tmp/clapgrid-158-run/eval-candidate-interruption-4.jsonl",
+      "rawSha256": "2aa014258b3c5c3643c0b95dae08c445138351524a682167e253ab8378cb2a76",
+      "promptSha256": "dd11bba3e3a40f2b2e5105b1a158a9536413e92cf0f6b6c03a11cabb6e7061ad",
+      "answer": "43 可按原完整快照继续已分配且依赖满足的本地开发、测试；暂停新调度、集成、验收写回及交付。保存关系 API 503 的来源、时间、范围和原结果；body 列表成功不能证明完整发现，503 也不代表不支持关系查询。\n\n恢复时先对照 run.json、登记表和原创建证据，经原宿主接口核对资源；查询失败则记 hostScope:unverified、activeUse:unknown，保留资源，不重复启动或清理。Python returncode=0 仅证明本地子进程结束，不能认定宿主会话、后代或正式任务结束。\n\n恢复全来源完整分页查询，比较事项增删、条款、关系及依赖，逐项再评估受影响工作后恢复推进；交付前再次完整核对，凭匹配证据验收并核实写回。当前不能认定验收、写回、交付或清理成功。",
+      "metrics": {
+        "noncachedInput": 12927,
+        "cachedInput": 13184,
+        "output": 340,
+        "modelCalls": null,
+        "completedTurns": 1,
+        "executionSeconds": 15.767593159999706,
+        "waitingSeconds": 0,
+        "externalBlockSeconds": 0
+      }
+    },
+    {
+      "variant": "candidate",
+      "scenario": "low-gain",
+      "repeat": "3",
+      "returncode": 0,
+      "durationSeconds": 23.134007804000248,
+      "usage": [
+        {
+          "input_tokens": 26087,
+          "cached_input_tokens": 13184,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 636,
+          "reasoning_output_tokens": 433
+        }
+      ],
+      "modelCalls": null,
+      "tools": [],
+      "sourceFiles": [
+        "SKILL.md",
+        "task-discovery.md",
+        "resource-management.md",
+        "acceptance.md",
+        "collaboration.md",
+        "run-record.md",
+        "implementation.md",
+        "integration-review.md",
+        "evidence-plan.md",
+        "maintenance.md"
+      ],
+      "raw": "/home/forclaw/tmp/clapgrid-158-run/eval-candidate-low-gain-3.jsonl",
+      "rawSha256": "05df5d08a374967aeb126b88ebbf3a3a7f476d7f9547ba4e814e05dbb00da035",
+      "promptSha256": "70386b22f4bdb0d183e74ac3e314a357a8c16c1e9486a8b6e87eef3d10e1ccc2",
+      "answer": "新 agent 应承接原 phaseId、预算和证据，先核对原状态、测量来源、并发条件及活动检查。已用35分钟不重置，默认余10分钟，补报30分钟检查点。\n\n确认可比后，两轮改善为2%、约1.02%，累计3%，已触发低收益停止条件，应立即停止新增实验。报告收益、条款差距和继续投入理由，请用户选择明确追加多少分钟或分期；未答保持待决，不视为同意。\n\n必要修复、审查和独立工作继续；原拥有者收尾活动检查后交接，完成独立集成审查，并为固定提交补齐有效正式验收证据。\n\n性能条款保持未勾选。功能通过、换人或分期均不代表性能达标，不能认定全部验收、完整交付或清理完成。",
+      "metrics": {
+        "noncachedInput": 12903,
+        "cachedInput": 13184,
+        "output": 636,
+        "modelCalls": null,
+        "completedTurns": 1,
+        "executionSeconds": 23.134007804000248,
+        "waitingSeconds": 0,
+        "externalBlockSeconds": 0
+      }
+    },
+    {
+      "variant": "candidate",
+      "scenario": "low-gain",
+      "repeat": "4",
+      "returncode": 0,
+      "durationSeconds": 17.658548714999597,
+      "usage": [
+        {
+          "input_tokens": 26103,
+          "cached_input_tokens": 13184,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 459,
+          "reasoning_output_tokens": 244
+        }
+      ],
+      "modelCalls": null,
+      "tools": [],
+      "sourceFiles": [
+        "SKILL.md",
+        "task-discovery.md",
+        "resource-management.md",
+        "acceptance.md",
+        "collaboration.md",
+        "run-record.md",
+        "implementation.md",
+        "integration-review.md",
+        "evidence-plan.md",
+        "maintenance.md"
+      ],
+      "raw": "/home/forclaw/tmp/clapgrid-158-run/eval-candidate-low-gain-4.jsonl",
+      "rawSha256": "cf9eb0835c3dda9903e2347244d1233aac444f415c3aec10214c53d23540d935",
+      "promptSha256": "46083af8ebdc7d6ca101ab08c2ca22cfa46a70f18cef4a65b064f802c1343e2a",
+      "answer": "新 agent 先核对原 phaseId、预算状态、测量来源及交接包；35 分钟计入共享 45 分钟预算，换人不重置，补报 30 分钟检查点。\n\n核实并发条件也一致后，两轮改善为 2%、约 1.02%，均低于 5%，立即停止新增实验，不能因尚余 10 分钟继续。若并发条件未核实，不能认定连续低收益。\n\n报告累计改善 3%、性能差距及继续理由，请用户明确选择延长多少分钟或分期；等待期间记录暂停，未答保持待决。\n\n必要修复、审查及独立工作继续；原拥有者须收尾并确认活动检查，再交接。最终固定提交，补齐有效正式验收证据。功能通过不能替代性能达标；性能条款保持未勾选、事项开放，不能宣称全部交付或关闭。",
+      "metrics": {
+        "noncachedInput": 12919,
+        "cachedInput": 13184,
+        "output": 459,
+        "modelCalls": null,
+        "completedTurns": 1,
+        "executionSeconds": 17.658548714999597,
+        "waitingSeconds": 0,
+        "externalBlockSeconds": 0
+      }
+    },
+    {
+      "variant": "candidate",
+      "scenario": "normal",
+      "repeat": "3",
+      "returncode": 0,
+      "durationSeconds": 18.42259569199996,
+      "usage": [
+        {
+          "input_tokens": 26073,
+          "cached_input_tokens": 7168,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 417,
+          "reasoning_output_tokens": 196
+        }
+      ],
+      "modelCalls": null,
+      "tools": [],
+      "sourceFiles": [
+        "SKILL.md",
+        "task-discovery.md",
+        "resource-management.md",
+        "acceptance.md",
+        "collaboration.md",
+        "run-record.md",
+        "implementation.md",
+        "integration-review.md",
+        "evidence-plan.md",
+        "maintenance.md"
+      ],
+      "raw": "/home/forclaw/tmp/clapgrid-158-run/eval-candidate-normal-3.jsonl",
+      "rawSha256": "3b8d6e79ed160cd4ef7a278e340a0c081b0123fe0478fffbf2de54393e848526",
+      "promptSha256": "53fdbf9dbdd25992de288aa70a289efce205fa74eda79b1a56c9ff6894814150",
+      "answer": "下一步：完整发现并核对父规格及全部事项、当前条款；由新上下文的独立 reviewer 对齐 OCR 全范围清单，复用差异、要求、规则仍匹配的审查，补审跨事项交互和缺口。\n\n固定最终提交；若 abc 正式验收确实对应该提交、当前条款、检查范围及有效环境，复用原报告，无须因阶段切换重跑。若修复产生新提交，补齐新提交的正式检查和受影响审查。\n\n写回前逐项重读，仅勾选 earned 条款并评论，核对实际成功；远端仅改验收框和评论不使测试失效。交付前再完整核对，全部条件满足才按 PR／直接交付流程推进。\n\n仅凭 abc 通过，不能认定审查完整、全部条款 earned、写回成功或已交付、关闭、清理；本场景未执行任何动作。",
+      "metrics": {
+        "noncachedInput": 18905,
+        "cachedInput": 7168,
+        "output": 417,
+        "modelCalls": null,
+        "completedTurns": 1,
+        "executionSeconds": 18.42259569199996,
+        "waitingSeconds": 0,
+        "externalBlockSeconds": 0
+      }
+    },
+    {
+      "variant": "candidate",
+      "scenario": "normal",
+      "repeat": "4",
+      "returncode": 0,
+      "durationSeconds": 18.421251472999757,
+      "usage": [
+        {
+          "input_tokens": 26089,
+          "cached_input_tokens": 15872,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 462,
+          "reasoning_output_tokens": 241
+        }
+      ],
+      "modelCalls": null,
+      "tools": [],
+      "sourceFiles": [
+        "SKILL.md",
+        "task-discovery.md",
+        "resource-management.md",
+        "acceptance.md",
+        "collaboration.md",
+        "run-record.md",
+        "implementation.md",
+        "integration-review.md",
+        "evidence-plan.md",
+        "maintenance.md"
+      ],
+      "raw": "/home/forclaw/tmp/clapgrid-158-run/eval-candidate-normal-4.jsonl",
+      "rawSha256": "806eb1a8359145d75ab6df0a9d1252feb6f7e48afe02ed660ac17a6267844ab2",
+      "promptSha256": "d0f85a2fa1e9353f92a46b752226530d3200d4db95f8b743863c3cea2889f772",
+      "answer": "下一步先完整发现并核对父项、全部子项及当前条款；由新上下文的独立只读 reviewer 对齐 OCR 全范围清单，复用仍对应差异、要求和规则的覆盖，补审跨事项交互及缺口。\n\n若候选提交确为 abc，原正式验收匹配当前条款、检查范围、环境且未过期，则直接复用；阶段切换及远端验收框、评论写入不使证据失效。若修复产生新提交，须补齐新提交的正式检查与审查。\n\n写前逐项重读，仅精确勾选 earned 条款并记录来源，核对写入结果；失败则暂停后续写回和交付。交付前再次完整核对。全部门禁满足才可判定可交付；本场景不执行推送、ready 或关闭，也不能认定审查、写回、交付或清理已完成。",
+      "metrics": {
+        "noncachedInput": 10217,
+        "cachedInput": 15872,
+        "output": 462,
+        "modelCalls": null,
+        "completedTurns": 1,
+        "executionSeconds": 18.421251472999757,
+        "waitingSeconds": 0,
+        "externalBlockSeconds": 0
+      }
+    }
+  ],
+  "excludedPreliminarySamples": [
+    {
+      "path": "/home/forclaw/tmp/clapgrid-158-run/eval-candidate-interruption-1.summary.json",
+      "reason": "漏载新版拆分协议，不能作为同覆盖对照"
+    },
+    {
+      "path": "/home/forclaw/tmp/clapgrid-158-run/eval-candidate-interruption-2.summary.json",
+      "reason": "漏载新版拆分协议，不能作为同覆盖对照"
+    },
+    {
+      "path": "/home/forclaw/tmp/clapgrid-158-run/eval-candidate-low-gain-1.summary.json",
+      "reason": "漏载新版拆分协议，不能作为同覆盖对照"
+    },
+    {
+      "path": "/home/forclaw/tmp/clapgrid-158-run/eval-candidate-low-gain-2.summary.json",
+      "reason": "漏载新版拆分协议，不能作为同覆盖对照"
+    },
+    {
+      "path": "/home/forclaw/tmp/clapgrid-158-run/eval-candidate-normal-1.summary.json",
+      "reason": "漏载新版拆分协议，不能作为同覆盖对照"
+    },
+    {
+      "path": "/home/forclaw/tmp/clapgrid-158-run/eval-candidate-normal-2.summary.json",
+      "reason": "漏载新版拆分协议，不能作为同覆盖对照"
+    }
+  ],
+  "medians": {
+    "normal": {
+      "baseline": {
+        "noncachedInput": 10543.0,
+        "cachedInput": 13184.0,
+        "output": 533.0,
+        "completedTurns": 1.0,
+        "executionSeconds": 25.423656493999943
+      },
+      "candidate": {
+        "noncachedInput": 14561.0,
+        "cachedInput": 11520.0,
+        "output": 439.5,
+        "completedTurns": 1.0,
+        "executionSeconds": 18.421923582499858
+      }
+    },
+    "low-gain": {
+      "baseline": {
+        "noncachedInput": 11132.0,
+        "cachedInput": 13184.0,
+        "output": 610.0,
+        "completedTurns": 1.0,
+        "executionSeconds": 22.38861966499985
+      },
+      "candidate": {
+        "noncachedInput": 12911.0,
+        "cachedInput": 13184.0,
+        "output": 547.5,
+        "completedTurns": 1.0,
+        "executionSeconds": 20.396278259499923
+      }
+    },
+    "interruption": {
+      "baseline": {
+        "noncachedInput": 10565.0,
+        "cachedInput": 13184.0,
+        "output": 387.0,
+        "completedTurns": 1.0,
+        "executionSeconds": 19.914568743500013
+      },
+      "candidate": {
+        "noncachedInput": 13494.0,
+        "cachedInput": 13184.0,
+        "output": 351.0,
+        "completedTurns": 1.0,
+        "executionSeconds": 15.920732259500255
+      }
+    }
+  },
+  "rollout": "pilot",
+  "coverage": "新版3/4样本补齐 run-record/implementation/integration-review 及新协议；原版1/2包含原始完整主流程和原引用协议。按全文档包提供适用要求，模型不访问工具/expectations。",
+  "conclusion": "未证明模型成本下降，所有收益结论保留试点；新增协议功能不因成本样本而改变验收。",
+  "limitations": [
+    "缓存命中不受控，不能将非缓存差异单独归因于文档改动",
+    "服务端隐含上下文存在1150 token量级差异；Git捕获说明修复在新版测量间改变16 token，原提示及哈希全部保留",
+    "相同默认模型/推理配置/宿主，后台负载未控制，执行时长仅为观测",
+    "completedTurns是CLI完成轮数；实际服务端模型调用次数未独立暴露，modelCalls=null，不能把代理计数冒充实际调用数",
+    "完整核心协议包评估不证明真实按需阅读轨迹的节省；未重放历史长任务"
+  ]
+}

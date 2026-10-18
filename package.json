@@ -37,10 +37,12 @@
     "test:service": "node scripts/test-runner.mjs --suite service",
     "test:ui:core": "node scripts/test-runner.mjs --suite ui-core --concurrency 2",
     "check:related": "node scripts/check-related.mjs",
-    "check:related:watch": "node scripts/check-related.mjs --watch"
+    "check:related:watch": "node scripts/check-related.mjs --watch",
+    "test:environment": "node scripts/test-runner.mjs --suite environment"
   },
   "checkPreflight": [
     "typecheck",
+    "test:environment",
     "test:tooling",
     "test:rows"
   ],

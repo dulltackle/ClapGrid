@@ -211,7 +211,7 @@ export function validateExecution(root, report, plan, identity, { checkSource = 
 }
 
 export function stagePlan(root, name, env = {}) {
-  const suites = { test: 'all', 'test:tooling': 'tooling', 'test:rows': 'rows', 'test:failed': 'all' };
+  const suites = { test: 'all', 'test:tooling': 'tooling', 'test:environment': 'environment', 'test:rows': 'rows', 'test:failed': 'all' };
   if (!(name in suites)) return null;
   let files;
   if (name === 'test:failed') {

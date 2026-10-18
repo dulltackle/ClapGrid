@@ -1,0 +1,111 @@
+{
+  "source": "/home/forclaw/文档/implement-spec",
+  "backup": "/home/forclaw/tmp/clapgrid-158-run/baseline-skill",
+  "changes": [
+    {
+      "file": "resource-management.md",
+      "before": "3e481da436ce94b40612aa24b1ae040c786a9ce1d09e25e8dd54fc3df59b5bb6",
+      "after": "0c9aa3af2e34525caccf2b68d1f1b63b200eaa9de581846841bd4bb89b559b36"
+    },
+    {
+      "file": "maintenance.md",
+      "before": null,
+      "after": "077d7c7e7e54b68800ba452550d4156a63ea5fc41865fc9400200cb92c697718"
+    },
+    {
+      "file": "integration-review.md",
+      "before": null,
+      "after": "acb74e2c3c87a40412ce08ddbaf2a84abc62df4b75ac340423ecf94a5667472e"
+    },
+    {
+      "file": "acceptance.md",
+      "before": "e544849729f55741401019d8257d6d56e0295db43c4c3daf3bced8ce1e2a4417",
+      "after": "e3c26832a52fc7ef1798043a879928bb1c0c00a046365d4892f5ed3aed99555e"
+    },
+    {
+      "file": "collaboration.md",
+      "before": null,
+      "after": "0b84bd3bdb64ae64b54289e3b520b52565de42436a1a91e2100551486653ffd8"
+    },
+    {
+      "file": "task-discovery.md",
+      "before": "f42687b104f44193f95f8eb2c13a7d5cc376799d2b4531f0e5ac78010ae33371",
+      "after": "177807dc2e8b366499cb12f3881f3c0b6b7569d2c10780a43043fb4fe85af6ba"
+    },
+    {
+      "file": "run-record.md",
+      "before": null,
+      "after": "47684266143df7f81b6a7103a421b17c5d2c1997c4eec05e3fba2f169df8154d"
+    },
+    {
+      "file": "implementation.md",
+      "before": null,
+      "after": "a77760293da23976064b09527c8980db9bb1da68c1a987a923b16252f35ef12e"
+    },
+    {
+      "file": "GLOSSARY.md",
+      "before": "1cf9d57c2e1ca5d998feb885b5998755480129b6555b200e78951f54d479435e",
+      "after": "50c064c32136fecf14c377f367f44a03d6bbe5f6084a47f78f4205987a9dd399"
+    },
+    {
+      "file": "evidence-plan.md",
+      "before": null,
+      "after": "842047a1259c3818e9cf116c0e935bfd3fffd7c1cacc19ac706ae805a49e2d1d"
+    },
+    {
+      "file": "SKILL.md",
+      "before": "1d2a7e5b2369269210c1da044bb43234cc2901a7f6e8908633f93e9f2283cd98",
+      "after": "f7941d9713c4206bcea726b7c158b8cb42cfdd0b9e34ff71f2fafb7a5b1d8240"
+    },
+    {
+      "file": "scripts/resources.py",
+      "before": "f48413e28665c2bfb27695907ec4ca9df1afd4b581d646700c5b4a792c19670b",
+      "after": "db308042debd218af802205a2ee3cee2fd350ed553bd5c258a9eccada191cd5c"
+    },
+    {
+      "file": "scripts/acceptance_evidence.py",
+      "before": null,
+      "after": "a8610481e180a480cb039cdb551b0c3d97b70f5f1e16d483204cd3a380966177"
+    },
+    {
+      "file": "scripts/workflow.py",
+      "before": null,
+      "after": "87735d7f30e2f19b43df08c7f46ea5535355f50648300cfa5747aae6aec9b2a6"
+    },
+    {
+      "file": "evals/test_workflow.py",
+      "before": null,
+      "after": "0d6bfe64fd166fc4bd00987c7ae724a30364fa65e39e45f019cf44b1098c2d94"
+    },
+    {
+      "file": "evals/test_resources.py",
+      "before": "745a6b1e8c8631a55c9a66c9eee6951dbe94fe7f0c3d262af17f12ac82bdf4bb",
+      "after": "bb8e12cf102bf507203a49515be880cb69c63f73a402c331dd2ab2a061c78231"
+    },
+    {
+      "file": "evals/test_evidence.py",
+      "before": null,
+      "after": "1f235f80ff8fc264c1e796afc082f5a0fdc2c48aa10abd11c361aa6af323b418"
+    },
+    {
+      "file": "evals/expectations.md",
+      "before": "b09b4928e4d28438fb03c280176b81d66e8418867698a1ac3921dd78fb01964b",
+      "after": "ec09c9dcd441f1e85a1f2944967d910ab1be8f1acfec2f71c9da3a8d8dfedf4d"
+    },
+    {
+      "file": "evals/scenarios.md",
+      "before": "132b508272eaf105df031fa554c8feab3af6f1a42e8db18a1c51cb2ed4b64dfc",
+      "after": "01ef826247135391e46e592dc9b9b025360167bd10b48975076a5c2b69bf2446"
+    },
+    {
+      "file": "docs/design/agent-execution-efficiency.md",
+      "before": "19d03934df66de5e456c3bdb7d7b6bd912a8f37dea767f3eeb150b303c2840d8",
+      "after": "ae54e3eae48c352ae7001c377037675ab1000ed6be620cf9a663cdda1b90c353"
+    },
+    {
+      "file": "docs/adr/0001-execution-evidence-and-acceptance-boundaries.md",
+      "before": "9213ee9fb9c4638afabe64243f10822bb9b25fde2d77ed60c82c411c289738ad",
+      "after": "683aedca1951efd744ad2c78d81eb478cc35a7dbfcf4b2c0faad712daf5f6a46"
+    }
+  ]
+}

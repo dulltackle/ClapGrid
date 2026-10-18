@@ -59,7 +59,8 @@
       "executor": "node",
       "scopes": [
         "all",
-        "tooling"
+        "tooling",
+        "environment"
       ]
     },
     {
@@ -75,7 +76,8 @@
       "executor": "node",
       "scopes": [
         "all",
-        "tooling"
+        "tooling",
+        "environment"
       ]
     },
     {
@@ -734,7 +736,8 @@
       "executor": "node",
       "scopes": [
         "all",
-        "tooling"
+        "tooling",
+        "environment"
       ]
     },
     {

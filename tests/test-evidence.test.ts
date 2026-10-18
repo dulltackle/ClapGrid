@@ -247,6 +247,10 @@ test('同次真实预检按文件去重并累计完整证据，独立检查没�
   }
   const pkgPath = join(root, 'package.json');
   const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+  inventory.files[0].scopes.push('environment');
+  writeFileSync(join(root, 'scripts/test-inventory.json'), JSON.stringify(inventory));
+  pkg.checkPreflight.splice(1, 0, 'test:environment');
+  pkg.scripts['test:environment'] = 'node scripts/test-runner.mjs --suite environment';
   pkg.checkPreflight.push('test:rows');
   pkg.scripts['test:rows'] = 'node scripts/test-runner.mjs --suite rows';
   pkg.scripts.typecheck = `node -e "require('fs').appendFileSync('logs/observed.jsonl',JSON.stringify('typecheck')+'\\n')"`;
@@ -258,6 +262,8 @@ test('同次真实预检按文件去重并累计完整证据，独立检查没�
     for (const name of ['typecheck', 'tooling', 'rows', 'remaining']) assert.equal(observed.filter(item => item === name).length, round + 1, `${name} 每个完整检查只实际执行一次`);
     const dirs = readdirSync(join(root, 'logs/check')).sort();
     const summary = JSON.parse(readFileSync(join(root, 'logs/check', dirs.at(-1)!, 'summary.json'), 'utf8'));
+    assert.equal(summary.preflight.results[1].name, 'test:environment');
+    assert.equal(summary.preflight.results[2].execution, 'counted', 'tooling 引用 environment 的实际证据');
     assert.equal(summary.results[0].execution, 'counted');
     const report = JSON.parse(readFileSync(summary.results[1].testReport, 'utf8'));
     assert.equal(report.kind, 'test-cumulative');

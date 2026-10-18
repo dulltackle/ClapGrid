@@ -430,3 +430,40 @@ test('正式验收拒绝缺失提交以及安装过程中改变源码', async t 
   assert.equal(result.status, 'failed');
   assert.match(result.error, /依赖安装改变/);
 });
+
+test('CI 观察入口保留取消状态与受检目标，记录执行耗时及作业余量', t => {
+  const root = mkdtempSync(join(tmpdir(), 'clapgrid-ci-observation-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const result = spawnSync(process.execPath, [join(scripts, 'ci-observation.mjs'), '--output', join(root, 'timing.json'), '--timeout-minutes', '15', '--status', 'cancelled'], {
+    encoding: 'utf8', env: { ...process.env, CLAPGRID_CI_STARTED_AT: new Date(Date.now() - 2000).toISOString(), GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/pull/42/merge', GITHUB_SHA: 'merge-result', GITHUB_RUN_ID: '123', GITHUB_RUN_ATTEMPT: '2', GITHUB_STEP_SUMMARY: join(root, 'summary.md') },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const record = JSON.parse(readFileSync(join(root, 'timing.json'), 'utf8'));
+  assert.equal(record.status, 'cancelled'); assert.equal(record.passed, false);
+  assert.equal(record.target, 'merge-result'); assert.equal(record.attempt, '2');
+  assert.ok(record.durationSeconds >= 2 && record.durationSeconds < 10);
+  assert.ok(record.timeoutMarginSeconds < 899 && record.timeoutMarginSeconds > 890);
+  assert.match(readFileSync(join(root, 'summary.md'), 'utf8'), /cancelled/);
+});
+
+test('CI 自动替换按工作流事件引用分组，手动及旧提交重跑隔离', () => {
+  for (const filename of ['check.yml', 'process-trace.yml']) {
+    const yaml = readFileSync(new URL(`../.github/workflows/${filename}`, import.meta.url), 'utf8');
+    assert.match(yaml, /  push:\n  pull_request:\n  workflow_dispatch:/);
+    const groupLine = yaml.split('\n').find(line => line.startsWith('  group:'))!;
+    const expressions = [...groupLine.matchAll(/\$\{\{ (.*?) \}\}/g)].map(match => match[1]!);
+    const cancel = yaml.split('\n').find(line => line.startsWith('  cancel-in-progress:'))!.match(/\$\{\{ (.*?) \}\}/)![1]!;
+    // 在配置边界解释实际表达式的共同运算子子集，预期分组来自规格而非重写公式。
+    const evaluate = (expression: string, github: object) => Function('github', 'format', `return (${expression});`)(github, (pattern: string, ...args: unknown[]) => pattern.replace(/\{(\d+)\}/g, (_, index) => String(args[Number(index)])));
+    const base = { workflow: filename, event_name: 'push', ref: 'refs/heads/task', run_id: '10', run_attempt: '1' };
+    const group = (changes = {}) => expressions.map(expression => evaluate(expression, { ...base, ...changes })).join('-');
+    assert.equal(group(), group({ run_id: '11' }));
+    assert.notEqual(group(), group({ event_name: 'pull_request' }));
+    assert.notEqual(group(), group({ ref: 'refs/heads/other' }));
+    assert.notEqual(group(), group({ run_attempt: '2' }));
+    assert.notEqual(group({ event_name: 'workflow_dispatch' }), group({ event_name: 'workflow_dispatch', run_id: '11' }));
+    assert.equal(evaluate(cancel, base), true);
+    assert.equal(evaluate(cancel, { ...base, run_attempt: '2' }), false);
+    assert.equal(evaluate(cancel, { ...base, event_name: 'workflow_dispatch' }), false);
+  }
+});
