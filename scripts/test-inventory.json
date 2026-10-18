@@ -18,7 +18,7 @@
     },
     {
       "file": "tests/browser-build-cache.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -26,7 +26,7 @@
     },
     {
       "file": "tests/browser-startup.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -49,7 +49,7 @@
     },
     {
       "file": "tests/check-related.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -57,7 +57,7 @@
     },
     {
       "file": "tests/check-runner.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling",
@@ -257,7 +257,7 @@
     },
     {
       "file": "tests/node-compile-cache.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -729,7 +729,7 @@
     },
     {
       "file": "tests/ui-check-plan.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -737,7 +737,7 @@
     },
     {
       "file": "tests/ui-check-runner.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -745,7 +745,7 @@
     },
     {
       "file": "tests/verification-jobs.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling",

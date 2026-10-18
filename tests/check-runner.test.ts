@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
-import { test, type TestContext } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, cpSync, rmSync, existsSync, readdirSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
+
+// 原 Node 未显式设置测试/收尾时限；保留各真实命令及业务等待上限。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const scripts = fileURLToPath(new URL('../scripts/', import.meta.url));
 const runnerUrl = new URL('../scripts/check-runner.mjs', import.meta.url).href;
@@ -17,7 +20,7 @@ const { sourceIdentity } = await import(identityUrl);
 
 function repository(t: TestContext, task = "require('node:assert/strict').equal(require('node:fs').readFileSync('value','utf8'),'original')") {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-check-'));
-  t.after(() => {
+  t.onTestFinished(() => {
     if(process.env.CLAPGRID_RUNNER_TEST_EVIDENCE){const archive=join(process.env.CLAPGRID_RUNNER_TEST_EVIDENCE,root.split('/').at(-1)!);mkdirSync(archive,{recursive:true});for(const name of ['logs','scripts','package.json','parent.mjs','child.mjs'])if(existsSync(join(root,name)))cpSync(join(root,name),join(archive,name),{recursive:true});}
     rmSync(root, { recursive: true, force: true });
   });
@@ -58,6 +61,10 @@ test('Linux检查的已结束进程组通过原生接口确认，不依赖额外
 });
 
 test('检查进度及命令输出不混入原生测试器的 V8 stdout 通道', async t => {
+  vi.stubEnv('NODE_TEST_CONTEXT', 'child-v8');
+  t.onTestFinished(() => { vi.unstubAllEnvs(); });
+  // 输出通道在真实模块加载时绑定；用原源码的新原生实例观察Node父标记。
+  const { runCheck: runCheckInNodeContext } = await import(`${runnerUrl}?node-parent-context`);
   const { root } = repository(t, `require('node:assert/strict').equal(process.env.NODE_TEST_CONTEXT,undefined);console.log('命令中文输出');`);
   const raw: string[] = [];
   const write = process.stdout.write;
@@ -70,7 +77,7 @@ test('检查进度及命令输出不混入原生测试器的 V8 stdout 通道', 
     return (write as any).call(this, chunk, ...args);
   } as typeof write;
   let result;
-  try { result = await runCheck(root); }
+  try { result = await runCheckInNodeContext(root); }
   finally { process.stdout.write = write; }
   assert.deepEqual(raw, [], '进度与子命令输出必须走 stderr，stdout 只传原生测试事件');
   assert.equal(result.status, 'passed');
@@ -92,7 +99,7 @@ async function until(check: () => boolean, message: string) {
 }
 
 for(const wrapper of ['direct','npm'])test(`取消${wrapper}子检查先等待拥有者两秒收尾，再确认组退出且无子锁`,{skip:process.platform!=='linux'},async t=>{
-  const parent=repository(t),nested=repository(t);
+  const nested=repository(t),parent=repository(t);
   writeFileSync(join(nested.root,'child.mjs'),`import{withCheckRun}from'./scripts/check-lifecycle.mjs';import{writeFileSync}from'node:fs';import{setTimeout as delay}from'node:timers/promises';await withCheckRun(process.cwd(),'slow-owner',async context=>{const timer=setInterval(()=>{},1000);writeFileSync('logs/ready','ready');await new Promise(resolve=>context.signal.addEventListener('abort',resolve,{once:true}));clearInterval(timer);writeFileSync('logs/aborted','aborted');await delay(2000);writeFileSync('logs/owner-completed','completed');process.exitCode=130;});`);
   const pkg=JSON.parse(readFileSync(join(nested.root,'package.json'),'utf8'));pkg.scripts.owner='node child.mjs';writeFileSync(join(nested.root,'package.json'),JSON.stringify(pkg));
   mkdirSync(join(nested.root,'logs'),{recursive:true});mkdirSync(join(parent.root,'logs'),{recursive:true});
@@ -105,7 +112,7 @@ for(const wrapper of ['direct','npm'])test(`取消${wrapper}子检查先等待�
     await until(()=>existsSync(join(nested.root,'logs/ready')),'实际子owner应开始');owner=JSON.parse(readFileSync(join(nested.root,'logs/check-state/active/owner.json'),'utf8'));
     child.kill('SIGTERM');assert.equal(await closed,130);
     const observation={wrapper,owner,ownerCompleted:existsSync(join(nested.root,'logs/owner-completed')),active:existsSync(join(nested.root,'logs/check-state/active')),result:JSON.parse(readFileSync(join(parent.root,'logs/result.json'),'utf8'))};
-    writeFileSync(join(parent.root,'logs/cancel-observation.json'),JSON.stringify(observation,null,2));t.diagnostic(JSON.stringify(observation));
+    writeFileSync(join(parent.root,'logs/cancel-observation.json'),JSON.stringify(observation,null,2));await t.annotate(JSON.stringify(observation));
     assert.equal(observation.ownerCompleted,true,'父组不能在安全收尾期间SIGKILL已确认的子拥有者');assert.equal(observation.active,false);
   }finally{
     if(child.exitCode===null&&child.signalCode===null){child.kill('SIGTERM');await closed;}
@@ -114,7 +121,7 @@ for(const wrapper of ['direct','npm'])test(`取消${wrapper}子检查先等待�
 });
 
 test('合作取消拒绝把本组拥有者记录拼接到另一真实工作树的控制socket', { skip: process.platform !== 'linux' }, async t => {
-  const parent = repository(t), nested = repository(t), foreign = repository(t);
+  const foreign = repository(t), nested = repository(t), parent = repository(t);
   for (const r of [parent, nested, foreign]) mkdirSync(join(r.root, 'logs'), { recursive: true });
   const ownerScript = `import{withCheckRun}from'./scripts/check-lifecycle.mjs';import{writeFileSync}from'node:fs';await withCheckRun(process.cwd(),'bound-owner',async context=>{const timer=setInterval(()=>{},1000);writeFileSync('logs/ready','yes');await new Promise(resolve=>context.signal.addEventListener('abort',resolve,{once:true}));writeFileSync('logs/aborted','yes');clearInterval(timer);process.exitCode=130;});`;
   for (const r of [nested, foreign]) writeFileSync(join(r.root, 'owner.mjs'), ownerScript);
@@ -148,7 +155,7 @@ test('合作取消拒绝把本组拥有者记录拼接到另一真实工作树�
 });
 
 test('父命令仅回收实际登记组，不取消同cwd内独立拥有者或旧绑定的新任务', { skip: process.platform !== 'linux' }, async t => {
-  const parent = repository(t), foreign = repository(t);
+  const foreign = repository(t), parent = repository(t);
   for (const r of [parent, foreign]) mkdirSync(join(r.root, 'logs'), { recursive: true });
   writeFileSync(join(foreign.root, 'owner.mjs'), `import{withCheckRun}from'./scripts/check-lifecycle.mjs';import{writeFileSync}from'node:fs';await withCheckRun(process.cwd(),'independent',async context=>{const timer=setInterval(()=>{},1000);writeFileSync('logs/ready','yes');await new Promise(resolve=>context.signal.addEventListener('abort',resolve,{once:true}));writeFileSync('logs/aborted','yes');clearInterval(timer);process.exitCode=130;});`);
   writeFileSync(join(parent.root, 'parent.mjs'), `import{withCheckRun}from'./scripts/check-lifecycle.mjs';import{runLogged}from'./scripts/check-runner.mjs';await withCheckRun(process.cwd(),'parent',async context=>{await runLogged(process.execPath,['-e',"require('node:fs').writeFileSync('logs/command-ready','yes');setInterval(()=>{},1000)"],${JSON.stringify(foreign.root)},'logs/command.log',context);process.exitCode=context.signal.aborted?130:0;});`);
@@ -245,7 +252,7 @@ test('拥有者finally回收忽略TERM的已登记孙组期间继续处理SIGTER
   try{
     await until(()=>existsSync(join(r.root,'logs/work-returned')),'真实work应返回并进入finally组回收');await delay(150);
     owner=JSON.parse(readFileSync(join(r.root,'logs/check-state/active/owner.json'),'utf8'));child.kill('SIGTERM');const result=await closed;
-    const observation={result,owner,cancelObserved:existsSync(join(r.root,'logs/cancel-observed')),active:existsSync(join(r.root,'logs/check-state/active'))};writeFileSync(join(r.root,'logs/finally-observation.json'),JSON.stringify(observation,null,2));t.diagnostic(JSON.stringify(observation));
+    const observation={result,owner,cancelObserved:existsSync(join(r.root,'logs/cancel-observed')),active:existsSync(join(r.root,'logs/check-state/active'))};writeFileSync(join(r.root,'logs/finally-observation.json'),JSON.stringify(observation,null,2));await t.annotate(JSON.stringify(observation));
     assert.equal(observation.cancelObserved,true,'finally清理期间不能提前卸载SIGTERM处理器');assert.equal(result.signal,null);assert.equal(result.code,130);assert.equal(observation.active,false);
   }finally{
     if(child.exitCode===null&&child.signalCode===null){child.kill('SIGTERM');await closed;}
@@ -262,7 +269,7 @@ test('同工作树拒绝 check 与 verify 重复启动，不同目录独立；�
     await assert.rejects(runCheck(root), /已有检查/);
     await assert.rejects(verify(root, commit), /已有检查/);
     const other = mkdtempSync(join(tmpdir(), 'clapgrid-check-worktree-'));
-    t.after(() => rmSync(other, { recursive: true, force: true }));
+    t.onTestFinished(() => rmSync(other, { recursive: true, force: true }));
     execFileSync('git', ['-C', root, 'worktree', 'add', '--quiet', '--detach', other, commit]);
     writeFileSync(join(other, 'task.cjs'), 'process.exit(0)');
     assert.equal((await runCheck(other)).status, 'passed', '共享 Git 主目录的另一工作树仍可独立检查');
@@ -280,7 +287,15 @@ test('取消会停止仍存活的孙进程并留存 cancelled 记录，不启动
     fs.writeFileSync('grandchild',String(child.pid)); setInterval(()=>{},1000);`;
   const { root } = repository(t, task);
   const child = spawn(process.execPath, ['scripts/check.mjs'], { cwd: root, stdio: 'ignore' });
-  t.after(() => { try { child.kill('SIGKILL'); } catch {} });
+  const closed = new Promise(resolve => child.once('close', resolve));
+  t.onTestFinished(async () => {
+    if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+    await closed;
+    if (existsSync(join(root, 'logs/check-state/active'))) {
+      const { stopCheckRun } = await import(new URL('../scripts/check-lifecycle.mjs', import.meta.url).href);
+      await stopCheckRun(root);
+    }
+  });
   await until(() => existsSync(join(root, 'heartbeat')), '孙进程应启动');
   child.kill('SIGTERM');
   await new Promise(resolve => child.once('exit', resolve));
