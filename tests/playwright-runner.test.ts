@@ -74,7 +74,7 @@ test('固定核心单文件并发1或2与普通all默认保持原场景、有限
   for (const [label, args, expectedWorkers] of [
     ['core-c2', ['--suite', 'ui-core', '--files', JSON.stringify([file]), '--concurrency', '2'], 2],
     ['core-c1', ['--suite', 'ui-core', '--files', JSON.stringify([file]), '--concurrency', '1'], 1],
-    ['all-default', [], 1],
+    ['all-default', [], 2],
   ] as const) {
     const timings = join(root, `logs/${label}-timings.jsonl`), reportPath = join(root, `logs/${label}-report.json`);
     env.CLAPGRID_BROWSER_TIMINGS = timings; env.CLAPGRID_TEST_REPORT = reportPath;

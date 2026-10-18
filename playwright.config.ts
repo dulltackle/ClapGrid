@@ -11,7 +11,7 @@ export default defineConfig({
   testDir: resolve(root, 'tests'),
   testMatch: files.map(file => resolve(root, file)),
   fullyParallel: false,
-  workers: Number(process.env.CLAPGRID_TEST_CONCURRENCY ?? 1),
+  workers: Number(process.env.CLAPGRID_TEST_CONCURRENCY ?? 2),
   retries: 0,
   forbidOnly: true,
   timeout: 40000,

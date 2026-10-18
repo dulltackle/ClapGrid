@@ -33,7 +33,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const cancel = () => { cancelled = true; controller.abort(Error('测试执行已取消')); };
   process.on('SIGINT', cancel); process.on('SIGTERM', cancel);
   try {
-    const { values } = parseArgs({ options: { suite: { type: 'string', default: 'all' }, files: { type: 'string' }, concurrency: { type: 'string', default: '1' } } });
+    const { values } = parseArgs({ options: { suite: { type: 'string', default: 'all' }, files: { type: 'string' }, concurrency: { type: 'string', default: '2' } } });
     if (!['all', 'rows', 'tooling', 'environment', 'failed', 'logic', 'service', 'native-logic', 'native-service', 'native-ui', 'ui', 'ui-core', 'ui-extended', 'styles'].includes(values.suite)) throw Error('未知测试范围');
     if (!['1', '2'].includes(values.concurrency)) throw Error('--concurrency 仅支持 1 或 2');
     const root = resolve(import.meta.dirname, '..');

@@ -1,0 +1,253 @@
+{
+  "baselineCommit": "a7808d1307d0db9f7010b0d486edea3cf27c45a9",
+  "source": "同一未提交开发candidate，逐轮实际身份在原件，不冒充固定验收",
+  "playwright": {
+    "c1": {
+      "samplesSeconds": [
+        51.869301676997566,
+        52.25090238700068,
+        51.567663724999875
+      ],
+      "medianSeconds": 51.869301676997566
+    },
+    "c2": {
+      "samplesSeconds": [
+        30.127318172999367,
+        30.092424962000223,
+        30.214503191000404
+      ],
+      "medianSeconds": 30.127318172999367
+    },
+    "changePercent": -41.916861806605155
+  },
+  "vitest": {
+    "threads": {
+      "samplesSeconds": [
+        2.4575500799983274,
+        2.3822396249997837,
+        2.383867361000739
+      ],
+      "medianSeconds": 2.383867361000739
+    },
+    "forks": {
+      "samplesSeconds": [
+        2.3761648979998427,
+        2.3872650299999805,
+        2.374975443999574
+      ],
+      "medianSeconds": 2.3761648979998427
+    },
+    "projects-separated": {
+      "samplesSeconds": [
+        2.440364492002118,
+        2.354269237999688,
+        2.481951018999098
+      ],
+      "medianSeconds": 2.440364492002118
+    }
+  },
+  "choice": {
+    "playwrightWorkers": 2,
+    "vitestPool": "threads",
+    "vitestProjects": 1,
+    "vitestWorkers": 1,
+    "nodeConcurrency": 1
+  },
+  "conditions": {
+    "runnerCount": 1,
+    "runnerCpuCount": 16,
+    "bytecodeCache": "disabled",
+    "browserBuildCache": "disabled",
+    "vitestResultCache": false,
+    "vitestFsModuleCache": false,
+    "competingChecks": false,
+    "retries": 0,
+    "runnerPlatform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "memoryTotalKiB": "13637392"
+  },
+  "invalidAttempts": [
+    {
+      "source": "/home/forclaw/tmp/implement-161/scheduling-171/projects-1.native.json",
+      "reason": "首轮双project默认extends=true继承根include，实际12项重复；CLI0但严格集合验证失败，未计入比较。原配置与12项原生原件保留；修复外部临时extends:false/root include后独立三次6例。"
+    }
+  ],
+  "runnerMinutes": "每轮wall-clock秒数/60，单runner；详细samples含各轮计算值，不增加机器",
+  "limitations": [
+    "代表Playwright9项/Vitest6项，不证明全量CI收益",
+    "完整/固定/related/UI/复验/watch最终兼容与固定来源仍由#172实际验收"
+  ],
+  "rawSources": [
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/c1-1.json",
+      "sha256": "a701a6a5df0ff0dfa52394f11124e41ad06061e9c9b948e24a766efa829fb348"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/c1-1.timings.jsonl",
+      "sha256": "c0c614a341fd837646095b4e7fa3bf64fda31cce4a7fadc155c02ff2d486d954"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/c1-2.json",
+      "sha256": "cbc57d716a8732b5e0cfa09fec54573b0034864c0c23a4c05fa3813816e006cc"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/c1-2.timings.jsonl",
+      "sha256": "2757086663764132264393d2a5974fc9e3b81bd52eab52d479e9ab8fc0c5f3e9"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/c1-3.json",
+      "sha256": "215a2f1fb8d26449c4c7c39e783e22cf006c40e73861242708bead62d0c48b4c"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/c1-3.timings.jsonl",
+      "sha256": "1070eefc0a69573ca8598aba919b0ae18ebeb019c031dc37eac088dcc870a86f"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/c2-1.json",
+      "sha256": "10c31edc80a92172f6b7bb07b9d0beb45bc42d069247e1efbb10b7508b413866"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/c2-1.timings.jsonl",
+      "sha256": "944b19789afec173a338d227f4f61891f3b248dc5a358ccc8d9313dfa8835536"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/c2-2.json",
+      "sha256": "2d931a8c11ca5367e2f91d5fc086c8559bb2276d13c327c27e4da18b4f3f68c6"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/c2-2.timings.jsonl",
+      "sha256": "c2e0bdf1d10a0688a10122f247006f8aa988e12afd1bdc8c610c39f1338b9456"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/c2-3.json",
+      "sha256": "a28f7bd85a3ad13e93c85a224cbb616252793585bdbf77f484ca9146b7e21f6f"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/c2-3.timings.jsonl",
+      "sha256": "29595d2d664852a82ba3a67765b08dcd6a0f8ddded3905604f198af89bd372df"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/forks-1.log",
+      "sha256": "cc4a6cb01e027c41af2294d16e7e4a350b00e12d62239d3350166c28388191c5"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/forks-1.native.json",
+      "sha256": "24c167910978eaf9502e35f4a655202ed4f1356aab41d90664a6fdcac67a4760"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/forks-2.log",
+      "sha256": "184d133c51fcfbdc65b7495729fff715c59d649f88aca44af8add6cc2673512f"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/forks-2.native.json",
+      "sha256": "58dc2c424b2675a53b7addd4a05dd3194133024c8fd13f983d56850bc8f4c14c"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/forks-3.log",
+      "sha256": "8ecc4e900e0082eecd1dba6a96c7d8344a427cebfbb801761daa466cb69107ad"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/forks-3.native.json",
+      "sha256": "c1aeb3f62fa5022802a63de213371ef2ebffc6ade37e85900f6a9ee074cf5675"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/forks.config.mjs",
+      "sha256": "48afc9ccb0bd4884f9c5a9f915c7d7518a88a86b76026d29f05fe792f2dd56dd"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/projects-1.log",
+      "sha256": "bca305b010b873fd69258b23be7c2c05d28b5e0e203d7403b02a68733f59ac4d"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/projects-1.native.json",
+      "sha256": "91dad9b8dcf7c720b87474eae26dc230bafdd5a7339ba2f375c0746325054de0"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/projects-separated-1.log",
+      "sha256": "6b1164c5353c603d86b1ae4d93e600430811047a77b324cdba59b81bd582c9d3"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/projects-separated-1.native.json",
+      "sha256": "c38bb50f5fb5df67564dbb0b9c21307b87ca6cab217c7042be75150d3bf7eecc"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/projects-separated-2.log",
+      "sha256": "629ea24083803145782f1320f21fbb6f0fd06a08f8bc8fd52ea7daf79444dd6b"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/projects-separated-2.native.json",
+      "sha256": "272e9038826b0c6ca34f256469304851cbb76f6eaea5f989ff3fadc5c932a44f"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/projects-separated-3.log",
+      "sha256": "ee89f49afdd4ad58a8acfe730fb817a1d25b4a13c2b032920345d319b0ac0d98"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/projects-separated-3.native.json",
+      "sha256": "d03578a65b56afaad9d9458d8b15b17a6a868a6e95a7c6810641f2133a43dd6d"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/projects-separated.config.mjs",
+      "sha256": "fa3611b1e308c6f69e25bd17a3be3a1a090ffb39b3ed9d8b2f90d1bd864c058b"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/projects.config.mjs",
+      "sha256": "979b353953883d6d8e05a244d36a67b4883b6442f9b98cf34ecdfbee441c75e7"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/samples.json",
+      "sha256": "d51824673878e4040e36e34eb9390a5a8b83f255d937a1f0fd1f30a80482d40a"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/summary.json",
+      "sha256": "f5e9796749b3f6d6dd1f34b57cf53dedada377a7a14993256622d84a7ca01252"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/threads-1.log",
+      "sha256": "7b1861561d49bdf30fae02bdd5cd9748bd92f9ce470612400ef9f3110ef78a09"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/threads-1.native.json",
+      "sha256": "c446ed936a5195a75960c966033637188d17ee84e7edb9dc3d51df1ffa832221"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/threads-2.log",
+      "sha256": "2c444e4ef8646174952eefcc50d97ff258128177789cb31323d7b5132db23954"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/threads-2.native.json",
+      "sha256": "34eee5b63312af91cb96a37d1b9de9d9dca693e0f425f29f034da4a0bec775fb"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/threads-3.log",
+      "sha256": "4760866ec339ecbeaac0600aa0feb68d9c76b75d9488344d9bb2ed1f1fa5ecd9"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/threads-3.native.json",
+      "sha256": "f5c66509d7a26b69aa315aac4566233b1d7192d87a9c58e93edd9b636b01c936"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/threads.config.mjs",
+      "sha256": "5a022b02e7ef4a5c7aca6b1e73d367eabe81274fb223ed3b74f2a47c066dcb2e"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/vitest-projects-repaired-samples.json",
+      "sha256": "e546dc5ddad8b33e30b98c8bbdd32fcbb4a7ceaf4830119093df6b76cd0c260b"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/vitest-samples.json",
+      "sha256": "a0f04bb0741ab4147c1305d88a8d66c87a7b816c992c55d6545f2eee1f5c1161"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/measure.py",
+      "sha256": "3567100b4610fd321142caa629f3040f34a725a29f9b111d1a37455b3f09367c"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/measure-vitest.py",
+      "sha256": "bcf146281d920b264701d534c135a6652d86622d5ffe5b6b7d8cfa41cab35665"
+    },
+    {
+      "path": "/home/forclaw/tmp/implement-161/scheduling-171/measure-vitest-projects-repaired.py",
+      "sha256": "a8b55d55ec7fb2cef2441be59c5581f55b080b4135b92d24dca22d24d6b82c93"
+    }
+  ]
+}
