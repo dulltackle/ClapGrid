@@ -88,8 +88,12 @@ test('完整 fresh 边界后的受控子进程使用公共 API，未知 Node 选
   assert.equal(report.status,'passed');assert.equal(report.actual.cases.length,1);
   assert.equal(report.actual.cases[0].name,'候选场景');assert.ok(report.actual.cases[0].line>0&&report.actual.cases[0].column>0);
   assert.deepEqual(report.identityAfter,report.identity);
-  const official=JSON.parse(readFileSync(join(root,'logs/report-native.json.vitest.json'),'utf8'));
-  assert.equal(official.success,true);assert.equal(official.numTotalTests,1);assert.equal(official.numPassedTests,1);
+  const native=JSON.parse(readFileSync(report.sources.native.path,'utf8'));
+  assert.equal(native.executor.name,'vitest');assert.equal(native.executor.version,'5.0.5');
+  assert.equal(native.reason,'passed');assert.equal(native.expectedCases.length,1);assert.equal(native.cases.length,1);
+  assert.ok(native.cases[0].line>0&&native.cases[0].column>0);
+  assert.equal(existsSync(join(root,'logs/report-native.json.vitest.json')),false,'公开入口只加工一份包含收集与结果的原生生命周期报告');
+  assert.equal(report.sources.additional,undefined);
   env.NODE_OPTIONS='--no-warnings';
   const legacy=command('scripts/test-runner.mjs','--suite','logic');
   assert.notEqual(legacy.status,0,legacy.stdout+legacy.stderr);
@@ -276,4 +280,22 @@ test('NODE_OPTIONS 的项目钩子保守等待全部源码读取，不能借预�
   assert.ok(readFileSync(trace,'utf8').includes('loaded'));
   const report=JSON.parse(readFileSync(join(root,'logs/report.json'),'utf8'));
   assert.equal(report.status,'passed');assert.match(report.identity.environment.nodeOptions,/project-hook/);
+});
+
+
+for (const [name, mutation] of [
+  ['损坏报告', `writeFileSync(path, '{broken');`],
+  ['集合缺口', `native.cases.pop();writeFileSync(path,JSON.stringify(native));`],
+  ['错误执行身份', `native.executionId='another-execution';writeFileSync(path,JSON.stringify(native));`],
+  ['取消报告', `native.reason='interrupted';writeFileSync(path,JSON.stringify(native));`],
+] as const) test(`公开入口拒绝 Vitest ${name}，即使用例实际成功`, t => {
+  const {root,command}=repository(t);
+  cpSync(join(root,'scripts/vitest-reporter.mjs'),join(root,'scripts/vitest-reporter-original.mjs'));
+  writeFileSync(join(root,'scripts/vitest-reporter.mjs'), `import Base from './vitest-reporter-original.mjs';import{readFileSync,writeFileSync}from'node:fs';export default class Reporter extends Base{onTestRunEnd(...args){super.onTestRunEnd(...args);const path=process.env.CLAPGRID_VITEST_NATIVE_REPORT,native=JSON.parse(readFileSync(path,'utf8'));${mutation}}}`);
+  const result=command('scripts/test-runner.mjs','--suite','logic');
+  assert.notEqual(result.status,0,result.stdout+result.stderr);
+  if(existsSync(join(root,'logs/report.json'))){
+    const report=JSON.parse(readFileSync(join(root,'logs/report.json'),'utf8'));
+    assert.equal(report.status,'failed');assert.ok(report.validationError);
+  }else assert.match(result.stderr,/报告/);
 });
