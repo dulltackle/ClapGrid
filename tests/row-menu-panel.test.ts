@@ -1,8 +1,8 @@
-import { test } from 'node:test';
+import { test } from './helpers/playwright-browser.js';
 import assert from 'node:assert/strict';
-import { chrome } from './helpers/browser.js';
+
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
 const script = String.raw`
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -62,9 +62,9 @@ await input({click:'.segment-grid',button:'right'}); check(!menu(), '空白无�
 document.getElementById('result').dataset.state='passed';
 } catch(e) { document.getElementById('result').dataset.state='failed'; document.getElementById('result').textContent=e.stack; }})();
 `;
-for (const width of [1600, 420]) test(`行右键删除确认的真实输入与视口（${width}px）`, {timeout:40000}, t => {
-  assert.ok(chrome, '主题矩阵需要真实 Chrome，环境缺失不能记为通过');
-  return checkInteractiveBrowser(t,script,fixture,width);
+for (const width of [1600, 420]) test(`行右键删除确认的真实输入与视口（${width}px）`, async ({ panel }) => { test.setTimeout(40000);
+
+  return panel.check(script,fixture,width);
 });
 
 const raceScript = script.slice(0, script.indexOf('\n(async () =>')) + String.raw`
@@ -116,10 +116,10 @@ const raceFixture = fixture.replace(
   "if (change.kind === 'delete') state.status.snapshot.segments = state.status.snapshot.segments.filter(item => item.id !== change.expected.id);",
   "if (change.kind === 'delete') { const current = state.status.snapshot.segments.find(item => item.id === change.expected.id); if (JSON.stringify(current) === JSON.stringify(change.expected)) state.status.snapshot.segments = state.status.snapshot.segments.filter(item => item.id !== change.expected.id); }",
 ).replace("results: [] };", "results: batch.changes.map((change,index) => ({ index, outcome: index ? 'deleted' : 'changed', message: index ? '口播片段已删除，已跳过' : '口播片段内容已变化，已跳过' })) };");
-test('确认删除保持旧快照并反馈过时目标，动态任务锁及修改权阻止提交', {skip:chrome ? false:'需要 Chrome',timeout:40000}, t=>checkInteractiveBrowser(t,raceScript,raceFixture));
+test('确认删除保持旧快照并反馈过时目标，动态任务锁及修改权阻止提交', async ({ panel }) => { test.setTimeout(40000); await (panel.check(raceScript,raceFixture)); });
 
-test('动态锁禁用确认按钮时等待透明度过渡完成后核对主题', {timeout:40000}, t => {
-  assert.ok(chrome, '主题矩阵需要真实 Chrome，环境缺失不能记为通过');
+test('动态锁禁用确认按钮时等待透明度过渡完成后核对主题', async ({ panel }) => { test.setTimeout(40000);
+
   // 延长真实 CSS 过渡，稳定暴露固定等待在过渡中途读取透明度的问题。
   const slowTransitionScript = raceScript.replace(
     "for (const lock of ['task', 'speech', 'codex', 'user']) {",
@@ -129,7 +129,7 @@ getComputedStyle(confirm).opacity;
 for (const lock of ['task', 'speech', 'codex', 'user']) {`,
   );
   assert.notEqual(slowTransitionScript, raceScript, '回归场景必须实际延长过渡');
-  return checkInteractiveBrowser(t, slowTransitionScript, raceFixture);
+  return panel.check(slowTransitionScript, raceFixture);
 });
 
 const edgeScript = script.slice(0, script.indexOf('\n(async () =>')) + String.raw`
@@ -166,7 +166,7 @@ await window.browserInput({screenshot:'menu-edge-return'});
 document.getElementById('result').dataset.state='passed';
 } catch(e) { document.getElementById('result').dataset.state='failed'; document.getElementById('result').textContent=e.stack; }})();
 `;
-for (const width of [1600,420]) test(`行菜单边缘定位、全部导航键及 Space 焦点交接（${width}×360）`, {skip:chrome?false:'需要 Chrome',timeout:40000},t=>checkInteractiveBrowser(t,edgeScript,fixture,width,360));
+for (const width of [1600,420]) test(`行菜单边缘定位、全部导航键及 Space 焦点交接（${width}×360）`,async ({ panel }) => { test.setTimeout(40000); await (panel.check(edgeScript,fixture,width,360)); });
 
 const focusScript = script.slice(0, script.indexOf('\n(async () =>')).replace("import { state }", "import { state, deferred }") + String.raw`
 (async () => { try {
@@ -197,7 +197,7 @@ check(state.batchRequests.length===1,'取消及轮询没有额外删除');
 document.getElementById('result').dataset.state='passed';
 } catch(e) { document.getElementById('result').dataset.state='failed'; document.getElementById('result').textContent=e.stack; }})();
 `;
-test('删除响应、轮询重排、虚拟滚动与空表后备焦点', {skip:chrome?false:'需要 Chrome',timeout:40000},t=>checkInteractiveBrowser(t,focusScript,fixture));
+test('删除响应、轮询重排、虚拟滚动与空表后备焦点',async ({ panel }) => { test.setTimeout(40000); await (panel.check(focusScript,fixture)); });
 
 const failureScript = script.slice(0, script.indexOf('\n(async () =>')) + String.raw`
 (async () => { try {
@@ -212,7 +212,7 @@ check(state.batchRequests.length===1,'失败或未知结果不得自动重试');
 document.getElementById('result').dataset.state='passed';
 } catch(e) { document.getElementById('result').dataset.state='failed'; document.getElementById('result').textContent=e.stack; }})();
 `;
-for (const unknown of [false,true]) test(`删除${unknown?'已处理但响应未知':'请求失败'}不自动重试`,{skip:chrome?false:'需要 Chrome',timeout:40000},t=>checkInteractiveBrowser(t,failureScript,fixture.replace(unknown?'if (state.saveGate) await state.saveGate.promise;\n    return result;\n  }\n  export async function submitExport':'if (state.batchFailure) throw Error(\'多行新增失败\');',unknown?'throw Error("删除结果不可确认");\n    return result;\n  }\n  export async function submitExport':'throw Error("删除结果不可确认");')));
+for (const unknown of [false,true]) test(`删除${unknown?'已处理但响应未知':'请求失败'}不自动重试`,async ({ panel }) => { test.setTimeout(40000); await (panel.check(failureScript,fixture.replace(unknown?'if (state.saveGate) await state.saveGate.promise;\n    return result;\n  }\n  export async function submitExport':'if (state.batchFailure) throw Error(\'多行新增失败\');',unknown?'throw Error("删除结果不可确认");\n    return result;\n  }\n  export async function submitExport':'throw Error("删除结果不可确认");'))); });
 
 const filterScript = script.slice(0, script.indexOf('\n(async () =>')) + String.raw`
 (async () => { try {
@@ -233,7 +233,7 @@ await input({key:'Enter'}); check(!dialog() && !state.batchRequests,'锁定时�
 document.getElementById('result').dataset.state='passed';
 } catch(e) { document.getElementById('result').dataset.state='failed'; document.getElementById('result').textContent=e.stack; }})();
 `;
-test('查找状态与确认动态禁用保持可用焦点', {skip:chrome?false:'需要 Chrome',timeout:40000},t=>checkInteractiveBrowser(t,filterScript,fixture));
+test('查找状态与确认动态禁用保持可用焦点',async ({ panel }) => { test.setTimeout(40000); await (panel.check(filterScript,fixture)); });
 
 const pendingCancelScript = script.slice(0, script.indexOf('\n(async () =>')).replace("import { state }", "import { state, deferred }") + String.raw`
 (async () => { try {
@@ -250,12 +250,12 @@ check(state.batchRequests.length===1 && !dialog(),'已确认请求仅执行一�
 document.getElementById('result').dataset.state='passed';
 } catch(e) { document.getElementById('result').dataset.state='failed'; document.getElementById('result').textContent=e.stack; }})();
 `;
-test('等待删除响应时取消不撤回已发送请求且不抢新焦点', {skip:chrome?false:'需要 Chrome',timeout:40000},t=>checkInteractiveBrowser(t,pendingCancelScript,fixture));
+test('等待删除响应时取消不撤回已发送请求且不抢新焦点',async ({ panel }) => { test.setTimeout(40000); await (panel.check(pendingCancelScript,fixture)); });
 
 const pendingReturnScript = pendingCancelScript
   .replace("await input({click:'.search-trigger'}); await input({key:'b'});\nconst search=document.querySelector('[aria-label=\"查找文案\"]'); check(document.activeElement===search,'用户已转向查找');", "check(document.activeElement.closest('[row-id]')?.getAttribute('row-id')==='a','取消先返回原片段');")
   .replace("check(document.activeElement===search && search.value==='b','迟到响应不抢用户新焦点');", "check(document.activeElement.closest('[row-id]')?.getAttribute('row-id')==='b','迟到删除移除当前焦点后恢复相邻片段');");
-test('等待响应取消后留在原片段，迟到删除仍恢复相邻行', {skip:chrome?false:'需要 Chrome',timeout:40000},t=>checkInteractiveBrowser(t,pendingReturnScript,fixture));
+test('等待响应取消后留在原片段，迟到删除仍恢复相邻行',async ({ panel }) => { test.setTimeout(40000); await (panel.check(pendingReturnScript,fixture)); });
 
 const cancelledReturnScript = script.slice(0, script.indexOf('\n(async () =>')) + String.raw`
 (async () => { try {
@@ -282,7 +282,7 @@ check(!state.batchRequests,'取消确认不能提交删除');
 document.getElementById('result').dataset.state='passed';
 }catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
 `;
-test('删除确认延迟返回被真实空白点击永久取消', {timeout:40000},t=>{assert.ok(chrome);return checkInteractiveBrowser(t,cancelledReturnScript,fixture,420,420);});
+test('删除确认延迟返回被真实空白点击永久取消',async ({ panel }) => { test.setTimeout(40000);return panel.check(cancelledReturnScript,fixture,420,420);});
 
 const detailsReturnScript = script.slice(0, script.indexOf('\n(async () =>')) + String.raw`
 (async () => { try {
@@ -306,7 +306,7 @@ check(!state.batchRequests,'交接和取消不发送删除');
 document.getElementById('result').dataset.state='passed';
 }catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
 `;
-test('菜单与删除确认交接保留详情入口和真实表格键盘', {timeout:40000},t=>{assert.ok(chrome);return checkInteractiveBrowser(t,detailsReturnScript,fixture);});
+test('菜单与删除确认交接保留详情入口和真实表格键盘',async ({ panel }) => { test.setTimeout(40000);return panel.check(detailsReturnScript,fixture);});
 
 const lateDeleteScript = script.slice(0, script.indexOf('\n(async () =>')).replace('import { state }','import { state, deferred }') + String.raw`
 (async () => { try {
@@ -327,8 +327,8 @@ check(state.batchRequests.length===1 && !state.status.snapshot.segments.some(s=>
 document.getElementById('result').dataset.state='passed';
 }catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
 `;
-for(const failure of [false,true])test('迟到删除'+(failure?'失败':'成功')+'保留用户的新界面状态',{timeout:40000},t=>{
-  assert.ok(chrome);
+for(const failure of [false,true])test('迟到删除'+(failure?'失败':'成功')+'保留用户的新界面状态',async ({ panel }) => { test.setTimeout(40000);
+
   const boundary=failure?fixture.replace('if (state.saveGate) await state.saveGate.promise;\n    return result;\n  }\n  export async function submitExport','if (state.saveGate) await state.saveGate.promise; throw Error("删除结果不可确认");\n    return result;\n  }\n  export async function submitExport'):fixture;
-  return checkInteractiveBrowser(t,lateDeleteScript,boundary);
+  return panel.check(lateDeleteScript,boundary);
 });

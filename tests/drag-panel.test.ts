@@ -1,7 +1,7 @@
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
+
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
 
 const script = String.raw`
 import { act } from 'react';
@@ -73,4 +73,4 @@ const order = ids => check(state.status.snapshot.segments.map(s => s.id).join() 
   document.getElementById('result').dataset.state='passed';
 } catch(error) { document.getElementById('result').dataset.state='failed'; document.getElementById('result').textContent=error.stack; } })();
 `;
-for (const width of [1600, 420]) test('真实指针整体拖拽口播片段并保持项目顺序 '+width, {skip: chrome ? false : '未执行：需要 Chrome/Chromium', timeout:60000}, t => checkInteractiveBrowser(t, script, fixture, width));
+for (const width of [1600, 420]) test('真实指针整体拖拽口播片段并保持项目顺序 '+width, async ({ panel }) => { test.setTimeout(60000); await (panel.check(script, fixture, width)); });

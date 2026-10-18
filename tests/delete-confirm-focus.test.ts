@@ -1,7 +1,4 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+import { test } from './helpers/playwright-browser.js';
 
 const script = String.raw`
 import { act } from 'react';
@@ -22,7 +19,6 @@ document.getElementById('result').dataset.state='passed';
 } catch(e) { document.getElementById('result').dataset.state='failed'; document.getElementById('result').textContent=e.stack; }})();
 `;
 
-test('删除确认按钮动态禁用后焦点移到取消', { timeout: 15000 }, t => {
-  assert.ok(chrome, '焦点回归需要真实 Chrome');
-  return checkInteractiveBrowser(t, script, '');
+test('删除确认按钮动态禁用后焦点移到取消', async ({ panel }) => { test.setTimeout(15000);
+  return panel.check(script, '');
 });

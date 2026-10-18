@@ -3,28 +3,10 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build, version as esbuildVersion } from 'esbuild';
 import type { TestContext } from 'node:test';
-import { PersistentBuildCache, assertBuildEnvironment, buildInputPlan, buildConfigurationInputFiles, bindBuildTools, fingerprint, treeFiles, bytesIdentity } from './persistent-build-cache.js';
+import { PersistentBuildCache, assertBuildEnvironment, buildInputPlan, bindBuildTools, bytesIdentity } from './persistent-build-cache.js';
 export { fingerprint, treeFiles, bytesIdentity } from './persistent-build-cache.js';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
-
-/** 只在当前测试进程内复用产物，每次命中前重新核对实际读取的依赖内容。 */
-export class MemoryBuildCache {
-  private entries = new Map<string, { bytes: Uint8Array; dependencies: string[]; fingerprint: string }>();
-  async get(key: string, inputs: string[], compile: () => Promise<{ bytes: Uint8Array; dependencies?: string[] }>) {
-    if (process.env.CLAPGRID_BROWSER_BUILD_CACHE === '0') return { ...(await compile()), cacheHit: false };
-    const previous = this.entries.get(key);
-    if (previous && fingerprint([...inputs, ...previous.dependencies]) === previous.fingerprint) return { bytes: previous.bytes, cacheHit: true };
-    const sourceBefore = fingerprint(inputs);
-    const result = await compile();
-    const dependencies = result.dependencies ?? [];
-    if (sourceBefore === fingerprint(inputs)) this.entries.set(key, { ...result, dependencies, fingerprint: fingerprint([...inputs, ...dependencies]) });
-    else this.entries.delete(key);
-    return { bytes: result.bytes, cacheHit: false };
-  }
-}
-
-export function buildConfigurationInputs() { return buildConfigurationInputFiles(root); }
 
 export const buildEnvironmentInputs = [join(root, 'package.json'), join(root, 'package-lock.json')];
 const scripts = new PersistentBuildCache(root);

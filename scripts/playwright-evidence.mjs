@@ -11,15 +11,16 @@ export function normalizeNative(root, native) {
       for (const test of spec.tests) {
         const item = { file: portable(spec.file), name: spec.title, nesting: 0, line: spec.line, column: spec.column, type: 'test' };
         expectedCases.push(item);
+        // 每个官方 test 已拥有自己的结果，避免为每例重新扫描此前全部结果。
+        const results = [];
         for (const result of test.results) {
           const status = ({ passed: 'passed', failed: 'failed', timedOut: 'timed-out', skipped: 'skipped', interrupted: 'cancelled' })[result.status] ?? 'incomplete';
           const actual = { ...item, status, durationMs: result.duration, startedAt: result.startTime, completedAt: new Date(Date.parse(result.startTime) + result.duration).toISOString(), retry: result.retry, workerIndex: result.workerIndex };
-          cases.push(actual);
+          cases.push(actual); results.push(actual);
           if (result.retry !== 0) errors.push({ message: `不允许重试掩盖首次失败：${item.name}` });
           if (test.expectedStatus !== 'passed') errors.push({ message: `UI 场景未要求实际通过：${item.name}` });
           for (const error of result.errors ?? []) failures.push({ ...item, ...(error.location ? { errorLocation: { ...error.location, file: portable(error.location.file) } } : {}), message: error.message ?? result.error?.message ?? status, status });
         }
-        const results = cases.filter(actual => actual.file === item.file && actual.line === item.line && actual.column === item.column && actual.name === item.name);
         const passed = results.length === 1 && results[0].status === 'passed';
         files.set(item.file, { file: item.file, status: passed && (files.get(item.file)?.status ?? 'passed') === 'passed' ? 'passed' : 'failed' });
       }

@@ -10,7 +10,7 @@
     },
     {
       "file": "tests/audio-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -41,9 +41,10 @@
     },
     {
       "file": "tests/business.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -82,7 +83,7 @@
     },
     {
       "file": "tests/delete-confirm-focus.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -97,7 +98,7 @@
     },
     {
       "file": "tests/dialog-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -105,7 +106,7 @@
     },
     {
       "file": "tests/drag-feedback-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -113,7 +114,7 @@
     },
     {
       "file": "tests/drag-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -121,7 +122,7 @@
     },
     {
       "file": "tests/drag-scroll-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "rows"
@@ -130,7 +131,7 @@
     },
     {
       "file": "tests/editing-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "rows"
@@ -139,7 +140,7 @@
     },
     {
       "file": "tests/export-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -147,14 +148,15 @@
     },
     {
       "file": "tests/export-service.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "service"
       ]
     },
     {
       "file": "tests/export-settings-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -162,9 +164,10 @@
     },
     {
       "file": "tests/export-settings.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -176,7 +179,7 @@
     },
     {
       "file": "tests/layout-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -212,7 +215,7 @@
     },
     {
       "file": "tests/long-text-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "rows",
@@ -222,14 +225,15 @@
     },
     {
       "file": "tests/mcp.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "service"
       ]
     },
     {
       "file": "tests/media-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -237,14 +241,15 @@
     },
     {
       "file": "tests/modification.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "service"
       ]
     },
     {
       "file": "tests/more-tasks-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -260,7 +265,7 @@
     },
     {
       "file": "tests/ordinary-add-focus-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -268,9 +273,10 @@
     },
     {
       "file": "tests/organization.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -282,7 +288,7 @@
     },
     {
       "file": "tests/panel-targets.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "rows"
@@ -291,7 +297,7 @@
     },
     {
       "file": "tests/panel-update-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -299,14 +305,15 @@
     },
     {
       "file": "tests/panel-update.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
       "file": "tests/paste-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -448,9 +455,10 @@
     },
     {
       "file": "tests/project-access.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "service"
       ]
     },
     {
@@ -470,7 +478,7 @@
     },
     {
       "file": "tests/relative-insert-lifecycle-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -478,7 +486,7 @@
     },
     {
       "file": "tests/relative-insert-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -500,7 +508,7 @@
     },
     {
       "file": "tests/row-hover-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "ui-extended"
@@ -509,7 +517,7 @@
     },
     {
       "file": "tests/row-menu-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "rows"
@@ -518,7 +526,7 @@
     },
     {
       "file": "tests/row-selection-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -526,7 +534,7 @@
     },
     {
       "file": "tests/search-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -534,7 +542,7 @@
     },
     {
       "file": "tests/segment-details-focus-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -542,7 +550,7 @@
     },
     {
       "file": "tests/segment-draft-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -550,7 +558,7 @@
     },
     {
       "file": "tests/segment-focus-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -568,7 +576,7 @@
     },
     {
       "file": "tests/selection-menu-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -576,7 +584,7 @@
     },
     {
       "file": "tests/selection-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -600,7 +608,7 @@
     },
     {
       "file": "tests/shell-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -608,9 +616,10 @@
     },
     {
       "file": "tests/speech-batch.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -625,9 +634,10 @@
     },
     {
       "file": "tests/speech-config.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -654,16 +664,18 @@
     },
     {
       "file": "tests/speech-service.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "service"
       ]
     },
     {
       "file": "tests/speech.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -742,7 +754,7 @@
     },
     {
       "file": "tests/video-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -750,7 +762,7 @@
     },
     {
       "file": "tests/video-preview-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -772,7 +784,7 @@
     },
     {
       "file": "tests/visual-note-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "ui-extended"
@@ -781,9 +793,10 @@
     },
     {
       "file": "tests/visual-note.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -796,7 +809,7 @@
     },
     {
       "file": "tests/voice-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -814,9 +827,10 @@
     },
     {
       "file": "tests/workspace-heartbeat.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "service"
       ]
     },
     {

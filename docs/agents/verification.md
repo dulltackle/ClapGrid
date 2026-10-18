@@ -64,6 +64,6 @@
 
 ## CI 并发与时限（#158）
 
-push 验证分支 tip，PR 验证默认合并结果，手动触发保留。自动初次运行按 workflow/event/ref 分组替换；手动和重跑以 runId/attempt 独立，旧提交重跑不取消新检查。分组不保证提交年龄顺序。[GitHub 并发语义](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency) 与 [运行身份](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#github-context) 是配置依据。
+自动事件仅限 PR 与 main push，两个工作流（完整检查与进程追踪）采用相同策略；功能分支 push 不启动检查，没有 PR 的功能分支没有自动检查结果。PR 验证默认合并结果，main push 验证 main 提交，手动触发保留所选 ref。CI 观察同时记录事件目标 `target` 与真实检出的 `checkout`，正式验收另核对独立检出的提交；不跨事件自动复用成功证据。自动初次运行按 workflow/event/ref 分组替换；手动和重跑以 runId/attempt 独立，旧提交重跑不取消新检查。分组不保证提交年龄顺序。[GitHub 并发语义](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency) 与 [运行身份](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#github-context) 是配置依据。
 
 CI artifact 保存 ci-timing.json，记录首步骤到汇总时的实际耗时和作业时限余量；runner 准备和后续上传不在窗口。完整作业时长以实际 GitHub job started_at/completed_at 核对。取消不算通过，不缩短单用例时限和覆盖；check 保持60分钟、process-trace保持15分钟。

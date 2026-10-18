@@ -1,11 +1,7 @@
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
 
-for (const width of [1600, 420]) test(`主视图全片导出与取消错误跨详情和连接恢复持续可见（${width}px）`, {
-  skip: chrome ? false : '未执行：需要 Chrome/Chromium', timeout: 30000,
-}, t => checkInteractiveBrowser(t, String.raw`
+for (const width of [1600, 420]) test(`主视图全片导出与取消错误跨详情和连接恢复持续可见（${width}px）`, async ({ panel }) => { test.setTimeout(30000); return panel.check(String.raw`
   import { act } from 'react';
   import { createRoot } from 'react-dom/client';
   import { App } from './src/panel/app.tsx';
@@ -83,4 +79,4 @@ for (const width of [1600, 420]) test(`主视图全片导出与取消错误跨�
       result.dataset.state = 'passed';
     } catch (error) { result.dataset.state = 'failed'; result.textContent = error.stack; }
   })();
-`, fixture, width));
+`, fixture, width); });

@@ -1,0 +1,2499 @@
+{
+  "baseline": "a7808d1307d0db9f7010b0d486edea3cf27c45a9",
+  "scope": "唯一常规归属；历史对照不进入all；场景细映射链接保留原件",
+  "counts": {
+    "node": 54,
+    "playwright": 38,
+    "vitest": 18
+  },
+  "mappingSources": [
+    "native-execution-163/scenario-map.tsv",
+    "native-migration-164/scenario-map.json",
+    "table-native-165-map.json",
+    "focus-native-166-map.json",
+    "media-167/scenario-map.json",
+    "special-ui-native-168-map.json"
+  ],
+  "files": [
+    {
+      "file": "tests/agent-tools.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "CLI 核对候选解释器并解析已知技能软链接",
+        "GitHub CLI 汇总全部分页、投影字段并保留可追溯副本",
+        "长结果先脱敏留存，摘要不暴露密钥且按需读取末项",
+        "失败与不支持的分页响应不能产生完整证据",
+        "已知纯文本凭据、完整认证值及环境秘密在留存和读取两个出口均脱敏",
+        "超长单行及多行 Unicode 文本按字节预算输出并可无损续读到末尾",
+        "HTTP 敏感头整体值脱敏且保留换行及安全日志行"
+      ],
+      "reason": "实际 CLI/宿主/安装包或 Git 进程边界，保留原 Node 文件级隔离和退出状态验证，不为统一断言框架改变被测进程语义。",
+      "observableExamples": [
+        "CLI 核对候选解释器并解析已知技能软链接",
+        "GitHub CLI 汇总全部分页、投影字段并保留可追溯副本",
+        "长结果先脱敏留存，摘要不暴露密钥且按需读取末项"
+      ]
+    },
+    {
+      "file": "tests/audio-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "配音试听与保留音频完整主视图流程（1600×1000）",
+        "配音试听与保留音频完整主视图流程（420×800）",
+        "配音试听与保留音频完整主视图流程（360×320）"
+      ]
+    },
+    {
+      "file": "tests/browser-build-cache.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ],
+      "historicalScenarios": [
+        "构建缓存按内容核对输入与实际 import，不能使用过期依赖或新扫描文件",
+        "真实 esbuild 跨尺寸复用字节，fixture 和导入文件变更均失效",
+        "生产同源 CSS 在同一进程复用字节，各场景仍输出到自己的目录",
+        "真实 JS helper 跨进程复用匹配的编译字节，冷和热都产生当前可执行输出",
+        "真实配置变化重建跨次 JS 产物，并使用当前 class field 行为",
+        "真实 CSS helper 跨进程命中字节，新增和删除扫描文件均重建当前样式",
+        "实际 import 的外部 package 解析配置变化后，重建并使用新的入口行为",
+        "实际安装的构建工具文件变化不能沿用仅版本相同的缓存",
+        "实际编译读取输入后源文件变化，跨次缓存不得给新输入返回旧行为",
+        "实际 extends 配置内容改变后，跨次构建重新执行当前配置行为",
+        "CSS 资源内容改变后重建，并在热缓存独立输出目录恢复完整资源",
+        "CSS 显式外部扫描根新增或删除文件时，当前工具类不能被旧缓存遮蔽",
+        "实际 bare import 的符号链接解析目标改变后，重建并读取新包行为",
+        "同内容符号链接入口切换到不同相对依赖时，不能命中旧解析产物",
+        "已加载工具的长进程遇到工具字节变化时拒绝旧实现，新进程使用新工具行为",
+        "显式禁用、独立冷目录及损坏记录均真实重建，输入完整键随输入变化",
+        "不确定 JSONC 配置与 Node 预载边界保守构建，每次仍执行当前输出",
+        "共享缓存目录中的不同真实工作树分别核对输入与产物",
+        "并发真实 worker 原子发布同一键，各独立目录得到完整当前产物",
+        "发布临时产物后真实取消或强杀，不发布半成品且下次仍完整构建",
+        "Vite 自动发现的动态 PostCSS 配置不能给未确认的外部读取发布缓存",
+        "CSS 构建的实际已安装 peer 工具字节改变，不能仅凭包版本命中",
+        "已加载工具的符号链接绑定切换后，不能信任 Node 缓存的旧解析路径",
+        "CSS helper 的实际构建选项实现改变后，跨进程缓存须重建当前产物",
+        "工具包内部符号链接目录的实际代码变化必须重建，目录环不能掩盖输入",
+        "长进程配置包 extends 的符号链接切换后，保守真实构建当前行为",
+        "包名 extends 的编译器 tsconfig 字段无法确认时，重复也真实构建当前配置",
+        "未知 baseUrl 和自定义 paths 的新候选不能复用旧字节，普通 alias 仍热命中",
+        "热命中恢复外层 await 前工具字节变化，必须重新核对并拒绝旧输出",
+        "实际编译 await 内工具改写自身后，独立 fresh 核对拒绝产物",
+        "旧任意输入 callback 在每次调用先执行，真实编译反映其当前文件改动",
+        "带写盘副作用的任意函数不能取得只读计划资格，旧入口仍真实编译当前输入",
+        "声明式计划复制外部数据并使用真实工具绑定，覆写公开属性不能注入写盘函数",
+        "真实编译 await 或旧输入 callback 改变受键覆盖环境时，不发布或命中过期环境字节",
+        "热命中外层 await 后受键覆盖环境改变时，helper拒绝消费旧字节",
+        "完整输入 frame 与冻结实现兼容，真实构建和热产物保持相同身份",
+        "公开输入指纹保持真实链接、路径故障和权限边界的冻结语义",
+        "真实构建的长短排序前缀保持冻结的完整输入与产物身份",
+        "完整投影在下一次真实构建重新读取同长度外部依赖，不受恢复 mtime 影响",
+        "默认工具环境仍是完整缓存键，显式其它值单独构建且各自热命中",
+        "真实浏览器脚本的冷产物与热产物保留函数、类及错误名称和执行行为",
+        "直接 CSS helper 在未设置、显式及空工具环境中均实际冷构建并热恢复相同当前样式"
+      ],
+      "reason": "真实构建、浏览器进程启动/版本/端口、缓存输入失效边界；通过子进程及磁盘原件观察，保留Node串行隔离。",
+      "observableExamples": [
+        "真实 esbuild 跨尺寸复用字节，fixture 和导入文件变更均失效",
+        "生产同源 CSS 在同一进程复用字节，各场景仍输出到自己的目录",
+        "真实 JS helper 跨进程复用匹配的编译字节，冷和热都产生当前可执行输出"
+      ],
+      "redundantInternalExamplesRemovedIn169": [
+        "MemoryBuildCache内部编译次数",
+        "frozen/candidate完整frame全构建重复对照",
+        "frozen/candidate完整projection全构建重复对照"
+      ]
+    },
+    {
+      "file": "tests/browser-startup.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ],
+      "historicalScenarios": [
+        "Chrome 端口文件先出现为空，写入完成后才视为启动成功",
+        "Chrome 没有启动或端口文件持续为空时必须有限等待后失败"
+      ],
+      "reason": "真实构建、浏览器进程启动/版本/端口、缓存输入失效边界；通过子进程及磁盘原件观察，保留Node串行隔离。",
+      "observableExamples": [
+        "Chrome 端口文件先出现为空，写入完成后才视为启动成功",
+        "Chrome 没有启动或端口文件持续为空时必须有限等待后失败"
+      ]
+    },
+    {
+      "file": "tests/build-identity.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "插件构建携带源码状态，清单版本与身份一致，内容改变产生新版本和指纹",
+        "真实 MCP 和 HTTP 报告加载身份，覆盖磁盘更新、缺失身份与诊断副作用"
+      ],
+      "reason": "实际 CLI/宿主/安装包或 Git 进程边界，保留原 Node 文件级隔离和退出状态验证，不为统一断言框架改变被测进程语义。",
+      "observableExamples": [
+        "插件构建携带源码状态，清单版本与身份一致，内容改变产生新版本和指纹",
+        "真实 MCP 和 HTTP 报告加载身份，覆盖磁盘更新、缺失身份与诊断副作用"
+      ]
+    },
+    {
+      "file": "tests/business.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "logic"
+      ],
+      "historicalScenarios": [
+        "共享业务层初始化 SQLite，重开后保留项目标识与创建时间",
+        "新增与编辑口播片段后重开，稳定身份、文案和项目顺序保留",
+        "拒绝项目内 clapgrid.sqlite 符号链接，不触碰项目外文件",
+        "拒绝项目内 clapgrid.sqlite-wal 符号链接，不触碰项目外文件",
+        "拒绝项目内 clapgrid.sqlite-shm 符号链接，不触碰项目外文件",
+        "拒绝项目内 clapgrid.sqlite-journal 符号链接，不触碰项目外文件",
+        "拒绝项目内 media 符号链接，不触碰项目外文件"
+      ]
+    },
+    {
+      "file": "tests/check-related.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ],
+      "historicalScenarios": [
+        "日常计划按实际归属选择修改的测试，列明基准、未覆盖与局部结论",
+        "历史材料变化明确列为排除，不进入当前和基准依赖图；未知资源仍扩大检查",
+        "逻辑源码通过 .js 扩展、export-from 与字面量动态导入选择消费者，不强制跑其他逻辑组",
+        "非样式UI源码结合 alias 消费者、固定核心及组件映射，保留类型和构建要求",
+        "配置、helper、生产模板和无法解释的文件读取保守扩大，静态CSS与扫描规则区别呈现",
+        "基准依赖与工作区依赖取并集；新增、删除、遗漏及重复归属不能被局部选测掩盖",
+        "默认真实日常命令单次退出，保留逐项报告和未覆盖；无改动及文档-only不产生通过证据",
+        "扩大范围真实分派Node、Vitest和Playwright，原报告和逐项并集等于唯一清单",
+        "零用例及退出零但缺报告都失败并进入未知失败集中待办，不能当作改动通过",
+        "已知跨执行者失败先在当前源码集中复验，解除待办仍只提供相关反馈",
+        "源码期间变化使日常结果invalidated并停止后续阶段",
+        "真实日常命令与完整检查互斥；显式取消清理孙进程而不影响另一工作树",
+        "面板静态消费者之外的字符串浏览器脚本也随逻辑依赖进入范围；陌生输入保守扩大",
+        "旧身份、实际集合缺口和原始来源损坏不能使退出零的执行得到通过",
+        "普通Node跳过明确呈现，UI跳过仍拒绝且保留实际归属待办",
+        "非法基准不回退HEAD；未知导入、动态执行与解析错误选择保守全范围",
+        "面板中的未知外部输入不能仅凭面板映射缩小范围",
+        "UI跳过待办在集中复验中仍阻塞，不能清单后再次执行或称复验通过",
+        "既有配置中的陌生alias也不能被硬编码图误判为完整静态影响",
+        "读取源码文本的literal消费者随源文件修改执行，无关literal输入仍可精确排除",
+        "未知读取能力位于共享源码中时也保守纳入其测试消费者，literal文档读取优先于文档白名单",
+        "fs子对象计算调用、逃逸、反射及非确认URL绑定都按未知能力保守选中",
+        "字符串执行、动态模块与其别名能力不能遗漏静态图之外的实际消费者",
+        "可信 UI 政策覆盖无 panel 后缀的文件，浏览器要求与严格待办一致"
+      ],
+      "reason": "公开检查入口、异常报告、拥有权和真实进程退出故障注入；测试器本身是被测系统，保留Node文件级进程边界。",
+      "observableExamples": [
+        "日常计划按实际归属选择修改的测试，列明基准、未覆盖与局部结论",
+        "历史材料变化明确列为排除，不进入当前和基准依赖图；未知资源仍扩大检查",
+        "逻辑源码通过 .js 扩展、export-from 与字面量动态导入选择消费者，不强制跑其他逻辑组"
+      ]
+    },
+    {
+      "file": "tests/check-runner.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling",
+        "environment"
+      ],
+      "historicalScenarios": [
+        "开发检查接受未提交内容，输出身份但不宣称正式验收",
+        "检查进度及命令输出不混入原生测试器的 V8 stdout 通道",
+        "检查期间修改源码使结果失效并停止后续阶段",
+        "取消direct子检查先等待拥有者两秒收尾，再确认组退出且无子锁",
+        "取消npm子检查先等待拥有者两秒收尾，再确认组退出且无子锁",
+        "合作取消拒绝把本组拥有者记录拼接到另一真实工作树的控制socket",
+        "父命令仅回收实际登记组，不取消同cwd内独立拥有者或旧绑定的新任务",
+        "继承相同owner的子阶段不能回收整个共享检查的登记组",
+        "default清理拒绝token身份替换并保留active与登记，不写完成证据",
+        "default清理拒绝root身份替换并保留active与登记，不写完成证据",
+        "drain清理拒绝token身份替换并保留active与登记，不写完成证据",
+        "drain清理拒绝root身份替换并保留active与登记，不写完成证据",
+        "drain清理拒绝pid身份替换并保留active与登记，不写完成证据",
+        "drain清理拒绝birth身份替换并保留active与登记，不写完成证据",
+        "drain清理拒绝namespace身份替换并保留active与登记，不写完成证据",
+        "finally资源清理内部await后重新核完整owner，身份变化保留原资源状态与登记且不新增完成证据",
+        "direct资源清理内部await后重新核完整owner，身份变化保留原资源状态与登记且不新增完成证据",
+        "completed资源清理内部await后重新核完整owner，身份变化保留原资源状态与登记且不新增完成证据",
+        "拥有者finally回收忽略TERM的已登记孙组期间继续处理SIGTERM直到释放锁",
+        "同工作树拒绝 check 与 verify 重复启动，不同目录独立；取消后可重新启动",
+        "取消会停止仍存活的孙进程并留存 cancelled 记录，不启动后续阶段",
+        "检查组长提前退出仍会清理忽略 SIGTERM 的孙进程",
+        "显式停止可恢复拥有者异常退出后的锁，并清理其仍运行的子进程",
+        "停止通过控制通道交给拥有者，不依赖调用者可见的 PID",
+        "控制通道不可达且无法确认跨命名空间拥有者已死时保留锁",
+        "嵌套 verify 取消覆盖独立检出内 check 的进程组",
+        "取消覆盖命令内另一个工作树子检查新建的进程组",
+        "失败后集中复验全部失败阶段，仍失败时阻止新的完整检查",
+        "损坏的测试报告记入失败阶段并阻止未通过的复验放行",
+        "预检失败不启动完整检查且固定提交不接受旧预检证据",
+        "固定提交验收与开发目录的未提交修改隔离",
+        "正式验收失败留存日志，不把退出失败记为通过",
+        "正式验收拒绝缺失提交以及安装过程中改变源码",
+        "CI 观察入口保留取消状态与受检目标，记录执行耗时及作业余量",
+        "CI 自动替换按工作流事件引用分组，手动及旧提交重跑隔离"
+      ],
+      "reason": "公开检查入口、异常报告、拥有权和真实进程退出故障注入；测试器本身是被测系统，保留Node文件级进程边界。",
+      "observableExamples": [
+        "开发检查接受未提交内容，输出身份但不宣称正式验收",
+        "检查进度及命令输出不混入原生测试器的 V8 stdout 通道",
+        "检查期间修改源码使结果失效并停止后续阶段"
+      ]
+    },
+    {
+      "file": "tests/check-source.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ],
+      "historicalScenarios": [
+        "显式源码算法在真实 Git 目录逐字节生成固定身份，线程数量和完成顺序不改变结果",
+        "每次读取完整当前内容，保留二进制、被忽略的跟踪文件、未跟踪、链接、缺失和执行位语义",
+        "目标目录没有算法配置时保留原线性协议，不由宿主版本强加新身份",
+        "真实 lstat 后将条目替换为 FIFO 或链接时拒绝读取，配置也不能阻塞取消边界",
+        "实际采集取消和线程读取失败均等待全部线程结束，未知配置不能回退为成功",
+        "统一执行身份的异步入口重新采集当前源码，配置与旧目标协议保持对应",
+        "异步证据入口只接受本次实际采集的结束身份，真实未选中源码改变仍失败",
+        "默认源码采集保留四线程资源上限并实际等候全部退出",
+        "代码输入边界排除历史材料，保留真实资源和未知文件，旧协议仍读取历史材料"
+      ],
+      "reason": "公开检查入口、异常报告、拥有权和真实进程退出故障注入；测试器本身是被测系统，保留Node文件级进程边界。",
+      "observableExamples": [
+        "显式源码算法在真实 Git 目录逐字节生成固定身份，线程数量和完成顺序不改变结果",
+        "每次读取完整当前内容，保留二进制、被忽略的跟踪文件、未跟踪、链接、缺失和执行位语义",
+        "目标目录没有算法配置时保留原线性协议，不由宿主版本强加新身份"
+      ]
+    },
+    {
+      "file": "tests/check-watch.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling",
+        "environment"
+      ],
+      "historicalScenarios": [
+        "watch夹具独立可写缓存且包仍只读共享",
+        "默认日常命令单次退出，显式watch空闲仍持锁且停止后释放",
+        "历史材料事件与周期探测不触发watch，模板输入仍执行新轮",
+        "watch默认不创建字节码cache，首冷执行后idle且真实外部依赖仍要求重启",
+        "默认字节码namespace内部真实导入的JS依赖变更必须要求重启",
+        "默认字节码8hex形状的已解析真实依赖优先于产物白名单",
+        "默认字节码namespace内部unknown.cache仍作为依赖变化要求重启",
+        "默认字节码namespace内部nested/node_modules/foreign/index.js仍作为依赖变化要求重启",
+        "watch跨进程嵌套工作树共享安装也保持自动cache关闭，不触发自身新轮",
+        "执行中显式停止watch先回收真实worker、Chrome和目录再释放锁",
+        "watch拥有者被强杀保留锁，显式恢复回收Chrome；旧token不能取消后来会话",
+        "上游真实检查取消覆盖watch及孙进程，不遗留两层工作树锁",
+        "取消round先收尾同拥有者登记的跨组孙进程，再写cancelled并释放锁",
+        "父检查取消嵌套watch的真实Chrome，完整ancestor登记与profile均清理后释放锁",
+        "watch空闲拒绝完整和UI检查，另一真实Git工作树仍能实际检查",
+        "真实Playwright worker骤死后watch先回收Chrome及profile，再idle保留失败且不重试",
+        "watch的严格UI skip待办在新轮集中复验仍阻塞，实际raw使用父预分配复验nonce",
+        "首次失败原样进入待办，watch不会自动重试；新输入先集中复验再产生新证据",
+        "单轮子入口退出零却缺少完成记录也必须失败并保存未知失败待办",
+        "相同源码事件也不能把上一轮通过记录重放成本轮执行证据",
+        "真实集中复验采用拥有者nonce；非法或同context重复nonce在执行前拒绝",
+        "通过摘要删掉主测试阶段不能以空遍历绕过本轮完整性校验",
+        "父预期需要复验时，丢失阶段或重放旧复验raw都不能清待办",
+        "负状态永远保留原待办，复验缺失截断或隐藏状态都不能清原范围",
+        "复验通过后停止主阶段，cancelled轮仍恢复父捕获的原待办",
+        "连续negative轮次只补缺失完整失败记录，不倍增原范围或丢失不同位置和身份",
+        "原待办在嵌套完整check及cleanup异常窗口始终留盘，owner强杀恢复后普通复验仍可清单",
+        "父最终通过前失败清单被新未知待办替换，不能清掉新身份或原范围",
+        "watch保留标记核对当前拥有者，旧token非watch或别名拒绝，跨树不取得保留资格",
+        "主阶段失败仍核验全部claimedpassed raw，损坏链保留父捕获native与strict待办",
+        "普通完整check后续失败也重验已通过proof，未知来源要求实际重跑原普通测试",
+        "单轮测试后准备步骤损坏原始报告也不能留下watch通过结论",
+        "模板与配置按单次规则扩大重跑，Vite临时输出无自循环；实际依赖恢复要求重启",
+        "真实scandir删除race只忽略范围外历史、无tracked输入的已忽略目录和Vite临时目录",
+        "嵌套依赖普通更新也要求重启，不被Git忽略规则吞掉或沿旧会话继续测试",
+        "watch每轮重新执行；运行中连续编辑使旧轮失效并只处理最新输入",
+        "运行中已观察到修改再恢复相同bytes，旧子记录通过仍被watch判失效并实际重跑",
+        "watch两轮真实Chrome均实际执行，浏览器和目录逐轮隔离且idle前清理",
+        "watch沿单次清单分派拒绝零收集，不产生局部或完整通过证据"
+      ],
+      "reason": "公开检查入口、异常报告、拥有权和真实进程退出故障注入；测试器本身是被测系统，保留Node文件级进程边界。",
+      "observableExamples": [
+        "watch夹具独立可写缓存且包仍只读共享",
+        "默认日常命令单次退出，显式watch空闲仍持锁且停止后释放",
+        "历史材料事件与周期探测不触发watch，模板输入仍执行新轮"
+      ]
+    },
+    {
+      "file": "tests/delete-confirm-focus.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "删除确认按钮动态禁用后焦点移到取消"
+      ]
+    },
+    {
+      "file": "tests/diagnose-identity.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "汇总命令缺少身份与宿主证据时保留未知，服务不可达且不创建文件",
+        "宿主证据明确记录不可达、过期和来源，不泄露额外字段",
+        "交付验收入口缺实际宿主和面板证据时返回非成功退出码"
+      ],
+      "reason": "实际 CLI/宿主/安装包或 Git 进程边界，保留原 Node 文件级隔离和退出状态验证，不为统一断言框架改变被测进程语义。",
+      "observableExamples": [
+        "汇总命令缺少身份与宿主证据时保留未知，服务不可达且不创建文件",
+        "宿主证据明确记录不可达、过期和来源，不泄露额外字段",
+        "交付验收入口缺实际宿主和面板证据时返回非成功退出码"
+      ]
+    },
+    {
+      "file": "tests/dialog-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "真实主视图浮层键盘与焦点恢复（1600px）",
+        "真实主视图浮层键盘与焦点恢复（420px）",
+        "导出设置在窄矮视口可滚动到字段、提示和关闭操作"
+      ]
+    },
+    {
+      "file": "tests/drag-feedback-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "拖拽松手后立即预览顺序，异步保存失败恢复 2",
+        "拖拽松手后立即预览顺序，异步保存失败恢复 8"
+      ]
+    },
+    {
+      "file": "tests/drag-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "真实指针整体拖拽口播片段并保持项目顺序 1600",
+        "真实指针整体拖拽口播片段并保持项目顺序 420"
+      ]
+    },
+    {
+      "file": "tests/drag-scroll-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all",
+        "rows"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "拖拽滚轮后静止指针采用当前目标 1600",
+        "拖拽滚轮后静止指针采用当前目标 420"
+      ]
+    },
+    {
+      "file": "tests/editing-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all",
+        "rows"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "真实编辑视图共享刷新仲裁，连续保存、断线取消草稿和单次保存正常关闭均符合约定"
+      ]
+    },
+    {
+      "file": "tests/export-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "主视图全片导出与取消错误跨详情和连接恢复持续可见（1600px）",
+        "主视图全片导出与取消错误跨详情和连接恢复持续可见（420px）"
+      ]
+    },
+    {
+      "file": "tests/export-service.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "service"
+      ],
+      "historicalScenarios": [
+        "user 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权",
+        "codex 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权",
+        "表格 HTTP 与 MCP 共享导出设置，自动保存恢复并遵守普通修改权及任务锁",
+        "表格与 MCP 共用全片导出任务，立即受理、重复提交、进度及取消状态一致"
+      ]
+    },
+    {
+      "file": "tests/export-settings-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "导出表单保留修改权、加载反馈、自动保存和字号提交规则",
+        "导出表单生产主题与控件可达性 1600×1000",
+        "导出表单生产主题与控件可达性 420×800",
+        "导出表单生产主题与控件可达性 420×360"
+      ]
+    },
+    {
+      "file": "tests/export-settings.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "logic"
+      ],
+      "historicalScenarios": [
+        "首次导出设置提供编码帧率默认值，字体字号留空且阻止导出",
+        "导出设置持有普通修改权保存，拒绝过时快照与无效参数，重开恢复",
+        "媒体组件缺失时准确反馈并拒绝保存，原设置保留",
+        "libx264 / 24 fps",
+        "libx264 / 25 fps",
+        "libx264 / 30 fps",
+        "libx264 / 50 fps",
+        "libx264 / 60 fps",
+        "mpeg4 / 24 fps",
+        "mpeg4 / 25 fps",
+        "mpeg4 / 30 fps",
+        "mpeg4 / 50 fps",
+        "mpeg4 / 60 fps",
+        "两个编码与全部支持帧率经真实 1080p MP4 编码解码验证",
+        "设置修改不改变有效配音或已有成片，配音任务锁与断开的修改权阻止保存",
+        "已保存字体从当前环境消失后阻止导出，不悄悄采用替代字体",
+        "字体枚举期间编辑断开返回修改权失效，并保留已保存值"
+      ]
+    },
+    {
+      "file": "tests/export-tasks.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "先受理再汇总空项目及设置问题，重复请求共享任务且校验期间锁定",
+        "汇总逐片段缺失视频和配音，不自动配音或跳过片段",
+        "user 持有修改权时拒绝导出，不创建任务且原编辑可以继续",
+        "codex 持有修改权时拒绝导出，不创建任务且原编辑可以继续",
+        "预览发布后成片目标冲突：撤销本次预览，不覆盖或删除原有文件",
+        "成片和预览已发布后在清理期间取消：撤销两份文件，终态保存前保持占用",
+        "成功产物已发布但终态保存失败：继续锁定且不可读取，重开清理后标记中断",
+        "真实全片按项目顺序导出：起点、冻结、留边、烧录字幕与 MP4 参数，失败的最新配音不妨碍有效旧配音",
+        "取消真实渲染显示清理状态，停止并删除本次文件后才解锁，保留历史成片",
+        "渲染器失败定位片段并清理半成品，已有成片保留且项目恢复编辑",
+        "损坏视频、真实时长变化导致起点失效、待更新或损坏配音一次汇总且不产生成片",
+        "再次导出使用新内容和设置，生成唯一文件且保留原成片，长文案多行烧录不阻止导出",
+        "配音刚受理及生成时拒绝导出且不创建任务，结束后恢复前置校验",
+        "配音时长不是视频帧整倍数时，拼接处不插入静音间隔",
+        "非方形像素视频按显示宽高比缩放，不能压成方形",
+        "合法起点落在视频末帧持续区间内时，使用末帧冻结而不是丢失画面",
+        "成片提供含字幕和声音的浏览器兼容预览，MP4 原文件仍独立保留"
+      ],
+      "reason": "实际 CLI/宿主/安装包或 Git 进程边界，保留原 Node 文件级隔离和退出状态验证，不为统一断言框架改变被测进程语义。",
+      "observableExamples": [
+        "先受理再汇总空项目及设置问题，重复请求共享任务且校验期间锁定",
+        "汇总逐片段缺失视频和配音，不自动配音或跳过片段",
+        "user 持有修改权时拒绝导出，不创建任务且原编辑可以继续"
+      ]
+    },
+    {
+      "file": "tests/layout-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "主视图入口迁移与剩余空间布局（1600px）",
+        "主视图入口迁移与剩余空间布局（420px）",
+        "读取状态及迁移表单保留保存、取消与互斥规则"
+      ]
+    },
+    {
+      "file": "tests/lifecycle-export.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体再清理，保留成片并从最新输入重新导出"
+      ],
+      "reason": "真实服务/宿主子进程、退出及跨工作空间生命周期场景，保留文件级进程隔离；本批只迁移已核对的普通逻辑和服务场景。",
+      "observableExamples": [
+        "真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体再清理，保留成片并从最新输入重新导出"
+      ]
+    },
+    {
+      "file": "tests/lifecycle-runtime.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "打包后台入口重复启动复用同一项目，拒绝其他项目，停止后恢复原项目身份"
+      ],
+      "reason": "真实服务/宿主子进程、退出及跨工作空间生命周期场景，保留文件级进程隔离；本批只迁移已核对的普通逻辑和服务场景。",
+      "observableExamples": [
+        "打包后台入口重复启动复用同一项目，拒绝其他项目，停止后恢复原项目身份"
+      ]
+    },
+    {
+      "file": "tests/lifecycle.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "普通编辑不是后台任务，默认退出仍能释放修改权并停止",
+        "退出服务默认保持配音与锁，明确中断后重开保留同一任务且不自动重试",
+        "批量部分完成后中断保留成功音频，运行项提示结果未知，未发送项说明中断且不重新提交"
+      ],
+      "reason": "真实服务/宿主子进程、退出及跨工作空间生命周期场景，保留文件级进程隔离；本批只迁移已核对的普通逻辑和服务场景。",
+      "observableExamples": [
+        "普通编辑不是后台任务，默认退出仍能释放修改权并停止",
+        "退出服务默认保持配音与锁，明确中断后重开保留同一任务且不自动重试",
+        "批量部分完成后中断保留成功音频，运行项提示结果未知，未发送项说明中断且不重新提交"
+      ]
+    },
+    {
+      "file": "tests/linux-components.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "组件缺失时检查返回可重试的明确错误，不尝试启动服务",
+        "安装基础工具缺失时说明原因与重试方式，恢复组件后重试成功",
+        "已有可用组件时重复安装直接复用，无需管理员权限或网络",
+        "有媒体编码器但缺少字体工具时不能宣称组件就绪"
+      ],
+      "reason": "实际 CLI/宿主/安装包或 Git 进程边界，保留原 Node 文件级隔离和退出状态验证，不为统一断言框架改变被测进程语义。",
+      "observableExamples": [
+        "组件缺失时检查返回可重试的明确错误，不尝试启动服务",
+        "安装基础工具缺失时说明原因与重试方式，恢复组件后重试成功",
+        "已有可用组件时重复安装直接复用，无需管理员权限或网络"
+      ]
+    },
+    {
+      "file": "tests/long-text-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all",
+        "rows",
+        "ui-extended"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "长文案摘要及全文编辑可读可操作（1600px）",
+        "长文案摘要及全文编辑可读可操作（420px）"
+      ]
+    },
+    {
+      "file": "tests/mcp.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "service"
+      ],
+      "historicalScenarios": [
+        "MCP 修改和查询与面板 HTTP 读取同一服务，服务离线时明确失败",
+        "宿主诊断在未声明 roots 时明确未知，不把 MCP 工作目录当作工作空间",
+        "宿主诊断查询 roots 并观测变更，但不把根列表推断为当前对话绑定"
+      ]
+    },
+    {
+      "file": "tests/media-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "素材和配音紧凑单元格及按需详情（1600px）",
+        "素材和配音紧凑单元格及按需详情（420px）"
+      ]
+    },
+    {
+      "file": "tests/modification.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "service"
+      ],
+      "historicalScenarios": [
+        "用户编辑期间拒绝 Codex 和无修改权保存，取消后立即可修改，旧连接不释放新修改权",
+        "Codex 收到写请求即占用修改权，查询不受阻；中断及格式异常后释放",
+        "持有修改权重读目标：返回变化信息、跳过删除目标，其余逐项提交且不覆盖新文案",
+        "用户连接断开释放修改权，旧取消凭据不能解除下一次编辑，异常保存也释放",
+        "Codex 存储异常逐项反馈失败，整批结束释放修改权且不提交失败内容",
+        "同一项目不能由不同端口的两个服务同时修改，关闭所有者后可以重开",
+        "表格选择连接独立于修改权，断开后不能使用旧选择，表格可批量粘贴删除重排"
+      ]
+    },
+    {
+      "file": "tests/more-tasks-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "更多到任务与诊断的完整键盘链（1600×1000）",
+        "更多到任务与诊断的完整键盘链（420×800）",
+        "更多到任务与诊断的完整键盘链（420×360）"
+      ]
+    },
+    {
+      "file": "tests/node-compile-cache.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ],
+      "historicalScenarios": [
+        "自动默认缓存只沿已核对来源跨工作树重派生，旧目标不继承宿主默认",
+        "显式 custom、empty、disable 请求保留，默认来源不能伪造或借路径别名转移",
+        "通用受控stage只重派生已继承的自动请求，不给非测试stage默认开启",
+        "公开受控stage在目标工作树spawn前重派生自动默认，实际Node不使用宿主目录",
+        "编译cache冷、热、同长还原mtime改源码及损坏目录都实际执行当前内容",
+        "正式任务控件身份保留custom/empty/disable并去掉已确认自动来源",
+        "显式empty与disable真实Node不启用默认cache，custom在当前cwd实际生效",
+        "UI快检原生与候选入口给实际测试child同样默认，非测试stage不默认开启",
+        "watch异步派生链及跨进程子孙关闭自动cache，独立任务仍启用且显式请求保留",
+        "启用字节码的测试child仍以env空对象创建源码Worker，线程不暗中继承cache"
+      ],
+      "reason": "公开检查入口、异常报告、拥有权和真实进程退出故障注入；测试器本身是被测系统，保留Node文件级进程边界。",
+      "observableExamples": [
+        "自动默认缓存只沿已核对来源跨工作树重派生，旧目标不继承宿主默认",
+        "显式 custom、empty、disable 请求保留，默认来源不能伪造或借路径别名转移",
+        "通用受控stage只重派生已继承的自动请求，不给非测试stage默认开启"
+      ]
+    },
+    {
+      "file": "tests/ordinary-add-focus-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "普通新增迟到成功保留新查找、勾选与焦点并接收数据",
+        "顶部普通新增保留正常创建选中编辑与统一关闭",
+        "底部普通新增保留正常创建选中编辑与统一关闭",
+        "更多普通新增保留正常创建选中编辑与统一关闭",
+        "普通新增等待响应：查找输入永久取消自动导航",
+        "普通新增等待响应：键盘导航永久取消自动导航",
+        "普通新增等待响应：空白点击永久取消自动导航",
+        "普通新增等待响应：滚轮永久取消自动导航",
+        "普通新增等待响应：其他流程永久取消自动导航",
+        "普通新增等待响应：离开返回永久取消自动导航",
+        "普通新增等待详情修改权：查找输入永久取消旧聚焦",
+        "普通新增等待详情修改权：键盘导航永久取消旧聚焦",
+        "普通新增等待详情修改权：空白点击永久取消旧聚焦",
+        "普通新增等待详情修改权：滚轮永久取消旧聚焦",
+        "普通新增等待详情修改权：其他流程永久取消旧聚焦",
+        "普通新增等待详情修改权：离开返回永久取消旧聚焦",
+        "普通新增响应后释放修改权等待期间的新操作取消后续详情导航",
+        "普通新增详情聚焦帧等待期间的新操作不取得编辑权",
+        "普通新增失败保留新的查找且不制造虚假行",
+        "普通新增旧响应失效后不覆盖新新增的详情、焦点或修改权",
+        "普通新增旧失败失效后不覆盖较新成功状态或修改权",
+        "新增详情关闭：重排采用统一返回规则",
+        "新增详情关闭：删除采用统一返回规则",
+        "新增详情关闭：空表采用统一返回规则",
+        "新增详情关闭：虚拟卸载采用统一返回规则",
+        "普通新增迟到响应不打断用户请求的现有片段行内编辑",
+        "普通新增虚拟定位后的手动滚动取消尚未执行的详情聚焦"
+      ]
+    },
+    {
+      "file": "tests/organization.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "logic"
+      ],
+      "historicalScenarios": [
+        "多行粘贴忽略空白行，原子重排保留稳定身份并拒绝过时顺序",
+        "选中操作固定稳定身份，改选和断开不扩大范围，明确查询仍可用",
+        "删除后项目序号连续，批量删除不会因自身引起的序号变化跳过目标",
+        "条件查询后的内容变化和明确身份删除逐项反馈，不静默丢失旧目标",
+        "超过五百个片段仍可全选查询和按固定范围处理"
+      ]
+    },
+    {
+      "file": "tests/panel-release.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "纯面板发布保留服务实例、项目、绑定和旧资源，忙碌及未知面板阻止切换，失败可回滚"
+      ],
+      "reason": "实际 CLI/宿主/安装包或 Git 进程边界，保留原 Node 文件级隔离和退出状态验证，不为统一断言框架改变被测进程语义。",
+      "observableExamples": [
+        "纯面板发布保留服务实例、项目、绑定和旧资源，忙碌及未知面板阻止切换，失败可回滚"
+      ]
+    },
+    {
+      "file": "tests/panel-targets.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all",
+        "rows"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "定位助手适应行高变化和覆盖区，实际就绪晚于固定延时仍可等待"
+      ]
+    },
+    {
+      "file": "tests/panel-update-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "面板快更新在编辑、播放与任务期间保持草稿并禁止刷新",
+        "面板刷新后的真实表格重连恢复稳定勾选且断线仍清除",
+        "迟到的刷新恢复让位于用户的新勾选"
+      ]
+    },
+    {
+      "file": "tests/panel-update.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "logic"
+      ],
+      "historicalScenarios": [
+        "只在明确兼容且面板代次变化时提示刷新",
+        "刷新快照按绑定分开、仅消费一次，过期及损坏记录不能恢复",
+        "勾选仅恢复同项目、同实例和目标面板中的现存身份，空选不扩大范围",
+        "无法持久化快照时保持当前面板，读取受限存储也不抛错"
+      ]
+    },
+    {
+      "file": "tests/paste-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "粘贴文案的完整提交与键盘流程（1600×1000）",
+        "粘贴文案的完整提交与键盘流程（420×800）",
+        "粘贴文案的完整提交与键盘流程（420×360）"
+      ]
+    },
+    {
+      "file": "tests/playwright-runner.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ],
+      "historicalScenarios": [
+        "Playwright独立入口与混合分派的worker实际采用同一默认字节码策略",
+        "固定核心单文件并发1或2与普通all默认保持原场景、有限worker和独立context",
+        "配音单元格三场景在并发2时同 worker 分组，每例仍隔离 context 和页面",
+        "真实配音与CSS门槛共享同一测试worker池，CSS不新增Chrome或context",
+        "真实 Playwright 入口复用 worker Chrome，并逐例隔离 context/page、DOM、storage 和目录",
+        "Playwright worker 被强杀后，完整检查退出前回收本次 Chrome 和全部临时目录",
+        "两个并行worker首次执行遇到SIGKILL仍回收全部Chrome和profile且不重试",
+        "并发2显式取消等待两个阻塞worker和Chrome退出后释放全部资源",
+        "Playwright 失败和超时留下实际失败文件，可在当前源码集中复验并清理资源",
+        "显式取消回收阻塞 worker、Chrome 和专属目录，锁在全部进程结束后释放",
+        "资源 marker 或根路径被替换时保留现场和锁，恢复身份后仅通过显式停止清理",
+        "未等待或捕获的页面检查失败仍由 fixture 收尾报告失败",
+        "清理拥有者在删除前或删除后被强杀，显式停止验证身份后恢复",
+        "UI 混合范围默认检测 Chrome，并严格拒绝 Node todo/skip",
+        "Playwright 实际入口拒绝跳过、收集错误、未捕获错误与缺失浏览器",
+        "CSS 门槛 worker 骤死仍回收登记的样式临时目录",
+        "中断恢复拒绝 broken symlink 与结构未知的清理锁，保留原检查身份",
+        "完整检查仅向三种执行者分派剩余文件，累计仍包含全部原场景",
+        "仅选中浏览器owner或原生UI参考时，dispatcher实际子进程获得稳定默认工具环境",
+        "默认浏览器工具环境在真实Chrome冷构建与跨进程热命中保持相同JS和CSS字节"
+      ],
+      "reason": "公开检查入口、异常报告、拥有权和真实进程退出故障注入；测试器本身是被测系统，保留Node文件级进程边界。",
+      "observableExamples": [
+        "Playwright独立入口与混合分派的worker实际采用同一默认字节码策略",
+        "固定核心单文件并发1或2与普通all默认保持原场景、有限worker和独立context",
+        "配音单元格三场景在并发2时同 worker 分组，每例仍隔离 context 和页面"
+      ]
+    },
+    {
+      "file": "tests/plugin-source-update.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "schema 2 安装后仅提交 app.tsx 仍提示源码更新，更新收据后相容运行时继续使用",
+        "schema 2 安装后仅提交 style.css 仍提示源码更新，更新收据后相容运行时继续使用",
+        "仅提交文档且插件源码未变时不误报更新"
+      ],
+      "reason": "实际 CLI/宿主/安装包或 Git 进程边界，保留原 Node 文件级隔离和退出状态验证，不为统一断言框架改变被测进程语义。",
+      "observableExamples": [
+        "schema 2 安装后仅提交 app.tsx 仍提示源码更新，更新收据后相容运行时继续使用",
+        "schema 2 安装后仅提交 style.css 仍提示源码更新，更新收据后相容运行时继续使用",
+        "仅提交文档且插件源码未变时不误报更新"
+      ]
+    },
+    {
+      "file": "tests/plugin-update.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "旧包和旧服务升级后保留项目，安装失败恢复旧包，缺宿主验证不冒充完成"
+      ],
+      "reason": "实际 CLI/宿主/安装包或 Git 进程边界，保留原 Node 文件级隔离和退出状态验证，不为统一断言框架改变被测进程语义。",
+      "observableExamples": [
+        "旧包和旧服务升级后保留项目，安装失败恢复旧包，缺宿主验证不冒充完成"
+      ]
+    },
+    {
+      "file": "tests/process-trace-command.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "进程追踪命令缺少 strace 时失败并保留诊断证据"
+      ],
+      "reason": "实际 CLI/宿主/安装包或 Git 进程边界，保留原 Node 文件级隔离和退出状态验证，不为统一断言框架改变被测进程语义。",
+      "observableExamples": [
+        "进程追踪命令缺少 strace 时失败并保留诊断证据"
+      ]
+    },
+    {
+      "file": "tests/production-archive-baseline.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "旧 Python 独立基线保留原清单、原索引和成功包内容身份",
+        "固定旧包 valid.tar.gz 的全部成员与原始字节完全相同",
+        "固定旧包 pax-overrides.tar.gz 的全部成员与原始字节完全相同",
+        "固定旧包 valid-python-3.12.tar.gz 的全部成员与原始字节完全相同",
+        "旧 v1 索引保留数值、有序扩展、覆盖位置与 UTF-8 字节序列化",
+        "旧成功包的局部 PAX 实际覆盖长路径、大小和扩展元数据",
+        "损坏样本记录独立构造依据、旧失败原因与严格规格要求，零尾和连续流完整对照",
+        "Python 3.12 最低版本与本机 3.14 均实际核对固定包且索引字节相同"
+      ],
+      "reason": "独立核对制作/归档/证据 CLI 与冻结来源，保留 Node 进程及原文件清理边界，避免把验收器本身随业务测试一并转换。",
+      "observableExamples": [
+        "旧 Python 独立基线保留原清单、原索引和成功包内容身份",
+        "固定旧包 valid.tar.gz 的全部成员与原始字节完全相同",
+        "固定旧包 pax-overrides.tar.gz 的全部成员与原始字节完全相同"
+      ]
+    },
+    {
+      "file": "tests/production-archive-node.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "verify-package 全程使用 Node 核对固定旧 v1 包，PATH 中没有 Python 仍保留成员顺序与审阅含义",
+        "真实 Node 入口接受独立旧成功包 valid.tar.gz",
+        "真实 Node 入口接受独立旧成功包 pax-overrides.tar.gz",
+        "真实 Node 入口接受独立旧成功包 valid-python-3.12.tar.gz",
+        "真实 Node 入口接受旧统一入口实际写出的 PAX 科学记数时间 positive-nanoseconds",
+        "真实 Node 入口接受旧统一入口实际写出的 PAX 科学记数时间 negative-nanoseconds",
+        "真实 Node 入口按旧完整流语义核对独立样本 missing",
+        "真实 Node 入口按旧完整流语义核对独立样本 extra",
+        "真实 Node 入口按旧完整流语义核对独立样本 duplicate",
+        "真实 Node 入口按旧完整流语义核对独立样本 size",
+        "真实 Node 入口按旧完整流语义核对独立样本 digest",
+        "真实 Node 入口按旧完整流语义核对独立样本 manifest",
+        "真实 Node 入口按旧完整流语义核对独立样本 index",
+        "真实 Node 入口按旧完整流语义核对独立样本 invalid-header",
+        "真实 Node 入口按旧完整流语义核对独立样本 header-truncated",
+        "真实 Node 入口按旧完整流语义核对独立样本 body-truncated",
+        "真实 Node 入口按旧完整流语义核对独立样本 gzip-crc",
+        "真实 Node 入口按旧完整流语义核对独立样本 gzip-length",
+        "真实 Node 入口按旧完整流语义核对独立样本 gzip-truncated",
+        "真实 Node 入口按旧完整流语义核对独立样本 missing-end-blocks",
+        "真实 Node 入口按旧完整流语义核对独立样本 single-end-block",
+        "真实 Node 入口按旧完整流语义核对独立样本 bad-header-at-end",
+        "真实 Node 入口按旧完整流语义核对独立样本 nonzero-tar-tail",
+        "真实 Node 入口按旧完整流语义核对独立样本 malformed-pax",
+        "真实 Node 入口按旧完整流语义核对独立样本 compressed-nonzero-tail",
+        "真实 Node 入口按旧完整流语义核对独立样本 compressed-zero-tail",
+        "真实 Node 入口按旧完整流语义核对独立样本 compressed-zero-then-junk",
+        "真实 Node 入口按旧完整流语义核对独立样本 compressed-zero-then-gzip",
+        "真实 Node 入口按旧完整流语义核对独立样本 concatenated-empty-gzip",
+        "真实 Node 入口按旧完整流语义核对独立样本 concatenated-zero-gzip",
+        "真实 Node 入口按旧完整流语义核对独立样本 concatenated-nonzero-gzip",
+        "真实 Node 入口按旧完整流语义核对独立样本 concatenated-crc",
+        "真实 Node 入口按旧完整流语义核对独立样本 compressed-zero-then-crc",
+        "复杂 v1 数字直接字节约定覆盖科学阈值、最小非零值、负零与整数精度",
+        "真实 Node 入口保持成员声明 escape 的拒绝规则",
+        "真实 Node 入口保持成员声明 absolute 的拒绝规则",
+        "真实 Node 入口保持成员声明 backslash 的拒绝规则",
+        "真实 Node 入口保持成员声明 noncanonical 的拒绝规则",
+        "真实 Node 入口保持成员声明 duplicate 的拒绝规则",
+        "真实 Node 入口保持成员声明 self 的拒绝规则",
+        "真实 Node 入口保持成员声明 reserved 的拒绝规则",
+        "真实 Node 入口保持成员声明 category 的拒绝规则",
+        "真实 Node 入口保持成员声明 digest-shape 的拒绝规则",
+        "真实 Node 入口保持成员声明 omitted-required 的拒绝规则",
+        "真实 Node 入口保持成员声明 symlink 的拒绝规则",
+        "真实 Node 入口保持成员声明 changed-source 的拒绝规则",
+        "真实 Node 入口明确拒绝范围外 tar 成员类型 1",
+        "真实 Node 入口明确拒绝范围外 tar 成员类型 2",
+        "真实 Node 入口明确拒绝范围外 tar 成员类型 3",
+        "真实 Node 入口明确拒绝范围外 tar 成员类型 4",
+        "真实 Node 入口明确拒绝范围外 tar 成员类型 5",
+        "真实 Node 入口明确拒绝范围外 tar 成员类型 6",
+        "真实 Node 入口明确拒绝范围外 tar 成员类型 7",
+        "真实 Node 入口明确拒绝范围外 tar 成员类型 S",
+        "真实 Node 入口明确拒绝范围外 tar 成员类型 L",
+        "真实 Node 入口明确拒绝范围外 tar 成员类型 K",
+        "真实 Node 入口明确拒绝范围外 tar 成员类型 Q",
+        "真实 Node 入口核对 PAX 时间 mtime=1e-07 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 mtime=-1e-07 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 mtime=NaN 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 mtime=Infinity 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 mtime=1e400 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 mtime=1e- 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 mtime=1e-07junk 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 atime=1e-07 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 atime=-1e-07 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 atime=NaN 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 atime=Infinity 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 atime=1e400 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 atime=1e- 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 atime=1e-07junk 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 ctime=1e-07 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 ctime=-1e-07 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 ctime=NaN 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 ctime=Infinity 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 ctime=1e400 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 ctime=1e- 的完整有限数值",
+        "真实 Node 入口核对 PAX 时间 ctime=1e-07junk 的完整有限数值",
+        "真实 Node 入口严格核对 tar/PAX 物理规则 wrong-byte-length",
+        "真实 Node 入口严格核对 tar/PAX 物理规则 truncated-record",
+        "真实 Node 入口严格核对 tar/PAX 物理规则 invalid-utf8",
+        "真实 Node 入口严格核对 tar/PAX 物理规则 empty-path",
+        "真实 Node 入口严格核对 tar/PAX 物理规则 bad-size",
+        "真实 Node 入口严格核对 tar/PAX 物理规则 negative-size",
+        "真实 Node 入口严格核对 tar/PAX 物理规则 sparse",
+        "真实 Node 入口严格核对 tar/PAX 物理规则 bad-octal",
+        "真实 Node 入口严格核对 tar/PAX 物理规则 bad-header-utf8",
+        "真实 Node 入口严格核对 tar/PAX 物理规则 unknown-format",
+        "真实 Node 入口严格核对 tar/PAX 物理规则 after-end-member",
+        "真实 Node 入口严格核对 tar/PAX 物理规则 nonaligned-zero-tail",
+        "真实 Node 入口严格核对 tar/PAX 物理规则 duplicate-pax-key",
+        "真实 Node 入口严格核对 tar/PAX 物理规则 consecutive-local-pax",
+        "真实 Node 入口严格核对 tar/PAX 物理规则 global-pax-effective",
+        "完整 gzip 对照在逐字节输入切块下仍消费零尾之后的后续流及错误",
+        "真实 Node 入口顺序核对较大成员，独立旧索引和原字节只变更相应内容身份"
+      ],
+      "reason": "独立核对制作/归档/证据 CLI 与冻结来源，保留 Node 进程及原文件清理边界，避免把验收器本身随业务测试一并转换。",
+      "observableExamples": [
+        "verify-package 全程使用 Node 核对固定旧 v1 包，PATH 中没有 Python 仍保留成员顺序与审阅含义",
+        "真实 Node 入口接受独立旧成功包 valid.tar.gz",
+        "真实 Node 入口接受独立旧成功包 pax-overrides.tar.gz"
+      ]
+    },
+    {
+      "file": "tests/production-archive-publication.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "真实 pack 无 Python 发布新 v1 包，全部成员与独立旧清单和索引原字节完全一致",
+        "显式历史待审、否决和人工确认原件保持原字节，归档成功不改变记录含义",
+        "真实 pack 拒绝输出 input 别名，原件不变且不虚报候选",
+        "真实 pack 拒绝输出 manifest 别名，原件不变且不虚报候选",
+        "真实 pack 拒绝输出 symlink-input 别名，原件不变且不虚报候选",
+        "真实 pack 拒绝输出 hardlink-input 别名，原件不变且不虚报候选",
+        "真实 pack 拒绝输出 parent-alias 别名，原件不变且不虚报候选",
+        "真实 pack 拒绝输出 index 别名，原件不变且不虚报候选",
+        "真实 pack 拒绝输出 dangling-index 别名，原件不变且不虚报候选",
+        "真实 pack 拒绝输出 parent-index 别名，原件不变且不虚报候选",
+        "真实 pack 拒绝输出 hardlink-index 别名，原件不变且不虚报候选",
+        "真实候选事件之后 changed-input 保留正式包、候选及报告的正确实际状态",
+        "真实候选事件之后 missing-input 保留正式包、候选及报告的正确实际状态",
+        "真实候选事件之后 bad-candidate 保留正式包、候选及报告的正确实际状态",
+        "真实候选事件之后 report-directory 保留正式包、候选及报告的正确实际状态",
+        "真实候选事件之后 report-hardlink 保留正式包、候选及报告的正确实际状态",
+        "真实子进程文件大小限制导致候选 EFBIG 写失败，原有效包和部分候选原样保留"
+      ],
+      "reason": "独立核对制作/归档/证据 CLI 与冻结来源，保留 Node 进程及原文件清理边界，避免把验收器本身随业务测试一并转换。",
+      "observableExamples": [
+        "真实 pack 无 Python 发布新 v1 包，全部成员与独立旧清单和索引原字节完全一致",
+        "显式历史待审、否决和人工确认原件保持原字节，归档成功不改变记录含义",
+        "真实 pack 拒绝输出 input 别名，原件不变且不虚报候选"
+      ]
+    },
+    {
+      "file": "tests/production-document.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "两个隔离项目获得独立约定，重新初始化保留各自修改",
+        "模板升级只用于新项目，已有项目副本保持不变",
+        "引用检查解析图片与动态样片的本地和 HTTP 地址，明确定位无效引用",
+        "引用式样片和图片可解析，未定义引用明确失败，代码示例无需真实文件",
+        "快捷引用与嵌套说明中的缺失素材不会被误报通过"
+      ],
+      "reason": "独立核对制作/归档/证据 CLI 与冻结来源，保留 Node 进程及原文件清理边界，避免把验收器本身随业务测试一并转换。",
+      "observableExamples": [
+        "两个隔离项目获得独立约定，重新初始化保留各自修改",
+        "模板升级只用于新项目，已有项目副本保持不变",
+        "引用检查解析图片与动态样片的本地和 HTTP 地址，明确定位无效引用"
+      ]
+    },
+    {
+      "file": "tests/production-evidence-recheck.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "公开业务接口保留原核对结果并独立复核不同影响集合，同步收回整条回写资格",
+        "复核保持已有否决失败待审跳过及受控限制，不提升或掩盖原结论"
+      ],
+      "reason": "独立核对制作/归档/证据 CLI 与冻结来源，保留 Node 进程及原文件清理边界，避免把验收器本身随业务测试一并转换。",
+      "observableExamples": [
+        "公开业务接口保留原核对结果并独立复核不同影响集合，同步收回整条回写资格",
+        "复核保持已有否决失败待审跳过及受控限制，不提升或掩盖原结论"
+      ]
+    },
+    {
+      "file": "tests/production-evidence.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "技术证据通过但混合条款仍缺人工确认时保持待审且不允许回写",
+        "全部对应证据完整时机械检查通过，受控测试记录仍不允许实际回写",
+        "当前版本记录声明复用时必须能追溯到有效原证据，缺失关联不能通过",
+        "真实入口将人工待审定位到子项，整条不得回写",
+        "真实入口将用户否决定位到子项，整条不得回写",
+        "真实入口将执行失败定位到子项，整条不得回写",
+        "真实入口将跳过定位到子项，整条不得回写",
+        "真实入口将错误审阅版本定位到子项，整条不得回写",
+        "真实入口将错误范围定位到子项，整条不得回写",
+        "真实入口将错误类型定位到子项，整条不得回写",
+        "真实入口将错误来源定位到子项，整条不得回写",
+        "真实入口将错误产物路径定位到子项，整条不得回写",
+        "真实入口将错误内容身份定位到子项，整条不得回写",
+        "内容与范围不变可显式复用旧版本，记录文字变化不会使媒体确认失效",
+        "复用原记录的否决、变更范围与循环关联均不能被新版本覆盖",
+        "原始项目证据与历史档案保持原字节，工具只输出回写判定",
+        "显式复用也不能绕过同一内容与范围的新否决或待审结论",
+        "受控历史通过与类型不合格的历史来源都不能覆盖真实来源否决",
+        "报告拒绝覆盖证据的产物直接路径并另存失败结果",
+        "报告拒绝覆盖证据的产物别名到真实文件并另存失败结果",
+        "报告拒绝覆盖证据的报告别名到产物并另存失败结果",
+        "报告拒绝覆盖证据的原证明文件并另存失败结果",
+        "报告拒绝覆盖证据的原证明别名到真实文件并另存失败结果",
+        "公开业务结果按要求和子项身份分别定位，报告转换保留碰撞检查标识",
+        "真实来源的新否决不污染受控历史分组的机械判断"
+      ],
+      "reason": "独立核对制作/归档/证据 CLI 与冻结来源，保留 Node 进程及原文件清理边界，避免把验收器本身随业务测试一并转换。",
+      "observableExamples": [
+        "技术证据通过但混合条款仍缺人工确认时保持待审且不允许回写",
+        "全部对应证据完整时机械检查通过，受控测试记录仍不允许实际回写",
+        "当前版本记录声明复用时必须能追溯到有效原证据，缺失关联不能通过"
+      ]
+    },
+    {
+      "file": "tests/production-impact.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "真实入口只读核对完整稳定依赖图，未变媒体可复用而不声明实际配音或宿主通过",
+        "A源改变使A末帧和B相邻转场重制，真实边界消除旧画面并保留C与配音",
+        "完整标记不能掩盖已知制作源到装配输出的漏接依赖",
+        "尺寸配置改变而节点文件摘要未变时扩大全部输出核对",
+        "影响识别重新核对旧确认，重制后真实证据入口拒绝旧A/B并复用未变C及配音",
+        "删除声明使用的转场节点及其边也不能把不完整图报告为无影响",
+        "真实入口拒绝完整性未确认并要求补齐或扩大核对",
+        "真实入口拒绝未登记依赖身份并要求补齐或扩大核对",
+        "真实入口拒绝稳定节点身份重复并要求补齐或扩大核对",
+        "真实入口拒绝同一真实文件重复登记并要求补齐或扩大核对",
+        "真实入口拒绝间接依赖循环并要求补齐或扩大核对",
+        "真实入口拒绝实际依赖文件缺失并要求补齐或扩大核对",
+        "真实入口拒绝配音未关联审阅输出并要求补齐或扩大核对",
+        "真实入口拒绝已声明共享素材未关联输出并要求补齐或扩大核对",
+        "真实入口拒绝节点使用未知片段身份并要求补齐或扩大核对",
+        "真实入口拒绝渲染基线身份重复并要求补齐或扩大核对",
+        "共享素材改变影响所有实际消费者及其间接输出，C与配音可复用",
+        "片段帧长改变只扩大该片段及实际消费它末帧的相邻输出",
+        "缺少渲染参数基线不能认定全部旧输出仍有效",
+        "帧率或片段顺序变化也扩大核对，无关制作约定文字变化不使媒体失效"
+      ],
+      "reason": "独立核对制作/归档/证据 CLI 与冻结来源，保留 Node 进程及原文件清理边界，避免把验收器本身随业务测试一并转换。",
+      "observableExamples": [
+        "真实入口只读核对完整稳定依赖图，未变媒体可复用而不声明实际配音或宿主通过",
+        "A源改变使A末帧和B相邻转场重制，真实边界消除旧画面并保留C与配音",
+        "完整标记不能掩盖已知制作源到装配输出的漏接依赖"
+      ]
+    },
+    {
+      "file": "tests/production-manifest-encoding.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "真实 Node 清单码点身份与两旧入口一致：unused-lone",
+        "真实 Node 清单码点身份与两旧入口一致：unused-pair",
+        "真实 Node 清单码点身份与两旧入口一致：overwritten-size-lone",
+        "真实 Node 清单码点身份与两旧入口一致：overwritten-size-pair",
+        "真实 Node 清单码点身份与两旧入口一致：unused-pair-selected-scalar",
+        "真实 Node 清单码点身份与两旧入口一致：escaped-pair",
+        "真实 Node 清单码点身份与两旧入口一致：duplicate-invalid-overwritten",
+        "真实 Node 清单码点身份与两旧入口一致：selected-lone",
+        "真实 Node 清单码点身份与两旧入口一致：selected-pair",
+        "真实 Node 清单码点身份与两旧入口一致：selected-pair-key",
+        "真实 Node 清单码点身份与两旧入口一致：selected-mixed-pair",
+        "v1 字符串按 Python 码点保持键身份、重复覆盖位置，并允许 UTF16 正常对",
+        "制作清单保留旧 Native 前置范围：utf8-bom",
+        "制作清单保留旧 Native 前置范围：utf16",
+        "制作清单保留旧 Native 前置范围：schema-true"
+      ],
+      "reason": "独立核对制作/归档/证据 CLI 与冻结来源，保留 Node 进程及原文件清理边界，避免把验收器本身随业务测试一并转换。",
+      "observableExamples": [
+        "真实 Node 清单码点身份与两旧入口一致：unused-lone",
+        "真实 Node 清单码点身份与两旧入口一致：unused-pair",
+        "真实 Node 清单码点身份与两旧入口一致：overwritten-size-lone"
+      ]
+    },
+    {
+      "file": "tests/production-package-restore.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "独立空目录恢复 valid.tar.gz，全成员/清单/索引按冻结旧字节与摘要核对后真实入口再验",
+        "独立空目录恢复 valid-python-3.12.tar.gz，全成员/清单/索引按冻结旧字节与摘要核对后真实入口再验",
+        "独立空目录恢复 pax-overrides.tar.gz，全成员/清单/索引按冻结旧字节与摘要核对后真实入口再验",
+        "独立空目录恢复 new-node，全成员/清单/索引按冻结旧字节与摘要核对后真实入口再验",
+        "独立恢复审阅历史与证明原件，待审/否决/受控测试/人工声明保持原字节和相同证据门槛"
+      ],
+      "reason": "独立核对制作/归档/证据 CLI 与冻结来源，保留 Node 进程及原文件清理边界，避免把验收器本身随业务测试一并转换。",
+      "observableExamples": [
+        "独立空目录恢复 valid.tar.gz，全成员/清单/索引按冻结旧字节与摘要核对后真实入口再验",
+        "独立空目录恢复 valid-python-3.12.tar.gz，全成员/清单/索引按冻结旧字节与摘要核对后真实入口再验",
+        "独立空目录恢复 pax-overrides.tar.gz，全成员/清单/索引按冻结旧字节与摘要核对后真实入口再验"
+      ]
+    },
+    {
+      "file": "tests/production-package.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "真实入口从清单生成完整归档，清单自身及不同大小成员字节准确，历史与人工记录原样保留",
+        "输出路径不得覆盖制作成员或清单，失败保留原输入",
+        "重复成员和清单自引用被拒绝，不覆盖已有有效交付包",
+        "真实归档拒绝 missing 并保留完整失败报告与输入",
+        "真实归档拒绝 extra 并保留完整失败报告与输入",
+        "真实归档拒绝 duplicate 并保留完整失败报告与输入",
+        "真实归档拒绝 digest 并保留完整失败报告与输入",
+        "真实归档拒绝 manifest 并保留完整失败报告与输入",
+        "真实归档拒绝 gzip-crc 并保留完整失败报告与输入",
+        "真实归档拒绝 truncated 并保留完整失败报告与输入",
+        "真实归档拒绝 invalid-header 并保留完整失败报告与输入",
+        "真实归档拒绝 nonzero-tail 并保留完整失败报告与输入",
+        "真实归档拒绝 bad-header-at-end 并保留完整失败报告与输入",
+        "真实归档拒绝 missing-end-blocks 并保留完整失败报告与输入",
+        "真实归档拒绝 single-end-block 并保留完整失败报告与输入",
+        "输入缺失或内容变化时不发布半成品，原有效包字节保持",
+        "清单 escape 不能发布为完整制作交付包",
+        "清单 absolute 不能发布为完整制作交付包",
+        "清单 empty 不能发布为完整制作交付包",
+        "清单 omitted-source 不能发布为完整制作交付包",
+        "清单 invalid-category 不能发布为完整制作交付包",
+        "发布失败保留可定位候选与已有有效包，独立恢复后全部成员可再核对",
+        "清单不能使用工具索引保留名，原清单保持且不发布错误包",
+        "报告指向默认交付路径时提前拒绝，失败保留旧包并另存报告",
+        "打包必须保留已声明 assets，不能以依赖图缺省跳过",
+        "打包必须保留已声明 lastFrame，不能以依赖图缺省跳过",
+        "打包必须保留已声明 transitions，不能以依赖图缺省跳过",
+        "打包必须保留已声明 sample-video，不能以依赖图缺省跳过",
+        "打包必须保留已声明 sample-plan，不能以依赖图缺省跳过",
+        "报告目标 existing-directory 在发布前拒绝，旧有效包及报告原件保持",
+        "报告目标 non-report-file 在发布前拒绝，旧有效包及报告原件保持",
+        "报告目标 file-parent 在发布前拒绝，旧有效包及报告原件保持",
+        "声明的 assets 即使是旧报告JSON也不能被新报告覆盖",
+        "声明的 lastFrame 即使是旧报告JSON也不能被新报告覆盖",
+        "声明的 transitions 即使是旧报告JSON也不能被新报告覆盖",
+        "当前审阅引用的 当前技术产物.json 必须入包，独立恢复后证据仍可核对",
+        "当前审阅引用的 当前证明原件.json 必须入包，独立恢复后证据仍可核对",
+        "打包保留待审及历史记录，不强求尚未生成或历史失效的原件"
+      ],
+      "reason": "独立核对制作/归档/证据 CLI 与冻结来源，保留 Node 进程及原文件清理边界，避免把验收器本身随业务测试一并转换。",
+      "observableExamples": [
+        "真实入口从清单生成完整归档，清单自身及不同大小成员字节准确，历史与人工记录原样保留",
+        "输出路径不得覆盖制作成员或清单，失败保留原输入",
+        "重复成员和清单自引用被拒绝，不覆盖已有有效交付包"
+      ]
+    },
+    {
+      "file": "tests/production-reference-encoding.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "真实Node入口接受两个旧Python版本独立生成的UTF8 BOM证据包且保留原始字节",
+        "真实Node入口接受旧UTF16LE BOM证据并正确定位含非BMP字符的原件",
+        "真实入口核对独立旧 utf8 包，自动识别端序与无BOM编码且原件不变",
+        "真实入口核对独立旧 utf16-le 包，自动识别端序与无BOM编码且原件不变",
+        "真实入口核对独立旧 utf16-be 包，自动识别端序与无BOM编码且原件不变",
+        "真实入口核对独立旧 utf16-be-bom 包，自动识别端序与无BOM编码且原件不变",
+        "真实入口核对独立旧 utf32-le 包，自动识别端序与无BOM编码且原件不变",
+        "真实入口核对独立旧 utf32-be 包，自动识别端序与无BOM编码且原件不变",
+        "真实入口核对独立旧 utf32-le-bom 包，自动识别端序与无BOM编码且原件不变",
+        "真实入口核对独立旧 utf32-be-bom 包，自动识别端序与无BOM编码且原件不变",
+        "真实入口核对独立旧 utf8-surrogatepass 包，自动识别端序与无BOM编码且原件不变",
+        "真实入口接受旧Python证据NaN与正负Infinity，保留字符串及当前版本的选择意义",
+        "utf8 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf8 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf8 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf8-bom 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf8-bom 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf8-bom 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf16-le 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf16-le 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf16-le 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf16-be 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf16-be 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf16-be 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf16-le-bom 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf16-le-bom 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf16-le-bom 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf16-be-bom 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf16-be-bom 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf16-be-bom 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf32-le 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf32-le 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf32-le 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf32-be 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf32-be 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf32-be 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf32-le-bom 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf32-le-bom 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf32-le-bom 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf32-be-bom 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf32-be-bom 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf32-be-bom 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "constants 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "constants 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "constants 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf8-surrogatepass 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf8-surrogatepass 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "utf8-surrogatepass 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "bigint-history 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "bigint-history 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "bigint-history 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "surrogate-history 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "surrogate-history 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "surrogate-history 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "string-constant-history 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "string-constant-history 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "string-constant-history 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "int-float-current 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "int-float-current 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "int-float-current 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "int-bool-current 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "int-bool-current 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "int-bool-current 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "null-missing-current 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "null-missing-current 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "null-missing-current 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "missing-null-current 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "missing-null-current 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "missing-null-current 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "structured-current 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "structured-current 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "structured-current 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "structured-history 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "structured-history 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "structured-history 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "nan-history 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "nan-history 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "nan-history 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "int-float-rounded-history 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "int-float-rounded-history 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "int-float-rounded-history 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "int-float-exact-current 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "int-float-exact-current 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "int-float-exact-current 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-surrogate-history 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-surrogate-history 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-surrogate-history 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-surrogate-nested-history 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-surrogate-nested-history 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-surrogate-nested-history 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "escaped-surrogate-current 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "escaped-surrogate-current 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "escaped-surrogate-current 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-key-history 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-key-history 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-key-history 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-key-current 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-key-current 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-key-current 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-surrogate32-history 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-surrogate32-history 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-surrogate32-history 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-surrogate16-current 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-surrogate16-current 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "paired-surrogate16-current 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "key-order-history 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "key-order-history 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "key-order-history 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "key-order-nested-history 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "key-order-nested-history 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "key-order-nested-history 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "key-order-current 的current原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "key-order-current 的historical原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "key-order-current 的extension原件即使形似旧报告也不可覆盖，失败报告可定位且编码字节不变",
+        "证据 UTF16-奇数 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "证据 UTF32LE-截断 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "证据 UTF32BE-截断 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "证据 UTF32-越界码点 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "证据 UTF8-截断 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "证据 UTF8-过长编码 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "证据 UTF8-坏代理字符 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "证据 重复BOM 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "证据 {\"x\":+Infinity} 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "证据 {\"x\":NaNfoo} 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "证据 {\"x\":-NaN} 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "证据 {\"x\":infinity} 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "证据 {\"x\":/*Infinity*/1} 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "证据 {'x':NaN} 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "证据 {\"x\":Infinity,} 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "证据 {\"x\":NaN 0} 明确失败，不放宽为JSON5或吞掉编码损坏",
+        "旧 bigint-history 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 surrogate-history 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 string-constant-history 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 int-float-current 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 int-bool-current 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 null-missing-current 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 missing-null-current 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 structured-current 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 structured-history 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 nan-history 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 int-float-rounded-history 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 int-float-exact-current 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 paired-surrogate-history 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 paired-surrogate-nested-history 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 escaped-surrogate-current 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 paired-key-history 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 paired-key-current 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 paired-surrogate32-history 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 paired-surrogate16-current 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 key-order-history 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 key-order-nested-history 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧 key-order-current 审阅版本精确比较继续区分当前与历史，避免误强制入包",
+        "旧Node可读取的非法UTF8-unused path 数据仍保护原件，严格归档不成为覆盖漏洞",
+        "旧Node可读取的非法UTF8-unused proof 数据仍保护原件，严格归档不成为覆盖漏洞",
+        "旧Node可读取的非法UTF8-unused manifest 数据仍保护原件，严格归档不成为覆盖漏洞",
+        "原Node的single raw surrogate path投影仍保护既有原件",
+        "原Node的single raw surrogate proof投影仍保护既有原件",
+        "原Node的paired raw surrogate path投影仍保护既有原件",
+        "原Node的paired raw surrogate proof投影仍保护既有原件"
+      ],
+      "reason": "独立核对制作/归档/证据 CLI 与冻结来源，保留 Node 进程及原文件清理边界，避免把验收器本身随业务测试一并转换。",
+      "observableExamples": [
+        "真实Node入口接受两个旧Python版本独立生成的UTF8 BOM证据包且保留原始字节",
+        "真实Node入口接受旧UTF16LE BOM证据并正确定位含非BMP字符的原件",
+        "真实入口核对独立旧 utf8 包，自动识别端序与无BOM编码且原件不变"
+      ]
+    },
+    {
+      "file": "tests/production-references.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "真实入口分别保护可读不合格记录中的历史和未知字段，而不强制这些引用入包",
+        "真实入口证明指针 relative 按两种用途选择范围且保护原字节",
+        "真实入口证明指针 absolute 按两种用途选择范围且保护原字节",
+        "真实入口证明指针 file-url 按两种用途选择范围且保护原字节",
+        "真实入口证明指针 alias 按两种用途选择范围且保护原字节",
+        "真实入口证明指针 symlink 按两种用途选择范围且保护原字节",
+        "真实入口证明指针 historical 按两种用途选择范围且保护原字节",
+        "真实入口证明指针 missing 按两种用途选择范围且保护原字节",
+        "真实入口证明指针 external 按两种用途选择范围且保护原字节",
+        "当前要求的相对别名定位为必需成员，待生成目标保护报告但不强制入包",
+        "不可写的已有报告在归档副作用前被拒绝并保留原件",
+        "归档不能把显式不合格 sample 当作缺省空记录",
+        "归档不能把显式不合格 dependencies 当作缺省空记录",
+        "归档不能把显式不合格 assets 当作缺省空记录",
+        "本地文件网址在 current-artifact 中仍保护旧报告形状的原件",
+        "本地文件网址在 historical-path 中仍保护旧报告形状的原件",
+        "本地文件网址在 extension-path 中仍保护旧报告形状的原件",
+        "本地 relative-file 的 artifact 指针沿用兼容解析且保护原件",
+        "本地 relative-file 的 proof 指针沿用兼容解析且保护原件",
+        "本地 encoded-slash 的 artifact 指针沿用兼容解析且保护原件",
+        "本地 encoded-slash 的 proof 指针沿用兼容解析且保护原件"
+      ],
+      "reason": "独立核对制作/归档/证据 CLI 与冻结来源，保留 Node 进程及原文件清理边界，避免把验收器本身随业务测试一并转换。",
+      "observableExamples": [
+        "真实入口分别保护可读不合格记录中的历史和未知字段，而不强制这些引用入包",
+        "真实入口证明指针 relative 按两种用途选择范围且保护原字节",
+        "真实入口证明指针 absolute 按两种用途选择范围且保护原字节"
+      ]
+    },
+    {
+      "file": "tests/production-report-identity.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "真实入口拒绝报告硬链接别名并保留制作输入原字节",
+        "真实入口拒绝报告硬链接别名并保留历史证明原件原字节",
+        "真实入口拒绝尚未生成原件的文件符号链接报告别名",
+        "真实入口拒绝尚未生成原件的父目录符号链接报告别名"
+      ],
+      "reason": "独立核对制作/归档/证据 CLI 与冻结来源，保留 Node 进程及原文件清理边界，避免把验收器本身随业务测试一并转换。",
+      "observableExamples": [
+        "真实入口拒绝报告硬链接别名并保留制作输入原字节",
+        "真实入口拒绝报告硬链接别名并保留历史证明原件原字节",
+        "真实入口拒绝尚未生成原件的文件符号链接报告别名"
+      ]
+    },
+    {
+      "file": "tests/production-sample.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "真实动态样片与视觉方案未取得用户确认时禁止批量并保留终审边界",
+        "隔离模拟机制测试：实际项目模式配合模拟用户确认可取得程序许可，不代表实际用户确认或制作许可",
+        "隔离模拟机制测试：受控确认完整时只演练机制，即使模拟真实来源也不授予实际批量许可",
+        "隔离模拟机制测试：实际项目模式配合受控来源独立阻止批量许可",
+        "隔离模拟机制测试：方案和范围不变可复用样片确认，普通文档备注不使产物确认失效",
+        "隔离模拟机制测试：真实样片入口在否决时保持未允许批量",
+        "隔离模拟机制测试：真实样片入口在错误版本时保持未允许批量",
+        "隔离模拟机制测试：真实样片入口在样片版本变化时保持未允许批量",
+        "隔离模拟机制测试：真实样片入口在方案变化时保持未允许批量",
+        "隔离模拟机制测试：真实样片入口在样片变化时保持未允许批量",
+        "隔离模拟机制测试：真实样片入口在范围变化时保持未允许批量",
+        "隔离模拟机制测试：真实样片入口在其他确认来源时保持未允许批量",
+        "隔离模拟机制测试：真实样片入口在声明者变化时保持未允许批量",
+        "隔离模拟机制测试：真实样片入口在确认时间变化时保持未允许批量",
+        "隔离模拟机制测试：真实样片入口在技术证据替代用户时保持未允许批量",
+        "隔离模拟机制测试：真实样片入口在范围越界时保持未允许批量",
+        "隔离模拟机制测试：真实样片入口在损坏视频时保持未允许批量",
+        "隔离模拟机制测试：其它终审要求待审时所选视觉范围仍可许可，保留终审排除范围",
+        "隔离模拟机制测试：局部损坏的视频即使工具宽容退出零也不能冒记完整解码通过",
+        "隔离模拟机制测试：含冒号身份碰撞仍定位所选视觉方向，不代表实际用户确认或制作许可",
+        "隔离模拟机制测试：静态图片不能取得批量许可",
+        "隔离模拟机制测试：单帧视频不能取得批量许可"
+      ],
+      "reason": "独立核对制作/归档/证据 CLI 与冻结来源，保留 Node 进程及原文件清理边界，避免把验收器本身随业务测试一并转换。",
+      "observableExamples": [
+        "真实动态样片与视觉方案未取得用户确认时禁止批量并保留终审边界",
+        "隔离模拟机制测试：实际项目模式配合模拟用户确认可取得程序许可，不代表实际用户确认或制作许可",
+        "隔离模拟机制测试：受控确认完整时只演练机制，即使模拟真实来源也不授予实际批量许可"
+      ]
+    },
+    {
+      "file": "tests/production.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "真实入口检查中文和空格路径及组合显示名映射，报告范围并保留输入",
+        "失败报告不能覆盖项目清单，另存可追溯失败结果",
+        "恢复音频的左右声道错位不能因混成单声道而通过",
+        "真实入口拒绝缺失装配素材并定位失败",
+        "真实入口拒绝损坏审阅媒体并定位失败",
+        "真实入口拒绝装配素材错误包含配音轨道并定位失败",
+        "真实入口拒绝审阅素材没有音轨并定位失败",
+        "真实入口拒绝稳定片段身份重复并定位失败",
+        "真实入口拒绝制作卡映射其他实际源文件并定位失败",
+        "真实入口拒绝错误视频帧长并定位失败",
+        "真实入口拒绝项目尺寸与媒体不符并定位失败",
+        "真实入口拒绝生产源文件出现类型错误并定位失败",
+        "真实入口拒绝类型配置未覆盖制作源文件并定位失败",
+        "真实入口拒绝引用符号链接越出项目并定位失败",
+        "真实入口拒绝真实配音延迟恢复产生错位并定位失败",
+        "真实入口拒绝配音时长与片段帧长不符并定位失败",
+        "缺失真实媒体工具明确失败并将媒体检查标为未执行",
+        "指定其他相对清单且附加数据由所属命令解释",
+        "未知命令不会冒记成功，并保存错误报告",
+        "项目关闭 checkJs 时仍不能把未检查的制作 JavaScript 类型冒记通过",
+        "制作类型检查不会重写项目原有增量编译缓存",
+        "相同配音样本在审阅视频时间线上延后时仍拒绝恢复错位",
+        "项目noCheck开关不能使未检查的制作类型冒记通过"
+      ],
+      "reason": "独立核对制作/归档/证据 CLI 与冻结来源，保留 Node 进程及原文件清理边界，避免把验收器本身随业务测试一并转换。",
+      "observableExamples": [
+        "真实入口检查中文和空格路径及组合显示名映射，报告范围并保留输入",
+        "失败报告不能覆盖项目清单，另存可追溯失败结果",
+        "恢复音频的左右声道错位不能因混成单声道而通过"
+      ]
+    },
+    {
+      "file": "tests/project-access.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "service"
+      ],
+      "historicalScenarios": [
+        "单片段配音受理保存失败后释放占用，不留下任务或阻止后续编辑",
+        "批量配音受理保存失败后释放占用，不留下任务或阻止后续编辑",
+        "导出受理保存失败后释放占用，不留下任务或阻止后续编辑",
+        "speech终态保存失败时查询、准入和默认退出均保持锁定，重开恢复后解锁",
+        "export终态保存失败时查询、准入和默认退出均保持锁定，重开恢复后解锁",
+        "中断导出恢复清理失败时继续占用，修复文件后重开才开放编辑"
+      ]
+    },
+    {
+      "file": "tests/project-editing.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "logic"
+      ],
+      "historicalScenarios": [
+        "单次保存先关闭连接再返回成功仍确认保存，释放后旧连接不影响新编辑",
+        "设置连续保存持有同一修改权，保存时断线等待请求结果但不恢复旧会话",
+        "旧查询成功或失败均不能覆盖设置编辑；同轮查询按最新请求接受",
+        "离页后迟到的修改权立即释放，重新激活后旧响应不打开编辑器",
+        "取消保存后旧回调、错误和释放都不能影响后续编辑，未知结果不重试",
+        "查询慢于轮询间隔时仍接收已完成结果，新查询完成后忽略旧失败",
+        "单次保存结果未知时释放修改权、只报告一次失败且不重试"
+      ]
+    },
+    {
+      "file": "tests/project-import.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "显式迁入入口要求来源与无运行任务确认，复制后原件保留且拒绝覆盖",
+        "迁入发布前阻止并发源修改及目标打开，中断后普通打开不能误认成功"
+      ],
+      "reason": "实际 CLI/宿主/安装包或 Git 进程边界，保留原 Node 文件级隔离和退出状态验证，不为统一断言框架改变被测进程语义。",
+      "observableExamples": [
+        "显式迁入入口要求来源与无运行任务确认，复制后原件保留且拒绝覆盖",
+        "迁入发布前阻止并发源修改及目标打开，中断后普通打开不能误认成功"
+      ]
+    },
+    {
+      "file": "tests/relative-insert-lifecycle-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "相对添加失败与来源恢复：active",
+        "相对添加失败与来源恢复：late",
+        "相对添加失败与来源恢复：deleted",
+        "相对添加失败与来源恢复：changed",
+        "相对添加失败与来源恢复：frame",
+        "相对添加离页后旧响应失效且不影响新编辑和租约",
+        "相对添加保留服务修改权与锁规则：task",
+        "相对添加保留服务修改权与锁规则：speech",
+        "相对添加保留服务修改权与锁规则：export",
+        "相对添加保留服务修改权与锁规则：owner"
+      ]
+    },
+    {
+      "file": "tests/relative-insert-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "相对添加的真实右键键盘、勾选与文案保存（1600px）",
+        "相对添加的真实右键键盘、勾选与文案保存（420px）",
+        "相对添加请求等待期间转向查找后仍接收数据且不抢焦点",
+        "相对添加后第二次修改权等待期间转向查找不抢焦点且释放租约",
+        "相对添加迟到矩阵：request/blank",
+        "相对添加迟到矩阵：request/tab",
+        "相对添加迟到矩阵：request/arrow",
+        "相对添加迟到矩阵：request/control",
+        "相对添加迟到矩阵：request/edge",
+        "相对添加迟到矩阵：request/details",
+        "相对添加迟到矩阵：request/wheel",
+        "相对添加迟到矩阵：request/more",
+        "相对添加迟到矩阵：request/leave",
+        "相对添加迟到矩阵：edit/blank",
+        "相对添加迟到矩阵：edit/tab",
+        "相对添加迟到矩阵：edit/arrow",
+        "相对添加迟到矩阵：edit/control",
+        "相对添加迟到矩阵：edit/edge",
+        "相对添加迟到矩阵：edit/details",
+        "相对添加迟到矩阵：edit/wheel",
+        "相对添加迟到矩阵：edit/more",
+        "相对添加迟到矩阵：edit/leave"
+      ]
+    },
+    {
+      "file": "tests/relative-insert.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "相对锚点原子插入空白片段，保留其他内容且兼容末尾追加",
+        "相对插入拒绝旧顺序、变化或删除的锚点及失效修改权且无残留片段",
+        "插入持久化失败回滚同事务位置更新，不留下空白片段",
+        "相对插入在 speech 任务占用期间拒绝修改且不改变项目",
+        "相对插入在 export 任务占用期间拒绝修改且不改变项目",
+        "相对插入和重排保留非空素材与有效配音关联，新片段无关联"
+      ],
+      "reason": "实际 CLI/宿主/安装包或 Git 进程边界，保留原 Node 文件级隔离和退出状态验证，不为统一断言框架改变被测进程语义。",
+      "observableExamples": [
+        "相对锚点原子插入空白片段，保留其他内容且兼容末尾追加",
+        "相对插入拒绝旧顺序、变化或删除的锚点及失效修改权且无残留片段",
+        "插入持久化失败回滚同事务位置更新，不留下空白片段"
+      ]
+    },
+    {
+      "file": "tests/review-contract.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "审查规范的本地上下文指针能到达目标，失效链接使检查失败",
+        "仓库当前审查上下文链接通过确定性检查"
+      ],
+      "reason": "实际 CLI/宿主/安装包或 Git 进程边界，保留原 Node 文件级隔离和退出状态验证，不为统一断言框架改变被测进程语义。",
+      "observableExamples": [
+        "审查规范的本地上下文指针能到达目标，失效链接使检查失败",
+        "仓库当前审查上下文链接通过确定性检查"
+      ]
+    },
+    {
+      "file": "tests/row-hover-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all",
+        "ui-extended"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "笔与鼠标悬浮时口播片段高亮及时跟随（2 行）",
+        "笔与鼠标悬浮时口播片段高亮及时跟随（7 行）"
+      ]
+    },
+    {
+      "file": "tests/row-menu-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all",
+        "rows"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "行右键删除确认的真实输入与视口（1600px）",
+        "行右键删除确认的真实输入与视口（420px）",
+        "确认删除保持旧快照并反馈过时目标，动态任务锁及修改权阻止提交",
+        "动态锁禁用确认按钮时等待透明度过渡完成后核对主题",
+        "行菜单边缘定位、全部导航键及 Space 焦点交接（1600×360）",
+        "行菜单边缘定位、全部导航键及 Space 焦点交接（420×360）",
+        "删除响应、轮询重排、虚拟滚动与空表后备焦点",
+        "删除请求失败不自动重试",
+        "删除已处理但响应未知不自动重试",
+        "查找状态与确认动态禁用保持可用焦点",
+        "等待删除响应时取消不撤回已发送请求且不抢新焦点",
+        "等待响应取消后留在原片段，迟到删除仍恢复相邻行",
+        "删除确认延迟返回被真实空白点击永久取消",
+        "菜单与删除确认交接保留详情入口和真实表格键盘",
+        "迟到删除成功保留用户的新界面状态",
+        "迟到删除失败保留用户的新界面状态"
+      ]
+    },
+    {
+      "file": "tests/row-selection-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "口播片段真实鼠标选择与上下文边界"
+      ]
+    },
+    {
+      "file": "tests/search-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "查找保留全部口播片段并高亮连续文案（1600×1000）",
+        "查找保留全部口播片段并高亮连续文案（420×720）",
+        "查找保留全部口播片段并高亮连续文案（420×360）"
+      ]
+    },
+    {
+      "file": "tests/segment-details-focus-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "详情取消表格导航保留原来源和原文案字段",
+        "继续编辑的延迟返回不能覆盖新的查找操作",
+        "保存继续期间的新操作取消迟到导航与来源提交",
+        "详情导航后的延迟初始聚焦尊重新操作且来源仍能正常关闭",
+        "详情修改权意图离开后返回也永久失效",
+        "鼠标详情内部浏览保留来源而表格成功导航提交新来源",
+        "键盘详情内部浏览保留来源而表格成功导航提交新来源",
+        "文案保存失败保留草稿确认与来源，成功继续才提交 B",
+        "画面说明保存失败保留草稿确认与来源，成功继续才提交 B",
+        "详情关闭后新空白点击永久取消旧恢复与滚动",
+        "详情关闭在来源被删除和重排后采用统一稳定身份及显示位置",
+        "修改权忙态拒绝新的 B 来源且迟到编辑不会重新取得焦点"
+      ]
+    },
+    {
+      "file": "tests/segment-draft-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "片段草稿、连续行内编辑与新增共享真实保存结果"
+      ]
+    },
+    {
+      "file": "tests/segment-focus-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "普通片段弹窗延迟返回：空白点击",
+        "普通片段弹窗延迟返回：Tab 导航",
+        "普通片段弹窗延迟返回：方向键导航",
+        "普通片段弹窗延迟返回：手动滚动",
+        "普通片段弹窗延迟返回：打开查找并输入",
+        "普通片段弹窗延迟返回：打开其他流程",
+        "普通片段弹窗延迟返回：离开后返回面板",
+        "普通片段弹窗延迟返回：悬停与普通刷新",
+        "普通片段弹窗延迟返回：等待中重排",
+        "普通片段弹窗延迟返回：等待中删除",
+        "普通片段弹窗延迟返回：原显示位置越界",
+        "普通片段弹窗延迟返回：空显示结果",
+        "普通片段弹窗恢复终止与二次执行：首帧后重排",
+        "普通片段弹窗恢复终止与二次执行：首帧后删除",
+        "普通片段弹窗恢复终止与二次执行：有限等待耗尽后不补跳",
+        "普通片段弹窗恢复终止与二次执行：禁用后备逐级跳过",
+        "普通片段弹窗恢复终止与二次执行：不可见后备逐级跳过",
+        "普通片段弹窗恢复终止与二次执行：已卸载后备逐级跳过",
+        "普通片段弹窗恢复终止与二次执行：全部候选不可用",
+        "取消子弹窗返回后父流程仍能关闭回原入口",
+        "查找输入后备禁用时继续尝试表格后备",
+        "查找输入后备不可见时继续尝试表格后备",
+        "跨流程查找与新详情替换旧弹窗返回后仍保留新来源"
+      ]
+    },
+    {
+      "file": "tests/segment-note-layout-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all",
+        "rows",
+        "ui-core",
+        "ui-extended"
+      ],
+      "historicalScenarios": [
+        "文案主导行布局与说明展开（1200×800）",
+        "文案主导行布局与说明展开（780×579）",
+        "文案主导行布局与说明展开（420×800）",
+        "文案主导行布局与说明展开（420×360）"
+      ]
+    },
+    {
+      "file": "tests/selection-menu-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "查找勾选保持布局及新行菜单 Escape 层级 1600",
+        "查找勾选保持布局及新行菜单 Escape 层级 420"
+      ]
+    },
+    {
+      "file": "tests/selection-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "勾选前后主入口稳定且复选框及全片范围保持 1600",
+        "勾选前后主入口稳定且复选框及全片范围保持 420"
+      ]
+    },
+    {
+      "file": "tests/service-exit-wait.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ],
+      "historicalScenarios": [
+        "端口先关闭而服务仍在写清理记录时，等待真实退出后才允许删除目录",
+        "服务未退出时超时失败，不强行结束进程或允许清理"
+      ],
+      "reason": "真实服务/宿主子进程、退出及跨工作空间生命周期场景，保留文件级进程隔离；本批只迁移已核对的普通逻辑和服务场景。",
+      "observableExamples": [
+        "端口先关闭而服务仍在写清理记录时，等待真实退出后才允许删除目录",
+        "服务未退出时超时失败，不强行结束进程或允许清理"
+      ]
+    },
+    {
+      "file": "tests/service.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "service"
+      ],
+      "historicalScenarios": [
+        "HTTP 查询共享业务层，静态面板与项目数据隔离，拒绝向查询接口写入",
+        "异常请求路径返回 400，服务仍能查询项目状态",
+        "HTTP 完成编辑才返回已提交快照，数据库占用时保存失败且重开保留原值",
+        "旧服务实例的绑定地址不能在其他服务读取或修改项目"
+      ]
+    },
+    {
+      "file": "tests/shell-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "页头和状态栏紧凑主题、键盘与任务锁（1600×1000）",
+        "页头和状态栏紧凑主题、键盘与任务锁（420×800）",
+        "页头和状态栏紧凑主题、键盘与任务锁（420×360）"
+      ]
+    },
+    {
+      "file": "tests/speech-batch.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "logic"
+      ],
+      "historicalScenarios": [
+        "批量固定勾选、局部失败继续、整批终态解锁且重发不重复付费",
+        "失败范围限定操作，显式重试读取最新输入并跳过已成功与已删除目标",
+        "缺失或待更新范围、空选择及逐项拒绝不会静默扩大或追加任务",
+        "重开批量操作保留成功结果，未完成显示已中断，不续跑且重发不产生请求"
+      ]
+    },
+    {
+      "file": "tests/speech-cell-layout-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all",
+        "rows",
+        "ui-core",
+        "ui-extended"
+      ],
+      "historicalScenarios": [
+        "配音主按钮与状态横向排列及双层行边界（780×579）",
+        "配音主按钮与状态横向排列及双层行边界（541×579）",
+        "配音主按钮与状态横向排列及双层行边界（420×360）"
+      ]
+    },
+    {
+      "file": "tests/speech-config.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "logic"
+      ],
+      "historicalScenarios": [
+        "只读取明确的本机配置，缺失为空，换密钥后重新读取"
+      ]
+    },
+    {
+      "file": "tests/speech-export-lock.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，成功后恢复校验",
+        "可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，明确失败后恢复校验",
+        "可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，中断后恢复校验",
+        "批量配音中尚未发送的 accepted 任务在表格重连后仍保留身份与导出锁"
+      ],
+      "reason": "保留 Node 选择性 mock.timers 与真实导出/取消计时器语义；不以 vi.useFakeTimers 扩大为全部定时器。",
+      "observableExamples": [
+        "可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，成功后恢复校验",
+        "可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，明确失败后恢复校验",
+        "可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，中断后恢复校验"
+      ]
+    },
+    {
+      "file": "tests/speech-provider.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "logic"
+      ],
+      "historicalScenarios": [
+        "跨网络分块拼接 SSE，只有完成标记后才返回完整音频",
+        "HTTP 401 返回原因与下一步且不泄露响应正文",
+        "HTTP 402 返回原因与下一步且不泄露响应正文",
+        "HTTP 429 返回原因与下一步且不泄露响应正文",
+        "HTTP 503 返回原因与下一步且不泄露响应正文",
+        "部分音频与断流标记结果未知，空成功响应不算成功",
+        "供应商缺失或非法状态码不能确认为失败，必须提示可能已计费"
+      ]
+    },
+    {
+      "file": "tests/speech-retention.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "成功后只保留最近三个音频，清理不丢失请求去重记录，失败不清理",
+        "有效配音供导出读取，改回恢复旧音频，重新生成成功替换当前配音",
+        "视频关联与项目重排不影响有效性，清理音频不删除导入视频",
+        "旧服务迟到结果不能恢复重开后已删除的片段或写入音频",
+        "旧项目按成功时间清理，优先保留当前有效配音而非仅保留最新三个"
+      ],
+      "reason": "真实 FFmpeg/媒体子进程与句柄回收场景，保留原 Node 进程退出边界，后续调度独立核对。",
+      "observableExamples": [
+        "成功后只保留最近三个音频，清理不丢失请求去重记录，失败不清理",
+        "有效配音供导出读取，改回恢复旧音频，重新生成成功替换当前配音",
+        "视频关联与项目重排不影响有效性，清理音频不删除导入视频"
+      ]
+    },
+    {
+      "file": "tests/speech-service.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "service"
+      ],
+      "historicalScenarios": [
+        "HTTP 单行提交与 MCP 共用任务，面板断开不解锁且支持查询与范围试听",
+        "MCP 批量提交返回逐项受理，HTTP 查询与重发共享持久化结果"
+      ]
+    },
+    {
+      "file": "tests/speech.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "logic"
+      ],
+      "historicalScenarios": [
+        "缺凭据时提交前拒绝且不发送付费请求",
+        "受理后持续锁定、重发去重，完整成功音频及输入快照重开仍保留",
+        "统一声音保存并校验范围，改变输入只改变配音有效性",
+        "服务异常不重试，失败保留旧配音；中断任务重开标记未知且不重新请求"
+      ]
+    },
+    {
+      "file": "tests/style-collisions.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all",
+        "ui-core",
+        "ui-extended"
+      ],
+      "historicalScenarios": [
+        "解析生成工具类的转义与嵌套，拒绝同名冲突和无效例外",
+        "生产同源 CSS 的工具类不得覆盖既有业务类名"
+      ]
+    },
+    {
+      "file": "tests/table-controls-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all",
+        "ui-core",
+        "ui-extended"
+      ],
+      "historicalScenarios": [
+        "表格紧凑操作主题与虚拟行（1600×1000）",
+        "表格紧凑操作主题与虚拟行（420×800）",
+        "表格紧凑操作主题与虚拟行（420×360）"
+      ]
+    },
+    {
+      "file": "tests/test-evidence.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ],
+      "historicalScenarios": [
+        "真实测试入口拒绝未登记、丢失和重复归属的测试文件",
+        "真实入口保存逐用例统一证据、原生来源与已登记预期集合",
+        "完整命令拒绝零退出的缺报告/不完整执行/篡改来源，失败进入待办并集中复验",
+        "固定提交正式入口核对统一报告，显式复用拒绝损坏的原始与逐项证据",
+        "多文件真实失败保留位置并在当前源码集中复验，未知与非法位置保守处理",
+        "真实收集错误和迟到的未捕获异常不能被成功用例掩盖",
+        "默认完整检查拒绝同源码历史成功报告，执行身份绑定当次阶段与原生来源",
+        "清单允许的嵌套文件在修复后可以从真实失败待办集中复验",
+        "显式原生 UI 对照失败可集中复验，常规完整范围仍排除对照",
+        "原生报告缺失仍保留对照范围，复验不能只运行普通全量后清空待办",
+        "同次真实预检按文件去重并累计完整证据，独立检查没有历史资格",
+        "预检覆盖全部文件时不启动空集合，完整报告明确引用原来源",
+        "正式复用逐项拒绝累计运行身份、来源、集合和阶段日志故障",
+        "累计链 build 损坏原生复验来源后，未知待办仍保留失败原生范围并阻塞",
+        "累计链 typecheck 损坏原生复验来源后，未知待办仍保留失败原生范围并阻塞",
+        "累计链 build 损坏原生复验来源后，未知待办仍保留严格跳过原生范围并阻塞",
+        "累计链 typecheck 损坏原生复验来源后，未知待办仍保留严格跳过原生范围并阻塞",
+        "UI 严格政策随原生失败待办保留，跳过不能被普通复验清空",
+        "普通严格 UI 来源在 main 类型阶段失效，后续仍须复验 UI 并阻塞",
+        "完整 all/rows 的业务 UI 文件保持严格，非 UI skip 政策仍按文件保留",
+        "新宿主校验旧执行器原 plan，已通过的旧业务 UI 可验而 skip/todo 仍拒绝",
+        "新宿主兼容累计账本之前的 node 配置身份并拒绝旧原始证据损坏",
+        "新宿主兼容累计账本之前的 vitest 配置身份并拒绝旧原始证据损坏",
+        "新宿主兼容累计账本之前的 playwright 配置身份并拒绝旧原始证据损坏",
+        "旧版完整检查的真实验收与显式复用保持可用，损坏 raw 必须新验收",
+        "新目标不能删除累计证明后降级旧协议，旧 UI skip 也不能放行",
+        "实际结束身份校验返回新采集身份，拒绝旧报告掩盖源码或原始来源变化"
+      ],
+      "reason": "公开检查入口、异常报告、拥有权和真实进程退出故障注入；测试器本身是被测系统，保留Node文件级进程边界。",
+      "observableExamples": [
+        "真实测试入口拒绝未登记、丢失和重复归属的测试文件",
+        "真实入口保存逐用例统一证据、原生来源与已登记预期集合",
+        "完整命令拒绝零退出的缺报告/不完整执行/篡改来源，失败进入待办并集中复验"
+      ]
+    },
+    {
+      "file": "tests/test-reporting.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ],
+      "historicalScenarios": [
+        "原生测试报告收齐不同文件及嵌套失败，不把父级汇总重复算作失败",
+        "失败复验使用新检出中的全部失败文件，拒绝丢失文件和越界路径"
+      ],
+      "reason": "公开检查入口、异常报告、拥有权和真实进程退出故障注入；测试器本身是被测系统，保留Node文件级进程边界。",
+      "observableExamples": [
+        "原生测试报告收齐不同文件及嵌套失败，不把父级汇总重复算作失败",
+        "失败复验使用新检出中的全部失败文件，拒绝丢失文件和越界路径"
+      ]
+    },
+    {
+      "file": "tests/text-search.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "logic"
+      ],
+      "historicalScenarios": [
+        "文案查找按连续输入匹配，保留空格和原文偏移",
+        "重复和重叠命中高亮所有涉及的原文且不解释正则"
+      ]
+    },
+    {
+      "file": "tests/thread-selection.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "打开入口建立的对话绑定只读取和改变自己的面板勾选"
+      ],
+      "reason": "真实服务/宿主子进程、退出及跨工作空间生命周期场景，保留文件级进程隔离；本批只迁移已核对的普通逻辑和服务场景。",
+      "observableExamples": [
+        "打开入口建立的对话绑定只读取和改变自己的面板勾选"
+      ]
+    },
+    {
+      "file": "tests/ui-check-plan.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ],
+      "historicalScenarios": [
+        "UI 固定核心保留点击范围检查，row 子集不能规避交互变更升级",
+        "静态 className 和现有 CSS 声明可使用 UI 范围，动态表达式和扫描配置保守升级",
+        "实际表格主题的七个既有颜色字段允许静态字符串替换并可混合静态 className",
+        "主题颜色识别只匹配真实导入及顶层直接主题配置",
+        "动态颜色、配置结构、非颜色参数及逻辑混改仍要求完整检查",
+        "主题颜色放行仍保留全部面板浏览器测试，row 范围与其他文件不绕过升级",
+        "组件映射追加真实专项，未知源码与依赖升级完整范围，文档不伪装源码变更",
+        "缺少指定 Chrome 直接失败，不能继承测试文件中的旧 skip"
+      ],
+      "reason": "公开检查入口、异常报告、拥有权和真实进程退出故障注入；测试器本身是被测系统，保留Node文件级进程边界。",
+      "observableExamples": [
+        "UI 固定核心保留点击范围检查，row 子集不能规避交互变更升级",
+        "静态 className 和现有 CSS 声明可使用 UI 范围，动态表达式和扫描配置保守升级",
+        "实际表格主题的七个既有颜色字段允许静态字符串替换并可混合静态 className"
+      ]
+    },
+    {
+      "file": "tests/ui-check-runner.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ],
+      "historicalScenarios": [
+        "UI 开发证据记录固定核心、源码身份与全部阶段，不称为正式验收",
+        "初始源码线程采集取消仍返回130与完整cancelled记录，线程结束后释放锁",
+        "安全 UI 范围仍可显式降为串行，非法并发不执行阶段",
+        "未知非样式源码即使 UI 子集通过也保留完整检查待办",
+        "纯主题颜色变更在既有 UI 阶段实际执行完成后通过本地检查",
+        "UI 检查期间源码变化立即失效，不能继续测试或构建",
+        "退出零但核心用例被标为 todo 不能获得通过证据",
+        "UI快检占用统一生命周期，取消后不进入测试和构建",
+        "UI失败保留结构化完整失败清单供后续集中复验",
+        "UI实际类型、测试与构建阶段采用同一默认浏览器工具环境，并恢复调用者环境",
+        "UI原生与候选实际三阶段保留显式及空工具环境，失败后也恢复调用者值",
+        "独立 CLI 合并实际身份采集仍保留完整三阶段与严格来源，未知预载回到逐边界采集"
+      ],
+      "reason": "公开检查入口、异常报告、拥有权和真实进程退出故障注入；测试器本身是被测系统，保留Node文件级进程边界。",
+      "observableExamples": [
+        "UI 开发证据记录固定核心、源码身份与全部阶段，不称为正式验收",
+        "初始源码线程采集取消仍返回130与完整cancelled记录，线程结束后释放锁",
+        "安全 UI 范围仍可显式降为串行，非法并发不执行阶段"
+      ]
+    },
+    {
+      "file": "tests/verification-jobs.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling",
+        "environment"
+      ],
+      "historicalScenarios": [
+        "开发检查接受未提交内容，输出身份但不宣称正式验收",
+        "检查期间修改源码使结果失效并停止后续阶段",
+        "固定提交验收与开发目录的未提交修改隔离",
+        "固定提交按代码输入范围验收，历史原件变化不伪装成受检源码变化",
+        "正式验收失败留存日志，不把退出失败记为通过",
+        "正式验收拒绝缺失提交以及安装过程中改变源码",
+        "相同身份并发启动只创建一个任务，状态包含稳定身份、阶段及心跳",
+        "独立检查不继承node:test父进程标记，嵌套测试实际执行",
+        "等待连接退出后后台验收继续，再次启动连接原任务",
+        "环境不同不合并，失败重试生成新任务并保留失败摘要",
+        "历史成功仅显式复用，保留原runId和完成时间；默认重新验收",
+        "缺少原始证据或环境未知时拒绝复用历史成功",
+        "过期心跳不抢占活拥有者，确认退出后旧任务记为interrupted再重试",
+        "拥有者退出但独立session仍有子进程时不重复启动",
+        "跨PID命名空间和新鲜心跳拥有者不可见时不判中断、不重复启动",
+        "字体配置或NODE_ENV改变会改变有效验收环境，测试上下文标记被剥离",
+        "预约启动与普通检查、UI快检共用互斥锁，只有相同令牌可接管",
+        "后台任务显式取消清理不同session的子进程，CLI返回130，旧runId不能取消新任务",
+        "worker退出但登记的另一session仍活着时不判中断，显式清理后才允许重试",
+        "历史复用必须保留通过的预检和完整结构化报告",
+        "取消父检查覆盖其启动的独立后台worker及子命令，嵌套祖先登记完整保留",
+        "累计校验模块变化改变正式执行器身份，不能连接旧任务",
+        "字节码cache控件及执行政策变化不能连接旧正式任务"
+      ],
+      "reason": "公开检查入口、异常报告、拥有权和真实进程退出故障注入；测试器本身是被测系统，保留Node文件级进程边界。",
+      "observableExamples": [
+        "开发检查接受未提交内容，输出身份但不宣称正式验收",
+        "检查期间修改源码使结果失效并停止后续阶段",
+        "固定提交验收与开发目录的未提交修改隔离"
+      ]
+    },
+    {
+      "file": "tests/video-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "画面素材嵌套、取消及迟到响应（1600×1000）",
+        "画面素材嵌套、取消及迟到响应（420×800）",
+        "画面素材嵌套、取消及迟到响应（360×320）",
+        "离开关联请求再回父详情不复活迟到修改权",
+        "嵌套预览父入口卸载后仍可连续返回表格",
+        "嵌套预览父入口不可见后仍可连续返回表格",
+        "嵌套预览父入口禁用后仍可连续返回表格",
+        "关联保存失败关闭子层并保留父层来源",
+        "离开面板期间断连关闭子层不重放旧返回",
+        "父详情内历史与关联的完整键盘返回链",
+        "关联失败关闭待返回时新模态层与父来源仍受保护"
+      ]
+    },
+    {
+      "file": "tests/video-preview-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "缩略图实际播放与侧栏可达性（1200×800）",
+        "缩略图实际播放与侧栏可达性（780×579）",
+        "缩略图实际播放与侧栏可达性（420×800）",
+        "缩略图实际播放与侧栏可达性（420×360）"
+      ]
+    },
+    {
+      "file": "tests/video-service.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "MCP 与表格共用视频导入和关联规则，预览支持范围播放且不开放任意文件"
+      ],
+      "reason": "真实 FFmpeg/媒体子进程与句柄回收场景，保留原 Node 进程退出边界，后续调度独立核对。",
+      "observableExamples": [
+        "MCP 与表格共用视频导入和关联规则，预览支持范围播放且不开放任意文件"
+      ]
+    },
+    {
+      "file": "tests/video.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "指定的项目外视频复制到项目，源文件变化后仍可复用并重开",
+        "拒绝不可解码媒体与无效起点，替换、解除和删除片段保留素材",
+        "目标已删除时跳过关联，不因损坏素材把已删除目标报告为失败",
+        "视频时长由画面决定，较长音轨不能放宽播放起点",
+        "导入不跟随来源链接或播放列表，断开修改权会取消尚未提交的导入",
+        "多视频轨道素材的缩略图与预览使用同一画面"
+      ],
+      "reason": "真实 FFmpeg/媒体子进程与句柄回收场景，保留原 Node 进程退出边界，后续调度独立核对。",
+      "observableExamples": [
+        "指定的项目外视频复制到项目，源文件变化后仍可复用并重开",
+        "拒绝不可解码媒体与无效起点，替换、解除和删除片段保留素材",
+        "目标已删除时跳过关联，不因损坏素材把已删除目标报告为失败"
+      ]
+    },
+    {
+      "file": "tests/visual-note-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all",
+        "ui-extended"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "画面说明展开与详情编辑、草稿冲突及任务锁（1200）",
+        "画面说明展开与详情编辑、草稿冲突及任务锁（420）"
+      ]
+    },
+    {
+      "file": "tests/visual-note.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "logic"
+      ],
+      "historicalScenarios": [
+        "旧项目补齐空画面说明，独立修改、清空、重开及新增均保留正确内容",
+        "说明变化使旧完整快照失效，范围编辑只更改说明，查找仍只搜索文案"
+      ]
+    },
+    {
+      "file": "tests/vitest-runner.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all",
+        "tooling"
+      ],
+      "historicalScenarios": [
+        "混合入口一次覆盖 Node 与 Vitest 文件并保留逐项原始证据",
+        "配置、setup 与用例加载前完成全部实际源码读取，异步采集不提前执行项目代码",
+        "完整 fresh 边界后的受控子进程使用公共 API，未知 Node 选项仍沿原 CLI",
+        "Vitest 首次失败进入统一待办，并按当前执行者集中复验",
+        "受控 Node 与 Vitest 子进程采用相同默认编译缓存，父进程控制不被改写",
+        "Vitest 收集错误 不能被零退出或其他成功场景掩盖",
+        "Vitest 零用例 不能被零退出或其他成功场景掩盖",
+        "Vitest 未捕获异常 不能被零退出或其他成功场景掩盖",
+        "Vitest only 不能被零退出或其他成功场景掩盖",
+        "缺少 Vitest 原始报告时，即使框架用例通过仍不能通过入口",
+        "完整检查聚合 Vitest，交付校验拒绝已改变的原始证据",
+        "取消真实 Vitest worker 回收本次孙进程，另一工作树继续运行且重复检查受锁保护",
+        "普通 Vitest 范围明确保留 skip 与 todo，沿用原生非 UI 政策",
+        "减少重复指纹扫描仍拒绝 Vitest 运行期间的非选中源码变化",
+        "纯框架预加载与实际源码读取重叠，释放后不遗留 IPC 语义",
+        "源码读取尚未放行时取消，预加载子进程与源码线程全部退出",
+        "NODE_OPTIONS 的项目钩子保守等待全部源码读取，不能借预加载提前执行"
+      ],
+      "reason": "公开检查入口、异常报告、拥有权和真实进程退出故障注入；测试器本身是被测系统，保留Node文件级进程边界。",
+      "observableExamples": [
+        "混合入口一次覆盖 Node 与 Vitest 文件并保留逐项原始证据",
+        "配置、setup 与用例加载前完成全部实际源码读取，异步采集不提前执行项目代码",
+        "完整 fresh 边界后的受控子进程使用公共 API，未知 Node 选项仍沿原 CLI"
+      ]
+    },
+    {
+      "file": "tests/voice-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all"
+      ],
+      "policy": "ui",
+      "historicalScenarios": [
+        "声音设置的原生键盘与提交互斥（1600×1000）",
+        "声音设置的原生键盘与提交互斥（420×800）",
+        "声音设置的原生键盘与提交互斥（420×360）",
+        "声音加载期间入口禁用，加载后保留未配置说明"
+      ]
+    },
+    {
+      "file": "tests/wide-panel.test.ts",
+      "executor": "playwright",
+      "scopes": [
+        "all",
+        "rows",
+        "ui-core",
+        "ui-extended"
+      ],
+      "historicalScenarios": [
+        "宽面板文案优先与详情联动（1200）",
+        "宽面板文案优先与详情联动（780）"
+      ]
+    },
+    {
+      "file": "tests/workspace-heartbeat.test.ts",
+      "executor": "vitest",
+      "scopes": [
+        "all",
+        "service"
+      ],
+      "historicalScenarios": [
+        "心跳共享宿主工作空间核对：多条长连接不再每秒启动宿主进程，工作空间改变后仍会释放"
+      ]
+    },
+    {
+      "file": "tests/workspace-inflight-edit.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "codex 在途 import 撤销后不提交，媒体清理完才释放修改权",
+        "codex 在途 video 撤销后不提交，媒体清理完才释放修改权",
+        "codex 在途 settings 撤销后不提交，媒体清理完才释放修改权",
+        "codex 在途 unobserved 撤销后不提交，媒体清理完才释放修改权",
+        "user 在途 import 撤销后不提交，媒体清理完才释放修改权",
+        "user 在途 video 撤销后不提交，媒体清理完才释放修改权",
+        "user 在途 settings 撤销后不提交，媒体清理完才释放修改权",
+        "user 在途 unobserved 撤销后不提交，媒体清理完才释放修改权"
+      ],
+      "reason": "真实服务/宿主子进程、退出及跨工作空间生命周期场景，保留文件级进程隔离；本批只迁移已核对的普通逻辑和服务场景。",
+      "observableExamples": [
+        "codex 在途 import 撤销后不提交，媒体清理完才释放修改权",
+        "codex 在途 video 撤销后不提交，媒体清理完才释放修改权",
+        "codex 在途 settings 撤销后不提交，媒体清理完才释放修改权"
+      ]
+    },
+    {
+      "file": "tests/workspace-runtime.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "打包入口按宿主工作空间打开，表格与业务 MCP 一致，切换及服务重启使旧连接失效"
+      ],
+      "reason": "真实服务/宿主子进程、退出及跨工作空间生命周期场景，保留文件级进程隔离；本批只迁移已核对的普通逻辑和服务场景。",
+      "observableExamples": [
+        "打包入口按宿主工作空间打开，表格与业务 MCP 一致，切换及服务重启使旧连接失效"
+      ]
+    },
+    {
+      "file": "tests/workspace-sharing.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "同工作空间并发打开复用项目与服务，不同工作空间独立",
+        "绑定入口两端共享修改权、任务和去重，另一个工作空间并行配音且产物隔离"
+      ],
+      "reason": "真实服务/宿主子进程、退出及跨工作空间生命周期场景，保留文件级进程隔离；本批只迁移已核对的普通逻辑和服务场景。",
+      "observableExamples": [
+        "同工作空间并发打开复用项目与服务，不同工作空间独立",
+        "绑定入口两端共享修改权、任务和去重，另一个工作空间并行配音且产物隔离"
+      ]
+    },
+    {
+      "file": "tests/workspace-task-continuity.test.ts",
+      "executor": "node",
+      "scopes": [
+        "all"
+      ],
+      "historicalScenarios": [
+        "工作空间往返与宿主不可查询使旧绑定失效，原后台任务持续且不重复提交"
+      ],
+      "reason": "真实服务/宿主子进程、退出及跨工作空间生命周期场景，保留文件级进程隔离；本批只迁移已核对的普通逻辑和服务场景。",
+      "observableExamples": [
+        "工作空间往返与宿主不可查询使旧绑定失效，原后台任务持续且不重复提交"
+      ]
+    }
+  ]
+}

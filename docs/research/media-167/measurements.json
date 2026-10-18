@@ -1,0 +1,49 @@
+{
+  "command": [
+    "node",
+    "scripts/test-runner.mjs",
+    "--suite",
+    "all",
+    "--files",
+    "[\"tests/video-preview-panel.test.ts\"]"
+  ],
+  "cwd": "/home/forclaw/.codex/worktrees/spec-161-media/ClapGrid",
+  "node": "v22.23.3",
+  "cache": "NODE_DISABLE_COMPILE_CACHE=1; CLAPGRID_BROWSER_BUILD_CACHE=0",
+  "samples": [
+    {
+      "sample": 1,
+      "durationSeconds": 19.357544451999274,
+      "exitCode": 0,
+      "log": "/home/forclaw/tmp/implement-161/media-167/before/1.log",
+      "sha256": "28f78a356152e3f6d4b562b2e79603c7365ec0eb9f00ebd6489a190edee9eb8e"
+    },
+    {
+      "sample": 2,
+      "durationSeconds": 19.201376223998523,
+      "exitCode": 0,
+      "log": "/home/forclaw/tmp/implement-161/media-167/before/2.log",
+      "sha256": "38187debe74e5ffbd9fd3baaba08fb541bffa99918a071c90463ffe35d5f57e3"
+    },
+    {
+      "sample": 3,
+      "durationSeconds": 19.296850316997734,
+      "exitCode": 0,
+      "log": "/home/forclaw/tmp/implement-161/media-167/before/3.log",
+      "sha256": "202d4d2676f80f333055cf9679e17e8dbc1096252a77db0c8ec88dcbb11b1de9"
+    }
+  ],
+  "after": {
+    "status": "measured",
+    "commit": "af62a49c97e34203f15b3452961c9d1fe8aa706e",
+    "seconds": [
+      20.646931207000307,
+      19.524792673000775,
+      19.358582823999313
+    ],
+    "medianSeconds": 19.524792673000775,
+    "changePercent": 1.1812412505592063,
+    "evidence": "../check-161/measurements.json",
+    "limits": "相同主机/Node22.23.3/串行公开入口/实际worker1；协调静默；禁Node字节码缓存和浏览器构建缓存；OS页缓存未控制。候选输出外置，167/168基线输出原目录，因此输出I/O并非严格逐字一致。"
+  }
+}

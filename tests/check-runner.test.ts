@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test, type TestContext } from 'node:test';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, cpSync, rmSync, existsSync, readdirSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, cpSync, rmSync, existsSync, readdirSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -44,6 +44,17 @@ test('开发检查接受未提交内容，输出身份但不宣称正式验收',
   const before = sourceIdentity(root);
   writeFileSync(join(root, 'new-file'), 'changed');
   assert.notEqual(sourceIdentity(root).fingerprint, before.fingerprint);
+});
+
+test('Linux检查的已结束进程组通过原生接口确认，不依赖额外ps命令', { skip: process.platform !== 'linux' }, async t => {
+  const { root } = repository(t, 'process.exit(0)');
+  mkdirSync(join(root, 'bin'));
+  const ps = join(root, 'bin/ps');
+  writeFileSync(ps, '#!/bin/sh\necho unexpected-process-scan >&2\nexit 73\n'); chmodSync(ps, 0o755);
+  const result = spawnSync(process.execPath, ['scripts/check.mjs'], { cwd: root,
+    env: { ...process.env, NODE_TEST_CONTEXT: undefined, PATH: `${join(root, 'bin')}:${process.env.PATH}` }, encoding: 'utf8', timeout: 15000 });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(existsSync(join(root, 'logs/check-state/active')), false, '全部子进程已退出才释放运行锁');
 });
 
 test('检查进度及命令输出不混入原生测试器的 V8 stdout 通道', async t => {
@@ -432,24 +443,24 @@ test('正式验收拒绝缺失提交以及安装过程中改变源码', async t 
 });
 
 test('CI 观察入口保留取消状态与受检目标，记录执行耗时及作业余量', t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-ci-observation-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const { root, commit } = repository(t);
   const result = spawnSync(process.execPath, [join(scripts, 'ci-observation.mjs'), '--output', join(root, 'timing.json'), '--timeout-minutes', '15', '--status', 'cancelled'], {
-    encoding: 'utf8', env: { ...process.env, CLAPGRID_CI_STARTED_AT: new Date(Date.now() - 2000).toISOString(), GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/pull/42/merge', GITHUB_SHA: 'merge-result', GITHUB_RUN_ID: '123', GITHUB_RUN_ATTEMPT: '2', GITHUB_STEP_SUMMARY: join(root, 'summary.md') },
+    cwd: root, encoding: 'utf8', env: { ...process.env, CLAPGRID_CI_STARTED_AT: new Date(Date.now() - 2000).toISOString(), GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/pull/42/merge', GITHUB_SHA: 'merge-result', GITHUB_RUN_ID: '123', GITHUB_RUN_ATTEMPT: '2', GITHUB_STEP_SUMMARY: join(root, 'summary.md') },
   });
   assert.equal(result.status, 0, result.stderr);
   const record = JSON.parse(readFileSync(join(root, 'timing.json'), 'utf8'));
   assert.equal(record.status, 'cancelled'); assert.equal(record.passed, false);
+  assert.equal(record.checkout, commit);
   assert.equal(record.target, 'merge-result'); assert.equal(record.attempt, '2');
   assert.ok(record.durationSeconds >= 2 && record.durationSeconds < 10);
   assert.ok(record.timeoutMarginSeconds < 899 && record.timeoutMarginSeconds > 890);
   assert.match(readFileSync(join(root, 'summary.md'), 'utf8'), /cancelled/);
 });
 
-test('CI 自动替换按工作流事件引用分组，手动及旧提交重跑隔离', () => {
+test('CI 仅自动检查 PR 和 main push，手动及旧提交重跑隔离', () => {
   for (const filename of ['check.yml', 'process-trace.yml']) {
     const yaml = readFileSync(new URL(`../.github/workflows/${filename}`, import.meta.url), 'utf8');
-    assert.match(yaml, /  push:\n  pull_request:\n  workflow_dispatch:/);
+    assert.match(yaml, /  push:\n    branches: \[main\]\n  pull_request:\n  workflow_dispatch:/);
     const groupLine = yaml.split('\n').find(line => line.startsWith('  group:'))!;
     const expressions = [...groupLine.matchAll(/\$\{\{ (.*?) \}\}/g)].map(match => match[1]!);
     const cancel = yaml.split('\n').find(line => line.startsWith('  cancel-in-progress:'))!.match(/\$\{\{ (.*?) \}\}/)![1]!;

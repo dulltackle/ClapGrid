@@ -1,12 +1,11 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
-import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+import { test } from './helpers/playwright-browser.js';
 
-for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`粘贴文案的完整提交与键盘流程（${width}×${height}）`, { timeout: 40000 }, t => {
-  assert.ok(chrome, '验收必须实际运行 Chrome');
-  return checkInteractiveBrowser(t, String.raw`
+import { fixture } from './helpers/editing-fixture.js';
+
+
+for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`粘贴文案的完整提交与键盘流程（${width}×${height}）`, async ({ panel }) => { test.setTimeout(40000);
+
+  return panel.check(String.raw`
     import { act } from 'react';
     import { createRoot } from 'react-dom/client';
     import { App } from './src/panel/app.tsx';

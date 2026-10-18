@@ -40,8 +40,7 @@ try {
     root, config: 'vitest.config.ts', run: true, watch: false,
     environment: 'node', pool: 'threads', maxWorkers: 1, fileParallelism: false, isolate: true,
     retry: 0, allowOnly: false, passWithNoTests: false, includeTaskLocation: true,
-    reporters: ['default', 'json', resolve(root, 'scripts/vitest-reporter.mjs')],
-    outputFile: { json: `${process.env.CLAPGRID_VITEST_NATIVE_REPORT}.vitest.json` },
+    reporters: ['default', resolve(root, 'scripts/vitest-reporter.mjs')],
   });
   // 与原 CLI 相同，保留退出超时诊断；close 自身等待线程池及原始报告完成。
   if (!context.shouldKeepServer()) await context.exit();

@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openBusiness } from '../src/business/index.js';
 
-test('缺凭据时提交前拒绝且不发送付费请求', () => {
+test('缺凭据时提交前拒绝且不发送付费请求', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-'));
   let calls = 0;
   const business = openBusiness(directory, { key: () => '', configPath: '/tmp/runtime/.env', fetch: async () => { calls++; throw new Error(); } });
@@ -15,7 +15,7 @@ test('缺凭据时提交前拒绝且不发送付费请求', () => {
     assert.throws(() => business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id }), /\/tmp\/runtime\/\.env.*TOKENDANCE_KEY/);
     assert.equal(calls, 0);
     assert.equal(business.getSpeechStatus().tasks.length, 0);
-  } finally { business.close(); rmSync(directory, { recursive: true, force: true }); }
+  } finally { await business.close(); rmSync(directory, { recursive: true, force: true }); }
 });
 
 test('受理后持续锁定、重发去重，完整成功音频及输入快照重开仍保留', async () => {
@@ -48,12 +48,12 @@ test('受理后持续锁定、重发去重，完整成功音频及输入快照�
     assert.equal(calls, 1);
     assert.equal(business.getSpeechStatus().audio[0]?.valid, true);
     assert.equal(JSON.stringify(business.getSpeechStatus()).includes('secret'), false);
-    business.close();
+    await business.close();
     business = openBusiness(directory, { ...runtime, key: () => 'changed' });
     assert.equal(business.submitSpeech(input).id, task.id);
     assert.equal(business.getSpeechStatus().audio[0]?.valid, true);
     assert.equal(calls, 1);
-  } finally { business.close(); rmSync(directory, { recursive: true, force: true }); }
+  } finally { await business.close(); rmSync(directory, { recursive: true, force: true }); }
 });
 
 test('统一声音保存并校验范围，改变输入只改变配音有效性', async () => {
@@ -68,7 +68,7 @@ test('统一声音保存并校验范围，改变输入只改变配音有效性',
     assert.throws(() => business.setVoice({ speaker: 'zh_female_vv_uranus_bigtts', speechRate: 0, loudness: 50 }));
     business.setVoice({ speaker: 'zh_male_ruyayichen_saturn_bigtts', speechRate: -50 });
     assert.equal(business.getSpeechStatus().audio[0]?.valid, false);
-    business.close(); business = openBusiness(directory, runtime);
+    await business.close(); business = openBusiness(directory, runtime);
     assert.equal(business.getSpeechStatus().voice.speechRate, -50);
     business.setVoice({ speaker: 'zh_female_vv_uranus_bigtts', speechRate: 0 });
     assert.equal(business.getSpeechStatus().audio[0]?.valid, true);
@@ -76,7 +76,7 @@ test('统一声音保存并校验范围，改变输入只改变配音有效性',
     assert.equal(business.getSpeechStatus().audio[0]?.valid, false);
     business.editSegment(segment.id, '原文');
     assert.equal(business.getSpeechStatus().audio[0]?.valid, true);
-  } finally { business.close(); rmSync(directory, { recursive: true, force: true }); }
+  } finally { await business.close(); rmSync(directory, { recursive: true, force: true }); }
 });
 
 test('服务异常不重试，失败保留旧配音；中断任务重开标记未知且不重新请求', async () => {
@@ -104,8 +104,8 @@ test('服务异常不重试，失败保留旧配音；中断任务重开标记�
     const interrupted = { requestId: randomUUID(), segmentId: segment.id };
     business.submitSpeech(interrupted);
     await new Promise(resolve => setImmediate(resolve));
-    business.close(); business = openBusiness(directory, runtime);
+    await business.close(); business = openBusiness(directory, runtime);
     assert.equal(business.submitSpeech(interrupted).state, 'unknown');
     assert.equal(calls, 3); assert.equal(business.getSpeechStatus().locked, false);
-  } finally { business.close(); rmSync(directory, { recursive: true, force: true }); }
+  } finally { await business.close(); rmSync(directory, { recursive: true, force: true }); }
 });

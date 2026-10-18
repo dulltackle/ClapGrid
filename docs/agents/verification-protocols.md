@@ -18,6 +18,8 @@
 
 普通开发检查收到 SIGINT/SIGTERM 会取消；正式验收的启动／等待终端只是观察者，退出不会取消独立 worker。拥有者异常退出后保留锁和日志；只有核对命名空间、进程出生身份及全部登记进程组已结束，才能标记 interrupted，并通过生命周期清理入口重试同身份验收。其他残留用停止入口处理；跨命名空间且控制通道不可达时保留锁并报错，不能仅根据本地 PID 不存在、心跳过期或外层命令退出码判断已停止。
 
+Linux 对已绑定的本命名空间登记组先用原生负 PGID 查询确认整组不存在，只有 ESRCH 可以省去外部扫描；组仍可见时继续完整扫描和僵尸过滤，未知错误保留锁。测量与保留边界见 [生命周期切片](../research/lifecycle-170/README.md)。
+
 Linux/macOS 用独立进程组管理普通子孙进程，宽限期后对尚未退出者强制停止；不扫描或按命令名终止其他工作树及应用服务。主动脱离进程组的外部守护进程不属于此机制的保证范围。Windows 使用 taskkill 进程树终止分支；正式回归以 Ubuntu CI 为准，未在 Windows/macOS 执行的结果不能宣称已验证。
 
 ## UI 迭代
@@ -80,6 +82,12 @@ CI 复用正式验收入口并沿用既有日志上传。修改检查工具或 C
 
 `test-evidence.mjs` 的同一校验器用于开发完整检查、UI 检查、固定提交正式验收及显式 `--reuse-passed`。成功退出不足以证明通过：报告丢失/不完整、零用例、文件/用例集合缺口、来源损坏、收集/未捕获错误、取消以及身份不符均不能通过。UI 使用严格政策，skip/todo 均失败；普通 Node 范围沿用既有 skip/todo 政策，必须明确呈现。无法定位的报告错误以未知失败进入待办，复验保守扩大到完整测试，并集保留所有已知原生对照。待办的 `referenceFiles` 来自失败阶段的原 `testPlan`，报告丢失时仍保留对照范围；复验在当前清单和快照哈希校验后执行，不能清待办漏掉原范围。所有测试执行者的失败统一按当前源码集中复验。
 
+## 原生报告精简（#163）
+
+Vitest 的公开入口仅保存一份来自官方 reporter 生命周期的原生事件 JSON：`onTestModuleCollected` 独立记录预期用例，`onTestCaseResult` 记录逐例结果，`onTestRunEnd` 记录未捕获错误及退出原因。保留执行者版本、nonce、文件、位置、时间和原始日志。移除未被语义消费的第二份官方 JSON reporter 及其 `sources.additional`；旧报告已有的 additional 来源仍逐件校验，不改写历史来源或降低旧证据完整性。
+
+Playwright 继续直接消费官方 JSON，只按每个 test 的原生 results 判断唯一首次结果，避免对此前所有结果反复扫描。统一校验器仍核对全清单、注册与完成集合、实际版本、源码/配置/环境身份及原始来源 hash；成功退出不能代替这些校验。资源归属、取消、严格 UI 和同次预检去重保持原协议。完整逐场景映射、后续批次与删减依据见 [本切片记录](../research/native-execution-163/README.md)。
+
 ## 原生试点对照
 
 `scripts/test-pilot-baseline.json` 固定原生快照哈希与 16/4/14 个原场景，逐项记录原测试、原生对照及候选对应。`tests/*.native.ts` 保留既有断言及相对 imports，清单标为 `comparison-only`；常规完整检查不运行它们，修改快照需明确重建基准。
@@ -92,19 +100,24 @@ CI 复用正式验收入口并沿用既有日志上传。修改检查工具或 C
 
 ## Vitest 逻辑与 HTTP/SQLite 试点（#150）
 
-`npm run test:logic` 单次执行文本搜索、编辑状态计算与配音供应商协议的 16 项；`npm run test:service` 单次执行真实 HTTP/SQLite 的 4 项。固定 Vitest 5.0.5，使用项目 Node 22.23.3、Node 环境、一个 threads worker、文件隔离、零重试，拒绝 only 和零收集。迁移只替换测试器与测试结束清理钩子，场景名称和行为断言继续对应 `test-pilot-baseline.json`；原生 16/4 对照入口保留。
+#164 新增迁移 14 个普通逻辑与真实服务文件，连同首轮 4 个文件共 18 个；Vitest include 由唯一执行者清单派生，仍单 worker 串行隔离，原生 hooks 等待服务/数据库关闭后才清理目录。场景、保留 Node 理由和公开使用方式见 [迁移记录](../research/native-migration-164/README.md)。
 
-`vitest.config.ts` 显式采用仓库根，沿用生产 `@` alias，include 仅四个试点文件。生产 Vite 的 `src/panel` 根和 Tailwind CSS 插件继续用于面板构建；Node 试点不加载该 CSS 插件。框架配置纳入类型检查，框架不替代类型检查和生产构建。
+
+`npm run test:logic` 依据当前清单执行逻辑场景，`npm run test:service` 执行真实 HTTP/SQLite 等服务场景；当前对应 11/7 个文件、59/27 个实际测试。最初试点的 16/4 项保留为 `test:native:logic` / `test:native:service` 独立对照，不是扩展后的命令范围。固定 Vitest 5.0.5，使用项目 Node 22.23.3、Node 环境、一个 threads worker、文件隔离、零重试，拒绝 only 和零收集。迁移保留业务断言，动态子例改为原生注册；首轮对应 `test-pilot-baseline.json`，扩展场景见 #164 的逐项映射。
+
+`vitest.config.ts` 显式采用仓库根，沿用生产 `@` alias，include 从唯一执行者清单派生全部 Vitest 文件。生产 Vite 的 `src/panel` 根和 Tailwind CSS 插件继续用于面板构建；Node 试点不加载该 CSS 插件。框架配置纳入类型检查，框架不替代类型检查和生产构建。
 
 `test-runner.mjs` 根据唯一文件归属顺序调用 Node、Vitest（及后续浏览器执行者），未迁移测试、生命周期及原生报告专项保留 Node。显式 `--files '["tests/text-search.test.ts"]'` 可交付精确集合；错误归属、遗漏、重复与空集合仍失败。默认 all、预检、集中失败复验与正式验收使用同一分派；预检与完整范围按下述同次累计规则去重。
 
-Vitest 同时保存可读日志、官方 JSON 及生命周期原始事件。`onTestModuleCollected` 登记的用例与完成事件分别留证，报告区分收集失败、未捕获错误、失败、中断、skip/todo，原始来源均保存摘要。普通 Node/Vitest 范围沿用非 UI 的 skip/todo 政策，逐项明确显示；浏览器严格政策不因此放宽。执行者版本须与实际安装一致。
+Vitest 保存可读日志及官方生命周期原始事件 JSON（#163 移除无语义消费者的重复官方 JSON reporter）。`onTestModuleCollected` 登记的用例与完成事件分别留证，报告区分收集失败、未捕获错误、失败、中断、skip/todo，原始来源均保存摘要。普通 Node/Vitest 范围沿用非 UI 的 skip/todo 政策，逐项明确显示；浏览器严格政策不因此放宽。执行者版本须与实际安装一致。
 
 混合范围输出 `kind:test-aggregate`，逐个引用同 `executionId` 的子报告及原生来源；文件并集必须等于预期且没有重复，逐项/汇总、源码、配置和环境均重新核对。单一执行者沿用 `kind:test-execution`。缺报告、旧运行替换、收集/未捕获错误、文件或用例缺口与取消不能通过，所有失败按当前归属进入待办并集中复验。运行与 worker 保持在已有受控进程组，取消后先回收本次后代再释放锁。
 
 上述命令只提供所选范围的开发证据；最终同机三次性能对照、完整固定提交验收以及插件安装/实际宿主验收分别记录，不能由试点通过代替。
 
 ## Playwright UI 固定核心（#151）
+
+特殊主题、布局、悬停、草稿、目标入口及刷新构建参数的七文件16场景由同一 Playwright fixture 执行。`panel.check` 第五参数接受 `colorScheme` 和 `buildDefine`，保留原媒体特性与构建身份；原场景脚本、视口、超时和 scopes 不变。映射、公开开发报告来源及已完成的三次性能对照与局限见[特殊条件批次记录](../research/special-ui-native-168.md)。
 
 固定 `@playwright/test` 1.64.1，迁移五个文件、14 项原场景，其中两项样式碰撞无需浏览器，另外 12 项实际运行本机 Chrome。`npm run check:ui -- --scope row --concurrency 1|2` 保留类型检查、固定核心、构建与生命周期清理；`npm run test:ui:core -- --concurrency 1|2` 只运行固定核心，不能当作完整入口预算。默认 UI 快检并发 2，含扩大范围或无法证明为静态样式的变更仍沿用计划器降为 1；最终并发选择与预算由同机三次对照证据决定。`npm run check:ui:native` 保留原生 14 场景对照。普通 all、rows、styles、failed 按清单分派，同次完整检查按累计规则去重。
 
@@ -116,6 +129,18 @@ Vitest 同时保存可读日志、官方 JSON 及生命周期原始事件。`onT
 
 资源登记在当前及祖先检查的 active 中，以 owner token、随机 resourceId、精确专属根和目录内 marker 绑定。正常清理与显式 stop 均先确认本次组结束，再核对非符号链接路径与 marker，删除成功后写根外完成证据并解除登记。worker 被强杀也由外层检查回收 profile；marker 或路径被替换则保留现场及检查锁，修复身份后通过显式 stop 恢复。另一同身份清理须有完成证据才能幂等结束，不能按目录名前缀扫描删除。
 
+
+## 表格编辑与选择原生批次（#165）
+
+11个表格编辑、粘贴、搜索、行菜单、选择和拖拽文件的36个既有场景改由同一Playwright fixture实际执行。原脚本、等待、真实键鼠、各例超时和视口保留；editing显式采用原窗口请求1600×1200，其余保留各自原值。每例独立context/page/DOM/storage/目录，worker复用Chrome；缺浏览器直接失败，无skip/todo或retry放行。该批开发测量采用并发1；后续默认调度及适用范围以#171记录为准，不将局部样本当作全量收益。
+
+唯一清单仅切换本批executor，all/rows/policy原样，原rows成员继续预检与同次累计；UI相关计划仍按原文件身份分派，不建立重复Node归属。原helper仍服务后续批次的调用者，保留其余测试。逐场景映射、editing执行时间语义、热点三次前后测与局部验收边界见[本批记录](../research/table-native-165.md)。
+
+## 添加与焦点原生批次（#166）
+
+相对添加/生命周期、普通添加、片段/详情焦点、删除确认及弹窗7文件98原场景交给同一Playwright fixture。原模板脚本、真实输入、跨渲染/迟到响应断言、视口与15/40秒上限保留，清单仅切换executor且scope/policy不变。实际保守并发1，每例独立页面、storage、选择与焦点状态，worker复用Chrome。原helper仍服务其他批次，不能删掉其剩余调用者。
+
+公开类型及98例功能定向通过不代表最终固定提交验收。旧代表组11例三次已保留；用户明确续时60分钟后完成三次候选，代表组中位下降6.24%且存在样本离散。该测量不代替最终固定提交完整验收。逐场景/原始报告身份、资源收尾及待验边界见[本批记录](../research/focus-native-166.md)。
 
 ## 浏览器编译产物缓存（#154）
 
@@ -212,3 +237,19 @@ watch 的异步派生链关闭自动默认，跨子孙传播该保守策略，�
 `browser-timings` 新增导航、视口核对、结果等待/轮询与 browserInput binding 请求耗时/计数。请求耗时与页面运行、结果等待可能重叠；它们都是观测到的 wall-clock，不能相加当 CPU 或入口收益。完整入口仍包含类型检查、测试、生产构建和生命周期清理。
 
 原生/候选各至少三次、并发 1/2、冷/热及默认字节码条件按 [测量方法](../research/test-executor-pilot.md#测量方法) 分开记录。最终数字、固定提交正式验收及 CI 来源写回 [#156](https://github.com/dulltackle/ClapGrid/issues/156)。记录与交付必须对应同一受验提交；源代码与文档变化后重新固定目标并检查受影响证据。
+
+## 执行器与准备缓存专项精简（#169）
+
+真实 JS/CSS helper 统一使用 `PersistentBuildCache`。删除无真实调用者的 `MemoryBuildCache`、未使用的配置枚举转发，以及重复运行冻结缓存实现来比较私有 metadata/hash 排序形状的两项测试。保留真实编译的冷/热执行、依赖/配置/资源/选项/工具环境失效及损坏重建，保留路径错误与权限的指纹语义回归；全部适用工具文件继续属于 tooling/all。执行器原生失败、报告完整性、预检累计及生命周期职责保持原协议。逐项等价覆盖、慢点保留理由与测量范围见 [专项记录](../research/tooling-169/README.md)。
+
+## 配音、素材与导出面板原生执行（#167）
+
+八个媒体面板文件由唯一清单分派 Playwright，完整范围和原业务 UI 严格政策保留。`Panel.check` 的每例 resources 仍由真实 HTTP 随机端口服务，保留 Range 与 reduced-motion 偏好；每例 context、storage、目录、媒体与服务独立，worker 只复用 Chrome 和既有编译缓存。先关闭 context、关闭全部 HTTP 连接并等待服务 close 回调，再最终回收目录及记录清理，异常累计失败。生成媒体置于登记资源根，强杀时由原拥有者确认进程退出后回收。32项映射、开发与修补证据、已完成的三次候选测量及无改善结论见 [本切片记录](../research/media-167/README.md)。
+
+## 全量原生调度收口（#171）
+
+常规清单110文件由38 Playwright、18 Vitest和54 Node唯一承接，预检范围不变，历史对照仅comparison-only。Playwright沿原文件级模式使用原生worker池，每例仍隔离context/page/目录与资源端口；普通test-runner默认请求2，显式--concurrency 1保留。UI快检/相关入口继续执行计划器的maxConcurrency，不将非静态或未知范围自动提升为并发2；Node生命周期/共享环境专项与Vitest服务保持原有串行/isolate边界。没有增加机器或分片。
+
+废弃checkBrowser的dumpDOM启动/独立构建路径已无调用者并删除；Chrome发现及四个历史原生对照使用的interactive-browser保留。已删除的重复报告、MemoryBuildCache和内部冗余对照与替代保障见[最终职责/完整范围/测量材料](../research/native-scheduling-171/README.md)。自研只保留唯一归属、严格UI、源码/环境身份、原始报告完整性、同次累计与复验、工作树锁与拥有者取消清理、可核对输入的准备缓存；原生框架负责收集、调度、worker池与原始逐例生命周期。
+
+调度选择以同候选同覆盖真实资源隔离的三次代表测量为依据；Vitest threads/forks与单/双project同样保留实际原件，不把子集wall-clock或运行器选择当作全量CI收益。性能数字不替代最终固定候选的独立完整验收。缓存命中仍实际执行，历史passed不自动累计，retry仍为0，缺浏览器/零收集/严格UI skip或todo/取消/报告缺损与错身份仍失败。

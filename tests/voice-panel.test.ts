@@ -1,12 +1,9 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
 
-for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`声音设置的原生键盘与提交互斥（${width}×${height}）`, { timeout: 40000 }, t => {
-  assert.ok(chrome, '验收必须实际运行 Chrome');
-  return checkInteractiveBrowser(t, String.raw`
+for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`声音设置的原生键盘与提交互斥（${width}×${height}）`, async ({ panel }) => { test.setTimeout(40000);
+
+  return panel.check(String.raw`
     import { act } from 'react';
     import { createRoot } from 'react-dom/client';
     import { App } from './src/panel/app.tsx';
@@ -67,11 +64,11 @@ for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`声�
       document.getElementById('result').dataset.state = 'passed';
     } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; } })();
   `, fixture, width, height);
-});
+ });
 
-test('声音加载期间入口禁用，加载后保留未配置说明', { timeout: 40000 }, t => {
-  assert.ok(chrome, '验收必须实际运行 Chrome');
-  return checkInteractiveBrowser(t, String.raw`
+test('声音加载期间入口禁用，加载后保留未配置说明', async ({ panel }) => { test.setTimeout(40000);
+
+  return panel.check(String.raw`
     import { act } from 'react';
     import { createRoot } from 'react-dom/client';
     import { App } from './src/panel/app.tsx';
@@ -93,4 +90,4 @@ test('声音加载期间入口禁用，加载后保留未配置说明', { timeou
       document.getElementById('result').dataset.state = 'passed';
     } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; } })();
   `, fixture.replace('export async function querySpeech() {', 'export async function querySpeech() { if (state.speechLoadGate) await state.speechLoadGate.promise;'));
-});
+ });

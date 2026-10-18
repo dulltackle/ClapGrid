@@ -1,3 +1,4 @@
+import { createConnection } from 'node:net';
 import { test, type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -35,6 +36,22 @@ function repository(t: TestContext, source: string) {
   return {root,command,env};
 }
 
+async function assertMediaServersClosed(path: string) {
+  const records = readFileSync(path, 'utf8').trim().split('\n').map(line => JSON.parse(line));
+  const servers = records.filter(item => item.event === 'media-server-start');
+  assert.ok(servers.length, '必须实际启动本次真实媒体服务');
+  for (const server of servers) {
+    await new Promise<void>((resolve, reject) => {
+      const socket = createConnection({ host: '127.0.0.1', port: server.address.port });
+      socket.setTimeout(1000, () => { socket.destroy(); reject(Error('媒体端口状态未知')); });
+      socket.once('connect', () => { socket.destroy(); reject(Error('媒体服务仍可连接')); });
+      socket.once('error', (error: NodeJS.ErrnoException) => error.code === 'ECONNREFUSED' ? resolve() : reject(error));
+    });
+    assert.equal(existsSync(server.directory), false, '实际服务退出后目录已回收');
+  }
+  return records;
+}
+
 test('Playwright独立入口与混合分派的worker实际采用同一默认字节码策略', t => {
   const {root,command,env}=repository(t,`test('cache worker',async()=>{const{getCompileCacheDir}=await import('node:module');if(process.env.NODE_COMPILE_CACHE!==${JSON.stringify('__DIRECTORY__')}||!getCompileCacheDir())throw Error('worker缺默认编译缓存');});`);
   const file=join(root,'tests/sample.test.ts');writeFileSync(file,readFileSync(file,'utf8').replace('__DIRECTORY__',join(root,'node_modules/.cache/clapgrid-node-compile-v1')));
@@ -57,7 +74,7 @@ test('固定核心单文件并发1或2与普通all默认保持原场景、有限
   for (const [label, args, expectedWorkers] of [
     ['core-c2', ['--suite', 'ui-core', '--files', JSON.stringify([file]), '--concurrency', '2'], 2],
     ['core-c1', ['--suite', 'ui-core', '--files', JSON.stringify([file]), '--concurrency', '1'], 1],
-    ['all-default', [], 1],
+    ['all-default', [], 2],
   ] as const) {
     const timings = join(root, `logs/${label}-timings.jsonl`), reportPath = join(root, `logs/${label}-report.json`);
     env.CLAPGRID_BROWSER_TIMINGS = timings; env.CLAPGRID_TEST_REPORT = reportPath;
@@ -163,14 +180,14 @@ test('真实配音与CSS门槛共享同一测试worker池，CSS不新增Chrome�
   t.diagnostic(JSON.stringify({cssOnly:{cases:cssReport.actual.cases,chromeCommand:env.CHROME_BIN,managedBrowserTimings:false}}));
 });
 
-test('真实 Playwright 入口复用 worker Chrome，并逐例隔离 context/page、DOM、storage 和目录', t => {
+test('真实 Playwright 入口复用 worker Chrome，并逐例隔离 context/page、DOM、storage 和目录', async t => {
   const {root,command} = repository(t, `
-    test('写入前例状态',async({panel})=>panel.check(String.raw\`
-      localStorage.setItem('isolation-probe','dirty');document.body.dataset.polluted='yes';
-      document.getElementById('result').dataset.state='passed';\`,'',420,360));
-    test('后例状态独立',async({panel})=>panel.check(String.raw\`
-      if(localStorage.getItem('isolation-probe')!==null || document.body.dataset.polluted)throw Error('状态串例');
-      document.getElementById('result').dataset.state='passed';\`,'',780,579));
+    test('写入前例状态',async({panel})=>panel.check(String.raw\`(async()=>{
+      if(await(await fetch('/probe')).text()!=='first')throw Error('媒体响应错误');localStorage.setItem('isolation-probe','dirty');document.body.dataset.polluted='yes';
+      document.getElementById('result').dataset.state='passed';})();\`,'',420,360,{resources:{'/probe':{body:Buffer.from('first'),type:'text/plain'}}}));
+    test('后例状态独立',async({panel})=>panel.check(String.raw\`(async()=>{
+      if(await(await fetch('/probe')).text()!=='second')throw Error('媒体资源串例');if(localStorage.getItem('isolation-probe')!==null || document.body.dataset.polluted)throw Error('状态串例');
+      document.getElementById('result').dataset.state='passed';})();\`,'',780,579,{resources:{'/probe':{body:Buffer.from('second'),type:'text/plain'}}}));
   `);
   const result = command();
   assert.equal(result.status,0,result.stdout+result.stderr);
@@ -178,6 +195,7 @@ test('真实 Playwright 入口复用 worker Chrome，并逐例隔离 context/pag
   t.diagnostic(JSON.stringify(records));
   const cases = records.filter(item=>item.event==='case');
   assert.equal(cases.length,2);
+  await assertMediaServersClosed(join(root,'logs/timings.jsonl'));
   assert.equal(cases[0].chromePid,cases[1].chromePid,'同一 worker 必须复用实际 Chrome 进程');
   assert.notEqual(cases[0].contextId,cases[1].contextId);
   assert.notEqual(cases[0].pageId,cases[1].pageId);
@@ -264,9 +282,10 @@ test('并发2显式取消等待两个阻塞worker和Chrome退出后释放全部�
 
 test('Playwright 失败和超时留下实际失败文件，可在当前源码集中复验并清理资源', async t => {
   for (const kind of ['失败','超时']) {
-    const body = kind==='失败' ? `await panel.check("throw Error('intentional-failure')",'');` : `test.setTimeout(1200);await panel.check('/* sentinel保持pending */','');`;
+    const body = kind==='失败' ? `await panel.check("throw Error('intentional-failure')",'',1600,1000,{resources:{'/probe':{body:Buffer.from('failure'),type:'text/plain'}}});` : `test.setTimeout(1200);await panel.check('/* sentinel保持pending */','',1600,1000,{resources:{'/probe':{body:Buffer.from('timeout'),type:'text/plain'}}});`;
     const {root,command} = repository(t, `test('${kind}',async({panel})=>{${body}});`);
     const first=command('scripts/check.mjs'); assert.notEqual(first.status,0);
+    if(kind==='失败') await assertMediaServersClosed(join(root,'logs/timings.jsonl'));
     const pending=JSON.parse(readFileSync(join(root,'logs/check-state/failures.json'),'utf8'));
     assert.ok(pending.failures.some((item:any)=>item.file==='tests/sample.test.ts' && item.name===kind));
     const prefix=readFileSync(join(root,'tests/sample.test.ts'),'utf8').split('\n')[0];
@@ -297,6 +316,25 @@ test('显式取消回收阻塞 worker、Chrome 和专属目录，锁在全部进
   assert.equal(alive(worker.workerPid),false);
   assert.equal(alive(worker.chromePid),false);
   assert.equal(existsSync(worker.directory),false);
+  assert.equal(existsSync(join(root,'logs/check-state/active')),false);
+});
+
+test('显式取消回收活动媒体页面与HTTP端口，Chrome退出后才删除目录', {skip:process.platform!=='linux'}, async t => {
+  const {root,env}=repository(t,`import{mkdtempSync,writeFileSync,appendFileSync}from'node:fs';import{join}from'node:path';test('阻塞worker',async({panel})=>{const directory=mkdtempSync(join(process.env.CLAPGRID_PLAYWRIGHT_RESOURCE_ROOT!,'media-'));writeFileSync(join(directory,'media.bin'),'owned media');appendFileSync(process.env.CLAPGRID_BROWSER_TIMINGS!,JSON.stringify({event:'generated-media',directory})+'\\n');await panel.check("fetch('/probe');",'',1600,1000,{resources:{'/probe':{body:Buffer.from('cancel'),type:'text/plain'}}});while(true){}});`);
+  const child=spawn(process.execPath,['scripts/check.mjs'],{cwd:root,env,stdio:'ignore'});
+  const closed=new Promise<number|null>(resolve=>child.once('close',resolve));
+  t.after(()=>{try{child.kill('SIGKILL')}catch{}});
+  const path=join(root,'logs/timings.jsonl');
+  await until(()=>existsSync(path)&&readFileSync(path,'utf8').includes('"event":"media-request"'));
+  const worker=readFileSync(path,'utf8').trim().split('\n').map(line=>JSON.parse(line)).find(item=>item.event==='worker-start');
+  child.kill('SIGTERM');
+  assert.equal(await closed,130);
+  assert.equal(alive(worker.workerPid),false);
+  assert.equal(alive(worker.chromePid),false);
+  assert.equal(existsSync(worker.directory),false);
+  const mediaRecords = await assertMediaServersClosed(path);
+  const generated = mediaRecords.find(item => item.event === 'generated-media');
+  assert.ok(generated); assert.equal(existsSync(generated.directory), false, 'worker取消后登记根内的生成媒体一起清理');
   assert.equal(existsSync(join(root,'logs/check-state/active')),false);
 });
 

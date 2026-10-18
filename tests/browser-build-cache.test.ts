@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync, cpSync, mkdirSync, symlinkSync, readdirSync, statSync, utimesSync, renameSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { MemoryBuildCache, buildBrowserScript, treeFiles } from './helpers/browser-build.js';
+import { buildBrowserScript } from './helpers/browser-build.js';
 import { buildPanelStyles } from './helpers/panel-styles.js';
 
 beforeEach(t => {
@@ -13,22 +13,6 @@ beforeEach(t => {
   const previous = process.env.CLAPGRID_BROWSER_BUILD_CACHE_DIR;
   process.env.CLAPGRID_BROWSER_BUILD_CACHE_DIR = directory;
   (t as TestContext).after(() => { if (previous === undefined) delete process.env.CLAPGRID_BROWSER_BUILD_CACHE_DIR; else process.env.CLAPGRID_BROWSER_BUILD_CACHE_DIR = previous; rmSync(directory, { recursive: true, force: true }); });
-});
-
-test('构建缓存按内容核对输入与实际 import，不能使用过期依赖或新扫描文件', async t => {
-  const dir = mkdtempSync(join(tmpdir(), 'clapgrid-cache-test-')); t.after(() => rmSync(dir, { recursive: true, force: true }));
-  const input = join(dir, 'input'); const dependency = join(dir, 'dependency');
-  writeFileSync(input, 'source'); writeFileSync(dependency, 'one');
-  let count = 0; const cache = new MemoryBuildCache();
-  const compile = async () => ({ bytes: Buffer.from(String(++count)), dependencies: [dependency] });
-  assert.equal((await cache.get('key', [input], compile)).cacheHit, false);
-  assert.equal((await cache.get('key', [input], compile)).cacheHit, true);
-  writeFileSync(dependency, 'two');
-  assert.equal((await cache.get('key', [input], compile)).cacheHit, false);
-  writeFileSync(join(dir, 'new-source'), 'className="p-3"');
-  assert.equal((await cache.get('key', treeFiles(dir), compile)).cacheHit, false);
-  assert.equal((await cache.get('other-options', treeFiles(dir), compile)).cacheHit, false);
-  assert.equal(count, 4);
 });
 
 test('真实 esbuild 跨尺寸复用字节，fixture 和导入文件变更均失效', async t => {
@@ -499,36 +483,17 @@ test('热命中外层 await 后受键覆盖环境改变时，helper拒绝消费�
 });
 
 
-test('完整输入 frame 与冻结实现兼容，真实构建和热产物保持相同身份', t => {
-  const {root}=buildRepository(t),data=join(root,'frame-data');mkdirSync(data);
-  writeFileSync(join(data,'value.js'),'export const value=41;');
-  writeFileSync(join(data,'二进制.bin'),Buffer.from([0,255,10,195,169,0]));
-  writeFileSync(join(data,'empty'),'');writeFileSync(join(data,'executable'),'#!/bin/sh\nexit 0\n');chmodSync(join(data,'executable'),0o755);
-  symlinkSync('value.js',join(data,'link'));symlinkSync('absent',join(data,'broken'));
-  const entries=mkdtempSync(join(tmpdir(),'clapgrid-frame-entries-'));t.after(()=>rmSync(entries,{recursive:true,force:true}));
-  for(const name of ['frozen','candidate'])mkdirSync(join(entries,name));
-  const frozen=new URL('./fixtures/cache-fingerprint-9ef.ts',import.meta.url).href,candidate=pathToFileURL(join(root,'tests/helpers/persistent-build-cache.ts')).href;
-  const code=`import * as old from ${JSON.stringify(frozen)};import * as current from ${JSON.stringify(candidate)};import{build}from'esbuild';import fs from'node:fs';import vm from'node:vm';const root=${JSON.stringify(root)},data=${JSON.stringify(data)},entries=${JSON.stringify(entries)};
-    const run=async(module,name)=>{process.env.CLAPGRID_BROWSER_BUILD_CACHE_DIR=entries+'/'+name;const cache=new module.PersistentBuildCache(root),tools=module.bindBuildTools(root,['esbuild']),plan=module.buildInputPlan({tools,directories:[data],files:[data,data+'/missing']});
-    const compile=async()=>{const out=await build({absWorkingDir:root,stdin:{contents:"import{value}from'./frame-data/value.js';globalThis.__cache_probe=value;",resolveDir:root},bundle:true,write:false,format:'iife'});return{bytes:out.outputFiles[0].contents,dependencies:[data+'/value.js']};};const observe=result=>{const c={};vm.runInNewContext(Buffer.from(result.bytes).toString(),c);return{hit:result.cacheHit,key:result.cacheKey,value:c.__cache_probe,identity:module.bytesIdentity(result.bytes)};};
-    const cold=observe(await cache.get('frame-compatibility-v1',plan,compile)),hot=observe(await cache.get('frame-compatibility-v1',plan,compile));const files=fs.readdirSync(entries+'/'+name).filter(file=>file.endsWith('.json'));const entry=JSON.parse(fs.readFileSync(entries+'/'+name+'/'+files[0],'utf8'));return{cold,hot,fingerprint:entry.fingerprint,cacheKey:entry.cacheKey,projection:module.fingerprint([data,...module.treeFiles(data),data+'/missing'])};};
-    const frozen=await run(old,'frozen'),candidate=await run(current,'candidate');console.log('FRAME-PROBE '+JSON.stringify({frozen,candidate}));`;
-  const env:NodeJS.ProcessEnv={...process.env};delete env.NODE_TEST_CONTEXT;
-  const child=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,encoding:'utf8'});assert.equal(child.status,0,child.stdout+child.stderr);
-  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('FRAME-PROBE '))!.slice(12));t.diagnostic(JSON.stringify(observed));
-  assert.equal(observed.frozen.cold.hit,false);assert.equal(observed.frozen.hot.hit,true);assert.equal(observed.frozen.hot.value,41);assert.deepEqual(observed.candidate,observed.frozen);
-});
-
 test('公开输入指纹保持真实链接、路径故障和权限边界的冻结语义', t => {
   const root=mkdtempSync(join(tmpdir(),'clapgrid-filesystem-frame-')),data=join(root,'filesystem-frame');mkdirSync(data);
   const regular=join(data,'value');writeFileSync(regular,Buffer.from([0,255,195,169]));
+  const empty=join(data,'empty');writeFileSync(empty,'');
   const directory=join(data,'目录');mkdirSync(directory);writeFileSync(join(directory,'空 格'),'value');
   symlinkSync('value',join(data,'file-link'));symlinkSync('目录',join(data,'directory-link'),'dir');
   symlinkSync('absent',join(data,'broken'));symlinkSync('cycle-b',join(data,'cycle-a'));symlinkSync('cycle-a',join(data,'cycle-b'));
   const denied=join(data,'denied');writeFileSync(denied,'private');chmodSync(denied,0o000);
   const locked=join(data,'locked');mkdirSync(locked);writeFileSync(join(locked,'child'),'private');chmodSync(locked,0o000);
   t.after(()=>{chmodSync(denied,0o600);chmodSync(locked,0o700);rmSync(root,{recursive:true,force:true});});
-  const paths=[regular,directory,join(directory,'空 格'),join(data,'file-link'),join(data,'directory-link'),join(data,'directory-link/空 格'),join(data,'broken'),join(data,'missing'),join(regular,'not-directory'),join(data,'cycle-a'),denied,join(locked,'child')];
+  const paths=[regular,empty,directory,join(directory,'空 格'),join(data,'file-link'),join(data,'directory-link'),join(data,'directory-link/空 格'),join(data,'broken'),join(data,'missing'),join(regular,'not-directory'),join(data,'cycle-a'),denied,join(locked,'child')];
   const frozen=new URL('./fixtures/cache-fingerprint-9ef.ts',import.meta.url).href,candidate=new URL('./helpers/persistent-build-cache.ts',import.meta.url).href;
   const code=`import * as old from ${JSON.stringify(frozen)};import * as current from ${JSON.stringify(candidate)};const paths=${JSON.stringify(paths)};const observe=module=>paths.map(file=>{try{return{file,fingerprint:module.fingerprint([file])};}catch(error){return{file,error:error.code??error.message};}});console.log('FILESYSTEM-FRAME '+JSON.stringify({frozen:observe(old),candidate:observe(current)}));`;
   const env:NodeJS.ProcessEnv={...process.env};delete env.NODE_TEST_CONTEXT;
@@ -538,28 +503,6 @@ test('公开输入指纹保持真实链接、路径故障和权限边界的冻�
   assert.equal(observed.candidate.find((item:{file:string})=>item.file===join(data,'cycle-a')).error,'ELOOP');
   assert.equal(observed.candidate.find((item:{file:string})=>item.file===regular).fingerprint.length,64);
 });
-
-test('真实构建的长短排序前缀保持冻结的完整输入与产物身份', t => {
-  const {root}=buildRepository(t),data=join(root,'prefix-data');mkdirSync(data);
-  writeFileSync(join(data,'value.js'),'export const value=41;');writeFileSync(join(data,'二进制'),Buffer.from([0,255,195,169,0]));
-  writeFileSync(join(data,'empty'),'');writeFileSync(join(data,'executable'),'#!/bin/sh\nexit 0\n');chmodSync(join(data,'executable'),0o755);
-  mkdirSync(join(data,'directory'));writeFileSync(join(data,'directory/member'),'member');
-  symlinkSync('value.js',join(data,'link'));symlinkSync('absent',join(data,'broken'));
-  writeFileSync(join(root,'src/panel/prefix-probe.ts'),'export const value=41;');
-  const entries=mkdtempSync(join(tmpdir(),'clapgrid-prefix-entries-'));t.after(()=>rmSync(entries,{recursive:true,force:true}));
-  const frozen=new URL('./fixtures/cache-fingerprint-9ef.ts',import.meta.url).href,candidate=pathToFileURL(join(root,'tests/helpers/persistent-build-cache.ts')).href;
-  const code=`import * as old from ${JSON.stringify(frozen)};import * as current from ${JSON.stringify(candidate)};import{build}from'esbuild';import fs from'node:fs';import path from'node:path';import vm from'node:vm';const root=${JSON.stringify(root)},data=${JSON.stringify(data)},entries=${JSON.stringify(entries)};
-    const run=async(module,name,specifier)=>{const directory=entries+'/'+name;fs.mkdirSync(directory);process.env.CLAPGRID_BROWSER_BUILD_CACHE_DIR=directory;const tools=module.bindBuildTools(root,['esbuild','tsx']),cache=new module.PersistentBuildCache(root),plan=module.buildInputPlan({tools,directories:[data],files:[data,data+'/absent',data+'/value.js',data+'/value.js']});
-      const compile=async()=>{const resolutions=[];const result=await build({absWorkingDir:root,stdin:{contents:'import{value}from'+JSON.stringify(specifier)+';globalThis.__cache_probe=value;',resolveDir:root,loader:'ts'},bundle:true,write:false,metafile:true,format:'iife',plugins:[{name:'actual-resolutions',setup(builder){builder.onResolve({filter:/.*/},args=>{if(args.resolveDir)resolutions.push('resolve:'+JSON.stringify([args.path,args.resolveDir]));return undefined;});}}]});return{bytes:result.outputFiles[0].contents,dependencies:[...Object.keys(result.metafile.inputs).filter(file=>file!=='<stdin>').map(file=>path.resolve(root,file)),...resolutions]};};
-      const observe=result=>{const context={};vm.runInNewContext(Buffer.from(result.bytes).toString(),context);return{hit:result.cacheHit,key:result.cacheKey,value:context.__cache_probe,identity:module.bytesIdentity(result.bytes)};};
-      const cold=observe(await cache.get('prefix-compatible:'+specifier,plan,compile)),hot=observe(await cache.get('prefix-compatible:'+specifier,plan,compile));const entry=JSON.parse(fs.readFileSync(directory+'/'+fs.readdirSync(directory).find(file=>file.endsWith('.json')),'utf8'));return{cold,hot,fingerprint:entry.fingerprint,dependencies:entry.dependencies};};
-    const observed=[];for(const[scope,specifier]of[['long','./prefix-data/value.js'],['short','@/prefix-probe']]){const frozen=await run(old,scope+'-frozen',specifier),candidate=await run(current,scope+'-candidate',specifier);observed.push({scope,frozen,candidate});}console.log('PREFIX-FRAME '+JSON.stringify(observed));`;
-  const env:NodeJS.ProcessEnv={...process.env};delete env.NODE_TEST_CONTEXT;
-  const child=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,encoding:'utf8'});assert.equal(child.status,0,child.stdout+child.stderr);
-  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('PREFIX-FRAME '))!.slice(13));t.diagnostic(JSON.stringify(observed));
-  for(const row of observed){assert.equal(row.frozen.cold.hit,false);assert.equal(row.frozen.hot.hit,true);assert.equal(row.frozen.hot.value,41);assert.deepEqual(row.candidate,row.frozen);}
-});
-
 
 test('完整投影在下一次真实构建重新读取同长度外部依赖，不受恢复 mtime 影响', t => {
   const {root,execute}=buildRepository(t),external=join(root,'external-same-path');mkdirSync(external);

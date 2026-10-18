@@ -1,16 +1,16 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startService } from '../src/service/server.js';
 
-async function fixture(t: import('node:test').TestContext) {
+async function fixture(t: import('vitest').TestContext) {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-modification-'));
   const panelDirectory = join(root, 'panel');
   mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'ClapGrid');
   const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
-  t.after(async () => { await service.close(); rmSync(root, { recursive: true, force: true }); });
+  t.onTestFinished(async () => { await service.close(); rmSync(root, { recursive: true, force: true }); });
   const post = (path: string, body: unknown, token?: string) => fetch(`${service.url}${path}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Edit-Token': token } : {}) }, body: JSON.stringify(body),
   });
@@ -43,7 +43,7 @@ test('Codex 收到写请求即占用修改权，查询不受阻；中断及格�
   const pending = request(`${service.url}/api/codex/modify`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
   pending.on('error', () => {});
   pending.write('{"changes":');
-  t.after(() => pending.destroy());
+  t.onTestFinished(() => { pending.destroy(); });
   for (let i = 0; i < 50 && !(await status()).modification; i++) await new Promise(resolve => setTimeout(resolve, 10));
   assert.deepEqual((await status()).modification, { owner: 'codex' });
   assert.equal((await fetch(`${service.url}/api/edit-session`, { method: 'POST' })).status, 409);

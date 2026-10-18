@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
@@ -13,16 +13,16 @@ import type { SpeechStatus, SpeechTask } from '../src/shared/contracts.js';
 
 test('HTTP 单行提交与 MCP 共用任务，面板断开不解锁且支持查询与范围试听', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-speech-http-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
   let finish!: (response: Response) => void;
   let calls = 0; let key = '';
   const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0, speechRuntime: {
     configPath: '/tmp/local/.env', key: () => key, fetch: (async () => { calls++; return await new Promise<Response>(resolve => { finish = resolve; }); }) as typeof fetch,
   } });
-  t.after(() => service.close());
+  t.onTestFinished(() => service.close());
   const mcp = createBusinessMcp(service.url); const client = new Client({ name: '配音验证', version: '1' });
-  t.after(() => client.close()); t.after(() => mcp.close());
+  t.onTestFinished(() => client.close()); t.onTestFinished(() => mcp.close());
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
   await client.callTool({ name: 'clapgrid_modify', arguments: { changes: [{ kind: 'add', text: '真实业务流程' }] } });
   const status = await (await fetch(`${service.url}/api/status`)).json();
@@ -63,15 +63,15 @@ test('HTTP 单行提交与 MCP 共用任务，面板断开不解锁且支持查�
 
 test('MCP 批量提交返回逐项受理，HTTP 查询与重发共享持久化结果', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-batch-http-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
   let calls = 0;
   const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0, speechRuntime: {
     configPath: '/tmp/.env', key: () => 'key', fetch: (async () => { calls++; return new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n'); }) as typeof fetch,
   } });
-  t.after(() => service.close());
+  t.onTestFinished(() => service.close());
   const mcp = createBusinessMcp(service.url); const client = new Client({ name: '批量配音验证', version: '1' });
-  t.after(() => client.close()); t.after(() => mcp.close());
+  t.onTestFinished(() => client.close()); t.onTestFinished(() => mcp.close());
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
   await client.callTool({ name: 'clapgrid_modify', arguments: { changes: [{ kind: 'add', text: '第一行' }, { kind: 'add', text: '第二行' }] } });
   const input = { requestId: randomUUID(), mode: 'generate', scope: { kind: 'all' } };

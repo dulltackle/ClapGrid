@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { test } from 'vitest';
 import type { BuildIdentity } from '../src/build-identity.js';
 import { panelCompatibility, panelNeedsRefresh, panelRestoreKey, readPanelRestore, restoredSelection, writePanelRestore } from '../src/panel/panel-update.js';
 
@@ -12,7 +12,7 @@ const memory = () => {
   return { getItem: (key: string) => items.get(key) ?? null, setItem: (key: string, value: string) => { items.set(key, value); }, removeItem: (key: string) => { items.delete(key); } };
 };
 
-test('只在明确兼容且面板代次变化时提示刷新', () => {
+test('只在明确兼容且面板代次变化时提示刷新', async () => {
   assert.equal(panelNeedsRefresh(identity(), identity('c')), true);
   assert.equal(panelNeedsRefresh(identity(), identity()), false);
   assert.equal(panelNeedsRefresh(identity(), identity('c', 'd')), false);
@@ -22,7 +22,7 @@ test('只在明确兼容且面板代次变化时提示刷新', () => {
   assert.equal(panelCompatibility(identity(), identity('c', 'd')), '版本不一致，请更新插件并重新打开');
 });
 
-test('刷新快照按绑定分开、仅消费一次，过期及损坏记录不能恢复', () => {
+test('刷新快照按绑定分开、仅消费一次，过期及损坏记录不能恢复', async () => {
   const store = memory(); const key = panelRestoreKey('http://127.0.0.1:1/binding/a');
   assert.notEqual(key, panelRestoreKey('http://127.0.0.1:1/binding/b'));
   assert.equal(writePanelRestore(store, key, restore()), true);
@@ -33,7 +33,7 @@ test('刷新快照按绑定分开、仅消费一次，过期及损坏记录不�
   writePanelRestore(store, key, { ...restore(), createdAt: 8000 }); assert.equal(readPanelRestore(store, key, 1000), null);
 });
 
-test('勾选仅恢复同项目、同实例和目标面板中的现存身份，空选不扩大范围', () => {
+test('勾选仅恢复同项目、同实例和目标面板中的现存身份，空选不扩大范围', async () => {
   assert.deepEqual(restoredSelection(restore(), 'project', 'instance', identity('c'), ['s1', 's2']), ['s2']);
   assert.deepEqual(restoredSelection({ ...restore(), selectedIds: [] }, 'project', 'instance', identity('c'), ['s1']), []);
   assert.equal(restoredSelection(restore(), 'other', 'instance', identity('c'), ['s2']), null);
@@ -41,7 +41,7 @@ test('勾选仅恢复同项目、同实例和目标面板中的现存身份，�
   assert.equal(restoredSelection(restore(), 'project', 'instance', identity(), ['s2']), null);
 });
 
-test('无法持久化快照时保持当前面板，读取受限存储也不抛错', () => {
+test('无法持久化快照时保持当前面板，读取受限存储也不抛错', async () => {
   const blocked = { getItem() { throw Error('blocked'); }, setItem() { throw Error('blocked'); }, removeItem() {} };
   assert.equal(writePanelRestore(blocked, 'key', restore()), false);
   assert.equal(readPanelRestore(blocked, 'key'), null);

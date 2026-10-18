@@ -1,8 +1,5 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
 
 const script = String.raw`
   import { act } from 'react';
@@ -87,8 +84,8 @@ const script = String.raw`
   })();
 `;
 for (const [width, height] of [[1600, 1000], [420, 800], [360, 320]]) {
-  test('配音试听与保留音频完整主视图流程（' + width + '×' + height + '）', { timeout: 40000 }, async t => {
-    assert.ok(chrome, '必须运行 Chrome，不将环境缺失视为通过');
-    await checkInteractiveBrowser(t, script, fixture, width, height);
-  });
+  test('配音试听与保留音频完整主视图流程（' + width + '×' + height + '）', async ({ panel }) => { test.setTimeout(40000);
+
+    await panel.check(script, fixture, width, height);
+   });
 }

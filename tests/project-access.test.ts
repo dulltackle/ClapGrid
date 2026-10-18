@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -24,7 +24,7 @@ for (const kind of ['单片段配音', '批量配音', '导出'] as const) test(
   const business = openBusiness(directory, { key: () => '测试', configPath: '测试', fetch: (async () => { calls++; throw new Error('不应调用供应商'); }) as typeof fetch });
   const segment = business.addSegment('任务受理失败').segments[0]!;
   const db = new DatabaseSync(business.getSnapshot().storage.database);
-  t.after(async () => { db.close(); await business.close(); rmSync(directory, { recursive: true, force: true }); });
+  t.onTestFinished(async () => { db.close(); await business.close(); rmSync(directory, { recursive: true, force: true }); });
   const table = kind === '单片段配音' ? 'speech_tasks' : kind === '批量配音' ? 'speech_operations' : 'export_tasks';
   // 批量操作最后落盘失败，验证此前写入的配音任务也被回滚。
   db.exec(`CREATE TRIGGER reject_acceptance BEFORE INSERT ON ${table} BEGIN SELECT RAISE(ABORT, '模拟受理保存失败'); END`);
@@ -54,7 +54,7 @@ for (const kind of ['speech', 'export'] as const) test(`${kind}终态保存失�
   await modifyBatch(service.url, { changes: [{ kind: 'add', text: '终态保存失败' }] });
   const before = await queryStatus(service.url);
   const db = new DatabaseSync(before.snapshot.storage.database);
-  t.after(async () => { await service.close(); db.close(); rmSync(root, { recursive: true, force: true }); });
+  t.onTestFinished(async () => { await service.close(); db.close(); rmSync(root, { recursive: true, force: true }); });
   db.exec(`CREATE TRIGGER reject_terminal BEFORE UPDATE ON ${kind}_tasks
     WHEN json_extract(NEW.value, '$.state') IN ('succeeded', 'failed', 'cancelled', 'interrupted')
     BEGIN SELECT RAISE(ABORT, '模拟终态保存失败'); END`);
@@ -104,7 +104,7 @@ test('中断导出恢复清理失败时继续占用，修复文件后重开才�
   const previewDirectory = join(mediaDirectory, `${task.id}.export.webm`);
   mkdirSync(previewDirectory);
   business = openBusiness(directory);
-  t.after(async () => { await business.close(); rmSync(directory, { recursive: true, force: true }); });
+  t.onTestFinished(async () => { await business.close(); rmSync(directory, { recursive: true, force: true }); });
   await until(() => business.getExportTasks().tasks.some(item => item.message.includes('清理失败')));
   assert.equal(business.getActivity().taskLocked, true);
   assert.equal(business.getExportTasks().locked, true);

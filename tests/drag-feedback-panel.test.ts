@@ -1,7 +1,7 @@
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
+
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
 
 // 将实际宿主中数百毫秒的取得编辑权/保存等待固定为闸门，避免依赖机器速度。
 const script = String.raw`
@@ -44,4 +44,4 @@ const position = id => document.querySelector('[row-id="'+id+'"]').getAttribute(
   document.getElementById('result').dataset.state='passed';
 }catch(error){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=error.stack;}})();
 `;
-for (const count of [2, 8]) test('拖拽松手后立即预览顺序，异步保存失败恢复 '+count, {skip:chrome?false:'未执行：需要 Chrome/Chromium',timeout:15000}, t=>checkInteractiveBrowser(t,script.replace('SEGMENT_COUNT', String(count)),fixture));
+for (const count of [2, 8]) test('拖拽松手后立即预览顺序，异步保存失败恢复 '+count, async ({ panel }) => { test.setTimeout(15000); await (panel.check(script.replace('SEGMENT_COUNT', String(count)),fixture)); });

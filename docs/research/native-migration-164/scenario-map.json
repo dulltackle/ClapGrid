@@ -1,0 +1,677 @@
+{
+  "baseline": "2a5bcc4254c77e8b256394866057ceae3d8ff2df",
+  "source": "../native-execution-163/scenario-map.tsv",
+  "mapping": [
+    {
+      "oldFile": "tests/business.test.ts",
+      "oldName": "共享业务层初始化 SQLite，重开后保留项目标识与创建时间",
+      "oldLocation": "1:264",
+      "newFile": "tests/business.test.ts",
+      "newName": "共享业务层初始化 SQLite，重开后保留项目标识与创建时间",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/business.test.ts",
+      "oldName": "新增与编辑口播片段后重开，稳定身份、文案和项目顺序保留",
+      "oldLocation": "1:1046",
+      "newFile": "tests/business.test.ts",
+      "newName": "新增与编辑口播片段后重开，稳定身份、文案和项目顺序保留",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/business.test.ts",
+      "oldName": "拒绝项目内 clapgrid.sqlite 符号链接，不触碰项目外文件",
+      "oldLocation": "1:2048",
+      "newFile": "tests/business.test.ts",
+      "newName": "拒绝项目内 clapgrid.sqlite 符号链接，不触碰项目外文件",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/business.test.ts",
+      "oldName": "拒绝项目内 clapgrid.sqlite-wal 符号链接，不触碰项目外文件",
+      "oldLocation": "1:2048",
+      "newFile": "tests/business.test.ts",
+      "newName": "拒绝项目内 clapgrid.sqlite-wal 符号链接，不触碰项目外文件",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/business.test.ts",
+      "oldName": "拒绝项目内 clapgrid.sqlite-shm 符号链接，不触碰项目外文件",
+      "oldLocation": "1:2048",
+      "newFile": "tests/business.test.ts",
+      "newName": "拒绝项目内 clapgrid.sqlite-shm 符号链接，不触碰项目外文件",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/business.test.ts",
+      "oldName": "拒绝项目内 clapgrid.sqlite-journal 符号链接，不触碰项目外文件",
+      "oldLocation": "1:2048",
+      "newFile": "tests/business.test.ts",
+      "newName": "拒绝项目内 clapgrid.sqlite-journal 符号链接，不触碰项目外文件",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/business.test.ts",
+      "oldName": "拒绝项目内 media 符号链接，不触碰项目外文件",
+      "oldLocation": "1:2048",
+      "newFile": "tests/business.test.ts",
+      "newName": "拒绝项目内 media 符号链接，不触碰项目外文件",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-service.test.ts",
+      "oldName": "user 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权",
+      "oldLocation": "1:844",
+      "newFile": "tests/export-service.test.ts",
+      "newName": "user 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-service.test.ts",
+      "oldName": "codex 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权",
+      "oldLocation": "1:844",
+      "newFile": "tests/export-service.test.ts",
+      "newName": "codex 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-service.test.ts",
+      "oldName": "表格 HTTP 与 MCP 共享导出设置，自动保存恢复并遵守普通修改权及任务锁",
+      "oldLocation": "1:3059",
+      "newFile": "tests/export-service.test.ts",
+      "newName": "表格 HTTP 与 MCP 共享导出设置，自动保存恢复并遵守普通修改权及任务锁",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-service.test.ts",
+      "oldName": "表格与 MCP 共用全片导出任务，立即受理、重复提交、进度及取消状态一致",
+      "oldLocation": "1:6888",
+      "newFile": "tests/export-service.test.ts",
+      "newName": "表格与 MCP 共用全片导出任务，立即受理、重复提交、进度及取消状态一致",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "首次导出设置提供编码帧率默认值，字体字号留空且阻止导出",
+      "oldLocation": "1:329",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "首次导出设置提供编码帧率默认值，字体字号留空且阻止导出",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "导出设置持有普通修改权保存，拒绝过时快照与无效参数，重开恢复",
+      "oldLocation": "1:1181",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "导出设置持有普通修改权保存，拒绝过时快照与无效参数，重开恢复",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "媒体组件缺失时准确反馈并拒绝保存，原设置保留",
+      "oldLocation": "1:3017",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "媒体组件缺失时准确反馈并拒绝保存，原设置保留",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "libx264 / 24 fps",
+      "oldLocation": "1:4347",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "两个编码与全部支持帧率经真实 1080p MP4 编码解码验证 > libx264 / 24 fps",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "libx264 / 25 fps",
+      "oldLocation": "1:4347",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "两个编码与全部支持帧率经真实 1080p MP4 编码解码验证 > libx264 / 25 fps",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "libx264 / 30 fps",
+      "oldLocation": "1:4347",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "两个编码与全部支持帧率经真实 1080p MP4 编码解码验证 > libx264 / 30 fps",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "libx264 / 50 fps",
+      "oldLocation": "1:4347",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "两个编码与全部支持帧率经真实 1080p MP4 编码解码验证 > libx264 / 50 fps",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "libx264 / 60 fps",
+      "oldLocation": "1:4347",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "两个编码与全部支持帧率经真实 1080p MP4 编码解码验证 > libx264 / 60 fps",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "mpeg4 / 24 fps",
+      "oldLocation": "1:4347",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "两个编码与全部支持帧率经真实 1080p MP4 编码解码验证 > mpeg4 / 24 fps",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "mpeg4 / 25 fps",
+      "oldLocation": "1:4347",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "两个编码与全部支持帧率经真实 1080p MP4 编码解码验证 > mpeg4 / 25 fps",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "mpeg4 / 30 fps",
+      "oldLocation": "1:4347",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "两个编码与全部支持帧率经真实 1080p MP4 编码解码验证 > mpeg4 / 30 fps",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "mpeg4 / 50 fps",
+      "oldLocation": "1:4347",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "两个编码与全部支持帧率经真实 1080p MP4 编码解码验证 > mpeg4 / 50 fps",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "mpeg4 / 60 fps",
+      "oldLocation": "1:4347",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "两个编码与全部支持帧率经真实 1080p MP4 编码解码验证 > mpeg4 / 60 fps",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "两个编码与全部支持帧率经真实 1080p MP4 编码解码验证",
+      "oldLocation": "1:3952",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "两个编码与全部支持帧率经真实 1080p MP4 编码解码验证",
+      "kind": "suite-container",
+      "note": "父测试仅顺序执行十个子例，改为describe容器；全部真实编解码断言保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "设置修改不改变有效配音或已有成片，配音任务锁与断开的修改权阻止保存",
+      "oldLocation": "1:4495",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "设置修改不改变有效配音或已有成片，配音任务锁与断开的修改权阻止保存",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "已保存字体从当前环境消失后阻止导出，不悄悄采用替代字体",
+      "oldLocation": "1:6712",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "已保存字体从当前环境消失后阻止导出，不悄悄采用替代字体",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/export-settings.test.ts",
+      "oldName": "字体枚举期间编辑断开返回修改权失效，并保留已保存值",
+      "oldLocation": "1:8189",
+      "newFile": "tests/export-settings.test.ts",
+      "newName": "字体枚举期间编辑断开返回修改权失效，并保留已保存值",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/mcp.test.ts",
+      "oldName": "MCP 修改和查询与面板 HTTP 读取同一服务，服务离线时明确失败",
+      "oldLocation": "1:482",
+      "newFile": "tests/mcp.test.ts",
+      "newName": "MCP 修改和查询与面板 HTTP 读取同一服务，服务离线时明确失败",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/mcp.test.ts",
+      "oldName": "宿主诊断在未声明 roots 时明确未知，不把 MCP 工作目录当作工作空间",
+      "oldLocation": "1:6559",
+      "newFile": "tests/mcp.test.ts",
+      "newName": "宿主诊断在未声明 roots 时明确未知，不把 MCP 工作目录当作工作空间",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/mcp.test.ts",
+      "oldName": "宿主诊断查询 roots 并观测变更，但不把根列表推断为当前对话绑定",
+      "oldLocation": "1:7773",
+      "newFile": "tests/mcp.test.ts",
+      "newName": "宿主诊断查询 roots 并观测变更，但不把根列表推断为当前对话绑定",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/modification.test.ts",
+      "oldName": "用户编辑期间拒绝 Codex 和无修改权保存，取消后立即可修改，旧连接不释放新修改权",
+      "oldLocation": "1:1088",
+      "newFile": "tests/modification.test.ts",
+      "newName": "用户编辑期间拒绝 Codex 和无修改权保存，取消后立即可修改，旧连接不释放新修改权",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/modification.test.ts",
+      "oldName": "Codex 收到写请求即占用修改权，查询不受阻；中断及格式异常后释放",
+      "oldLocation": "1:2300",
+      "newFile": "tests/modification.test.ts",
+      "newName": "Codex 收到写请求即占用修改权，查询不受阻；中断及格式异常后释放",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/modification.test.ts",
+      "oldName": "持有修改权重读目标：返回变化信息、跳过删除目标，其余逐项提交且不覆盖新文案",
+      "oldLocation": "1:3579",
+      "newFile": "tests/modification.test.ts",
+      "newName": "持有修改权重读目标：返回变化信息、跳过删除目标，其余逐项提交且不覆盖新文案",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/modification.test.ts",
+      "oldName": "用户连接断开释放修改权，旧取消凭据不能解除下一次编辑，异常保存也释放",
+      "oldLocation": "1:5043",
+      "newFile": "tests/modification.test.ts",
+      "newName": "用户连接断开释放修改权，旧取消凭据不能解除下一次编辑，异常保存也释放",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/modification.test.ts",
+      "oldName": "Codex 存储异常逐项反馈失败，整批结束释放修改权且不提交失败内容",
+      "oldLocation": "1:6551",
+      "newFile": "tests/modification.test.ts",
+      "newName": "Codex 存储异常逐项反馈失败，整批结束释放修改权且不提交失败内容",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/modification.test.ts",
+      "oldName": "同一项目不能由不同端口的两个服务同时修改，关闭所有者后可以重开",
+      "oldLocation": "1:7544",
+      "newFile": "tests/modification.test.ts",
+      "newName": "同一项目不能由不同端口的两个服务同时修改，关闭所有者后可以重开",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/modification.test.ts",
+      "oldName": "表格选择连接独立于修改权，断开后不能使用旧选择，表格可批量粘贴删除重排",
+      "oldLocation": "1:8357",
+      "newFile": "tests/modification.test.ts",
+      "newName": "表格选择连接独立于修改权，断开后不能使用旧选择，表格可批量粘贴删除重排",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/organization.test.ts",
+      "oldName": "多行粘贴忽略空白行，原子重排保留稳定身份并拒绝过时顺序",
+      "oldLocation": "1:215",
+      "newFile": "tests/organization.test.ts",
+      "newName": "多行粘贴忽略空白行，原子重排保留稳定身份并拒绝过时顺序",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/organization.test.ts",
+      "oldName": "选中操作固定稳定身份，改选和断开不扩大范围，明确查询仍可用",
+      "oldLocation": "1:1528",
+      "newFile": "tests/organization.test.ts",
+      "newName": "选中操作固定稳定身份，改选和断开不扩大范围，明确查询仍可用",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/organization.test.ts",
+      "oldName": "删除后项目序号连续，批量删除不会因自身引起的序号变化跳过目标",
+      "oldLocation": "1:3589",
+      "newFile": "tests/organization.test.ts",
+      "newName": "删除后项目序号连续，批量删除不会因自身引起的序号变化跳过目标",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/organization.test.ts",
+      "oldName": "条件查询后的内容变化和明确身份删除逐项反馈，不静默丢失旧目标",
+      "oldLocation": "1:4334",
+      "newFile": "tests/organization.test.ts",
+      "newName": "条件查询后的内容变化和明确身份删除逐项反馈，不静默丢失旧目标",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/organization.test.ts",
+      "oldName": "超过五百个片段仍可全选查询和按固定范围处理",
+      "oldLocation": "1:5554",
+      "newFile": "tests/organization.test.ts",
+      "newName": "超过五百个片段仍可全选查询和按固定范围处理",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/panel-update.test.ts",
+      "oldName": "只在明确兼容且面板代次变化时提示刷新",
+      "oldLocation": "1:1046",
+      "newFile": "tests/panel-update.test.ts",
+      "newName": "只在明确兼容且面板代次变化时提示刷新",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/panel-update.test.ts",
+      "oldName": "刷新快照按绑定分开、仅消费一次，过期及损坏记录不能恢复",
+      "oldLocation": "1:1864",
+      "newFile": "tests/panel-update.test.ts",
+      "newName": "刷新快照按绑定分开、仅消费一次，过期及损坏记录不能恢复",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/panel-update.test.ts",
+      "oldName": "勾选仅恢复同项目、同实例和目标面板中的现存身份，空选不扩大范围",
+      "oldLocation": "1:2629",
+      "newFile": "tests/panel-update.test.ts",
+      "newName": "勾选仅恢复同项目、同实例和目标面板中的现存身份，空选不扩大范围",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/panel-update.test.ts",
+      "oldName": "无法持久化快照时保持当前面板，读取受限存储也不抛错",
+      "oldLocation": "1:3305",
+      "newFile": "tests/panel-update.test.ts",
+      "newName": "无法持久化快照时保持当前面板，读取受限存储也不抛错",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/project-access.test.ts",
+      "oldName": "单片段配音受理保存失败后释放占用，不留下任务或阻止后续编辑",
+      "oldLocation": "1:981",
+      "newFile": "tests/project-access.test.ts",
+      "newName": "单片段配音受理保存失败后释放占用，不留下任务或阻止后续编辑",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/project-access.test.ts",
+      "oldName": "批量配音受理保存失败后释放占用，不留下任务或阻止后续编辑",
+      "oldLocation": "1:981",
+      "newFile": "tests/project-access.test.ts",
+      "newName": "批量配音受理保存失败后释放占用，不留下任务或阻止后续编辑",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/project-access.test.ts",
+      "oldName": "导出受理保存失败后释放占用，不留下任务或阻止后续编辑",
+      "oldLocation": "1:981",
+      "newFile": "tests/project-access.test.ts",
+      "newName": "导出受理保存失败后释放占用，不留下任务或阻止后续编辑",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/project-access.test.ts",
+      "oldName": "speech终态保存失败时查询、准入和默认退出均保持锁定，重开恢复后解锁",
+      "oldLocation": "1:2825",
+      "newFile": "tests/project-access.test.ts",
+      "newName": "speech终态保存失败时查询、准入和默认退出均保持锁定，重开恢复后解锁",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/project-access.test.ts",
+      "oldName": "export终态保存失败时查询、准入和默认退出均保持锁定，重开恢复后解锁",
+      "oldLocation": "1:2825",
+      "newFile": "tests/project-access.test.ts",
+      "newName": "export终态保存失败时查询、准入和默认退出均保持锁定，重开恢复后解锁",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/project-access.test.ts",
+      "oldName": "中断导出恢复清理失败时继续占用，修复文件后重开才开放编辑",
+      "oldLocation": "3:1857",
+      "newFile": "tests/project-access.test.ts",
+      "newName": "中断导出恢复清理失败时继续占用，修复文件后重开才开放编辑",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/speech-batch.test.ts",
+      "oldName": "批量固定勾选、局部失败继续、整批终态解锁且重发不重复付费",
+      "oldLocation": "1:688",
+      "newFile": "tests/speech-batch.test.ts",
+      "newName": "批量固定勾选、局部失败继续、整批终态解锁且重发不重复付费",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/speech-batch.test.ts",
+      "oldName": "失败范围限定操作，显式重试读取最新输入并跳过已成功与已删除目标",
+      "oldLocation": "1:2648",
+      "newFile": "tests/speech-batch.test.ts",
+      "newName": "失败范围限定操作，显式重试读取最新输入并跳过已成功与已删除目标",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/speech-batch.test.ts",
+      "oldName": "缺失或待更新范围、空选择及逐项拒绝不会静默扩大或追加任务",
+      "oldLocation": "1:5064",
+      "newFile": "tests/speech-batch.test.ts",
+      "newName": "缺失或待更新范围、空选择及逐项拒绝不会静默扩大或追加任务",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/speech-batch.test.ts",
+      "oldName": "重开批量操作保留成功结果，未完成显示已中断，不续跑且重发不产生请求",
+      "oldLocation": "1:7207",
+      "newFile": "tests/speech-batch.test.ts",
+      "newName": "重开批量操作保留成功结果，未完成显示已中断，不续跑且重发不产生请求",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/speech-config.test.ts",
+      "oldName": "只读取明确的本机配置，缺失为空，换密钥后重新读取",
+      "oldLocation": "1:242",
+      "newFile": "tests/speech-config.test.ts",
+      "newName": "只读取明确的本机配置，缺失为空，换密钥后重新读取",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/speech-service.test.ts",
+      "oldName": "HTTP 单行提交与 MCP 共用任务，面板断开不解锁且支持查询与范围试听",
+      "oldLocation": "1:645",
+      "newFile": "tests/speech-service.test.ts",
+      "newName": "HTTP 单行提交与 MCP 共用任务，面板断开不解锁且支持查询与范围试听",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/speech-service.test.ts",
+      "oldName": "MCP 批量提交返回逐项受理，HTTP 查询与重发共享持久化结果",
+      "oldLocation": "1:4211",
+      "newFile": "tests/speech-service.test.ts",
+      "newName": "MCP 批量提交返回逐项受理，HTTP 查询与重发共享持久化结果",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/speech.test.ts",
+      "oldName": "缺凭据时提交前拒绝且不发送付费请求",
+      "oldLocation": "1:365",
+      "newFile": "tests/speech.test.ts",
+      "newName": "缺凭据时提交前拒绝且不发送付费请求",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/speech.test.ts",
+      "oldName": "受理后持续锁定、重发去重，完整成功音频及输入快照重开仍保留",
+      "oldLocation": "1:1055",
+      "newFile": "tests/speech.test.ts",
+      "newName": "受理后持续锁定、重发去重，完整成功音频及输入快照重开仍保留",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/speech.test.ts",
+      "oldName": "统一声音保存并校验范围，改变输入只改变配音有效性",
+      "oldLocation": "1:3225",
+      "newFile": "tests/speech.test.ts",
+      "newName": "统一声音保存并校验范围，改变输入只改变配音有效性",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/speech.test.ts",
+      "oldName": "服务异常不重试，失败保留旧配音；中断任务重开标记未知且不重新请求",
+      "oldLocation": "1:4793",
+      "newFile": "tests/speech.test.ts",
+      "newName": "服务异常不重试，失败保留旧配音；中断任务重开标记未知且不重新请求",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/visual-note.test.ts",
+      "oldName": "旧项目补齐空画面说明，独立修改、清空、重开及新增均保留正确内容",
+      "oldLocation": "1:359",
+      "newFile": "tests/visual-note.test.ts",
+      "newName": "旧项目补齐空画面说明，独立修改、清空、重开及新增均保留正确内容",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/visual-note.test.ts",
+      "oldName": "说明变化使旧完整快照失效，范围编辑只更改说明，查找仍只搜索文案",
+      "oldLocation": "1:2023",
+      "newFile": "tests/visual-note.test.ts",
+      "newName": "说明变化使旧完整快照失效，范围编辑只更改说明，查找仍只搜索文案",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    },
+    {
+      "oldFile": "tests/workspace-heartbeat.test.ts",
+      "oldName": "心跳共享宿主工作空间核对：多条长连接不再每秒启动宿主进程，工作空间改变后仍会释放",
+      "oldLocation": "1:473",
+      "newFile": "tests/workspace-heartbeat.test.ts",
+      "newName": "心跳共享宿主工作空间核对：多条长连接不再每秒启动宿主进程，工作空间改变后仍会释放",
+      "kind": "test",
+      "note": "业务断言与外部边界保留",
+      "executor": "vitest"
+    }
+  ],
+  "note": "映射不是当前固定提交验收证明；执行来源由run.json保留。"
+}

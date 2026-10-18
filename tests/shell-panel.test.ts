@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
-import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+import { test } from './helpers/playwright-browser.js';
 
-for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`页头和状态栏紧凑主题、键盘与任务锁（${width}×${height}）`, { timeout: 40000 }, async t => {
-  assert.ok(chrome, '需要实际 Chrome，浏览器缺失不能视为通过');
-  await checkInteractiveBrowser(t, String.raw`
+import { fixture } from './helpers/editing-fixture.js';
+
+
+for (const [width, height] of [[1600, 1000], [420, 800], [420, 360]]) test(`页头和状态栏紧凑主题、键盘与任务锁（${width}×${height}）`, async ({ panel }) => { test.setTimeout(40000);
+  
+  await panel.check(String.raw`
     import { act } from 'react';
     import { createRoot } from 'react-dom/client';
     import { App } from './src/panel/app.tsx';

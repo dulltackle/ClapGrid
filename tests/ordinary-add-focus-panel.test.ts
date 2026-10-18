@@ -1,8 +1,7 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
+
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
 
 const setup = String.raw`
 import { act } from 'react';
@@ -27,7 +26,7 @@ const add=async entry=>{if(entry==='更多'){await click('更多');await mouse(b
 `;
 const addFixture=fixture.replace('if (state.acquireGate) await state.acquireGate.promise;', 'if (state.acquireGate) await state.acquireGate.promise; if (state.detailGate && state.leases.length > 1) await state.detailGate.promise;');
 function page(name: string, body: string, http=addFixture) {
- test(name,{timeout:40000},t=>{assert.ok(chrome,'必须实际启动 Chrome');return checkInteractiveBrowser(t,setup+`(async()=>{try{await mount();${body}document.getElementById('result').dataset.state='passed';}catch(error){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=error.stack;}})();`,http,1200,800);});
+ test(name,async ({ panel }) => { test.setTimeout(40000);return panel.check(setup+`(async()=>{try{await mount();${body}document.getElementById('result').dataset.state='passed';}catch(error){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=error.stack;}})();`,http,1200,800);});
 }
 page('普通新增迟到成功保留新查找、勾选与焦点并接收数据',String.raw`
  await action(()=>window.browserInput({click:'[row-id="a"] input[type="checkbox"]'}));

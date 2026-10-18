@@ -1,8 +1,5 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
 
 const script = String.raw`
 import { act, StrictMode } from 'react';
@@ -75,10 +72,10 @@ const geometry = async (d, name) => {
  } catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
 `;
 for (const [width, height] of [[1600,1000],[420,800],[360,320]]) {
-  test(`画面素材嵌套、取消及迟到响应（${width}×${height}）`, { timeout: 40000 }, t => {
-    assert.ok(chrome, '需要 Chrome 执行视频验收');
-    return checkInteractiveBrowser(t, script, fixture.replace('export async function importVideo() {', "export async function importVideo() { if (state.importFailure) throw Error('视频导入失败');"), width, height);
-  });
+  test(`画面素材嵌套、取消及迟到响应（${width}×${height}）`, async ({ panel }) => { test.setTimeout(40000);
+
+    return panel.check(script, fixture.replace('export async function importVideo() {', "export async function importVideo() { if (state.importFailure) throw Error('视频导入失败');"), width, height);
+   });
 }
 
 const abandonedEditorScript = script.slice(0, script.indexOf('\n(async () =>')) + String.raw`
@@ -99,7 +96,7 @@ const abandonedEditorScript = script.slice(0, script.indexOf('\n(async () =>')) 
  document.getElementById('result').dataset.state='passed';
 }catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
 `;
-test('离开关联请求再回父详情不复活迟到修改权', {timeout:40000}, t=>{assert.ok(chrome);return checkInteractiveBrowser(t,abandonedEditorScript,fixture,1200,800);});
+test('离开关联请求再回父详情不复活迟到修改权', async ({ panel }) => { test.setTimeout(40000); return panel.check(abandonedEditorScript,fixture,1200,800); });
 
 const unavailableParentScript = (unavailable: string) => script.slice(0, script.indexOf('\n(async () =>')) + String.raw`
 (async () => { try {
@@ -118,7 +115,7 @@ const unavailableParentScript = (unavailable: string) => script.slice(0, script.
  document.getElementById('result').dataset.state='passed';
 }catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
 `;
-for(const [name,environment] of [['卸载','entry.remove();'],['不可见','entry.hidden=true;'],['禁用','entry.disabled=true;']] as const)test('嵌套预览父入口'+name+'后仍可连续返回表格',{timeout:40000},t=>{assert.ok(chrome);return checkInteractiveBrowser(t,unavailableParentScript(environment),fixture,1200,800);});
+for(const [name,environment] of [['卸载','entry.remove();'],['不可见','entry.hidden=true;'],['禁用','entry.disabled=true;']] as const)test('嵌套预览父入口'+name+'后仍可连续返回表格', async ({ panel }) => { test.setTimeout(40000); return panel.check(unavailableParentScript(environment),fixture,1200,800); });
 
 const failedAssociationScript=script.slice(0,script.indexOf('\n(async () =>'))+String.raw`
 (async()=>{try{
@@ -132,7 +129,7 @@ const failedAssociationScript=script.slice(0,script.indexOf('\n(async () =>'))+S
  document.getElementById('result').dataset.state='passed';
 }catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
 `;
-test('关联保存失败关闭子层并保留父层来源',{timeout:40000},t=>{assert.ok(chrome);return checkInteractiveBrowser(t,failedAssociationScript,fixture,1200,800);});
+test('关联保存失败关闭子层并保留父层来源', async ({ panel }) => { test.setTimeout(40000); return panel.check(failedAssociationScript,fixture,1200,800); });
 
 const disconnectedWhileAwayScript=script.slice(0,script.indexOf('\n(async () =>'))+String.raw`
 (async()=>{try{
@@ -152,7 +149,7 @@ const disconnectedWhileAwayScript=script.slice(0,script.indexOf('\n(async () =>'
  document.getElementById('result').dataset.state='passed';
 }catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
 `;
-test('离开面板期间断连关闭子层不重放旧返回',{timeout:40000},t=>{assert.ok(chrome);return checkInteractiveBrowser(t,disconnectedWhileAwayScript,fixture,1200,800);});
+test('离开面板期间断连关闭子层不重放旧返回', async ({ panel }) => { test.setTimeout(40000); return panel.check(disconnectedWhileAwayScript,fixture,1200,800); });
 
 const keyboardChildrenScript=script.slice(0,script.indexOf('\n(async () =>'))+String.raw`
 (async()=>{try{
@@ -169,7 +166,7 @@ const keyboardChildrenScript=script.slice(0,script.indexOf('\n(async () =>'))+St
  document.getElementById('result').dataset.state='passed';
 }catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
 `;
-test('父详情内历史与关联的完整键盘返回链',{timeout:40000},t=>{assert.ok(chrome);return checkInteractiveBrowser(t,keyboardChildrenScript,fixture,1200,800);});
+test('父详情内历史与关联的完整键盘返回链', async ({ panel }) => { test.setTimeout(40000); return panel.check(keyboardChildrenScript,fixture,1200,800); });
 
 const failedAssociationNewLayerScript=script.slice(0,script.indexOf('\n(async () =>'))+String.raw`
 (async()=>{try{
@@ -197,4 +194,4 @@ const failedAssociationNewLayerScript=script.slice(0,script.indexOf('\n(async ()
  document.getElementById('result').dataset.state='passed';
 }catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack;}})();
 `;
-test('关联失败关闭待返回时新模态层与父来源仍受保护',{timeout:40000},t=>{assert.ok(chrome);return checkInteractiveBrowser(t,failedAssociationNewLayerScript,fixture,1200,800);});
+test('关联失败关闭待返回时新模态层与父来源仍受保护', async ({ panel }) => { test.setTimeout(40000); return panel.check(failedAssociationNewLayerScript,fixture,1200,800); });

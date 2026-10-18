@@ -13,7 +13,7 @@ import { executionPlan, executionIdentityAsync, executorEvidenceAsync } from './
 const root = fileURLToPath(new URL('../', import.meta.url));
 try {
   process.env.BROWSERSLIST_IGNORE_OLD_DATA ??= 'true';
-  const { values } = parseArgs({ options: { files: { type: 'string' }, suite: { type: 'string', default: 'ui' }, concurrency: { type: 'string', default: process.env.CLAPGRID_TEST_CONCURRENCY ?? '1' } } });
+  const { values } = parseArgs({ options: { files: { type: 'string' }, suite: { type: 'string', default: 'ui' }, concurrency: { type: 'string', default: process.env.CLAPGRID_TEST_CONCURRENCY ?? '2' } } });
   if (!['1', '2'].includes(values.concurrency)) throw Error('Playwright 并发仅允许 1 或 2');
   const plan = executionPlan(root, { suite: values.suite, files: JSON.parse(values.files ?? '[]'), executor: 'playwright' });
   const reportPath = resolve(process.env.CLAPGRID_TEST_REPORT ?? `logs/tests/${Date.now()}-playwright.json`);

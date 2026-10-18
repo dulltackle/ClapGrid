@@ -1,0 +1,1676 @@
+{
+  "observedAt": "2026-10-18T08:12:48.694843+00:00",
+  "scope": "三个原候选固定commit的局部热点测量，非全集正式验收",
+  "sessions": {
+    "166": 70253,
+    "167": 97881,
+    "168": 4891
+  },
+  "sessionsExitCode": 0,
+  "staticSourcesUnmodified": true,
+  "conditions": "相同主机/Node22.23.3/串行公开入口/实际worker1；协调静默；禁Node字节码缓存和浏览器构建缓存；OS页缓存未控制。候选输出外置，167/168基线输出原目录，因此输出I/O并非严格逐字一致。",
+  "batches": [
+    {
+      "ticket": 166,
+      "beforeSamplesSeconds": [
+        35.96591567993164,
+        36.27464818954468,
+        36.31809687614441
+      ],
+      "afterSamplesSeconds": [
+        31.996805667877197,
+        34.0128378868103,
+        35.0053653717041
+      ],
+      "beforeMedianSeconds": 36.27464818954468,
+      "afterMedianSeconds": 34.0128378868103,
+      "medianChangePercent": -6.235237047416186,
+      "candidateRangeSeconds": [
+        31.996805667877197,
+        35.0053653717041
+      ],
+      "beforeSamplesFile": "/home/forclaw/tmp/implement-161/measure-166-before/results.json",
+      "afterSamplesFile": "/home/forclaw/tmp/implement-161/measure-166-after/results.json",
+      "beforeReports": [
+        {
+          "path": "/home/forclaw/tmp/implement-161/measure-166-before/1.json",
+          "sha256": "9573ca8f4acf920fb3da6dcd4607c8ec8bd04db146a41f44439eb6d15c54126f",
+          "native": {
+            "path": "/home/forclaw/tmp/implement-161/measure-166-before/1-native.json",
+            "sha256": "17165d43f036cfcf21f141db01db50cf498a39a7165f9a3075e3b5b6cef19c95"
+          },
+          "nonce": "6d933329-c09f-4432-aadf-af6026bba17c",
+          "source": {
+            "commit": "81ff4eb4c55082f0d21ceb659645e6e29d5d5502",
+            "tree": "e163292a204648e6899ed8ad14c4d8957141f4c8",
+            "fingerprint": "sha256-merkle-v1:03ae894c16ae7292aa58d9288625fc4f99ca3bc3a92cd19cbf04465604d0bf9c",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "node",
+            "version": "v22.23.3"
+          },
+          "cases": 11,
+          "caseNames": [
+            [
+              "tests/delete-confirm-focus.test.ts",
+              "删除确认按钮动态禁用后焦点移到取消"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：active"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：late"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：deleted"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：changed"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：frame"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加离页后旧响应失效且不影响新编辑和租约"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：task"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：speech"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：export"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：owner"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "node",
+            "files": [
+              "tests/delete-confirm-focus.test.ts",
+              "tests/relative-insert-lifecycle-panel.test.ts"
+            ],
+            "inventory": "dba587f946f7dc8bcb11339c0554e9d7a56397fc192fe2898987b191d606913f",
+            "strictFiles": [
+              "tests/delete-confirm-focus.test.ts",
+              "tests/relative-insert-lifecycle-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/measure-166-before/2.json",
+          "sha256": "c4f764f4f4e34795fda5f582d2b8e2b44cd50fb076365eba50b6180bc4ecc3c9",
+          "native": {
+            "path": "/home/forclaw/tmp/implement-161/measure-166-before/2-native.json",
+            "sha256": "0c72ef3605834fe27ed48ed26d5caa67ab05b709cbce55119a995461be980fb8"
+          },
+          "nonce": "c2bf4fc3-946e-4d61-8051-092d4a3f35fd",
+          "source": {
+            "commit": "81ff4eb4c55082f0d21ceb659645e6e29d5d5502",
+            "tree": "e163292a204648e6899ed8ad14c4d8957141f4c8",
+            "fingerprint": "sha256-merkle-v1:03ae894c16ae7292aa58d9288625fc4f99ca3bc3a92cd19cbf04465604d0bf9c",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "node",
+            "version": "v22.23.3"
+          },
+          "cases": 11,
+          "caseNames": [
+            [
+              "tests/delete-confirm-focus.test.ts",
+              "删除确认按钮动态禁用后焦点移到取消"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：active"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：late"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：deleted"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：changed"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：frame"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加离页后旧响应失效且不影响新编辑和租约"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：task"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：speech"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：export"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：owner"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "node",
+            "files": [
+              "tests/delete-confirm-focus.test.ts",
+              "tests/relative-insert-lifecycle-panel.test.ts"
+            ],
+            "inventory": "dba587f946f7dc8bcb11339c0554e9d7a56397fc192fe2898987b191d606913f",
+            "strictFiles": [
+              "tests/delete-confirm-focus.test.ts",
+              "tests/relative-insert-lifecycle-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/measure-166-before/3.json",
+          "sha256": "29eedf3de2ae4c72dfaded2f4f4656b165ae3bb4f4a819ee4c6f10e012436eab",
+          "native": {
+            "path": "/home/forclaw/tmp/implement-161/measure-166-before/3-native.json",
+            "sha256": "28038a26987197879083861a848c097281baa935c1ba70915c2256b152751bac"
+          },
+          "nonce": "269d6e4f-35b4-4af7-84ff-5660eed86c31",
+          "source": {
+            "commit": "81ff4eb4c55082f0d21ceb659645e6e29d5d5502",
+            "tree": "e163292a204648e6899ed8ad14c4d8957141f4c8",
+            "fingerprint": "sha256-merkle-v1:03ae894c16ae7292aa58d9288625fc4f99ca3bc3a92cd19cbf04465604d0bf9c",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "node",
+            "version": "v22.23.3"
+          },
+          "cases": 11,
+          "caseNames": [
+            [
+              "tests/delete-confirm-focus.test.ts",
+              "删除确认按钮动态禁用后焦点移到取消"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：active"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：late"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：deleted"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：changed"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：frame"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加离页后旧响应失效且不影响新编辑和租约"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：task"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：speech"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：export"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：owner"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "node",
+            "files": [
+              "tests/delete-confirm-focus.test.ts",
+              "tests/relative-insert-lifecycle-panel.test.ts"
+            ],
+            "inventory": "dba587f946f7dc8bcb11339c0554e9d7a56397fc192fe2898987b191d606913f",
+            "strictFiles": [
+              "tests/delete-confirm-focus.test.ts",
+              "tests/relative-insert-lifecycle-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        }
+      ],
+      "afterReports": [
+        {
+          "path": "/home/forclaw/tmp/implement-161/measure-166-after/1.json",
+          "sha256": "678a1ad033065e642f94ddd7560d23e9b08b3ac9607660daf2e714d5e3b19213",
+          "native": {
+            "path": "/home/forclaw/tmp/implement-161/measure-166-after/1-native.json",
+            "sha256": "5820bb703b6dbe6447966285e6b16545b8baeb377f7e454fe11d7db6b06dd123"
+          },
+          "nonce": "ac38e416-b4ea-4f43-9475-be41f471824a",
+          "source": {
+            "commit": "75ce6a5a9f1f3458441ad9d24187657bb09c121d",
+            "tree": "ddbabed340b9e655869b936bdce693f17a9da0f3",
+            "fingerprint": "sha256-merkle-v1:5ac5216a84f31d03a106412d0975622147f856cd750fe589e1b3e6afe8643c3a",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "playwright",
+            "version": "1.64.1"
+          },
+          "cases": 11,
+          "caseNames": [
+            [
+              "tests/delete-confirm-focus.test.ts",
+              "删除确认按钮动态禁用后焦点移到取消"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：active"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：late"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：deleted"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：changed"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：frame"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加离页后旧响应失效且不影响新编辑和租约"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：task"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：speech"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：export"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：owner"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "playwright",
+            "files": [
+              "tests/delete-confirm-focus.test.ts",
+              "tests/relative-insert-lifecycle-panel.test.ts"
+            ],
+            "inventory": "eea8f7086f8ff75cac0f99202b9246787933fcb200cc1434e9efb06464f171ee",
+            "strictFiles": [
+              "tests/delete-confirm-focus.test.ts",
+              "tests/relative-insert-lifecycle-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/measure-166-after/2.json",
+          "sha256": "e3574699c0104cd04b9001afd54a57297a2788d44cf7879c8fc888bbf04c8671",
+          "native": {
+            "path": "/home/forclaw/tmp/implement-161/measure-166-after/2-native.json",
+            "sha256": "205f9e3c21c0ddbe3a35dea14215f6eca8eeb76d51efdee4d737c43623538123"
+          },
+          "nonce": "395cba14-9293-403f-8682-9a99a87f9c66",
+          "source": {
+            "commit": "75ce6a5a9f1f3458441ad9d24187657bb09c121d",
+            "tree": "ddbabed340b9e655869b936bdce693f17a9da0f3",
+            "fingerprint": "sha256-merkle-v1:5ac5216a84f31d03a106412d0975622147f856cd750fe589e1b3e6afe8643c3a",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "playwright",
+            "version": "1.64.1"
+          },
+          "cases": 11,
+          "caseNames": [
+            [
+              "tests/delete-confirm-focus.test.ts",
+              "删除确认按钮动态禁用后焦点移到取消"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：active"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：late"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：deleted"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：changed"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：frame"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加离页后旧响应失效且不影响新编辑和租约"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：task"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：speech"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：export"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：owner"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "playwright",
+            "files": [
+              "tests/delete-confirm-focus.test.ts",
+              "tests/relative-insert-lifecycle-panel.test.ts"
+            ],
+            "inventory": "eea8f7086f8ff75cac0f99202b9246787933fcb200cc1434e9efb06464f171ee",
+            "strictFiles": [
+              "tests/delete-confirm-focus.test.ts",
+              "tests/relative-insert-lifecycle-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/measure-166-after/3.json",
+          "sha256": "322c610bf49d494cec417c3b85c28cd590d0076fadfc715a4cffaf7600cac888",
+          "native": {
+            "path": "/home/forclaw/tmp/implement-161/measure-166-after/3-native.json",
+            "sha256": "4b000cbc5871e7fcfe732e5b8ea2b87104660095ad008de326d31d57d27e4db0"
+          },
+          "nonce": "c383e290-7e11-4bc0-a0dc-5676fcd54528",
+          "source": {
+            "commit": "75ce6a5a9f1f3458441ad9d24187657bb09c121d",
+            "tree": "ddbabed340b9e655869b936bdce693f17a9da0f3",
+            "fingerprint": "sha256-merkle-v1:5ac5216a84f31d03a106412d0975622147f856cd750fe589e1b3e6afe8643c3a",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "playwright",
+            "version": "1.64.1"
+          },
+          "cases": 11,
+          "caseNames": [
+            [
+              "tests/delete-confirm-focus.test.ts",
+              "删除确认按钮动态禁用后焦点移到取消"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：active"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：late"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：deleted"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：changed"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加失败与来源恢复：frame"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加离页后旧响应失效且不影响新编辑和租约"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：task"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：speech"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：export"
+            ],
+            [
+              "tests/relative-insert-lifecycle-panel.test.ts",
+              "相对添加保留服务修改权与锁规则：owner"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "playwright",
+            "files": [
+              "tests/delete-confirm-focus.test.ts",
+              "tests/relative-insert-lifecycle-panel.test.ts"
+            ],
+            "inventory": "eea8f7086f8ff75cac0f99202b9246787933fcb200cc1434e9efb06464f171ee",
+            "strictFiles": [
+              "tests/delete-confirm-focus.test.ts",
+              "tests/relative-insert-lifecycle-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        }
+      ],
+      "candidateTimings": [
+        {
+          "path": "/home/forclaw/tmp/implement-161/measure-166-after/1-timings.jsonl",
+          "sha256": "f64da7b0928c4e2d729add8dc081ac411e951e56307b675c44f5d92b135ad117"
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/measure-166-after/2-timings.jsonl",
+          "sha256": "31b4fadd757c90b801069b8a1cac1adfad59174643844f531382a4cb8765100b"
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/measure-166-after/3-timings.jsonl",
+          "sha256": "7e1b31a03c4a65bf9d2eb747726c8df9cfa63fa615b653b2735bb2d1ff3a8a02"
+        }
+      ],
+      "candidateObservedCacheDisabled": true,
+      "candidateActualWorkersPerRun": 1,
+      "candidateChromeVersions": [
+        "Google Chrome 155.0.8059.84"
+      ],
+      "cleanup": {
+        "checkedPids": [
+          859166,
+          859196,
+          860420,
+          860515,
+          863944,
+          863963
+        ],
+        "alive": [],
+        "directories": [
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-a9318926-03dd-41e8-b2d2-8f8a83263768/case-1O9AF2",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-a9318926-03dd-41e8-b2d2-8f8a83263768/case-1b6IQY",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-a9318926-03dd-41e8-b2d2-8f8a83263768/case-6kZG9K",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-a9318926-03dd-41e8-b2d2-8f8a83263768/case-M72USr",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-a9318926-03dd-41e8-b2d2-8f8a83263768/case-SSEi4C",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-a9318926-03dd-41e8-b2d2-8f8a83263768/case-VNwMw3",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-a9318926-03dd-41e8-b2d2-8f8a83263768/case-X89gdX",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-a9318926-03dd-41e8-b2d2-8f8a83263768/case-a64jRZ",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-a9318926-03dd-41e8-b2d2-8f8a83263768/case-kXhM8H",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-a9318926-03dd-41e8-b2d2-8f8a83263768/case-mBVerN",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-a9318926-03dd-41e8-b2d2-8f8a83263768/case-s3UJDY",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-a9318926-03dd-41e8-b2d2-8f8a83263768/worker-hyrTb5",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34/case-5Ip4Na",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34/case-6H893Z",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34/case-OKjbwE",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34/case-PuPA8C",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34/case-blO5zD",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34/case-gUE841",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34/case-mEXhSS",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34/case-qoz0gu",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34/case-tnHpr6",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34/case-vPoxfP",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34/case-yzYxsA",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34/worker-rMMNkb",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-cebc730e-0291-4554-ba39-e241f49db390/case-6TY1CI",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-cebc730e-0291-4554-ba39-e241f49db390/case-ARgzKh",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-cebc730e-0291-4554-ba39-e241f49db390/case-MhE5pX",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-cebc730e-0291-4554-ba39-e241f49db390/case-Onj2Sm",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-cebc730e-0291-4554-ba39-e241f49db390/case-c8j1nP",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-cebc730e-0291-4554-ba39-e241f49db390/case-cHbsLQ",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-cebc730e-0291-4554-ba39-e241f49db390/case-ij2dSh",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-cebc730e-0291-4554-ba39-e241f49db390/case-ksi3z9",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-cebc730e-0291-4554-ba39-e241f49db390/case-qp81d0",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-cebc730e-0291-4554-ba39-e241f49db390/case-rwNFGJ",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-cebc730e-0291-4554-ba39-e241f49db390/case-v7Ww9X",
+          "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resources-cebc730e-0291-4554-ba39-e241f49db390/worker-r56frX"
+        ],
+        "present": [],
+        "resourceRootsPresent": [],
+        "contextsClosed": 33,
+        "distinctContexts": 33,
+        "workersStopped": 3,
+        "mediaServersClosed": 0,
+        "mediaPorts": []
+      },
+      "baselineBrowserCacheObservation": "166有逐case timings reason disabled；167/168基线无timings，仅已保全命令env禁用与源逻辑，未伪造逐case观测。",
+      "bundleStylesViewportIdentityMatchesBaseline": true
+    },
+    {
+      "ticket": 167,
+      "beforeSamplesSeconds": [
+        19.357544451999274,
+        19.201376223998523,
+        19.296850316997734
+      ],
+      "afterSamplesSeconds": [
+        20.646931207000307,
+        19.524792673000775,
+        19.358582823999313
+      ],
+      "beforeMedianSeconds": 19.296850316997734,
+      "afterMedianSeconds": 19.524792673000775,
+      "medianChangePercent": 1.1812412505592063,
+      "candidateRangeSeconds": [
+        19.358582823999313,
+        20.646931207000307
+      ],
+      "beforeSamplesFile": "/home/forclaw/tmp/implement-161/media-167/before/samples.json",
+      "afterSamplesFile": "/home/forclaw/tmp/implement-161/media-167/after-resume/samples.json",
+      "beforeReports": [
+        {
+          "path": "/home/forclaw/tmp/implement-161/media-167/raw-reports/1792304775864-801523.json",
+          "sha256": "cd47b4337f94514299672eee2845c41843e96af9a1e823e5ab40e06934153eb8",
+          "native": {
+            "path": "/home/forclaw/.codex/worktrees/spec-161-media/ClapGrid/logs/tests/1792304775864-801523-native.json",
+            "sha256": "a56a3a07298e305e127347e1d61b5a21f0189edf9c21f47d017821289cb338fa"
+          },
+          "nonce": "97f4da58-94ca-47af-a67f-24ab6b84187c",
+          "source": {
+            "commit": "81ff4eb4c55082f0d21ceb659645e6e29d5d5502",
+            "tree": "e163292a204648e6899ed8ad14c4d8957141f4c8",
+            "fingerprint": "sha256-merkle-v1:03ae894c16ae7292aa58d9288625fc4f99ca3bc3a92cd19cbf04465604d0bf9c",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "node",
+            "version": "v22.23.3"
+          },
+          "cases": 4,
+          "caseNames": [
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（1200×800）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（780×579）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（420×800）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（420×360）"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "node",
+            "files": [
+              "tests/video-preview-panel.test.ts"
+            ],
+            "inventory": "dba587f946f7dc8bcb11339c0554e9d7a56397fc192fe2898987b191d606913f",
+            "strictFiles": [
+              "tests/video-preview-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/media-167/raw-reports/1792304795230-803247.json",
+          "sha256": "c4f4f0a545288be25ace150a7f4c721d68170488f6e82e706183398780016fbd",
+          "native": {
+            "path": "/home/forclaw/.codex/worktrees/spec-161-media/ClapGrid/logs/tests/1792304795230-803247-native.json",
+            "sha256": "2b58825eaaf7145d8364a46771c384953a5d9e9f6691cb98e8f174b65ce6a669"
+          },
+          "nonce": "a5fa0f67-c1f5-42bf-b17d-e3af9a461f08",
+          "source": {
+            "commit": "81ff4eb4c55082f0d21ceb659645e6e29d5d5502",
+            "tree": "e163292a204648e6899ed8ad14c4d8957141f4c8",
+            "fingerprint": "sha256-merkle-v1:03ae894c16ae7292aa58d9288625fc4f99ca3bc3a92cd19cbf04465604d0bf9c",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "node",
+            "version": "v22.23.3"
+          },
+          "cases": 4,
+          "caseNames": [
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（1200×800）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（780×579）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（420×800）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（420×360）"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "node",
+            "files": [
+              "tests/video-preview-panel.test.ts"
+            ],
+            "inventory": "dba587f946f7dc8bcb11339c0554e9d7a56397fc192fe2898987b191d606913f",
+            "strictFiles": [
+              "tests/video-preview-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/media-167/raw-reports/1792304814427-804974.json",
+          "sha256": "679652f1d46ac4f7fcf00b0ce7d2e0d5d16f460af0479fc06125656287237e7e",
+          "native": {
+            "path": "/home/forclaw/.codex/worktrees/spec-161-media/ClapGrid/logs/tests/1792304814427-804974-native.json",
+            "sha256": "b9f6cc6e6599f17870696139cd06e0458317ccfea3cbeff805eb73ad0566c512"
+          },
+          "nonce": "a1f0542f-f13c-48df-87cd-6f886611e872",
+          "source": {
+            "commit": "81ff4eb4c55082f0d21ceb659645e6e29d5d5502",
+            "tree": "e163292a204648e6899ed8ad14c4d8957141f4c8",
+            "fingerprint": "sha256-merkle-v1:03ae894c16ae7292aa58d9288625fc4f99ca3bc3a92cd19cbf04465604d0bf9c",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "node",
+            "version": "v22.23.3"
+          },
+          "cases": 4,
+          "caseNames": [
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（1200×800）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（780×579）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（420×800）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（420×360）"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "node",
+            "files": [
+              "tests/video-preview-panel.test.ts"
+            ],
+            "inventory": "dba587f946f7dc8bcb11339c0554e9d7a56397fc192fe2898987b191d606913f",
+            "strictFiles": [
+              "tests/video-preview-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        }
+      ],
+      "afterReports": [
+        {
+          "path": "/home/forclaw/tmp/implement-161/media-167/after-resume/1.json",
+          "sha256": "afcca258cb34cc1fd58b5ecc197fe35124bf1046d11de7bc904c7bccdf9d7885",
+          "native": {
+            "path": "/home/forclaw/tmp/implement-161/media-167/after-resume/1-native.json",
+            "sha256": "a37835556288883a90b5bed337037b9bc1bc0427e36694335b80860a8b5f69e7"
+          },
+          "nonce": "cd9ac6f9-6c26-4f92-9e96-4fa07cfb5a73",
+          "source": {
+            "commit": "af62a49c97e34203f15b3452961c9d1fe8aa706e",
+            "tree": "9a5fc853fc7c6ade0d5818f0be19c36d96def07e",
+            "fingerprint": "sha256-merkle-v1:f80b80c78e32e04dc8bcc753b1f11dafce35982b11d40216f70b38d6e3e2f17d",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "playwright",
+            "version": "1.64.1"
+          },
+          "cases": 4,
+          "caseNames": [
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（1200×800）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（780×579）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（420×800）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（420×360）"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "playwright",
+            "files": [
+              "tests/video-preview-panel.test.ts"
+            ],
+            "inventory": "d0d1557f96f692679eb32c371353b1758c735303209ab8c5fa7e1d49f1d130fb",
+            "strictFiles": [
+              "tests/video-preview-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/media-167/after-resume/2.json",
+          "sha256": "2ccb95a54da1a7414883144b441fe045933a2d3e8533fcdfcf66ce7e5e3d1030",
+          "native": {
+            "path": "/home/forclaw/tmp/implement-161/media-167/after-resume/2-native.json",
+            "sha256": "ffc9b582b635cf1dea4c6b63062cf8cc45c3b03d6ed98a7cd5748473919495e6"
+          },
+          "nonce": "b68a1af2-422c-49f3-a114-b9a1dfc052a6",
+          "source": {
+            "commit": "af62a49c97e34203f15b3452961c9d1fe8aa706e",
+            "tree": "9a5fc853fc7c6ade0d5818f0be19c36d96def07e",
+            "fingerprint": "sha256-merkle-v1:f80b80c78e32e04dc8bcc753b1f11dafce35982b11d40216f70b38d6e3e2f17d",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "playwright",
+            "version": "1.64.1"
+          },
+          "cases": 4,
+          "caseNames": [
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（1200×800）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（780×579）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（420×800）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（420×360）"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "playwright",
+            "files": [
+              "tests/video-preview-panel.test.ts"
+            ],
+            "inventory": "d0d1557f96f692679eb32c371353b1758c735303209ab8c5fa7e1d49f1d130fb",
+            "strictFiles": [
+              "tests/video-preview-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/media-167/after-resume/3.json",
+          "sha256": "a1d45bb505ade29c6f9fd0372aed8b4e34feab7d4ac946f7fbfee72959e269ae",
+          "native": {
+            "path": "/home/forclaw/tmp/implement-161/media-167/after-resume/3-native.json",
+            "sha256": "535adc838561268d013cb79b7e55071c817a5c089aede71fa895395efb611a85"
+          },
+          "nonce": "c96c300a-21d5-4232-8cfb-58dfc0aaf1d1",
+          "source": {
+            "commit": "af62a49c97e34203f15b3452961c9d1fe8aa706e",
+            "tree": "9a5fc853fc7c6ade0d5818f0be19c36d96def07e",
+            "fingerprint": "sha256-merkle-v1:f80b80c78e32e04dc8bcc753b1f11dafce35982b11d40216f70b38d6e3e2f17d",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "playwright",
+            "version": "1.64.1"
+          },
+          "cases": 4,
+          "caseNames": [
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（1200×800）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（780×579）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（420×800）"
+            ],
+            [
+              "tests/video-preview-panel.test.ts",
+              "缩略图实际播放与侧栏可达性（420×360）"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "playwright",
+            "files": [
+              "tests/video-preview-panel.test.ts"
+            ],
+            "inventory": "d0d1557f96f692679eb32c371353b1758c735303209ab8c5fa7e1d49f1d130fb",
+            "strictFiles": [
+              "tests/video-preview-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        }
+      ],
+      "candidateTimings": [
+        {
+          "path": "/home/forclaw/tmp/implement-161/media-167/after-resume/1-timings.jsonl",
+          "sha256": "ecc75a49b2ffbed1c6bed1c78786f3bbd4cc97f7bb8c156630ac45d870bf060b"
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/media-167/after-resume/2-timings.jsonl",
+          "sha256": "42803c72ec2f34ff15010fade3b06df98712d34717ad3f2c1cb33a14011c8e55"
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/media-167/after-resume/3-timings.jsonl",
+          "sha256": "642958419a2316a906b04ed8ab70be42d8d3ac5607e0a58baa9a4b8a29c4523d"
+        }
+      ],
+      "candidateObservedCacheDisabled": true,
+      "candidateActualWorkersPerRun": 1,
+      "candidateChromeVersions": [
+        "Google Chrome 155.0.8059.84"
+      ],
+      "cleanup": {
+        "checkedPids": [
+          867730,
+          867825,
+          869725,
+          869745,
+          872219,
+          872238
+        ],
+        "alive": [],
+        "directories": [
+          "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resources-0b451365-9593-4eae-b247-0926e0d83119/case-1gYXoV",
+          "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resources-0b451365-9593-4eae-b247-0926e0d83119/case-39WMOL",
+          "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resources-0b451365-9593-4eae-b247-0926e0d83119/case-uS6mI6",
+          "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resources-0b451365-9593-4eae-b247-0926e0d83119/case-zbTDca",
+          "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resources-0b451365-9593-4eae-b247-0926e0d83119/worker-8ydmoQ",
+          "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resources-9570d4dc-8564-4d43-813c-db82a7a59702/case-1yUs4v",
+          "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resources-9570d4dc-8564-4d43-813c-db82a7a59702/case-MU1t56",
+          "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resources-9570d4dc-8564-4d43-813c-db82a7a59702/case-RgjQsd",
+          "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resources-9570d4dc-8564-4d43-813c-db82a7a59702/case-ionmlH",
+          "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resources-9570d4dc-8564-4d43-813c-db82a7a59702/worker-xib8Va",
+          "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resources-b993b662-395e-4da2-979c-81892d98ca8e/case-J0bQkL",
+          "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resources-b993b662-395e-4da2-979c-81892d98ca8e/case-N4OXnA",
+          "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resources-b993b662-395e-4da2-979c-81892d98ca8e/case-kipwnS",
+          "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resources-b993b662-395e-4da2-979c-81892d98ca8e/case-v623zn",
+          "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resources-b993b662-395e-4da2-979c-81892d98ca8e/worker-97bEYe"
+        ],
+        "present": [],
+        "resourceRootsPresent": [],
+        "contextsClosed": 12,
+        "distinctContexts": 12,
+        "workersStopped": 3,
+        "mediaServersClosed": 12,
+        "mediaPorts": [
+          {
+            "host": "127.0.0.1",
+            "port": 35549,
+            "connectErrno": 111,
+            "notListening": true
+          },
+          {
+            "host": "127.0.0.1",
+            "port": 34003,
+            "connectErrno": 111,
+            "notListening": true
+          },
+          {
+            "host": "127.0.0.1",
+            "port": 42167,
+            "connectErrno": 111,
+            "notListening": true
+          },
+          {
+            "host": "127.0.0.1",
+            "port": 45901,
+            "connectErrno": 111,
+            "notListening": true
+          },
+          {
+            "host": "127.0.0.1",
+            "port": 34409,
+            "connectErrno": 111,
+            "notListening": true
+          },
+          {
+            "host": "127.0.0.1",
+            "port": 38895,
+            "connectErrno": 111,
+            "notListening": true
+          },
+          {
+            "host": "127.0.0.1",
+            "port": 35453,
+            "connectErrno": 111,
+            "notListening": true
+          },
+          {
+            "host": "127.0.0.1",
+            "port": 42603,
+            "connectErrno": 111,
+            "notListening": true
+          },
+          {
+            "host": "127.0.0.1",
+            "port": 38615,
+            "connectErrno": 111,
+            "notListening": true
+          },
+          {
+            "host": "127.0.0.1",
+            "port": 38897,
+            "connectErrno": 111,
+            "notListening": true
+          },
+          {
+            "host": "127.0.0.1",
+            "port": 38925,
+            "connectErrno": 111,
+            "notListening": true
+          },
+          {
+            "host": "127.0.0.1",
+            "port": 35763,
+            "connectErrno": 111,
+            "notListening": true
+          }
+        ]
+      },
+      "baselineBrowserCacheObservation": "166有逐case timings reason disabled；167/168基线无timings，仅已保全命令env禁用与源逻辑，未伪造逐case观测。"
+    },
+    {
+      "ticket": 168,
+      "beforeSamplesSeconds": [
+        13.718129279997811,
+        13.66767086300024,
+        13.628958547000366
+      ],
+      "afterSamplesSeconds": [
+        13.87911986799736,
+        13.580130098001973,
+        13.454863412000122
+      ],
+      "beforeMedianSeconds": 13.66767086300024,
+      "afterMedianSeconds": 13.580130098001973,
+      "medianChangePercent": -0.6404951207542475,
+      "candidateRangeSeconds": [
+        13.454863412000122,
+        13.87911986799736
+      ],
+      "beforeSamplesFile": "/home/forclaw/tmp/implement-161/before-168/samples.json",
+      "afterSamplesFile": "/home/forclaw/tmp/implement-161/after-168-resume/samples.json",
+      "beforeReports": [
+        {
+          "path": "/home/forclaw/tmp/implement-161/before-168/2.json",
+          "sha256": "f0f35d34e9e98b9d3eab58a75250e9bd2877cad0f5739db6dc095e3f227bfe1e",
+          "native": {
+            "path": "/home/forclaw/tmp/implement-161/before-168/2-native.json",
+            "sha256": "0d4713c87d4c8b6603dad771a5cfa0094554eb52ae39734f82ffce67f06ae250"
+          },
+          "nonce": "9cb55ebc-7f33-42a7-bb0f-c6f327b3b4e0",
+          "source": {
+            "commit": "0a7fb4009cd7ff3a21e22511cc7d70d997d4bc23",
+            "tree": "8971c2194ccfef6fd3496c7b2181dcc1ebae3ebe",
+            "fingerprint": "sha256-merkle-v1:9c66df16475b2fc41ab47065fc99f9ed327009c8ece3341981e5497f758be9a9",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "node",
+            "version": "v22.23.3"
+          },
+          "cases": 3,
+          "caseNames": [
+            [
+              "tests/panel-update-panel.test.ts",
+              "面板快更新在编辑、播放与任务期间保持草稿并禁止刷新"
+            ],
+            [
+              "tests/panel-update-panel.test.ts",
+              "面板刷新后的真实表格重连恢复稳定勾选且断线仍清除"
+            ],
+            [
+              "tests/panel-update-panel.test.ts",
+              "迟到的刷新恢复让位于用户的新勾选"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "node",
+            "files": [
+              "tests/panel-update-panel.test.ts"
+            ],
+            "inventory": "2d931843f86b558ec6e54f106f295a34decbd681a30d1f3f298c99a079458132",
+            "strictFiles": [
+              "tests/panel-update-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/before-168/3.json",
+          "sha256": "304c9e9d4e9d1c5524d9514749f286711c96c8cf375b3a295b83466c74fd7bf5",
+          "native": {
+            "path": "/home/forclaw/tmp/implement-161/before-168/3-native.json",
+            "sha256": "74d416950cc1337920d8ce9df3df15beff33aeea9a1c193a06e90cc031c4ae48"
+          },
+          "nonce": "d1c87870-1781-495b-bc9c-6a525d128259",
+          "source": {
+            "commit": "0a7fb4009cd7ff3a21e22511cc7d70d997d4bc23",
+            "tree": "8971c2194ccfef6fd3496c7b2181dcc1ebae3ebe",
+            "fingerprint": "sha256-merkle-v1:9c66df16475b2fc41ab47065fc99f9ed327009c8ece3341981e5497f758be9a9",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "node",
+            "version": "v22.23.3"
+          },
+          "cases": 3,
+          "caseNames": [
+            [
+              "tests/panel-update-panel.test.ts",
+              "面板快更新在编辑、播放与任务期间保持草稿并禁止刷新"
+            ],
+            [
+              "tests/panel-update-panel.test.ts",
+              "面板刷新后的真实表格重连恢复稳定勾选且断线仍清除"
+            ],
+            [
+              "tests/panel-update-panel.test.ts",
+              "迟到的刷新恢复让位于用户的新勾选"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "node",
+            "files": [
+              "tests/panel-update-panel.test.ts"
+            ],
+            "inventory": "2d931843f86b558ec6e54f106f295a34decbd681a30d1f3f298c99a079458132",
+            "strictFiles": [
+              "tests/panel-update-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/before-168/4.json",
+          "sha256": "2bd254acff908aae4915e25b8ef1b37189b7dba25ef4e770a65be6b71b018008",
+          "native": {
+            "path": "/home/forclaw/tmp/implement-161/before-168/4-native.json",
+            "sha256": "5d67a47a809c30dd131baa4c9e2cc025825b07fefca2b4e8b817d818a9523699"
+          },
+          "nonce": "d499903d-598c-4b81-b659-4f15dead323e",
+          "source": {
+            "commit": "0a7fb4009cd7ff3a21e22511cc7d70d997d4bc23",
+            "tree": "8971c2194ccfef6fd3496c7b2181dcc1ebae3ebe",
+            "fingerprint": "sha256-merkle-v1:9c66df16475b2fc41ab47065fc99f9ed327009c8ece3341981e5497f758be9a9",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "node",
+            "version": "v22.23.3"
+          },
+          "cases": 3,
+          "caseNames": [
+            [
+              "tests/panel-update-panel.test.ts",
+              "面板快更新在编辑、播放与任务期间保持草稿并禁止刷新"
+            ],
+            [
+              "tests/panel-update-panel.test.ts",
+              "面板刷新后的真实表格重连恢复稳定勾选且断线仍清除"
+            ],
+            [
+              "tests/panel-update-panel.test.ts",
+              "迟到的刷新恢复让位于用户的新勾选"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "node",
+            "files": [
+              "tests/panel-update-panel.test.ts"
+            ],
+            "inventory": "2d931843f86b558ec6e54f106f295a34decbd681a30d1f3f298c99a079458132",
+            "strictFiles": [
+              "tests/panel-update-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        }
+      ],
+      "afterReports": [
+        {
+          "path": "/home/forclaw/tmp/implement-161/after-168-resume/1.json",
+          "sha256": "4a70676fa632e5dedc7565d1cf3618a69798373dd1a3809ceca599ed9de77691",
+          "native": {
+            "path": "/home/forclaw/tmp/implement-161/after-168-resume/1-native.json",
+            "sha256": "5819cf78de74a1a39bde5cc768c418659df9c65784f053fb2b36d54c3f10236b"
+          },
+          "nonce": "3676210b-133a-4bec-8b27-a56e38aba9ca",
+          "source": {
+            "commit": "308fbe5f8908a2725b6be3e2afe439c900689ce0",
+            "tree": "1b13ae679a00658a135132d443e883b3d7812b0f",
+            "fingerprint": "sha256-merkle-v1:87d4b9597b01ed446955283316876aad17adad92dc4c8ed2bde0e8cb196a16e8",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "playwright",
+            "version": "1.64.1"
+          },
+          "cases": 3,
+          "caseNames": [
+            [
+              "tests/panel-update-panel.test.ts",
+              "面板快更新在编辑、播放与任务期间保持草稿并禁止刷新"
+            ],
+            [
+              "tests/panel-update-panel.test.ts",
+              "面板刷新后的真实表格重连恢复稳定勾选且断线仍清除"
+            ],
+            [
+              "tests/panel-update-panel.test.ts",
+              "迟到的刷新恢复让位于用户的新勾选"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "playwright",
+            "files": [
+              "tests/panel-update-panel.test.ts"
+            ],
+            "inventory": "a92a852337d50ea69d61446b8796c4eb9ab94927f9e5446bd8c7597477e1d059",
+            "strictFiles": [
+              "tests/panel-update-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/after-168-resume/2.json",
+          "sha256": "db0f365e7087cc8eee65651cc9086758e41347045777d41c22ba9047ffa33289",
+          "native": {
+            "path": "/home/forclaw/tmp/implement-161/after-168-resume/2-native.json",
+            "sha256": "992985e1973ab45f42c9d92badbe528edbdcb1099ecc7b2ce14a3d450f20d5bb"
+          },
+          "nonce": "712babd1-13a2-4ef3-8712-de61b200d039",
+          "source": {
+            "commit": "308fbe5f8908a2725b6be3e2afe439c900689ce0",
+            "tree": "1b13ae679a00658a135132d443e883b3d7812b0f",
+            "fingerprint": "sha256-merkle-v1:87d4b9597b01ed446955283316876aad17adad92dc4c8ed2bde0e8cb196a16e8",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "playwright",
+            "version": "1.64.1"
+          },
+          "cases": 3,
+          "caseNames": [
+            [
+              "tests/panel-update-panel.test.ts",
+              "面板快更新在编辑、播放与任务期间保持草稿并禁止刷新"
+            ],
+            [
+              "tests/panel-update-panel.test.ts",
+              "面板刷新后的真实表格重连恢复稳定勾选且断线仍清除"
+            ],
+            [
+              "tests/panel-update-panel.test.ts",
+              "迟到的刷新恢复让位于用户的新勾选"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "playwright",
+            "files": [
+              "tests/panel-update-panel.test.ts"
+            ],
+            "inventory": "a92a852337d50ea69d61446b8796c4eb9ab94927f9e5446bd8c7597477e1d059",
+            "strictFiles": [
+              "tests/panel-update-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/after-168-resume/3.json",
+          "sha256": "46598270738104e7377168816c6d3848f0eddf440b2e7e6742b74e9b74627e3b",
+          "native": {
+            "path": "/home/forclaw/tmp/implement-161/after-168-resume/3-native.json",
+            "sha256": "e8b6ff5fc43ca228cdb41fc215302009d220279f8ad821cc4b6cc537992afb45"
+          },
+          "nonce": "273f69d4-a900-4c58-a306-dfba5111b963",
+          "source": {
+            "commit": "308fbe5f8908a2725b6be3e2afe439c900689ce0",
+            "tree": "1b13ae679a00658a135132d443e883b3d7812b0f",
+            "fingerprint": "sha256-merkle-v1:87d4b9597b01ed446955283316876aad17adad92dc4c8ed2bde0e8cb196a16e8",
+            "dirty": false,
+            "scope": "code-check-v1"
+          },
+          "environment": {
+            "node": "v22.23.3",
+            "platform": "linux",
+            "arch": "x64",
+            "chrome": null,
+            "nodeOptions": null,
+            "nodeCompileCache": {
+              "directory": null,
+              "disable": "1"
+            }
+          },
+          "executor": {
+            "name": "playwright",
+            "version": "1.64.1"
+          },
+          "cases": 3,
+          "caseNames": [
+            [
+              "tests/panel-update-panel.test.ts",
+              "面板快更新在编辑、播放与任务期间保持草稿并禁止刷新"
+            ],
+            [
+              "tests/panel-update-panel.test.ts",
+              "面板刷新后的真实表格重连恢复稳定勾选且断线仍清除"
+            ],
+            [
+              "tests/panel-update-panel.test.ts",
+              "迟到的刷新恢复让位于用户的新勾选"
+            ]
+          ],
+          "plan": {
+            "schemaVersion": 1,
+            "suite": "all",
+            "executor": "playwright",
+            "files": [
+              "tests/panel-update-panel.test.ts"
+            ],
+            "inventory": "a92a852337d50ea69d61446b8796c4eb9ab94927f9e5446bd8c7597477e1d059",
+            "strictFiles": [
+              "tests/panel-update-panel.test.ts"
+            ]
+          },
+          "status": "passed",
+          "allRetriesZero": true
+        }
+      ],
+      "candidateTimings": [
+        {
+          "path": "/home/forclaw/tmp/implement-161/after-168-resume/1-timings.jsonl",
+          "sha256": "799b3a7c752ee7f814983a67cfaefc80321bd507100be34a6181c3a65b603387"
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/after-168-resume/2-timings.jsonl",
+          "sha256": "4bd0af3d3d3a2f40f2fd7cb97798636843f2be6690b9623921ae39ef47c4c594"
+        },
+        {
+          "path": "/home/forclaw/tmp/implement-161/after-168-resume/3-timings.jsonl",
+          "sha256": "d7e782055bb9d562ce7496d2fd76b2840dc7752f7874f57d5259bc9c9be60953"
+        }
+      ],
+      "candidateObservedCacheDisabled": true,
+      "candidateActualWorkersPerRun": 1,
+      "candidateChromeVersions": [
+        "Google Chrome 155.0.8059.84"
+      ],
+      "cleanup": {
+        "checkedPids": [
+          874396,
+          874431,
+          875618,
+          875637,
+          876286,
+          876377
+        ],
+        "alive": [],
+        "directories": [
+          "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resources-4a51db1c-8814-4591-8100-5890750c8c44/case-LCeIEZ",
+          "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resources-4a51db1c-8814-4591-8100-5890750c8c44/case-gHF59F",
+          "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resources-4a51db1c-8814-4591-8100-5890750c8c44/case-j50YGX",
+          "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resources-4a51db1c-8814-4591-8100-5890750c8c44/worker-t0HbuN",
+          "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resources-cb88ca2e-51c7-419d-bd7b-d536e8e41c93/case-DFoTkH",
+          "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resources-cb88ca2e-51c7-419d-bd7b-d536e8e41c93/case-G5soc0",
+          "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resources-cb88ca2e-51c7-419d-bd7b-d536e8e41c93/case-yvvb9t",
+          "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resources-cb88ca2e-51c7-419d-bd7b-d536e8e41c93/worker-92AuEL",
+          "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resources-fc864e67-850f-45b3-aff7-2128a0c1920d/case-IKP1XS",
+          "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resources-fc864e67-850f-45b3-aff7-2128a0c1920d/case-K1fg6i",
+          "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resources-fc864e67-850f-45b3-aff7-2128a0c1920d/case-ZshNeo",
+          "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resources-fc864e67-850f-45b3-aff7-2128a0c1920d/worker-NWMpee"
+        ],
+        "present": [],
+        "resourceRootsPresent": [],
+        "contextsClosed": 9,
+        "distinctContexts": 9,
+        "workersStopped": 3,
+        "mediaServersClosed": 0,
+        "mediaPorts": []
+      },
+      "baselineBrowserCacheObservation": "166有逐case timings reason disabled；167/168基线无timings，仅已保全命令env禁用与源逻辑，未伪造逐case观测。",
+      "excludedBaselineSample1": "保留原件；与167红灯确认退出观察时间重叠，无法证明静默；比较仅2/3/4。"
+    }
+  ],
+  "nineDistinctExecutionNonces": true,
+  "worktreesAfter": [
+    {
+      "cwd": "/home/forclaw/.codex/worktrees/spec-161-native/ClapGrid",
+      "head": "75ce6a5a9f1f3458441ad9d24187657bb09c121d",
+      "status": ""
+    },
+    {
+      "cwd": "/home/forclaw/.codex/worktrees/spec-161-media/ClapGrid",
+      "head": "af62a49c97e34203f15b3452961c9d1fe8aa706e",
+      "status": ""
+    },
+    {
+      "cwd": "/home/forclaw/code/ClapGrid",
+      "head": "308fbe5f8908a2725b6be3e2afe439c900689ce0",
+      "status": ""
+    }
+  ]
+}

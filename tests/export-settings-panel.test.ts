@@ -1,7 +1,4 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { chrome, checkBrowser } from './helpers/browser.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+import { test } from './helpers/playwright-browser.js';
 import { fixture } from './helpers/editing-fixture.js';
 
 const setup = String.raw`
@@ -27,9 +24,9 @@ const pass = () => document.getElementById('result').dataset.state='passed';
 const fail = e => { document.getElementById('result').dataset.state='failed'; document.getElementById('result').textContent=e.stack; };
 `;
 
-test('导出表单保留修改权、加载反馈、自动保存和字号提交规则', {timeout:30000}, async t => {
-  assert.ok(chrome, '导出表单验收必须实际运行浏览器');
-  await checkBrowser(t, setup + String.raw`
+test('导出表单保留修改权、加载反馈、自动保存和字号提交规则', async ({ panel }) => { test.setTimeout(30000);
+
+  await panel.check(setup + String.raw`
 (async () => { try {
 await action(() => root.render(<App/>));
 state.settingsGate = deferred();
@@ -79,12 +76,12 @@ check(document.body.textContent.includes('媒体组件与字体读取失败'),'�
 await click('编辑设置'); check(field('字幕字体').disabled,'读取失败仍禁用字体');
 const lastLease=state.current; await click('关闭设置'); check(lastLease.closes===1,'关闭释放修改权一次');
 pass();
-} catch(e) { fail(e); } })();`, fixture);
-});
+} catch(e) { fail(e); } })();`, fixture, 1600, 1200);
+ });
 
-for (const [width,height] of [[1600,1000],[420,800],[420,360]]) test(`导出表单生产主题与控件可达性 ${width}×${height}`, {timeout:40000}, async t => {
-  assert.ok(chrome, '主题矩阵必须实际运行 Chrome');
-  await checkInteractiveBrowser(t, setup + String.raw`
+for (const [width,height] of [[1600,1000],[420,800],[420,360]]) test(`导出表单生产主题与控件可达性 ${width}×${height}`, async ({ panel }) => { test.setTimeout(40000);
+
+  await panel.check(setup + String.raw`
 const input = async request => { await action(() => window.browserInput(request)); await new Promise(r => setTimeout(r, 200)); };
 const bounds = node => { const r=node.getBoundingClientRect(); check(r.left>=0 && r.right<=innerWidth && r.top>=0 && r.bottom<=innerHeight,'控件在视口内可达'); };
 (async () => { try {
@@ -116,4 +113,4 @@ check(getComputedStyle(button('更多')).borderTopWidth==='1px','页头按钮保
 await input({key:'Enter'}); check(!field('导出编码'),'关闭操作可达');
 pass();
 } catch(e) { fail(e); } })();`, fixture,width,height);
-});
+ });
