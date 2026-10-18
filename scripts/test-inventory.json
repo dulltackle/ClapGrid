@@ -187,21 +187,21 @@
     },
     {
       "file": "tests/lifecycle-export.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/lifecycle-runtime.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/lifecycle.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -592,7 +592,7 @@
     },
     {
       "file": "tests/service-exit-wait.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -642,7 +642,7 @@
     },
     {
       "file": "tests/speech-export-lock.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -722,7 +722,7 @@
     },
     {
       "file": "tests/thread-selection.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -835,28 +835,28 @@
     },
     {
       "file": "tests/workspace-inflight-edit.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/workspace-runtime.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/workspace-sharing.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/workspace-task-continuity.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]

@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -10,6 +10,25 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createBusinessMcp } from '../src/mcp/server.js';
 import { startService } from '../src/service/server.js';
 import { connectTable, importVideo, modifyBatch, queryExports, queryExportSettings, querySpeech, queryStatus, saveExportSettings, submitExport, submitSpeech, submitSpeechBatch } from '../src/shared/client.js';
+
+// 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
+// 只暂停生产任务使用的 global 回调边界；不改 Node Promise 时钟或真实 HTTP。
+function pauseImmediate() {
+  const original = globalThis.setImmediate;
+  const pending: (() => void)[] = [];
+  let paused = true;
+  const clock = vi.spyOn(globalThis, 'setImmediate').mockImplementation((callback, ...args) => original(function (this: NodeJS.Immediate) {
+    const invoke = () => callback.apply(this, args);
+    if (paused) pending.push(invoke); else invoke();
+  }));
+  return () => {
+    if (!paused) return;
+    paused = false; clock.mockRestore();
+    for (const invoke of pending.splice(0)) original(invoke);
+  };
+}
 
 async function until<T>(read: () => Promise<T>, accepts: (value: T) => boolean) {
   const deadline = Date.now() + 30000;
@@ -37,7 +56,8 @@ for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可�
   const mcp = createBusinessMcp(service.url); const client = new Client({ name: '配音导出锁回归', version: '1' });
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
   let table = await connectTable(service.url);
-  t.after(async () => { t.mock.timers.reset(); finish?.(success()); await table.close(); await client.close(); await mcp.close(); await service.close(); rmSync(root, { recursive: true, force: true }); });
+  let resumeImmediate: (() => void) | undefined;
+  t.onTestFinished(async () => { resumeImmediate?.(); finish?.(success()); await table.close(); await client.close(); await mcp.close(); await service.close(); rmSync(root, { recursive: true, force: true }); });
   await modifyBatch(service.url, { changes: [{ kind: 'add', text: '配音任务锁验证' }] });
   const segment = (await queryStatus(service.url)).snapshot.segments[0]!;
   const { asset } = await importVideo(service.url, video);
@@ -53,12 +73,12 @@ for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可�
   const original = await queryStatus(service.url);
   hold = true;
   // 只暂停外部时钟调度；真实 HTTP/MCP 可以在纯 accepted 状态下完成请求。
-  t.mock.timers.enable({ apis: ['setImmediate'] });
+  resumeImmediate = pauseImmediate();
   const task = await submitSpeech(service.url, { requestId: randomUUID(), segmentId: segment.id });
   assert.equal(task.state, 'accepted');
   for (const phase of ['accepted', 'running'] as const) {
     if (phase === 'running') {
-      t.mock.timers.tick(0); t.mock.timers.reset();
+      resumeImmediate!(); resumeImmediate = undefined;
       await until(() => querySpeech(service.url), value => value.tasks.some(item => item.id === task.id && item.state === 'running'));
     }
     const start = Date.now();
@@ -79,7 +99,7 @@ for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可�
       const progress = await client.callTool({ name: 'clapgrid_speech_status', arguments: {} });
       assert.notEqual(progress.isError, true);
     }
-    t.diagnostic(`LOCK_WINDOW ${JSON.stringify({ outcome, phase, start, end: Date.now(), taskId: task.id })}`);
+    await t.annotate(`LOCK_WINDOW ${JSON.stringify({ outcome, phase, start, end: Date.now(), taskId: task.id })}`);
   }
   if (outcome === '中断') {
     await table.close(); await service.close(); finish(success());
@@ -119,7 +139,7 @@ test('批量配音中尚未发送的 accepted 任务在表格重连后仍保留�
   const mcp = createBusinessMcp(service.url); const client = new Client({ name: '批量配音导出锁回归', version: '1' });
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
   let table = await connectTable(service.url);
-  t.after(async () => {
+  t.onTestFinished(async () => {
     await table.close(); await client.close(); await mcp.close(); await service.close();
     pending.forEach(resolve => resolve(success())); rmSync(root, { recursive: true, force: true });
   });
@@ -166,7 +186,7 @@ test('批量配音中尚未发送的 accepted 任务在表格重连后仍保留�
     const playback = await fetch(`${service.url}${before.audio[0]!.url}`);
     assert.equal(playback.status, 200); assert.deepEqual(Buffer.from(await playback.arrayBuffer()), bytes);
   }
-  t.diagnostic(`LOCK_WINDOW ${JSON.stringify({ outcome: '批量等待', start, end: Date.now(), taskIds: ids })}`);
+  await t.annotate(`LOCK_WINDOW ${JSON.stringify({ outcome: '批量等待', start, end: Date.now(), taskIds: ids })}`);
   mode = 'success'; pending.shift()!(success());
   const finished = await until(() => querySpeech(service.url), value => !value.locked);
   assert.deepEqual(ids.map(id => finished.tasks.find(task => task.id === id)!.state), ['succeeded', 'succeeded']);

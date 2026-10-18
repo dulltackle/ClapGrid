@@ -7,8 +7,11 @@ import { join } from 'node:path';
 export function dependencyView(root: string, dependencies: string) {
   const target = join(root, 'node_modules');
   mkdirSync(target);
+  const writableCaches = ['.cache', '.vite', '.vite-temp', '.vitest-cache'];
+  // 启动前固定本地缓存拓扑，避免首次写入改变构建输入或跟随共享安装。
+  for (const cache of writableCaches) mkdirSync(join(target, cache));
   for (const name of readdirSync(dependencies)) {
-    if (['.cache', '.vite', '.vite-temp'].includes(name)) continue;
+    if (writableCaches.includes(name)) continue;
     symlinkSync(join(dependencies, name), join(target, name));
   }
 }

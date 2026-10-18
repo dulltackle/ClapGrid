@@ -1,6 +1,7 @@
+import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 import { beginEdit, connectTable, queryStatus, querySpeech } from '../src/shared/client.js';
 import { createServer, request } from 'node:http';
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -11,6 +12,9 @@ import { randomUUID } from 'node:crypto';
 import { build } from 'esbuild';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+
+// 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切换及服务重启使旧连接失效', { timeout: 60000 }, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-workspace-'));
@@ -26,7 +30,7 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
     occupied.once('error', (error: NodeJS.ErrnoException) => error.code === 'EADDRINUSE' ? resolve(false) : reject(error));
     occupied.listen(48762, '127.0.0.1', () => resolve(true));
   });
-  t.after(() => { if (ownsDefaultPort) occupied.close(); });
+  t.onTestFinished(async () => { if (ownsDefaultPort) await new Promise<void>((resolve, reject) => occupied.close(error => error ? reject(error) : resolve())); });
   const host = join(root, 'host.cjs');
   const queryStarted = join(root, 'host-query-started');
   writeFileSync(host, `#!/usr/bin/env node\nconst fs=require('node:fs');const rl=require('node:readline').createInterface({input:process.stdin});rl.on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read'){const thread=JSON.parse(fs.readFileSync(${JSON.stringify(state)},'utf8'));if(thread.delay)fs.writeFileSync(${JSON.stringify(queryStarted)},'started');setTimeout(()=>console.log(JSON.stringify({id:r.id,result:{thread}})),thread.delay);}});\n`, { mode: 0o700 });
@@ -39,18 +43,18 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   });
   const cli = async (action: string, workspace?: string) => JSON.parse((await promisify(execFile)(process.execPath,
     [join(dist, 'runtime.js'), action, ...(workspace ? ['--workspace', workspace, '--thread', threadId] : [])], { env })).stdout);
-  const running = new Map<string, { id: string; boundUrl: string; workspace: string }>();
+  const running = new Map<string, { id: string; boundUrl: string; workspace: string; process: ReturnType<typeof serviceProcess> }>();
   const stop = async (url: string, instanceId: string) => {
     const record = running.get(url)!; setWorkspace(record.workspace);
     record.boundUrl = (await cli('open', record.workspace)).url;
     await fetch(`${record.boundUrl}/api/service/stop`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instanceId }) });
     for (let i = 0; i < 100; i++) {
-      try { await fetch(`${url}/api/identity`); } catch { running.delete(url); return; }
+      try { await fetch(`${url}/api/identity`); } catch { await waitForServiceExit(record.process); running.delete(url); return; }
       await new Promise(r => setTimeout(r, 20));
     }
     throw new Error('服务未退出');
   };
-  t.after(async () => {
+  t.onTestFinished(async () => {
     for (const [url, record] of running) await stop(url, record.id);
     rmSync(root, { recursive: true, force: true });
   });
@@ -61,7 +65,7 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   assert.equal(existsSync(join(first, 'clapgrid')), false, '宿主无有效目录时不得建立项目或启动服务');
   setWorkspace(first);
   const opened = await cli('open', first);
-  const origin = new URL(opened.url).origin; running.set(origin, { id: opened.instanceId, boundUrl: opened.url, workspace: first });
+  const origin = new URL(opened.url).origin; running.set(origin, { id: opened.instanceId, boundUrl: opened.url, workspace: first, process: serviceProcess(opened.pid) });
   assert.notEqual(origin, 'http://127.0.0.1:48762');
   if (ownsDefaultPort) assert.equal(await (await fetch('http://127.0.0.1:48762')).text(), '保留原服务');
   assert.equal(opened.snapshot.project.directory, join(first, 'clapgrid'));
@@ -96,7 +100,7 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   assert.equal((await cli('open', first)).snapshot.project.id, opened.snapshot.project.id);
   const client = new Client({ name: 'workspace-regression', version: '1.0.0' });
   await client.connect(new StdioClientTransport({ command: process.execPath, args: [join(dist, 'mcp/main.js')], env: Object.fromEntries(Object.entries(env).filter((e): e is [string,string] => typeof e[1] === 'string')) }));
-  t.after(() => client.close());
+  t.onTestFinished(() => client.close());
   const tool = (name: string, args = {}) => client.callTool({ name, arguments: args, _meta: { threadId } });
   const ready = await tool('clapgrid_prepare_panel');
   assert.notEqual(ready.isError, true);
@@ -149,7 +153,7 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   assert.deepEqual(needsStart.structuredContent, { state: 'needs-start', workspace: second, threadId });
   assert.equal(existsSync(join(second, 'clapgrid')), false, '快捷打开离线工作空间不创建项目');
   const other = await cli('open', second);
-  const otherOrigin = new URL(other.url).origin; running.set(otherOrigin, { id: other.instanceId, boundUrl: other.url, workspace: second });
+  const otherOrigin = new URL(other.url).origin; running.set(otherOrigin, { id: other.instanceId, boundUrl: other.url, workspace: second, process: serviceProcess(other.pid) });
   assert.notEqual(otherOrigin, origin);
   assert.notEqual(other.snapshot.project.id, opened.snapshot.project.id);
   setWorkspace(null);
@@ -165,10 +169,10 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   assert.equal(((await tool('clapgrid_prepare_panel')).structuredContent as any)?.state, 'needs-start');
   const replacement = createServer((_request, response) => { response.statusCode = 404; response.end('其他服务'); });
   await new Promise<void>(resolve => replacement.listen(Number(new URL(origin).port), '127.0.0.1', resolve));
-  t.after(() => replacement.close());
+  t.onTestFinished(() => new Promise<void>((resolve, reject) => replacement.close(error => error ? reject(error) : resolve())));
   assert.equal((await tool('clapgrid_prepare_panel')).isError, true, '地址被其他服务占用时不得回退启动');
   const reopened = await cli('open', first);
-  const reopenedOrigin = new URL(reopened.url).origin; running.set(reopenedOrigin, { id: reopened.instanceId, boundUrl: reopened.url, workspace: first });
+  const reopenedOrigin = new URL(reopened.url).origin; running.set(reopenedOrigin, { id: reopened.instanceId, boundUrl: reopened.url, workspace: first, process: serviceProcess(reopened.pid) });
   assert.equal(reopened.snapshot.project.id, opened.snapshot.project.id);
   assert.equal(reopened.snapshot.segments.length, 1);
   assert.notEqual(reopened.instanceId, opened.instanceId);
