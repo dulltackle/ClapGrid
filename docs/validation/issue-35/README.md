@@ -1,5 +1,7 @@
 # #35 详情浮层验证
 
+> 历史记录：原始材料已退出当前 Git 跟踪；复现前请按[原件保留与恢复说明](../README.md)恢复对应工程或证据。本页不代表当前版本验收。
+
 ## 环境与边界
 
 2026-10-03，在 Linux 的真实 Chrome 中渲染 React 主视图、AG Grid 及生产样式。测试仅替换现有 HTTP 客户端模块，通过可控响应验证保存、取消、修改权及合法项目更新。键盘通过 Chrome DevTools Protocol 发送真实按键，覆盖原生 Tab、Shift+Tab、Enter 和 Esc。

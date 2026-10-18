@@ -1,6 +1,7 @@
-import { test } from 'node:test';
+import { test } from './helpers/playwright-browser.js';
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
+test.describe.configure({ mode: 'parallel' });
 
 const script = String.raw`
 import { act } from 'react';
@@ -83,5 +84,5 @@ const region = () => document.querySelector('[role="region"][aria-label$="画面
 } catch(error) { document.getElementById('result').dataset.state='failed'; document.getElementById('result').textContent=error.stack; } })();
 `;
 for (const [width, height] of [[1200, 800], [780, 579], [420, 800], [420, 360]]) {
-  test(`文案主导行布局与说明展开（${width}×${height}）`, { timeout: 40000 }, t => checkInteractiveBrowser(t, script, fixture, width, height));
+  test(`文案主导行布局与说明展开（${width}×${height}）`, async ({ panel }) => { test.setTimeout(40000); await panel.check( script, fixture, width, height); });
 }

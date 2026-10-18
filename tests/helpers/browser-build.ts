@@ -1,9 +1,10 @@
-import { createHash } from 'node:crypto';
-import { appendFileSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { appendFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build, version as esbuildVersion } from 'esbuild';
 import type { TestContext } from 'node:test';
+import { PersistentBuildCache, assertBuildEnvironment, buildInputPlan, buildConfigurationInputFiles, bindBuildTools, fingerprint, treeFiles, bytesIdentity } from './persistent-build-cache.js';
+export { fingerprint, treeFiles, bytesIdentity } from './persistent-build-cache.js';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 
@@ -23,47 +24,39 @@ export class MemoryBuildCache {
   }
 }
 
-export function fingerprint(files: string[]) {
-  const hash = createHash('sha256');
-  for (const file of [...new Set(files)].sort()) {
-    const present = existsSync(file);
-    const bytes = present ? readFileSync(file) : Buffer.alloc(0);
-    hash.update(JSON.stringify([file, present, bytes.length])); hash.update(bytes);
-  }
-  return hash.digest('hex');
-}
-
-export function treeFiles(directory: string): string[] {
-  return readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
-    const path = join(directory, entry.name);
-    return entry.isDirectory() ? treeFiles(path) : statSync(path).isFile() ? [path] : [];
-  });
-}
+export function buildConfigurationInputs() { return buildConfigurationInputFiles(root); }
 
 export const buildEnvironmentInputs = [join(root, 'package.json'), join(root, 'package-lock.json')];
-const scripts = new MemoryBuildCache();
-export const bytesIdentity = (bytes: Uint8Array) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+const scripts = new PersistentBuildCache(root);
+const verifiedTools = bindBuildTools(root, ['esbuild', 'tsx']);
 
 export async function buildBrowserScript(directory: string, script: string, fixture: string, buildDefine: Record<string, string> = {}) {
   const define = { 'process.env.NODE_ENV': '"development"', ...buildDefine };
-  const key = JSON.stringify([script, fixture, define, esbuildVersion, process.version, 'development-iife-automatic-v1']);
-  const result = await scripts.get(key, [...buildEnvironmentInputs, ...treeFiles(join(root, 'src')), ...treeFiles(join(root, 'tests/helpers'))], async () => {
+  const key = JSON.stringify([script, fixture, define, esbuildVersion, process.version, 'development-iife-automatic-minified-preserve-names-v2']);
+  const result = await scripts.get(key, buildInputPlan({ tools: verifiedTools, directories: [join(root, 'src'), join(root, 'tests/helpers')], files: buildEnvironmentInputs }), async () => {
+    verifiedTools();
+    const resolutions: string[] = [];
     const output = await build({
       absWorkingDir: root,
       stdin: { resolveDir: root, loader: 'tsx', contents: script },
-      bundle: true, jsx: 'automatic', format: 'iife', write: false, metafile: true, outfile: join(root, 'browser-test.js'),
+      bundle: true, jsx: 'automatic', format: 'iife', minify: true, keepNames: true, write: false, metafile: true, outfile: join(root, 'browser-test.js'),
       define,
       plugins: [{ name: 'http-fixture', setup(builder) {
         builder.onResolve({ filter: /^(editing-fixture|\.\.\/shared\/client\.js)$/ }, () => ({ path: 'fixture', namespace: 'fixture' }));
         builder.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: fixture, loader: 'js' }));
+      } }, { name: 'record-import-resolution', setup(builder) {
+        builder.onResolve({ filter: /.*/ }, args => { if (args.resolveDir && args.namespace !== 'fixture') resolutions.push(`resolve:${JSON.stringify([args.path, args.resolveDir])}`); return undefined; });
       } }],
     });
+    verifiedTools();
     const dependencies = Object.keys(output.metafile!.inputs).filter(path => !path.startsWith('fixture:') && path !== '<stdin>').map(path => resolve(root, path));
     // 每次命中还检查整个源码树，新增文件或 import 解析目标变化不能沿用旧包。
-    return { bytes: output.outputFiles!.find(file => file.path.endsWith('.js'))!.contents, dependencies };
+    return { bytes: output.outputFiles!.find(file => file.path.endsWith('.js'))!.contents, dependencies: [...dependencies, ...resolutions] };
   });
+  assertBuildEnvironment(result);
+  verifiedTools();
   writeFileSync(join(directory, 'test.js'), result.bytes);
-  return { cacheHit: result.cacheHit, identity: bytesIdentity(result.bytes) };
+  return { cacheHit: result.cacheHit, identity: bytesIdentity(result.bytes), cacheReason: result.cacheReason, cacheKey: result.cacheKey, cacheLookupMs: result.cacheLookupMs, buildMs: result.buildMs, cachePublishMs: result.cachePublishMs };
 }
 
 export type BrowserTimings = Record<string, number | boolean | string>;

@@ -28,11 +28,11 @@ export async function checkInteractiveBrowser(t: TestContext, script: string, fi
   });
   let stageStarted = performance.now();
   const bundle = await buildBrowserScript(directory, script, fixture, options.buildDefine);
-  timings.bundleMs = performance.now() - stageStarted; timings.bundleCacheHit = bundle.cacheHit;
+  timings.bundleMs = performance.now() - stageStarted; timings.bundleCacheHit = bundle.cacheHit; timings.bundleCacheLookupMs = bundle.cacheLookupMs; timings.bundleBuildMs = bundle.buildMs; timings.bundleCachePublishMs = bundle.cachePublishMs; timings.bundleCacheReason = bundle.cacheReason; timings.bundleCacheKey = bundle.cacheKey ?? 'unverified';
   timings.bundleIdentity = bundle.identity;
   stageStarted = performance.now();
   const styles = await buildPanelStyles(directory);
-  timings.stylesMs = performance.now() - stageStarted; timings.stylesCacheHit = styles.cacheHit;
+  timings.stylesMs = performance.now() - stageStarted; timings.stylesCacheHit = styles.cacheHit; timings.stylesCacheLookupMs = styles.cacheLookupMs; timings.stylesBuildMs = styles.buildMs; timings.stylesCachePublishMs = styles.cachePublishMs; timings.stylesCacheReason = styles.cacheReason; timings.stylesCacheKey = styles.cacheKey ?? 'unverified';
   timings.stylesIdentity = styles.identity;
   writeFileSync(join(directory, 'index.html'), '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="test.css"><div id="root"></div><pre id="result" data-state="pending"></pre><script src="test.js"></script></html>');
   let pageUrl = pathToFileURL(join(directory, 'index.html')).href;

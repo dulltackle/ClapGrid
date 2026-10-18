@@ -65,3 +65,14 @@ temp/
 
 # 本地安装的 Remotion 技能
 /.agents/skills/remotion-*/
+
+# 独立制作工程与历史验收原件在本机保留，仅提交 Markdown 历史说明。
+/docs/productions/**
+!/docs/productions/**/
+!/docs/productions/**/*.md
+/docs/validation/**
+!/docs/validation/**/
+!/docs/validation/**/*.md
+/docs/design/**
+!/docs/design/**/
+!/docs/design/**/*.md

@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { test } from './helpers/playwright-browser.js';
+import { mkdtempSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildPanelStyles } from './helpers/panel-styles.js';
@@ -21,9 +20,12 @@ test('解析生成工具类的转义与嵌套，拒绝同名冲突和无效例�
   assert.throws(() => checkStyleCollisions('.grid {}', '.grid {}'), /未找到/);
 });
 
-test('生产同源 CSS 的工具类不得覆盖既有业务类名', async t => {
-  const output = mkdtempSync(join(tmpdir(), 'clapgrid-style-check-'));
-  t.after(() => rmSync(output, { recursive: true, force: true }));
+test('生产同源 CSS 的工具类不得覆盖既有业务类名', async () => {
+  const resourceRoot = process.env.CLAPGRID_PLAYWRIGHT_RESOURCE_ROOT;
+  if (!resourceRoot) throw Error('CSS 门槛必须通过受控 Playwright 入口运行');
+  const output = mkdtempSync(join(resourceRoot, 'style-'));
+  const { removeOwnedSubdirectory } = await import(new URL('../scripts/playwright-resources.mjs', import.meta.url).href);
+  try {
   await buildPanelStyles(output);
   const panel = join(root, 'src/panel');
   const files = readdirSync(panel, { recursive: true, withFileTypes: true })
@@ -34,4 +36,5 @@ test('生产同源 CSS 的工具类不得覆盖既有业务类名', async t => {
   assert.doesNotThrow(() => checkStyleCollisions(authored, generated, exceptions));
   // 使用真实产物注入历史 .grid 冲突，证明门槛能拦截复发。
   assert.throws(() => checkStyleCollisions(authored + '.grid {width:100%}', generated + '@layer utilities {.grid {display:grid}}', exceptions), /grid/);
+  } finally { removeOwnedSubdirectory(output, resourceRoot, process.env.CLAPGRID_TEST_EXECUTION_ID); }
 });

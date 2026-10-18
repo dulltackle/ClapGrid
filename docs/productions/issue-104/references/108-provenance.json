@@ -1,8 +1,0 @@
-{
-  "新图像来源": "本轮手工编写可编辑Remotion SVG，无新生成图片或外部素材；复用#105解剖形态与固定seed17纸纹。",
-  "参考图": {
-    "path": "references/108-confirmed-static.png",
-    "source": "https://github.com/dulltackle/ClapGrid/blob/67166d4e966739f5ec669ea977589e42a5544c7d/docs/prototypes/issue-97-style/keyframes/fh11-12-collapse-v01.png",
-    "生成记录": "参考为#97同会话imagegen生成，原生成提示/来源清单一同保存于108-reference-origin.json；未直接烧录图中文字。"
-  }
-}

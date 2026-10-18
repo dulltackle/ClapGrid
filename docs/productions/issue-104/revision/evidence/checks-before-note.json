@@ -1,6 +1,0 @@
-{
-  "typecheck": "通过tsc -p revision/tsconfig.json",
-  "red": "缺本轮真实纯素材报错，原版不可代替",
-  "green": "15纯素材与原声匹配、无音轨、1080p30fps/帧长与全长decode通过",
-  "scope": "开发检查；三段底部文案澄清后仅重渲受影响内容，正式固定提交与人审待执行"
-}

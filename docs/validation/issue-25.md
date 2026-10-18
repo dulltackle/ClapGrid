@@ -1,5 +1,7 @@
 # #25 全片粗剪导出验证
 
+> 历史记录：原始材料已退出当前 Git 跟踪；复现前请按[原件保留与恢复说明](README.md)恢复对应工程或证据。本页不代表当前版本验收。
+
 日期：2026-09-28。环境：当前 Linux 工作区，Node.js、FFmpeg/ffprobe、Fontconfig 与支持 Unicode 自动换行的 libass。
 
 ## 已执行的验证

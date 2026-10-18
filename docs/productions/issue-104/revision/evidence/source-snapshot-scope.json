@@ -1,4 +1,0 @@
-{
-  "scope": "render-sources是两批真正执行时的源码与当时卡数据，不是当前选用制作卡；当前role与确认范围唯一取revision/cards.json。需要追溯时应将快照复制回相同revision相对结构，依赖/字体仍由本档案提供。当前15clip均有自己的实际renderBatch及sourceSHA，不冒称后改说明影响了其它12内容。",
-  "currentManifest": "outputs/render-delivery.json"
-}

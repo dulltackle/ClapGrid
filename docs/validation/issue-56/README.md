@@ -1,5 +1,7 @@
 # #56 交付与验证
 
+> 历史记录：原始材料已退出当前 Git 跟踪；复现前请按[原件保留与恢复说明](../README.md)恢复对应工程或证据。本页不代表当前版本验收。
+
 ## 仓库交付
 
 `scripts/agent-tools.mjs` 提供解释器候选核对、已知技能路径解析、GitHub REST 列表分页与字段投影、脱敏留存及按需读五个小命令。公开 CLI 测试位于 `tests/agent-tools.test.ts`，固定分页夹具位于 `tests/fixtures/agent-tools/pages.json`。使用说明为 `tool-economy.md`。

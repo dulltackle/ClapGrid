@@ -1,9 +1,0 @@
-{
-  "geometryCommit": "fa19a47f326b50d793ff3378962718523f99784d",
-  "staticReferenceCommit": "67166d4e966739f5ec669ea977589e42a5544c7d",
-  "staticReferencePath": "docs/prototypes/issue-97-style/keyframes/fh03-layers-v01.png",
-  "localReference": "references/106-structure-reference.png",
-  "sha256": "0161b5c32854326a77a33c29a73b34c64eec3e020bf5f34da09fa2aad49784bf",
-  "source": "既有本会话imagegen确认稿，用于视觉参考；本组未重新生成图像；纯SVG动画保留共享原型骨几何",
-  "scope": "静态参考确认不扩大为本组新动画用户确认"
-}

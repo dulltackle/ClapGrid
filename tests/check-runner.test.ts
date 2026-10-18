@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test, type TestContext } from 'node:test';
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, cpSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -17,11 +17,14 @@ const { sourceIdentity } = await import(identityUrl);
 
 function repository(t: TestContext, task = "require('node:assert/strict').equal(require('node:fs').readFileSync('value','utf8'),'original')") {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-check-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.after(() => {
+    if(process.env.CLAPGRID_RUNNER_TEST_EVIDENCE){const archive=join(process.env.CLAPGRID_RUNNER_TEST_EVIDENCE,root.split('/').at(-1)!);mkdirSync(archive,{recursive:true});for(const name of ['logs','scripts','package.json','parent.mjs','child.mjs'])if(existsSync(join(root,name)))cpSync(join(root,name),join(archive,name),{recursive:true});}
+    rmSync(root, { recursive: true, force: true });
+  });
   const git = (...args: string[]) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
   git('init', '-q');
   mkdirSync(join(root, 'scripts'));
-  for (const file of ['check.mjs', 'check-runner.mjs', 'check-source.mjs', 'check-lifecycle.mjs']) cpSync(join(scripts, file), join(root, 'scripts', file));
+  for (const file of ['node-compile-cache.mjs', 'check.mjs', 'check-runner.mjs', 'check-source.mjs', 'check-lifecycle.mjs', 'playwright-resources.mjs']) cpSync(join(scripts, file), join(root, 'scripts', file));
   writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 'check-fixture', version: '1.0.0', private: true, scripts: { check: 'node scripts/check.mjs', typecheck: 'node task.cjs', test: 'node task.cjs', 'test:failed': 'node task.cjs', build: 'node task.cjs' } }));
   writeFileSync(join(root, 'package-lock.json'), JSON.stringify({ name: 'check-fixture', version: '1.0.0', lockfileVersion: 3, packages: { '': { name: 'check-fixture', version: '1.0.0' } } }));
   writeFileSync(join(root, '.gitignore'), 'logs/\nnode_modules/\n');
@@ -76,6 +79,168 @@ async function until(check: () => boolean, message: string) {
   while (!check() && Date.now() < deadline) await delay(25);
   assert.ok(check(), message);
 }
+
+for(const wrapper of ['direct','npm'])test(`取消${wrapper}子检查先等待拥有者两秒收尾，再确认组退出且无子锁`,{skip:process.platform!=='linux'},async t=>{
+  const parent=repository(t),nested=repository(t);
+  writeFileSync(join(nested.root,'child.mjs'),`import{withCheckRun}from'./scripts/check-lifecycle.mjs';import{writeFileSync}from'node:fs';import{setTimeout as delay}from'node:timers/promises';await withCheckRun(process.cwd(),'slow-owner',async context=>{const timer=setInterval(()=>{},1000);writeFileSync('logs/ready','ready');await new Promise(resolve=>context.signal.addEventListener('abort',resolve,{once:true}));clearInterval(timer);writeFileSync('logs/aborted','aborted');await delay(2000);writeFileSync('logs/owner-completed','completed');process.exitCode=130;});`);
+  const pkg=JSON.parse(readFileSync(join(nested.root,'package.json'),'utf8'));pkg.scripts.owner='node child.mjs';writeFileSync(join(nested.root,'package.json'),JSON.stringify(pkg));
+  mkdirSync(join(nested.root,'logs'),{recursive:true});mkdirSync(join(parent.root,'logs'),{recursive:true});
+  const command=wrapper==='direct'?process.execPath:'npm',args=wrapper==='direct'?['child.mjs']:['run','owner'];
+  writeFileSync(join(parent.root,'parent.mjs'),`import{withCheckRun}from'./scripts/check-lifecycle.mjs';import{runLogged}from'./scripts/check-runner.mjs';import{writeFileSync}from'node:fs';await withCheckRun(process.cwd(),'parent',async context=>{const result=await runLogged(${JSON.stringify(command)},${JSON.stringify(args)},${JSON.stringify(nested.root)},'logs/command.log',context);writeFileSync('logs/result.json',JSON.stringify(result));process.exitCode=context.signal.aborted?130:result.exitCode;});`);
+  const child=spawn(process.execPath,['parent.mjs'],{cwd:parent.root,env:{...process.env,NODE_TEST_CONTEXT:undefined},stdio:'ignore'}),closed=new Promise<number|null>(resolve=>child.once('close',resolve));
+  const {stopCheckRun}=await import(new URL('../scripts/check-lifecycle.mjs',import.meta.url).href);
+  let owner:any;
+  try{
+    await until(()=>existsSync(join(nested.root,'logs/ready')),'实际子owner应开始');owner=JSON.parse(readFileSync(join(nested.root,'logs/check-state/active/owner.json'),'utf8'));
+    child.kill('SIGTERM');assert.equal(await closed,130);
+    const observation={wrapper,owner,ownerCompleted:existsSync(join(nested.root,'logs/owner-completed')),active:existsSync(join(nested.root,'logs/check-state/active')),result:JSON.parse(readFileSync(join(parent.root,'logs/result.json'),'utf8'))};
+    writeFileSync(join(parent.root,'logs/cancel-observation.json'),JSON.stringify(observation,null,2));t.diagnostic(JSON.stringify(observation));
+    assert.equal(observation.ownerCompleted,true,'父组不能在安全收尾期间SIGKILL已确认的子拥有者');assert.equal(observation.active,false);
+  }finally{
+    if(child.exitCode===null&&child.signalCode===null){child.kill('SIGTERM');await closed;}
+    if(existsSync(join(nested.root,'logs/check-state/active')))await stopCheckRun(nested.root,{token:owner?.token});
+  }
+});
+
+test('合作取消拒绝把本组拥有者记录拼接到另一真实工作树的控制socket', { skip: process.platform !== 'linux' }, async t => {
+  const parent = repository(t), nested = repository(t), foreign = repository(t);
+  for (const r of [parent, nested, foreign]) mkdirSync(join(r.root, 'logs'), { recursive: true });
+  const ownerScript = `import{withCheckRun}from'./scripts/check-lifecycle.mjs';import{writeFileSync}from'node:fs';await withCheckRun(process.cwd(),'bound-owner',async context=>{const timer=setInterval(()=>{},1000);writeFileSync('logs/ready','yes');await new Promise(resolve=>context.signal.addEventListener('abort',resolve,{once:true}));writeFileSync('logs/aborted','yes');clearInterval(timer);process.exitCode=130;});`;
+  for (const r of [nested, foreign]) writeFileSync(join(r.root, 'owner.mjs'), ownerScript);
+  writeFileSync(join(parent.root, 'parent.mjs'), `import{withCheckRun}from'./scripts/check-lifecycle.mjs';import{runLogged}from'./scripts/check-runner.mjs';await withCheckRun(process.cwd(),'parent',async context=>{await runLogged(process.execPath,['owner.mjs'],${JSON.stringify(nested.root)},'logs/command.log',context);process.exitCode=context.signal.aborted?130:0;});`);
+  const start = (root: string, entry: string) => { const child = spawn(process.execPath, [entry], { cwd: root, env: { ...process.env, NODE_TEST_CONTEXT: undefined }, stdio: 'ignore' }); return { child, closed: new Promise(resolve => child.once('close', resolve)) }; };
+  const independent = start(foreign.root, 'owner.mjs'), running = start(parent.root, 'parent.mjs');
+  const { stopCheckRun } = await import(new URL('../scripts/check-lifecycle.mjs', import.meta.url).href);
+  let foreignOwner: any, nestedOwner: any;
+  try {
+    await until(() => existsSync(join(foreign.root, 'logs/ready')) && existsSync(join(nested.root, 'logs/ready')), '两个真实拥有者均已启动');
+    const path = join(nested.root, 'logs/check-state/active/owner.json');
+    const original = nestedOwner = JSON.parse(readFileSync(path, 'utf8'));
+    foreignOwner = JSON.parse(readFileSync(join(foreign.root, 'logs/check-state/active/owner.json'), 'utf8'));
+    writeFileSync(path, JSON.stringify({ ...original, token: foreignOwner.token, socket: foreignOwner.socket }));
+    running.child.kill('SIGTERM'); assert.equal(await running.closed, 130);
+    const observation = { original, foreignOwner, nestedActive: existsSync(join(nested.root, 'logs/check-state/active')), foreignAborted: existsSync(join(foreign.root, 'logs/aborted')), foreignActive: existsSync(join(foreign.root, 'logs/check-state/active')), foreignExit: independent.child.exitCode, foreignSignal: independent.child.signalCode };
+    writeFileSync(join(parent.root, 'logs/foreign-control-observation.json'), JSON.stringify(observation, null, 2));
+    assert.equal(observation.foreignAborted, false, '合作控制必须由socket服务器核对内存拥有者身份');
+    assert.equal(observation.nestedActive, true, '拒绝后保留身份被替换的子锁');
+    assert.equal(observation.foreignActive, true); assert.equal(observation.foreignExit, null); assert.equal(observation.foreignSignal, null);
+  } finally {
+    if (running.child.exitCode === null && running.child.signalCode === null) { running.child.kill('SIGTERM'); await running.closed; }
+    if (existsSync(join(nested.root, 'logs/check-state/active'))) {
+      // 已确认原命令组结束；用本fixture原记录恢复，不能重用故障拼接的foreign socket。
+      writeFileSync(join(nested.root, 'logs/check-state/active/owner.json'), JSON.stringify(nestedOwner));
+      await stopCheckRun(nested.root, { token: nestedOwner.token });
+    }
+    if (existsSync(join(foreign.root, 'logs/check-state/active'))) await stopCheckRun(foreign.root, { token: foreignOwner?.token });
+    await independent.closed;
+  }
+});
+
+test('父命令仅回收实际登记组，不取消同cwd内独立拥有者或旧绑定的新任务', { skip: process.platform !== 'linux' }, async t => {
+  const parent = repository(t), foreign = repository(t);
+  for (const r of [parent, foreign]) mkdirSync(join(r.root, 'logs'), { recursive: true });
+  writeFileSync(join(foreign.root, 'owner.mjs'), `import{withCheckRun}from'./scripts/check-lifecycle.mjs';import{writeFileSync}from'node:fs';await withCheckRun(process.cwd(),'independent',async context=>{const timer=setInterval(()=>{},1000);writeFileSync('logs/ready','yes');await new Promise(resolve=>context.signal.addEventListener('abort',resolve,{once:true}));writeFileSync('logs/aborted','yes');clearInterval(timer);process.exitCode=130;});`);
+  writeFileSync(join(parent.root, 'parent.mjs'), `import{withCheckRun}from'./scripts/check-lifecycle.mjs';import{runLogged}from'./scripts/check-runner.mjs';await withCheckRun(process.cwd(),'parent',async context=>{await runLogged(process.execPath,['-e',"require('node:fs').writeFileSync('logs/command-ready','yes');setInterval(()=>{},1000)"],${JSON.stringify(foreign.root)},'logs/command.log',context);process.exitCode=context.signal.aborted?130:0;});`);
+  const start = (root: string, entry: string) => { const child = spawn(process.execPath, [entry], { cwd: root, env: { ...process.env, NODE_TEST_CONTEXT: undefined }, stdio: 'ignore' }); return { child, closed: new Promise(resolve => child.once('close', resolve)) }; };
+  const independent = start(foreign.root, 'owner.mjs'), running = start(parent.root, 'parent.mjs');
+  const { stopCheckRun } = await import(new URL('../scripts/check-lifecycle.mjs', import.meta.url).href);
+  let owner: any;
+  try {
+    await until(() => existsSync(join(foreign.root, 'logs/ready')) && existsSync(join(foreign.root, 'logs/command-ready')), '独立拥有者和父命令均已启动');
+    const path = join(foreign.root, 'logs/check-state/active/owner.json'); owner = JSON.parse(readFileSync(path, 'utf8'));
+    const parentOwner = JSON.parse(readFileSync(join(parent.root, 'logs/check-state/active/owner.json'), 'utf8'));
+    // 即使磁盘祖先字段被伪接，实际PGID不属于本组仍不能合作取消。
+    writeFileSync(path, JSON.stringify({ ...owner, ancestors: [{ root: parent.root, token: parentOwner.token }] }));
+    running.child.kill('SIGTERM'); assert.equal(await running.closed, 130);
+    assert.equal(existsSync(join(foreign.root, 'logs/aborted')), false); assert.equal(independent.child.exitCode, null); assert.equal(independent.child.signalCode, null);
+    for (const key of ['token', 'root', 'pid', 'birth', 'namespace']) {
+      const expected = { ...owner, [key]: key === 'pid' ? owner.pid + 1 : `${owner[key]}-stale` };
+      await assert.rejects(stopCheckRun(foreign.root, { token: owner.token, expectedOwner: expected }), /身份已变化|绑定已变化/);
+      assert.equal(existsSync(join(foreign.root, 'logs/aborted')), false, `${key}旧绑定不能取消当前任务`);
+      assert.equal(JSON.parse(readFileSync(path, 'utf8')).token, owner.token);
+    }
+    writeFileSync(join(parent.root, 'logs/non-owner-observation.json'), JSON.stringify({ owner, parentOwner, foreignActive: true, staleBindingKeys: ['token','root','pid','birth','namespace'] }, null, 2));
+  } finally {
+    if (running.child.exitCode === null && running.child.signalCode === null) { running.child.kill('SIGTERM'); await running.closed; }
+    if (existsSync(join(foreign.root, 'logs/check-state/active'))) await stopCheckRun(foreign.root, { token: owner?.token });
+    await independent.closed;
+  }
+});
+
+test('继承相同owner的子阶段不能回收整个共享检查的登记组', async t => {
+  const r = repository(t); mkdirSync(join(r.root, 'logs'), { recursive: true });
+  writeFileSync(join(r.root, 'child.mjs'), `import assert from'node:assert/strict';import{withCheckRun}from'./scripts/check-lifecycle.mjs';await withCheckRun(process.cwd(),'inherited',async context=>{await assert.rejects(context.drainGroups(),/实际拥有者/);});`);
+  const { withCheckRun } = await import(new URL('../scripts/check-lifecycle.mjs', import.meta.url).href);
+  const { runLogged } = await import(runnerUrl);
+  const result = await withCheckRun(r.root, 'actual-owner', (context: any) => runLogged(process.execPath, ['child.mjs'], r.root, join(r.root, 'logs/child.log'), context, { CLAPGRID_CHECK_CHILD_ROOT: r.root }));
+  assert.equal(result.status, 'passed'); assert.equal(result.exitCode, 0);
+  assert.equal(existsSync(join(r.root, 'logs/check-state/active')), false);
+});
+
+for (const [mode, key] of [['default','token'],['default','root'],['drain','token'],['drain','root'],['drain','pid'],['drain','birth'],['drain','namespace']] as const) test(`${mode}清理拒绝${key}身份替换并保留active与登记，不写完成证据`, async t => {
+  const r = repository(t); mkdirSync(join(r.root, 'logs/evidence'), { recursive: true });
+  writeFileSync(join(r.root, 'owner.mjs'), `import{withCheckRun,currentCheckRun,atomicJson}from'./scripts/check-lifecycle.mjs';import{writeFileSync}from'node:fs';import{randomUUID}from'node:crypto';import{spawn}from'node:child_process';await withCheckRun(process.cwd(),'identity-fixture',async context=>{const child=spawn(process.execPath,['-e','setTimeout(()=>{},50)'],{detached:process.platform!=='win32',stdio:'ignore'});const closed=new Promise(resolve=>child.once('close',resolve));await new Promise(resolve=>child.once('spawn',resolve));const group=context.register(child.pid);await closed;writeFileSync('logs/original-group.json',JSON.stringify(group));const original=currentCheckRun(process.cwd());writeFileSync('logs/original-owner.json',JSON.stringify(original));const key=${JSON.stringify(key)};const replacement={...original,[key]:key==='token'?randomUUID():key==='root'?${JSON.stringify(tmpdir())}:key==='pid'?original.pid+100000:String(original[key])+'-replacement'};atomicJson('logs/check-state/active/owner.json',replacement);writeFileSync('logs/replacement-owner.json',JSON.stringify(replacement));if(${JSON.stringify(mode)}==='drain')await context.drainGroups();else throw Error('fixture body failed');},{metadata:{verificationDirectory:process.cwd()+'/logs/evidence'}});`);
+  const result = spawnSync(process.execPath, ['owner.mjs'], { cwd: r.root, env: { ...process.env, NODE_TEST_CONTEXT: undefined }, encoding: 'utf8', timeout: 5000 });
+  const active = join(r.root, 'logs/check-state/active'), original = JSON.parse(readFileSync(join(r.root, 'logs/original-owner.json'), 'utf8'));
+  const group = JSON.parse(readFileSync(join(r.root, 'logs/original-group.json'), 'utf8'));
+  const replacement = JSON.parse(readFileSync(join(r.root, 'logs/replacement-owner.json'), 'utf8'));
+  const observation = { mode, key, status: result.status, signal: result.signal, active: existsSync(active), actual: existsSync(active) ? JSON.parse(readFileSync(join(active,'owner.json'),'utf8')) : null, lifecycleEnded: existsSync(join(r.root,'logs/evidence/lifecycle-ended.json')) };
+  writeFileSync(join(r.root,'logs/replacement-observation.json'),JSON.stringify(observation,null,2));
+  try {
+    assert.equal(result.status, 1, result.stdout + result.stderr); assert.equal(result.signal, null);
+    assert.equal(observation.active, true, '身份拒绝后finally不能清除替换拥有者的锁');
+    assert.deepEqual(observation.actual, replacement);
+    assert.deepEqual(JSON.parse(readFileSync(join(active, `group-${group.pid}.json`), 'utf8')), group, '拒绝后保留原完整登记供恢复'); assert.equal(observation.lifecycleEnded, false);
+    assert.equal(existsSync(original.socket), false, '本地控制server须结束，不借未知owner锁继续持有socket');
+  } finally {
+    if (existsSync(active)) {
+      // 独立子进程已经真实退出；恢复本fixture原记录后由原token入口收尾。
+      writeFileSync(join(active,'owner.json'),JSON.stringify(original));
+      const {stopCheckRun}=await import(new URL('../scripts/check-lifecycle.mjs',import.meta.url).href);
+      await stopCheckRun(r.root,{token:original.token});
+    }
+  }
+});
+
+for (const path of ['finally', 'direct', 'completed'] as const) test(`${path}资源清理内部await后重新核完整owner，身份变化保留原资源状态与登记且不新增完成证据`, { skip: process.platform !== 'linux' }, async t => {
+  const r = repository(t); mkdirSync(join(r.root, 'logs/resources'), { recursive: true });
+  writeFileSync(join(r.root, 'owner.mjs'), `import fs from'node:fs';import{syncBuiltinESMExports}from'node:module';import{withCheckRun,currentCheckRun,atomicJson,checkRunGroupsEnded}from'./scripts/check-lifecycle.mjs';import{registerPlaywrightResources,cleanupCheckResources}from'./scripts/playwright-resources.mjs';await withCheckRun(process.cwd(),'resource-binding',async context=>{process.env.CLAPGRID_CHECK_REGISTRY=context.env.CLAPGRID_CHECK_REGISTRY;const original=currentCheckRun(process.cwd());fs.writeFileSync('logs/original-owner.json',JSON.stringify(original));const resource=registerPlaywrightResources(process.cwd()+'/logs/resources','real-resource-binding');fs.writeFileSync('logs/resource.json',JSON.stringify(resource));await context.drainGroups();if(${JSON.stringify(path)}==='completed'){const rm=fs.rmSync;fs.rmSync=function(...args){if(args[0]===resource.registrations[0].path)throw Error('checkpoint before unregister');return rm(...args);};syncBuiltinESMExports();try{await cleanupCheckResources(process.cwd()+'/logs/check-state/active',original.token,context.confirmGroupsEnded??checkRunGroupsEnded);throw Error('missing checkpoint failure');}catch(error){if(error.message!=='checkpoint before unregister')throw error;}finally{fs.rmSync=rm;syncBuiltinESMExports();}fs.writeFileSync('logs/checkpoint-evidence.json',fs.readFileSync(resource.cleanupEvidence));}const link=fs.linkSync;let injected=false;fs.linkSync=function(...args){const result=link(...args);if(!injected&&args[1]===resource.cleanupEvidence+'.lock'){injected=true;queueMicrotask(()=>{const replacement={...original,birth:original.birth+'-replacement'};atomicJson('logs/check-state/active/owner.json',replacement);fs.writeFileSync('logs/replaced-owner.json',JSON.stringify(replacement));});}return result;};syncBuiltinESMExports();if(${JSON.stringify(path)}!=='finally')await cleanupCheckResources(process.cwd()+'/logs/check-state/active',original.token,context.confirmGroupsEnded??checkRunGroupsEnded);});`);
+  const result = spawnSync(process.execPath, ['owner.mjs'], { cwd: r.root, env: { ...process.env, NODE_TEST_CONTEXT: undefined }, encoding: 'utf8', timeout: 5000 });
+  const active = join(r.root,'logs/check-state/active'), original = JSON.parse(readFileSync(join(r.root,'logs/original-owner.json'),'utf8'));
+  const resource = JSON.parse(readFileSync(join(r.root,'logs/resource.json'),'utf8'));
+  const observation = { path, status: result.status, signal: result.signal, resourceExists: existsSync(resource.directory), registrationExists: existsSync(resource.registrations[0].path), completedResourceEvidence: existsSync(resource.cleanupEvidence), actualOwner: existsSync(active) ? JSON.parse(readFileSync(join(active,'owner.json'),'utf8')) : null };
+  writeFileSync(join(r.root,'logs/resource-observation.json'),JSON.stringify(observation,null,2));
+  try {
+    assert.equal(result.status,1,result.stdout+result.stderr); assert.equal(result.signal,null);
+    assert.equal(observation.actualOwner?.birth,original.birth+'-replacement');
+    assert.equal(observation.resourceExists,path!=='completed','callee await后必须先重验完整身份，不能先删资源再由outer拒绝');
+    assert.equal(observation.registrationExists,true);assert.equal(observation.completedResourceEvidence,path==='completed');
+    if(path==='completed')assert.equal(readFileSync(resource.cleanupEvidence,'utf8'),readFileSync(join(r.root,'logs/checkpoint-evidence.json'),'utf8'),'原恢复checkpoint不被重写');
+    assert.equal(existsSync(original.socket),false);
+  } finally {
+    if(existsSync(active)) {
+      writeFileSync(join(active,'owner.json'),JSON.stringify(original));
+      const{stopCheckRun}=await import(new URL('../scripts/check-lifecycle.mjs',import.meta.url).href);
+      await stopCheckRun(r.root,{token:original.token});
+    }
+  }
+});
+
+test('拥有者finally回收忽略TERM的已登记孙组期间继续处理SIGTERM直到释放锁',{skip:process.platform!=='linux'},async t=>{
+  const r=repository(t);mkdirSync(join(r.root,'logs'),{recursive:true});
+  writeFileSync(join(r.root,'owner.mjs'),`import{withCheckRun}from'./scripts/check-lifecycle.mjs';import{spawn}from'node:child_process';import{writeFileSync,existsSync}from'node:fs';import{setTimeout as delay}from'node:timers/promises';let signal;await withCheckRun(process.cwd(),'finally-owner',async context=>{signal=context.signal;context.signal.addEventListener('abort',()=>writeFileSync('logs/cancel-observed','yes'));const child=spawn(process.execPath,['-e',\`process.on('SIGTERM',()=>{});setInterval(()=>require('node:fs').writeFileSync('logs/heartbeat','live'),20);\`],{detached:true,stdio:'ignore'});await new Promise(resolve=>child.once('spawn',resolve));context.register(child.pid);while(!existsSync('logs/heartbeat'))await delay(20);writeFileSync('logs/work-returned','yes');});process.exitCode=signal.aborted?130:0;`);
+  const child=spawn(process.execPath,['owner.mjs'],{cwd:r.root,env:{...process.env,NODE_TEST_CONTEXT:undefined},stdio:'ignore'}),closed=new Promise<{code:number|null,signal:NodeJS.Signals|null}>(resolve=>child.once('close',(code,signal)=>resolve({code,signal})));
+  const{stopCheckRun}=await import(new URL('../scripts/check-lifecycle.mjs',import.meta.url).href);let owner:any;
+  try{
+    await until(()=>existsSync(join(r.root,'logs/work-returned')),'真实work应返回并进入finally组回收');await delay(150);
+    owner=JSON.parse(readFileSync(join(r.root,'logs/check-state/active/owner.json'),'utf8'));child.kill('SIGTERM');const result=await closed;
+    const observation={result,owner,cancelObserved:existsSync(join(r.root,'logs/cancel-observed')),active:existsSync(join(r.root,'logs/check-state/active'))};writeFileSync(join(r.root,'logs/finally-observation.json'),JSON.stringify(observation,null,2));t.diagnostic(JSON.stringify(observation));
+    assert.equal(observation.cancelObserved,true,'finally清理期间不能提前卸载SIGTERM处理器');assert.equal(result.signal,null);assert.equal(result.code,130);assert.equal(observation.active,false);
+  }finally{
+    if(child.exitCode===null&&child.signalCode===null){child.kill('SIGTERM');await closed;}
+    if(existsSync(join(r.root,'logs/check-state/active')))await stopCheckRun(r.root,{token:owner?.token});
+  }
+});
 
 test('同工作树拒绝 check 与 verify 重复启动，不同目录独立；取消后可重新启动', async t => {
   const { root, commit } = repository(t, 'setTimeout(()=>{},20000)');

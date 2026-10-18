@@ -1,8 +1,0 @@
-{
-  "observedAt": "2026-10-12T09:20:39.490731+00:00",
-  "status": "passed",
-  "hostSnapshotUnchanged": true,
-  "sameInstance": true,
-  "speechUnchanged": true,
-  "scope": "导出前后实际读取的完整项目/素材关联/声音与有效配音一致；任务中由ClapGrid内容锁和复制输入保护，不扩大端点采样为持续监测"
-}
