@@ -21,7 +21,7 @@ export default class VitestReporter {
   onTestCaseResult(test) {
     const result = test.result();
     const status = test.options.mode === 'todo' ? 'todo' : result.state;
-    const item = { ...this.item(test), status, durationMs: test.diagnostic()?.duration, completedAt: new Date().toISOString() };
+    const item = { ...this.item(test), status, note: result.note, annotations: test.annotations(), durationMs: test.diagnostic()?.duration, completedAt: new Date().toISOString() };
     this.cases.push(item);
     for (const error of result.errors ?? []) this.failures.push({ ...this.item(test), message: error.message ?? String(error), stack: error.stack });
   }

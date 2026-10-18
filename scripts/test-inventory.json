@@ -494,7 +494,7 @@
     },
     {
       "file": "tests/relative-insert.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]

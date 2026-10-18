@@ -38,11 +38,11 @@ let context;
 try {
   context = await startVitest(process.argv.slice(2), {
     root, config: 'vitest.config.ts', run: true, watch: false,
-    environment: 'node', pool: 'threads', maxWorkers: 1, fileParallelism: false, isolate: true,
+    environment: 'node', pool: 'forks', maxWorkers: 1, fileParallelism: false, isolate: true,
     retry: 0, allowOnly: false, passWithNoTests: false, includeTaskLocation: true,
     reporters: ['default', resolve(root, 'scripts/vitest-reporter.mjs')],
   });
-  // 与原 CLI 相同，保留退出超时诊断；close 自身等待线程池及原始报告完成。
+  // 与原 CLI 相同，保留退出超时诊断；close 自身等待 worker 池及原始报告完成。
   if (!context.shouldKeepServer()) await context.exit();
 } catch (error) { console.error(error); process.exitCode = 1; }
 finally { await context?.close(); }

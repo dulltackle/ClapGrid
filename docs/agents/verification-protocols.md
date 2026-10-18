@@ -103,7 +103,7 @@ Playwright 继续直接消费官方 JSON，只按每个 test 的原生 results �
 #164 新增迁移 14 个普通逻辑与真实服务文件，连同首轮 4 个文件共 18 个；Vitest include 由唯一执行者清单派生，仍单 worker 串行隔离，原生 hooks 等待服务/数据库关闭后才清理目录。场景、保留 Node 理由和公开使用方式见 [迁移记录](../research/native-migration-164/README.md)。
 
 
-`npm run test:logic` 依据当前清单执行逻辑场景，`npm run test:service` 执行真实 HTTP/SQLite 等服务场景；当前对应 11/7 个文件、59/27 个实际测试。最初试点的 16/4 项保留为 `test:native:logic` / `test:native:service` 独立对照，不是扩展后的命令范围。固定 Vitest 5.0.5，使用项目 Node 22.23.3、Node 环境、一个 threads worker、文件隔离、零重试，拒绝 only 和零收集。迁移保留业务断言，动态子例改为原生注册；首轮对应 `test-pilot-baseline.json`，扩展场景见 #164 的逐项映射。
+`npm run test:logic` 依据当前清单执行逻辑场景，`npm run test:service` 执行真实 HTTP/SQLite 等服务场景；当前对应 11/7 个文件、59/27 个实际测试。最初试点的 16/4 项保留为 `test:native:logic` / `test:native:service` 独立对照，不是扩展后的命令范围。固定 Vitest 5.0.5，使用项目 Node 22.23.3、Node 环境、一个 forks worker、文件串行隔离、零重试，拒绝 only 和零收集。迁移保留业务断言，动态子例改为原生注册；首轮对应 `test-pilot-baseline.json`，扩展场景见 #164 的逐项映射。
 
 `vitest.config.ts` 显式采用仓库根，沿用生产 `@` alias，include 从唯一执行者清单派生全部 Vitest 文件。生产 Vite 的 `src/panel` 根和 Tailwind CSS 插件继续用于面板构建；Node 试点不加载该 CSS 插件。框架配置纳入类型检查，框架不替代类型检查和生产构建。
 
@@ -114,6 +114,8 @@ Vitest 保存可读日志及官方生命周期原始事件 JSON（#163 移除无
 混合范围输出 `kind:test-aggregate`，逐个引用同 `executionId` 的子报告及原生来源；文件并集必须等于预期且没有重复，逐项/汇总、源码、配置和环境均重新核对。单一执行者沿用 `kind:test-execution`。缺报告、旧运行替换、收集/未捕获错误、文件或用例缺口与取消不能通过，所有失败按当前归属进入待办并集中复验。运行与 worker 保持在已有受控进程组，取消后先回收本次后代再释放锁。
 
 上述命令只提供所选范围的开发证据；最终同机三次性能对照、完整固定提交验收以及插件安装/实际宿主验收分别记录，不能由试点通过代替。
+
+#176 将原18个Vitest文件与相对插入6场景统一到forks串行基线（共19文件92场景），配置、普通CLI和预加载API保持一致。相对插入保留原all范围；迁移Node文件仅在本文件注册前使用原生`vi.setConfig({testTimeout:0,hookTimeout:0})`保留未限时语义，原18文件原时限不变。逐例清理、beforeEach登记、动态跳过前回收、mock恢复、注解与时限反例及真实场景映射见[迁移记录](../research/native-migration-176/README.md)。本阶段执行者仍串行，迁移通过不赋予并发资格。
 
 ## Playwright UI 固定核心（#151）
 
