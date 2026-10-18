@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
@@ -8,6 +8,9 @@ import { execFileSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { openBusiness } from '../src/business/index.js';
 
+// 保留原 Node 文件未显式设置的测试与清理无限时语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 const success = () => new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n');
 async function settle(business: ReturnType<typeof openBusiness>) {
   for (let i = 0; i < 200 && business.getSpeechStatus().locked; i++) await new Promise(resolve => setTimeout(resolve, 5));
@@ -16,10 +19,11 @@ async function settle(business: ReturnType<typeof openBusiness>) {
 
 test('成功后只保留最近三个音频，清理不丢失请求去重记录，失败不清理', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-retention-'));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
   let failed = false; let calls = 0;
   const runtime = { key: () => 'key', configPath: '/tmp/.env', fetch: (async () => { calls++; return failed ? new Response('', { status: 402 }) : success(); }) as typeof fetch };
-  let business = openBusiness(directory, runtime); t.after(() => business.close());
+  let business = openBusiness(directory, runtime); let closed = false;
+  t.onTestFinished(() => closed ? undefined : business.close());
   const segment = business.addSegment('第一条').segments[0]!;
   const requests = []; const paths = [];
   for (const text of ['第一条', '第二条', '第三条', '第四条']) {
@@ -37,7 +41,8 @@ test('成功后只保留最近三个音频，清理不丢失请求去重记录�
   business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id }); await settle(business);
   assert.deepEqual(business.getSpeechStatus().audio, before);
   assert.equal(business.getSpeechStatus().tasks.at(-1)?.state, 'failed');
-  business.close(); business = openBusiness(directory, runtime);
+  await business.close(); closed = true;
+  business = openBusiness(directory, runtime); closed = false;
   assert.deepEqual(business.getSpeechStatus().audio, before);
   const old = business.submitSpeech(requests[0]!);
   assert.equal(old.state, 'succeeded');
@@ -47,10 +52,10 @@ test('成功后只保留最近三个音频，清理不丢失请求去重记录�
 
 test('有效配音供导出读取，改回恢复旧音频，重新生成成功替换当前配音', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-current-'));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
   let calls = 0;
   const business = openBusiness(directory, { key: () => 'key', configPath: '/tmp/.env', fetch: (async () => { calls++; return success(); }) as typeof fetch });
-  t.after(() => business.close());
+  t.onTestFinished(() => business.close());
   const segment = business.addSegment('原文').segments[0]!;
   assert.throws(() => business.getCurrentSpeechAudio(segment.id), /配音缺失/);
   const first = business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
@@ -70,11 +75,11 @@ test('有效配音供导出读取，改回恢复旧音频，重新生成成功�
 
 test('视频关联与项目重排不影响有效性，清理音频不删除导入视频', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-video-'));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
   const source = join(directory, 'video.mp4');
   execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:d=1', '-c:v', 'libx264', source]);
   const business = openBusiness(join(directory, 'project'), { key: () => 'key', configPath: '/tmp/.env', fetch: (async () => success()) as typeof fetch });
-  t.after(() => business.close());
+  t.onTestFinished(() => business.close());
   const first = business.addSegment('文案').segments[0]!;
   const second = business.addSegment('另一片段').segments[1]!;
   business.submitSpeech({ requestId: randomUUID(), segmentId: first.id }); await settle(business);
@@ -94,15 +99,17 @@ test('视频关联与项目重排不影响有效性，清理音频不删除导�
 
 test('旧服务迟到结果不能恢复重开后已删除的片段或写入音频', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-late-'));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
   let finish!: (response: Response) => void;
   const runtime = { key: () => 'key', configPath: '/tmp/.env', fetch: (async () => new Promise<Response>(resolve => { finish = resolve; })) as typeof fetch };
-  let business = openBusiness(directory, runtime); t.after(() => business.close());
+  let business = openBusiness(directory, runtime); let closed = false;
+  t.onTestFinished(() => closed ? undefined : business.close());
   const segment = business.addSegment('待删除').segments[0]!;
   const request = { requestId: randomUUID(), segmentId: segment.id };
   business.submitSpeech(request);
   await new Promise(resolve => setImmediate(resolve));
-  business.close(); business = openBusiness(directory, runtime);
+  await business.close(); closed = true;
+  business = openBusiness(directory, runtime); closed = false;
   const token = business.acquire('user');
   await business.modifyBatch(token, { changes: [{ kind: 'delete', expected: segment }] }); business.release(token);
   finish(success()); await new Promise(resolve => setTimeout(resolve, 20));
@@ -114,15 +121,16 @@ test('旧服务迟到结果不能恢复重开后已删除的片段或写入音�
 
 test('旧项目按成功时间清理，优先保留当前有效配音而非仅保留最新三个', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-legacy-'));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
   const runtime = { key: () => 'key', configPath: '/tmp/.env', fetch: (async () => success()) as typeof fetch };
-  let business = openBusiness(directory, runtime); t.after(() => business.close());
+  let business = openBusiness(directory, runtime); let closed = false;
+  t.onTestFinished(() => closed ? undefined : business.close());
   const segment = business.addSegment('有效旧文案').segments[0]!;
   const task = business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id }); await settle(business);
   const originalPath = business.getSpeechAudio(task.id);
   const { database, mediaDirectory } = business.getSnapshot().storage;
   const template = business.getSpeechStatus().tasks[0]!;
-  business.close();
+  await business.close(); closed = true;
   // 构造升级前的持久化项目：四条成功音频，提交顺序与成功顺序不同。
   const db = new DatabaseSync(database);
   try {
@@ -134,7 +142,7 @@ test('旧项目按成功时间清理，优先保留当前有效配音而非仅�
       db.prepare('INSERT INTO speech_tasks VALUES (?, ?, ?)').run(id, requestId, JSON.stringify({ ...template, id, requestId, input: { ...template.input, text }, succeededAt: `${date}T00:00:00.000Z` }));
     }
   } finally { db.close(); }
-  business = openBusiness(directory, runtime);
+  business = openBusiness(directory, runtime); closed = false;
   assert.deepEqual(business.getSpeechStatus().audio.map(audio => audio.input.text), ['有效旧文案', '次新旧音频', '最新旧音频']);
   assert.equal(business.getCurrentSpeechAudio(segment.id), originalPath);
   assert.equal(readdirSync(mediaDirectory).filter(name => name.endsWith('.mp3')).length, 3);
