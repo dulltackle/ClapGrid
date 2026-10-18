@@ -1,8 +1,7 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
+
 import { relativeInsertFixture as insertFixture } from './helpers/relative-insert-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
 const script = String.raw`
 import { act } from 'react'; import { createRoot } from 'react-dom/client'; import { App } from './src/panel/app.tsx'; import { state } from 'editing-fixture';
 globalThis.IS_REACT_ACT_ENVIRONMENT=true;
@@ -43,7 +42,7 @@ await input({click:'[role="menuitem"]:nth-child(2)'});check(state.batchRequests.
 document.getElementById('result').dataset.state='passed';
 }catch(e){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=e.stack}})();
 `;
-for(const width of [1600,420])test('相对添加的真实右键键盘、勾选与文案保存（'+width+'px）',{skip:chrome?false:'需要 Chrome',timeout:40000},t=>checkInteractiveBrowser(t,script,insertFixture,width));
+for(const width of [1600,420])test('相对添加的真实右键键盘、勾选与文案保存（'+width+'px）',async ({ panel }) => { test.setTimeout(40000); await (panel.check(script,insertFixture,width)); });
 
 const interruptions = {
   search: `await action(() => button('查找').click()); await input({ key: 'b' });`,
@@ -103,18 +102,15 @@ const input = request => action(() => window.browserInput(request));
   document.getElementById('result').dataset.state = 'passed';
 } catch(error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; } })();
 `;
-test('相对添加请求等待期间转向查找后仍接收数据且不抢焦点', { timeout: 40000 }, t => {
-  assert.ok(chrome, '必须实际运行 Chrome');
-  return checkInteractiveBrowser(t, lateInsert('request'), insertFixture, 1600, 1000);
+test('相对添加请求等待期间转向查找后仍接收数据且不抢焦点', async ({ panel }) => { test.setTimeout(40000);
+  return panel.check(lateInsert('request'), insertFixture, 1600, 1000);
 });
-test('相对添加后第二次修改权等待期间转向查找不抢焦点且释放租约', { timeout: 40000 }, t => {
-  assert.ok(chrome, '必须实际运行 Chrome');
-  return checkInteractiveBrowser(t, lateInsert('edit'), insertFixture, 1600, 1000);
+test('相对添加后第二次修改权等待期间转向查找不抢焦点且释放租约', async ({ panel }) => { test.setTimeout(40000);
+  return panel.check(lateInsert('edit'), insertFixture, 1600, 1000);
 });
 
 for (const stage of ['request', 'edit'] as const) for (const interruption of ['blank', 'tab', 'arrow', 'control', 'edge', 'details', 'wheel', 'more', 'leave'] as const) {
-  test('相对添加迟到矩阵：' + stage + '/' + interruption, { timeout: 40000 }, t => {
-    assert.ok(chrome, '必须实际运行 Chrome');
-    return checkInteractiveBrowser(t, lateInsert(stage, interruption), insertFixture, 1600, 1000);
+  test('相对添加迟到矩阵：' + stage + '/' + interruption, async ({ panel }) => { test.setTimeout(40000);
+    return panel.check(lateInsert(stage, interruption), insertFixture, 1600, 1000);
   });
 }

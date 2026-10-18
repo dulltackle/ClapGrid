@@ -1,8 +1,7 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
+
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
 
 // 仅在浏览器帧调度 seam 暂停时间；仍由真实页面及 AG Grid 产生和卸载入口。
 const scenario = (action: string, assertion: string, source = 0, beforeClose = '', parent = false, beforeOpen = '') => String.raw`
@@ -80,9 +79,8 @@ const cases: [string, string, string, number?][] = [
   ['空显示结果', `state.status.snapshot.segments = []; await poll();`, `check(document.activeElement === button('查找'), '没有表格目标时使用可见页面后备');`],
 ];
 for (const [name, action, assertion, source] of cases) {
-  test('普通片段弹窗延迟返回：' + name, { timeout: 40000 }, t => {
-    assert.ok(chrome, '此验收必须实际运行 Chrome');
-    return checkInteractiveBrowser(t, scenario(action, assertion, source), fixture, 420, 420);
+  test('普通片段弹窗延迟返回：' + name, async ({ panel }) => { test.setTimeout(40000);
+    return panel.check(scenario(action, assertion, source), fixture, 420, 420);
   });
 }
 
@@ -97,15 +95,13 @@ const followupCases: [string, string, string, string][] = [
   ['全部候选不可用', `await advanceFrame(); await advanceFrame(); await advanceFrame(); const endedFocus = document.activeElement; const endedScroll = vertical.scrollTop;`, `check(document.activeElement === endedFocus && vertical.scrollTop === endedScroll, '全部候选不可用时停止移动焦点'); button('查找').hidden = false; button('更多').disabled = false; state.status.snapshot.segments = [{ id: 'row-0', order: 1, text: '迟到目标', visualNote: '', video: null }]; await poll(); await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))); check(document.activeElement === endedFocus, '流程终止后候选和目标迟到也不补恢复');`, `state.status.snapshot.segments = []; await poll(); button('查找').hidden = true; button('更多').disabled = true;`],
 ];
 for (const [name, action, assertion, environment] of followupCases) {
-  test('普通片段弹窗恢复终止与二次执行：' + name, { timeout: 40000 }, t => {
-    assert.ok(chrome, '此验收必须实际运行 Chrome');
-    return checkInteractiveBrowser(t, scenario(action, assertion, 0, environment), fixture, 420, 420);
+  test('普通片段弹窗恢复终止与二次执行：' + name, async ({ panel }) => { test.setTimeout(40000);
+    return panel.check(scenario(action, assertion, 0, environment), fixture, 420, 420);
   });
 }
 
-test('取消子弹窗返回后父流程仍能关闭回原入口', { timeout: 40000 }, t => {
-  assert.ok(chrome, '此验收必须实际运行 Chrome');
-  return checkInteractiveBrowser(t, scenario(
+test('取消子弹窗返回后父流程仍能关闭回原入口', async ({ panel }) => { test.setTimeout(40000);
+  return panel.check(scenario(
     `await window.browserInput({ pointer: { type: 'mousePressed', x: 5, y: 5 } }); await window.browserInput({ pointer: { type: 'mouseReleased', x: 5, y: 5 } });`,
     `check(document.querySelector('[aria-label="口播片段详情"]'), '取消子返回不能关闭仍存续父流程'); await click(button('关闭详情')); check(document.activeElement === document.querySelector('[row-id="row-0"] [data-row-details]'), '父流程以后真正关闭仍返回自己的原入口'); await key('ArrowDown'); check(document.activeElement.closest('[row-id]')?.getAttribute('row-id') === 'row-1', '返回父入口后方向键继续从正确片段操作表格：' + document.activeElement.outerHTML.slice(0,800));`,
     0, '', true,
@@ -113,9 +109,8 @@ test('取消子弹窗返回后父流程仍能关闭回原入口', { timeout: 400
 });
 
 for (const [name, unavailable] of [['禁用', 'disabled'], ['不可见', 'hidden']] as const) {
-  test('查找输入后备' + name + '时继续尝试表格后备', { timeout: 40000 }, t => {
-    assert.ok(chrome, '此验收必须实际运行 Chrome');
-    return checkInteractiveBrowser(t, scenario(
+  test('查找输入后备' + name + '时继续尝试表格后备', async ({ panel }) => { test.setTimeout(40000);
+    return panel.check(scenario(
       `await advanceFrame();`,
       `check(document.activeElement === button('查找'), '跳过失效的查找输入，使用仍可用的表格后备'); check(document.querySelector('[aria-label="查找文案"]').value === '文', '返回不清除现有查找条件');`,
       0, `state.status.snapshot.segments = []; await poll(); document.querySelector('[aria-label="查找文案"]').${unavailable} = true;`, false,
@@ -124,9 +119,8 @@ for (const [name, unavailable] of [['禁用', 'disabled'], ['不可见', 'hidden
   });
 }
 
-test('跨流程查找与新详情替换旧弹窗返回后仍保留新来源', { timeout: 40000 }, t => {
-  assert.ok(chrome, '此验收必须实际运行 Chrome');
-  return checkInteractiveBrowser(t, scenario(
+test('跨流程查找与新详情替换旧弹窗返回后仍保留新来源', async ({ panel }) => { test.setTimeout(40000);
+  return panel.check(scenario(
     `await act(async () => { await window.browserInput({ click: '.search-trigger' }); await settle(); }); await key('x');
      await click(document.querySelector('[row-id="row-64"] [data-row-details]'));
      const parent = document.querySelector('[aria-label="口播片段详情"]');

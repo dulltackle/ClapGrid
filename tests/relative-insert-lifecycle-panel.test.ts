@@ -1,7 +1,5 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+import { test } from './helpers/playwright-browser.js';
+
 import { relativeInsertFixture } from './helpers/relative-insert-fixture.js';
 
 const failure = (mode: 'active' | 'late' | 'deleted' | 'changed' | 'frame') => String.raw`
@@ -53,9 +51,8 @@ const input = request => action(() => window.browserInput(request));
   document.getElementById('result').dataset.state = 'passed';
 } catch(error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; } })();
 `;
-for (const mode of ['active', 'late', 'deleted', 'changed', 'frame'] as const) test('相对添加失败与来源恢复：' + mode, { timeout: 40000 }, t => {
-  assert.ok(chrome, '必须实际运行 Chrome');
-  return checkInteractiveBrowser(t, failure(mode), relativeInsertFixture, 1600, 1000);
+for (const mode of ['active', 'late', 'deleted', 'changed', 'frame'] as const) test('相对添加失败与来源恢复：' + mode, async ({ panel }) => { test.setTimeout(40000);
+  return panel.check(failure(mode), relativeInsertFixture, 1600, 1000);
 });
 
 const oldResponse = String.raw`
@@ -88,9 +85,8 @@ const input = request => action(() => window.browserInput(request));
   document.getElementById('result').dataset.state = 'passed';
 } catch(error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; } })();
 `;
-test('相对添加离页后旧响应失效且不影响新编辑和租约', { timeout: 40000 }, t => {
-  assert.ok(chrome, '必须实际运行 Chrome');
-  return checkInteractiveBrowser(t, oldResponse, relativeInsertFixture, 1600, 1000);
+test('相对添加离页后旧响应失效且不影响新编辑和租约', async ({ panel }) => { test.setTimeout(40000);
+  return panel.check(oldResponse, relativeInsertFixture, 1600, 1000);
 });
 
 const locked = (kind: 'task' | 'speech' | 'export' | 'owner') => String.raw`
@@ -116,7 +112,6 @@ const input = request => action(() => window.browserInput(request));
   document.getElementById('result').dataset.state = 'passed';
 } catch(error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; } })();
 `;
-for (const kind of ['task', 'speech', 'export', 'owner'] as const) test('相对添加保留服务修改权与锁规则：' + kind, { timeout: 40000 }, t => {
-  assert.ok(chrome, '必须实际运行 Chrome');
-  return checkInteractiveBrowser(t, locked(kind), relativeInsertFixture, 1600, 1000);
+for (const kind of ['task', 'speech', 'export', 'owner'] as const) test('相对添加保留服务修改权与锁规则：' + kind, async ({ panel }) => { test.setTimeout(40000);
+  return panel.check(locked(kind), relativeInsertFixture, 1600, 1000);
 });
