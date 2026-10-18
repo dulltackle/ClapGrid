@@ -1,13 +1,16 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, readFileSync, linkSync, symlinkSync, existsSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 
+// 原 Node 文件未设置测试及清理时限；仅本迁移文件保留相同语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 for (const kind of ['制作输入', '历史证明原件']) test(`真实入口拒绝报告硬链接别名并保留${kind}原字节`, t => {
   const project = mkdtempSync(join(tmpdir(), 'clapgrid-report-identity-'));
-  t.after(() => rmSync(project, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
   const original = join(project, 'source.ts');
   const report = join(project, 'alias.json');
   const bytes = JSON.stringify({ schemaVersion: 1, report, startedAt: 'controlled-test', checks: [] });
@@ -30,7 +33,7 @@ for (const kind of ['制作输入', '历史证明原件']) test(`真实入口拒
 
 for (const kind of ['文件', '父目录']) test(`真实入口拒绝尚未生成原件的${kind}符号链接报告别名`, t => {
   const project = mkdtempSync(join(tmpdir(), 'clapgrid-report-dangling-'));
-  t.after(() => rmSync(project, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
   const future = kind === '文件' ? 'future.txt' : 'future/result.json';
   const report = kind === '文件' ? join(project, 'alias.json') : join(project, 'alias', 'result.json');
   symlinkSync(kind === '文件' ? 'future.txt' : 'future', kind === '文件' ? report : join(project, 'alias'), kind === '文件' ? 'file' : 'dir');

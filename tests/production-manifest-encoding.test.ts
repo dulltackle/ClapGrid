@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -7,6 +7,9 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
+
+// 原 Node 文件未设置测试及清理时限；仅本迁移文件保留相同语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const root = resolve('tests/fixtures/production-manifest-encoding');
 const catalog = JSON.parse(readFileSync(join(root, 'catalog.json'), 'utf8')) as {
@@ -27,7 +30,7 @@ function member(archive: Buffer, name: string) {
 for (const entry of catalog.cases) {
   test(`真实 Node 清单码点身份与两旧入口一致：${entry.name}`, t => {
     const project = mkdtempSync(join(tmpdir(), 'clapgrid-manifest-'));
-    t.after(() => rmSync(project,{recursive:true,force:true}));
+    t.onTestFinished(() => rmSync(project,{recursive:true,force:true}));
     cpSync(join(root,entry.name,'project'),project,{recursive:true});
     const manifest = readFileSync(join(project,'production.json'));
     assert.equal(sha(manifest),entry.manifestSha256);
@@ -75,7 +78,7 @@ test('v1 字符串按 Python 码点保持键身份、重复覆盖位置，并允
 // 独立旧入口范围探针确认这些编码/类型在 Node 前置 schema 已失败，不能因 Python 解码器放宽。
 for (const variant of ['utf8-bom','utf16','schema-true']) test(`制作清单保留旧 Native 前置范围：${variant}`, t => {
   const project = mkdtempSync(join(tmpdir(),'clapgrid-manifest-range-'));
-  t.after(() => rmSync(project,{recursive:true,force:true}));
+  t.onTestFinished(() => rmSync(project,{recursive:true,force:true}));
   cpSync(join(root,'escaped-pair','project'),project,{recursive:true});
   const path = join(project,'production.json'), raw = readFileSync(path);
   writeFileSync(path,variant === 'utf8-bom' ? Buffer.concat([Buffer.from('efbbbf','hex'),raw]) : variant === 'utf16' ? Buffer.from(raw.toString(),'utf16le') : Buffer.from(raw.toString().replace('"schemaVersion":1','"schemaVersion":true')));

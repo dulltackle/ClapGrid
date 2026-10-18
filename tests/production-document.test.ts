@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
-import { cp, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { test, vi } from 'vitest';
+import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { dependencyView } from './helpers/temporary-repository.js';
+
+// 原 Node 文件未设置测试及清理时限；仅本迁移文件保留相同语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const entry = fileURLToPath(new URL('../scripts/production.mjs', import.meta.url));
 async function command(name: string, project: string, commandEntry = entry) {
@@ -18,7 +22,7 @@ async function command(name: string, project: string, commandEntry = entry) {
 
 test('两个隔离项目获得独立约定，重新初始化保留各自修改', async t => {
   const root = await mkdtemp(join(tmpdir(), 'clapgrid-production-doc-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rm(root, { recursive: true, force: true }));
   const a = join(root, '项目 A');
   const b = join(root, '项目 B');
   await Promise.all([mkdir(a), mkdir(b)]);
@@ -36,12 +40,12 @@ test('两个隔离项目获得独立约定，重新初始化保留各自修改',
 
 test('模板升级只用于新项目，已有项目副本保持不变', async t => {
   const root = await mkdtemp(join(tmpdir(), 'clapgrid-template-upgrade-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rm(root, { recursive: true, force: true }));
   const kit = join(root, 'kit');
   await mkdir(join(kit, 'scripts', 'production'), { recursive: true });
   await mkdir(join(kit, 'docs', 'templates'), { recursive: true });
   await cp(new URL('../scripts/', import.meta.url), join(kit, 'scripts'), { recursive: true });
-  await symlink(fileURLToPath(new URL('../node_modules', import.meta.url)), join(kit, 'node_modules'));
+  dependencyView(kit, fileURLToPath(new URL('../node_modules', import.meta.url)));
   const template = join(kit, 'docs', 'templates', 'video.md');
   await writeFile(template, '模板来源：测试版 1\n');
   const a = join(root, 'old');
@@ -58,7 +62,7 @@ test('模板升级只用于新项目，已有项目副本保持不变', async t 
 
 test('引用检查解析图片与动态样片的本地和 HTTP 地址，明确定位无效引用', async t => {
   const root = await mkdtemp(join(tmpdir(), 'clapgrid-reference-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, '素材'));
   await writeFile(join(root, '素材', '参考 图.png'), 'local image');
   await writeFile(join(root, '样片 (初版).mp4'), 'local sample');
@@ -84,7 +88,7 @@ test('引用检查解析图片与动态样片的本地和 HTTP 地址，明确�
 
 test('引用式样片和图片可解析，未定义引用明确失败，代码示例无需真实文件', async t => {
   const root = await mkdtemp(join(tmpdir(), 'clapgrid-reference-style-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rm(root, { recursive: true, force: true }));
   await writeFile(join(root, '参考.png'), 'image');
   await writeFile(join(root, '样片.mp4'), 'video');
   await writeFile(join(root, 'video.md'), [
@@ -103,7 +107,7 @@ test('引用式样片和图片可解析，未定义引用明确失败，代码�
 
 test('快捷引用与嵌套说明中的缺失素材不会被误报通过', async t => {
   const root = await mkdtemp(join(tmpdir(), 'clapgrid-reference-shortcut-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rm(root, { recursive: true, force: true }));
   await writeFile(join(root, 'video.md'), [
     '![参考图片]', '[动态样片]', '[样片[初版]](missing-nested.mp4)',
     '[参考图片]: missing.png', '[动态样片]: missing.mp4',
