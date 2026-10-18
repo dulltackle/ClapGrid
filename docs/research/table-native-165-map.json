@@ -1,0 +1,672 @@
+{
+  "schemaVersion": 1,
+  "baselineCommit": "2a5bcc4254c77e8b256394866057ceae3d8ff2df",
+  "reference": "native-execution-163/scenario-map.tsv",
+  "scenarioCount": 36,
+  "scenarios": [
+    {
+      "oldFile": "tests/drag-scroll-panel.test.ts",
+      "oldName": "拖拽滚轮后静止指针采用当前目标 1600",
+      "newFile": "tests/drag-scroll-panel.test.ts",
+      "newName": "拖拽滚轮后静止指针采用当前目标 1600",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 41,
+        "column": 33
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/drag-scroll-panel.test.ts",
+      "oldName": "拖拽滚轮后静止指针采用当前目标 420",
+      "newFile": "tests/drag-scroll-panel.test.ts",
+      "newName": "拖拽滚轮后静止指针采用当前目标 420",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 41,
+        "column": 33
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/editing-panel.test.ts",
+      "oldName": "真实编辑视图共享刷新仲裁，连续保存、断线取消草稿和单次保存正常关闭均符合约定",
+      "newFile": "tests/editing-panel.test.ts",
+      "newName": "真实编辑视图共享刷新仲裁，连续保存、断线取消草稿和单次保存正常关闭均符合约定",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 6,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/long-text-panel.test.ts",
+      "oldName": "长文案摘要及全文编辑可读可操作（1600px）",
+      "newFile": "tests/long-text-panel.test.ts",
+      "newName": "长文案摘要及全文编辑可读可操作（1600px）",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows",
+        "ui-extended"
+      ],
+      "actualLocation": {
+        "line": 107,
+        "column": 3
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/long-text-panel.test.ts",
+      "oldName": "长文案摘要及全文编辑可读可操作（420px）",
+      "newFile": "tests/long-text-panel.test.ts",
+      "newName": "长文案摘要及全文编辑可读可操作（420px）",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows",
+        "ui-extended"
+      ],
+      "actualLocation": {
+        "line": 107,
+        "column": 3
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "行右键删除确认的真实输入与视口（1600px）",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "行右键删除确认的真实输入与视口（1600px）",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 65,
+        "column": 34
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "行右键删除确认的真实输入与视口（420px）",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "行右键删除确认的真实输入与视口（420px）",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 65,
+        "column": 34
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "确认删除保持旧快照并反馈过时目标，动态任务锁及修改权阻止提交",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "确认删除保持旧快照并反馈过时目标，动态任务锁及修改权阻止提交",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 119,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "动态锁禁用确认按钮时等待透明度过渡完成后核对主题",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "动态锁禁用确认按钮时等待透明度过渡完成后核对主题",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 121,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "行菜单边缘定位、全部导航键及 Space 焦点交接（1600×360）",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "行菜单边缘定位、全部导航键及 Space 焦点交接（1600×360）",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 169,
+        "column": 33
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "行菜单边缘定位、全部导航键及 Space 焦点交接（420×360）",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "行菜单边缘定位、全部导航键及 Space 焦点交接（420×360）",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 169,
+        "column": 33
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "删除响应、轮询重排、虚拟滚动与空表后备焦点",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "删除响应、轮询重排、虚拟滚动与空表后备焦点",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 200,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "删除请求失败不自动重试",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "删除请求失败不自动重试",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 215,
+        "column": 37
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "删除已处理但响应未知不自动重试",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "删除已处理但响应未知不自动重试",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 215,
+        "column": 37
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "查找状态与确认动态禁用保持可用焦点",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "查找状态与确认动态禁用保持可用焦点",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 236,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "等待删除响应时取消不撤回已发送请求且不抢新焦点",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "等待删除响应时取消不撤回已发送请求且不抢新焦点",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 253,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "等待响应取消后留在原片段，迟到删除仍恢复相邻行",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "等待响应取消后留在原片段，迟到删除仍恢复相邻行",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 258,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "删除确认延迟返回被真实空白点击永久取消",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "删除确认延迟返回被真实空白点击永久取消",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 285,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "菜单与删除确认交接保留详情入口和真实表格键盘",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "菜单与删除确认交接保留详情入口和真实表格键盘",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 309,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "迟到删除成功保留用户的新界面状态",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "迟到删除成功保留用户的新界面状态",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 330,
+        "column": 35
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-menu-panel.test.ts",
+      "oldName": "迟到删除失败保留用户的新界面状态",
+      "newFile": "tests/row-menu-panel.test.ts",
+      "newName": "迟到删除失败保留用户的新界面状态",
+      "executor": "playwright",
+      "scope": [
+        "all",
+        "rows"
+      ],
+      "actualLocation": {
+        "line": 330,
+        "column": 35
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/drag-feedback-panel.test.ts",
+      "oldName": "拖拽松手后立即预览顺序，异步保存失败恢复 2",
+      "newFile": "tests/drag-feedback-panel.test.ts",
+      "newName": "拖拽松手后立即预览顺序，异步保存失败恢复 2",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 47,
+        "column": 29
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/drag-feedback-panel.test.ts",
+      "oldName": "拖拽松手后立即预览顺序，异步保存失败恢复 8",
+      "newFile": "tests/drag-feedback-panel.test.ts",
+      "newName": "拖拽松手后立即预览顺序，异步保存失败恢复 8",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 47,
+        "column": 29
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/drag-panel.test.ts",
+      "oldName": "真实指针整体拖拽口播片段并保持项目顺序 1600",
+      "newFile": "tests/drag-panel.test.ts",
+      "newName": "真实指针整体拖拽口播片段并保持项目顺序 1600",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 76,
+        "column": 34
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/drag-panel.test.ts",
+      "oldName": "真实指针整体拖拽口播片段并保持项目顺序 420",
+      "newFile": "tests/drag-panel.test.ts",
+      "newName": "真实指针整体拖拽口播片段并保持项目顺序 420",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 76,
+        "column": 34
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/paste-panel.test.ts",
+      "oldName": "粘贴文案的完整提交与键盘流程（1600×1000）",
+      "newFile": "tests/paste-panel.test.ts",
+      "newName": "粘贴文案的完整提交与键盘流程（1600×1000）",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 6,
+        "column": 71
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/paste-panel.test.ts",
+      "oldName": "粘贴文案的完整提交与键盘流程（420×800）",
+      "newFile": "tests/paste-panel.test.ts",
+      "newName": "粘贴文案的完整提交与键盘流程（420×800）",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 6,
+        "column": 71
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/paste-panel.test.ts",
+      "oldName": "粘贴文案的完整提交与键盘流程（420×360）",
+      "newFile": "tests/paste-panel.test.ts",
+      "newName": "粘贴文案的完整提交与键盘流程（420×360）",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 6,
+        "column": 71
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/row-selection-panel.test.ts",
+      "oldName": "口播片段真实鼠标选择与上下文边界",
+      "newFile": "tests/row-selection-panel.test.ts",
+      "newName": "口播片段真实鼠标选择与上下文边界",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 100,
+        "column": 1
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/search-panel.test.ts",
+      "oldName": "查找保留全部口播片段并高亮连续文案（1600×1000）",
+      "newFile": "tests/search-panel.test.ts",
+      "newName": "查找保留全部口播片段并高亮连续文案（1600×1000）",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 6,
+        "column": 71
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/search-panel.test.ts",
+      "oldName": "查找保留全部口播片段并高亮连续文案（420×720）",
+      "newFile": "tests/search-panel.test.ts",
+      "newName": "查找保留全部口播片段并高亮连续文案（420×720）",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 6,
+        "column": 71
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/search-panel.test.ts",
+      "oldName": "查找保留全部口播片段并高亮连续文案（420×360）",
+      "newFile": "tests/search-panel.test.ts",
+      "newName": "查找保留全部口播片段并高亮连续文案（420×360）",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 6,
+        "column": 71
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/selection-menu-panel.test.ts",
+      "oldName": "查找勾选保持布局及新行菜单 Escape 层级 1600",
+      "newFile": "tests/selection-menu-panel.test.ts",
+      "newName": "查找勾选保持布局及新行菜单 Escape 层级 1600",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 57,
+        "column": 31
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/selection-menu-panel.test.ts",
+      "oldName": "查找勾选保持布局及新行菜单 Escape 层级 420",
+      "newFile": "tests/selection-menu-panel.test.ts",
+      "newName": "查找勾选保持布局及新行菜单 Escape 层级 420",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 57,
+        "column": 31
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/selection-panel.test.ts",
+      "oldName": "勾选前后主入口稳定且复选框及全片范围保持 1600",
+      "newFile": "tests/selection-panel.test.ts",
+      "newName": "勾选前后主入口稳定且复选框及全片范围保持 1600",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 73,
+        "column": 32
+      },
+      "actualStatus": "passed"
+    },
+    {
+      "oldFile": "tests/selection-panel.test.ts",
+      "oldName": "勾选前后主入口稳定且复选框及全片范围保持 420",
+      "newFile": "tests/selection-panel.test.ts",
+      "newName": "勾选前后主入口稳定且复选框及全片范围保持 420",
+      "executor": "playwright",
+      "scope": [
+        "all"
+      ],
+      "actualLocation": {
+        "line": 73,
+        "column": 32
+      },
+      "actualStatus": "passed"
+    }
+  ],
+  "scriptPreservation": [
+    {
+      "file": "tests/drag-feedback-panel.test.ts",
+      "registrations": 1,
+      "sourceSha256": "1911c6b3845697b5f8ec66d466ab47efe36a4ef671b95dc6df0b12689fc8260f",
+      "targetSha256": "555cdde7001a375507d902f92e1f88f24ac1114e7859f48346e9cbcf4d14db80",
+      "templateLiteralsUnchanged": true
+    },
+    {
+      "file": "tests/drag-panel.test.ts",
+      "registrations": 1,
+      "sourceSha256": "c53c5fff1415bdc092466ce8e0f2e7482048579b7988cc2d16965a5a0dee862c",
+      "targetSha256": "91ab46584b81450ed022d7e4b68faf124b72024cf5b00a37a6ddcb406f8dcade",
+      "templateLiteralsUnchanged": true
+    },
+    {
+      "file": "tests/drag-scroll-panel.test.ts",
+      "registrations": 1,
+      "sourceSha256": "981d58bd129e2bbca73cc79fd6dd5b8ef5c6670520db19aea1dbe097f21129f9",
+      "targetSha256": "3cd82c01adc6f63f344d94a4d1914e0c419d5aa2f24e94242cdd8d4620f1e793",
+      "templateLiteralsUnchanged": true
+    },
+    {
+      "file": "tests/editing-panel.test.ts",
+      "registrations": 1,
+      "sourceSha256": "708eede177f0f70a40c5d4f6ddf6afb757d8fe74e18ab749bc047e207d1fe37f",
+      "targetSha256": "7a6f98c10d360b77529c551194da90b1d2f058a8f1e7ecf6071f96d515768f6f",
+      "templateLiteralsUnchanged": true
+    },
+    {
+      "file": "tests/long-text-panel.test.ts",
+      "registrations": 1,
+      "sourceSha256": "4bf628343b4645bfb39639df9c62e3ca6c642db24372658430f5382ef6f20111",
+      "targetSha256": "58e8b8b30790f386745a98f4e89929a52dc87a6358bb83483d573cb25aa39984",
+      "templateLiteralsUnchanged": true
+    },
+    {
+      "file": "tests/paste-panel.test.ts",
+      "registrations": 1,
+      "sourceSha256": "6e1a9af2fe4c01ec22cbc44ed0b7e9968df24a727ba2f9ffc33eb0efd1b9829d",
+      "targetSha256": "7c38ee99dbee66b3cedefc58312cf260b7b1ad406e69814a32cee0947d724289",
+      "templateLiteralsUnchanged": true,
+      "beforeWhitespaceCleanupSha256": "e0ce3bfdb02a31c53fe712b799334c9d216bfde3d3cb08d9ecb11b3719bc5ef0"
+    },
+    {
+      "file": "tests/row-menu-panel.test.ts",
+      "registrations": 12,
+      "sourceSha256": "61e7ad8729494bddc823de8af948d943a9cc1034c145b35a41daa7fd95b8a77c",
+      "targetSha256": "30a8f831ee18ab9fd01f31159d6fcfec85c22becfc46cac9d2645df8df995391",
+      "templateLiteralsUnchanged": true,
+      "beforeWhitespaceCleanupSha256": "49fc79a1e3cefc27033e830bf25a3b71e6ad20fc40ad4b11d6641cda037b8458"
+    },
+    {
+      "file": "tests/row-selection-panel.test.ts",
+      "registrations": 1,
+      "sourceSha256": "b09be343b14f42b766e73e5e1806c90c753baa0e15243ed44b5e58d3fbcc0832",
+      "targetSha256": "5df861093b498a5ff788a5552a5475e489abc194be0fe88cf945724069376097",
+      "templateLiteralsUnchanged": true
+    },
+    {
+      "file": "tests/search-panel.test.ts",
+      "registrations": 1,
+      "sourceSha256": "e0356861ba6fef74814e44b2cd89e9babc3d5132c944cee1319d45336653564d",
+      "targetSha256": "59217a8f5647fd4d3bce3366c7c7d8a351749e8fcb12af8aa16235f47d265518",
+      "templateLiteralsUnchanged": true
+    },
+    {
+      "file": "tests/selection-menu-panel.test.ts",
+      "registrations": 1,
+      "sourceSha256": "3018d91736f51405c2c6b6722d49e1b9879f046aff69b59e93a61002f1315871",
+      "targetSha256": "d3dc7c3a7bb041c98e97455d3932c5f82ed0230816c88b5c29246dd688f2df7f",
+      "templateLiteralsUnchanged": true
+    },
+    {
+      "file": "tests/selection-panel.test.ts",
+      "registrations": 1,
+      "sourceSha256": "30be143e80dfc43e0ed146d736071dc6c3d609bbdd4b961cc43e4051898539b2",
+      "targetSha256": "87a22f0cb6f87a843612883b42081dfdf4c956f72cd8784c30b8224171df0a89",
+      "templateLiteralsUnchanged": true
+    }
+  ],
+  "note": "模板字面量逐字节不变，旧独立Chrome调用替换为原生fixture；原生完成集合由本票实际报告独立核对，不以条数相同代替断言语义。",
+  "execution": {
+    "scope": "开发定向；不是最终固定提交验收",
+    "cases": 36,
+    "files": 11,
+    "concurrency": 1,
+    "executor": {
+      "name": "playwright",
+      "version": "1.64.1"
+    },
+    "executionId": "f018095f-68dc-4b72-8dcb-24300c9be84d",
+    "source": {
+      "commit": "2a5bcc4254c77e8b256394866057ceae3d8ff2df",
+      "tree": "6bc9dfa256031945d73e0d221ab893b05d0bcb8c",
+      "fingerprint": "sha256-merkle-v1:2a19d0a19c2274850bc231811f6cf4684bb5a5492347cd728ed20bda7baaaffd",
+      "dirty": true,
+      "scope": "code-check-v1"
+    },
+    "nativeSha256": "d47eec44ca8648fb6f43204d9c3e1f854de4c36d981a4c6b193613409d127f65"
+  }
+}

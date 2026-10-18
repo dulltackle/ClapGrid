@@ -1,7 +1,7 @@
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
+
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
 
 const script = String.raw`
   import { act } from 'react';
@@ -97,4 +97,4 @@ const script = String.raw`
     } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; }
   })();
 `;
-test('口播片段真实鼠标选择与上下文边界', { skip: chrome ? false : '未执行：需要 Chrome/Chromium', timeout: 40000 }, t => checkInteractiveBrowser(t, script, fixture));
+test('口播片段真实鼠标选择与上下文边界', async ({ panel }) => { test.setTimeout(40000); await (panel.check(script, fixture)); });

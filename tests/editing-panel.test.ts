@@ -1,11 +1,9 @@
-import { test } from 'node:test';
-import { checkBrowser, chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
+
 
 import { fixture } from './helpers/editing-fixture.js';
 
-test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿和单次保存正常关闭均符合约定', {
-  skip: chrome ? false : '需要 Chrome/Chromium，可通过 CHROME_BIN 指定', timeout: 30000,
-}, async t => checkBrowser(t, String.raw`
+test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿和单次保存正常关闭均符合约定', async ({ panel }) => { test.setTimeout(30000); await (panel.check(String.raw`
   import { act, StrictMode } from 'react';
   import { createRoot } from 'react-dom/client';
   import { App } from './src/panel/app.tsx';
@@ -97,4 +95,4 @@ test('真实编辑视图共享刷新仲裁，连续保存、断线取消草稿�
       result.dataset.state = 'passed'; result.textContent = '全部编辑时序验证通过';
     } catch (error) { result.dataset.state = 'failed'; result.textContent = error.stack + '\n界面：' + document.getElementById('root').innerText; }
   })();
-`, fixture));
+`, fixture, 1600, 1200)); });

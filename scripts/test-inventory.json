@@ -105,7 +105,7 @@
     },
     {
       "file": "tests/drag-feedback-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -113,7 +113,7 @@
     },
     {
       "file": "tests/drag-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -121,7 +121,7 @@
     },
     {
       "file": "tests/drag-scroll-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "rows"
@@ -130,7 +130,7 @@
     },
     {
       "file": "tests/editing-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "rows"
@@ -212,7 +212,7 @@
     },
     {
       "file": "tests/long-text-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "rows",
@@ -306,7 +306,7 @@
     },
     {
       "file": "tests/paste-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -509,7 +509,7 @@
     },
     {
       "file": "tests/row-menu-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all",
         "rows"
@@ -518,7 +518,7 @@
     },
     {
       "file": "tests/row-selection-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -526,7 +526,7 @@
     },
     {
       "file": "tests/search-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -568,7 +568,7 @@
     },
     {
       "file": "tests/selection-menu-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],
@@ -576,7 +576,7 @@
     },
     {
       "file": "tests/selection-panel.test.ts",
-      "executor": "node",
+      "executor": "playwright",
       "scopes": [
         "all"
       ],

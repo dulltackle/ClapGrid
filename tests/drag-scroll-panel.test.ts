@@ -1,7 +1,7 @@
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
+
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
 
 const script = String.raw`
 import { act } from 'react';
@@ -38,4 +38,4 @@ check(ids.indexOf('1')===ids.indexOf(target)+1,'静止指针应采用滚轮后�
   document.getElementById('result').dataset.state='passed';
 } catch(error) { document.getElementById('result').dataset.state='failed'; document.getElementById('result').textContent=error.stack; } })();
 `;
-for (const width of [1600,420]) test('拖拽滚轮后静止指针采用当前目标 '+width, {skip: chrome ? false : '未执行：需要 Chrome/Chromium', timeout:40000}, t=>checkInteractiveBrowser(t,script,fixture,width));
+for (const width of [1600,420]) test('拖拽滚轮后静止指针采用当前目标 '+width, async ({ panel }) => { test.setTimeout(40000); await (panel.check(script,fixture,width)); });

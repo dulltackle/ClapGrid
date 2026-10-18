@@ -1,11 +1,9 @@
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
-import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+import { test } from './helpers/playwright-browser.js';
 
-for (const [width, height] of [[1600, 1000], [420, 720], [420, 360]]) test(`查找保留全部口播片段并高亮连续文案（${width}×${height}）`, {
-  skip: chrome ? false : '未执行：需要 Chrome/Chromium', timeout: 40000,
-}, t => checkInteractiveBrowser(t, String.raw`
+import { fixture } from './helpers/editing-fixture.js';
+
+
+for (const [width, height] of [[1600, 1000], [420, 720], [420, 360]]) test(`查找保留全部口播片段并高亮连续文案（${width}×${height}）`, async ({ panel }) => { test.setTimeout(40000); await (panel.check(String.raw`
   import { act } from 'react';
   import { createRoot } from 'react-dom/client';
   import { App } from './src/panel/app.tsx';
@@ -132,4 +130,4 @@ for (const [width, height] of [[1600, 1000], [420, 720], [420, 360]]) test(`查�
       document.getElementById('result').dataset.state = 'passed';
     } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; }
   })();
-`, fixture, width, height));
+`, fixture, width, height)); });

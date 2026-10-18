@@ -1,7 +1,7 @@
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
+
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
 
 const script=String.raw`
 import { assertTheme } from './tests/helpers/theme-contract.ts';
@@ -54,4 +54,4 @@ const selected=ids=>check(JSON.stringify([...(state.selectionRequests.at(-1)??[]
  document.getElementById('result').dataset.state='passed';
 }catch(error){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=error.stack;}})();
 `;
-for(const width of [1600,420])test('查找勾选保持布局及新行菜单 Escape 层级 '+width,{skip:chrome?false:'未执行：需要 Chrome/Chromium',timeout:40000},t=>checkInteractiveBrowser(t,script,fixture,width));
+for(const width of [1600,420])test('查找勾选保持布局及新行菜单 Escape 层级 '+width,async ({ panel }) => { test.setTimeout(40000); await (panel.check(script,fixture,width)); });

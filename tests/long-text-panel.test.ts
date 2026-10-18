@@ -1,7 +1,7 @@
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
+
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
 
 const script = String.raw`
   import { act } from 'react';
@@ -104,7 +104,5 @@ const script = String.raw`
   })();
 `;
 for (const width of [1600, 420]) {
-  test(`长文案摘要及全文编辑可读可操作（${width}px）`, {
-    skip: chrome ? false : '未执行：需要 Chrome/Chromium', timeout: 40000,
-  }, t => checkInteractiveBrowser(t, script, fixture, width));
+  test(`长文案摘要及全文编辑可读可操作（${width}px）`, async ({ panel }) => { test.setTimeout(40000); await (panel.check(script, fixture, width)); });
 }
