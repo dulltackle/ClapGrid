@@ -1,24 +1,29 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, symlinkSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, symlinkSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+// 原 Node 文件默认未限时；保留显式专项 timeout 的优先级。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 const cli = resolve('scripts/agent-tools.mjs');
 const run = (...args: string[]) => spawnSync(process.execPath, [cli, ...args], { encoding: 'utf8' });
-test('CLI 核对候选解释器并解析已知技能软链接', () => {
+test('CLI 核对候选解释器并解析已知技能软链接', t => {
   const missing = run('interpreter', 'clapgrid-missing-interpreter');
   assert.notEqual(missing.status, 0);
   const found = run('interpreter', 'clapgrid-missing-interpreter', process.execPath);
   assert.equal(found.status, 0);
   assert.equal(JSON.parse(found.stdout).selected, process.execPath);
   const dir = mkdtempSync(join(tmpdir(), 'agent-tools-'));
+  t.onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
   writeFileSync(join(dir, 'SKILL.md'), '技能正文');
   symlinkSync(join(dir, 'SKILL.md'), join(dir, 'link.md'));
   assert.equal(JSON.parse(run('skill', join(dir, 'link.md')).stdout).path, join(dir, 'SKILL.md'));
 });
-test('GitHub CLI 汇总全部分页、投影字段并保留可追溯副本', () => {
+test('GitHub CLI 汇总全部分页、投影字段并保留可追溯副本', t => {
   const dir = mkdtempSync(join(tmpdir(), 'agent-github-'));
+  t.onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
   const fixture = resolve('tests/fixtures/agent-tools/pages.json');
   writeFileSync(join(dir, 'gh'), `#!/bin/sh\n[ "$1" = api ] && [ "$3" = --method ] && [ "$4" = GET ] && [ "$5" = --paginate ] && [ "$6" = --slurp ] || exit 3\ncat '${fixture}'\n`, { mode: 0o700 });
   const evidence = join(dir, 'result.json');
@@ -34,8 +39,9 @@ test('GitHub CLI 汇总全部分页、投影字段并保留可追溯副本', () 
   assert.match(read.stdout, /最后一页事项/);
   assert.doesNotMatch(read.stdout, /fixture-secret|完整正文/);
 });
-test('长结果先脱敏留存，摘要不暴露密钥且按需读取末项', () => {
+test('长结果先脱敏留存，摘要不暴露密钥且按需读取末项', t => {
   const dir = mkdtempSync(join(tmpdir(), 'agent-capture-'));
+  t.onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
   const path = join(dir, 'output.json');
   const input = JSON.stringify({ password: 'plain-secret', note: 'Bearer hidden-auth ghp_fixedtoken', rows: Array.from({ length: 30 }, (_, n) => ({ number: n + 1 })) });
   const result = spawnSync(process.execPath, [cli, 'capture', path], { encoding: 'utf8', input });
@@ -47,8 +53,9 @@ test('长结果先脱敏留存，摘要不暴露密钥且按需读取末项', ()
   assert.match(read.stdout, /30/);
   assert.notEqual(spawnSync(process.execPath, [cli, 'capture', path], { encoding: 'utf8', input }).status, 0, '已有证据不可覆盖');
 });
-test('失败与不支持的分页响应不能产生完整证据', () => {
+test('失败与不支持的分页响应不能产生完整证据', t => {
   const dir = mkdtempSync(join(tmpdir(), 'agent-failure-'));
+  t.onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
   writeFileSync(join(dir, 'gh'), '#!/bin/sh\nprintf \'[{"items":[],"incomplete_results":true}]\'\n', { mode: 0o700 });
   const result = spawnSync(process.execPath, [cli, 'github', 'repos/dulltackle/ClapGrid/issues', 'number', join(dir, 'bad.json')], { encoding: 'utf8', env: { ...process.env, PATH: `${dir}:${process.env.PATH}` } });
   assert.notEqual(result.status, 0);
@@ -56,8 +63,9 @@ test('失败与不支持的分页响应不能产生完整证据', () => {
   assert.notEqual(run('github', 'repos/dulltackle/ClapGrid/issues?page=2', 'number', join(dir, 'skip.json')).status, 0);
 });
 
-test('已知纯文本凭据、完整认证值及环境秘密在留存和读取两个出口均脱敏', () => {
+test('已知纯文本凭据、完整认证值及环境秘密在留存和读取两个出口均脱敏', t => {
   const dir = mkdtempSync(join(tmpdir(), 'agent-secrets-'));
+  t.onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
   const path = join(dir, 'text.json');
   const env = { ...process.env, AGENT_TEST_SECRET: 'known-environment-value', AGENT_SHORT_SECRET: 'z9x' };
   const input = `credential=fixture-credential
@@ -84,9 +92,10 @@ z9x
   const legacy = spawnSync(process.execPath, [cli, 'read', join(dir, 'old.txt')], { encoding: 'utf8', env });
   assert.doesNotMatch(legacy.stdout, secrets);
 });
-test('超长单行及多行 Unicode 文本按字节预算输出并可无损续读到末尾', () => {
+test('超长单行及多行 Unicode 文本按字节预算输出并可无损续读到末尾', t => {
   for (const input of ['line=' + 'a'.repeat(200000) + '\nlast-line', ('多行🙂\t"内容\n').repeat(5000) + '最终行']) {
     const dir = mkdtempSync(join(tmpdir(), 'agent-budget-'));
+    t.onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
     const path = join(dir, 'long.json');
     assert.equal(spawnSync(process.execPath, [cli, 'capture', path, 'complete'], { encoding: 'utf8', input }).status, 0);
     const first = run('read', path, '4', '1');
@@ -113,8 +122,9 @@ test('超长单行及多行 Unicode 文本按字节预算输出并可无损续�
     assert.equal(JSON.parse(reconstructed).completeness, 'complete');
   }
 });
-test('HTTP 敏感头整体值脱敏且保留换行及安全日志行', () => {
+test('HTTP 敏感头整体值脱敏且保留换行及安全日志行', t => {
   const dir = mkdtempSync(join(tmpdir(), 'agent-headers-'));
+  t.onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
   const path = join(dir, 'headers.json');
   const input = [
     'Cookie: theme=dark; sid=review-cookie-session; auth=review-cookie-auth',

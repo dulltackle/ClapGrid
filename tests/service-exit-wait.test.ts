@@ -1,10 +1,13 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
+
+// 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 test('端口先关闭而服务仍在写清理记录时，等待真实退出后才允许删除目录', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-service-exit-'));
@@ -14,7 +17,7 @@ test('端口先关闭而服务仍在写清理记录时，等待真实退出后�
     server.listen(0,'127.0.0.1',()=>console.log(server.address().port));`;
   const child = spawn(process.execPath, ['-e', script], { stdio: ['ignore', 'pipe', 'pipe'] });
   const exited = new Promise(resolve => child.once('exit', resolve));
-  t.after(async () => { if (child.exitCode === null) child.kill('SIGTERM'); await exited; rmSync(root, { recursive: true, force: true }); });
+  t.onTestFinished(async () => { if (child.exitCode === null) child.kill('SIGTERM'); await exited; rmSync(root, { recursive: true, force: true }); });
   const port = await new Promise<string>((resolve, reject) => {
     let output = ''; child.stdout.on('data', chunk => { output += chunk; if (output.includes('\n')) resolve(output.trim()); }); child.once('error', reject);
   });
@@ -28,7 +31,7 @@ test('端口先关闭而服务仍在写清理记录时，等待真实退出后�
 test('服务未退出时超时失败，不强行结束进程或允许清理', async t => {
   const child = spawn(process.execPath, ['-e', 'setInterval(()=>{},1000)'], { stdio: 'ignore' });
   const exited = new Promise(resolve => child.once('exit', resolve));
-  t.after(async () => { child.kill('SIGTERM'); await exited; });
+  t.onTestFinished(async () => { child.kill('SIGTERM'); await exited; });
   const identity = serviceProcess(child.pid!);
   await assert.rejects(waitForServiceExit(identity, { timeoutMs: 60, intervalMs: 10 }), /尚未确认退出/);
   assert.equal(child.exitCode, null, '等待器只观察，不终止服务');

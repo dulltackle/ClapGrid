@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -9,6 +9,9 @@ import { promisify } from 'node:util';
 import { build } from 'esbuild';
 import { startService } from '../src/service/server.js';
 import { beginEdit, queryStatus } from '../src/shared/client.js';
+
+// 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 for (const owner of ['codex', 'user'] as const) for (const operation of ['import', 'video', 'settings', 'unobserved'] as const) test(`${owner} 在途 ${operation} 撤销后不提交，媒体清理完才释放修改权`, { timeout: 30000 }, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-inflight-'));
@@ -21,13 +24,17 @@ for (const owner of ['codex', 'user'] as const) for (const operation of ['import
   writeFileSync(host, `#!/usr/bin/env node\nconst fs=require('node:fs');require('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:JSON.parse(fs.readFileSync(${JSON.stringify(state)},'utf8'))}}));});`, { mode: 0o700 });
   const oldHost = process.env.CLAPGRID_CODEX_BIN; const oldPath = process.env.PATH;
   process.env.CLAPGRID_CODEX_BIN = host;
+  t.onTestFinished(() => {
+    if (oldHost === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = oldHost;
+    if (oldPath === undefined) delete process.env.PATH; else process.env.PATH = oldPath;
+  });
   const source = join(root, 'source.mp4');
   execFileSync('/usr/bin/ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:d=1', '-c:v', 'libx264', source]);
   const bin = join(root, 'bin'); mkdirSync(bin); const marker = join(root, 'started'); const gate = join(root, 'continue');
   writeFileSync(join(bin, 'ffmpeg'), `#!/bin/sh\ntrap '' TERM\ntouch '${marker}'\nwhile [ ! -f '${gate}' ]; do sleep 0.05; done\nexec /usr/bin/ffmpeg "$@"\n`, { mode: 0o700 });
   process.env.PATH = bin + ':' + oldPath;
   const service = await startService({ workspaceDirectory: workspace, projectDirectory: join(workspace, 'clapgrid'), panelDirectory: join(dist, 'panel'), port: 0 });
-  t.after(async () => { writeFileSync(gate, 'continue'); await service.close(); if (oldHost === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = oldHost; process.env.PATH = oldPath; rmSync(root, { recursive: true, force: true }); });
+  t.onTestFinished(async () => { writeFileSync(gate, 'continue'); await service.close(); rmSync(root, { recursive: true, force: true }); });
   await build({ entryPoints: ['src/runtime.ts'], outdir: dist, bundle: true, platform: 'node', format: 'esm', target: 'node22', external: ['vite'], banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" } });
   const open = async () => JSON.parse((await promisify(execFile)(process.execPath, [join(dist, 'runtime.js'), 'open', '--workspace', workspace, '--thread', threadId], { env: process.env })).stdout);
   const opened = await open();

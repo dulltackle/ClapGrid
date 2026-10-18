@@ -1,14 +1,17 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
+// 原 Node 文件默认未限时；保留显式专项 timeout 的优先级。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 const command = resolve('scripts/diagnose-identity.mjs');
 test('汇总命令缺少身份与宿主证据时保留未知，服务不可达且不创建文件', t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-diagnose-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   writeFileSync(join(root, 'credentials.json'), 'secret-provider-value');
   const before = readdirSync(root);
   const output = execFileSync(process.execPath, [command, '--build', root, '--installed', root,
@@ -24,7 +27,7 @@ test('汇总命令缺少身份与宿主证据时保留未知，服务不可达�
 
 test('宿主证据明确记录不可达、过期和来源，不泄露额外字段', t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-evidence-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   const file = join(root, 'evidence.json');
   const run = (evidence: unknown) => {
     writeFileSync(file, JSON.stringify(evidence));
