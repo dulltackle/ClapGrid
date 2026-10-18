@@ -235,3 +235,7 @@ watch 的异步派生链关闭自动默认，跨子孙传播该保守策略，�
 ## 执行器与准备缓存专项精简（#169）
 
 真实 JS/CSS helper 统一使用 `PersistentBuildCache`。删除无真实调用者的 `MemoryBuildCache`、未使用的配置枚举转发，以及重复运行冻结缓存实现来比较私有 metadata/hash 排序形状的两项测试。保留真实编译的冷/热执行、依赖/配置/资源/选项/工具环境失效及损坏重建，保留路径错误与权限的指纹语义回归；全部适用工具文件继续属于 tooling/all。执行器原生失败、报告完整性、预检累计及生命周期职责保持原协议。逐项等价覆盖、慢点保留理由与测量范围见 [专项记录](../research/tooling-169/README.md)。
+
+## 配音、素材与导出面板原生执行（#167）
+
+八个媒体面板文件由唯一清单分派 Playwright，完整范围和原业务 UI 严格政策保留。`Panel.check` 的每例 resources 仍由真实 HTTP 随机端口服务，保留 Range 与 reduced-motion 偏好；每例 context、storage、目录、媒体与服务独立，worker 只复用 Chrome 和既有编译缓存。先关闭 context、关闭全部 HTTP 连接并等待服务 close 回调，再最终回收目录及记录清理，异常累计失败。生成媒体置于登记资源根，强杀时由原拥有者确认进程退出后回收。32项映射、开发与修补证据、未完成的三次候选测量见 [本切片记录](../research/media-167/README.md)。

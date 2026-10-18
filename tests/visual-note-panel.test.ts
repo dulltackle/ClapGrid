@@ -1,6 +1,5 @@
-import { test } from 'node:test';
+import { test } from './helpers/playwright-browser.js';
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
 
 const script = String.raw`
 import { act } from 'react';
@@ -57,5 +56,5 @@ const button = name => [...document.querySelectorAll('button')].find(node => nod
 `;
 
 for (const [width, height] of [[1200, 800], [420, 800]]) {
-  test(`画面说明展开与详情编辑、草稿冲突及任务锁（${width}）`, { timeout: 40000 }, t => checkInteractiveBrowser(t, script, fixture, width, height));
+  test(`画面说明展开与详情编辑、草稿冲突及任务锁（${width}）`, async ({ panel }) => { test.setTimeout(40000); return panel.check(script, fixture, width, height); });
 }
