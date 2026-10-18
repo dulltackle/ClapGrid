@@ -1,6 +1,14 @@
 # 检查与正式验收
 
-`npm run check` 检查当前开发目录，允许未提交内容。日志位于 `logs/check/`，记录提交、源码树、跟踪文件与未忽略新文件的内容指纹、检查阶段和结果。发现阶段间源码变化时返回非零并标为 `invalidated`；起止一致不能证明运行期间从未修改。
+`npm run check` 检查当前开发目录，允许未提交内容。日志位于 `logs/check/`，记录完整 Git 提交/tree、代码检查输入的版本化内容身份、检查阶段和结果。发现阶段间受检输入变化时返回非零并标为 `invalidated`；起止一致不能证明运行期间从未修改。
+
+## 代码检查输入
+
+`scripts/source-identity.json` 的 schema 2 显式选择 `code-check-v1`。统一读取 Git 跟踪文件与未忽略新文件，仅排除 `docs/productions/`、`docs/validation/`、`docs/design/` 的历史内容（包括其 Markdown 说明）。代码、配置、检查工具、真实资源、全部 `tests/fixtures/`、`docs/templates/` 及未知路径均保留完整当前内容校验。代码新增历史材料依赖时，先将所需材料迁入受检资源/fixture，不能将排除目录作为隐藏输入。
+
+源码指纹、选测的当前/基准依赖图、watch 事件与周期探测共用此边界。报告列出 `scope`，选测另列 `excludedChanges`；排除材料修改不触发执行，也不产生测试通过证据。源码身份的 `dirty` 仅说明受检输入是否偏离提交，不能用它宣称整个仓库干净。无配置和 schema 1 的旧目标继续原全仓库协议；未知版本拒绝，不迁移或复用旧范围的通过结果。
+
+历史非 Markdown 原件退出当前 Git 跟踪并保留迁移时的本机文件；旧提交保留，恢复方法见 [历史制作工程](../productions/README.md) 与 [历史验收记录](../validation/README.md)。这不改变制作命令对显式项目输入的校验，也不将代码检查结论扩展为制作材料验收。决定见 [ADR0010](../adr/0010-code-check-input-boundary.md)。
 
 ## 运行与取消
 
@@ -181,7 +189,7 @@ watch 的受控环境把保留策略绑定实际父 owner 的 canonical root/tok
 
 源码事件合并后触发实际一轮；执行中变化会使旧轮 `invalidated`，等待旧轮安全收尾再按最新输入重新选择，不对旧轮发会取消整个会话的局部 SIGTERM。已经观察到的事件即使恢复相同 bytes，也不能让旧轮自动成为新轮证据。同输入失败后 idle 等待新输入，无定时自动重试；新输入先集中复验既有待办，严格 UI skip/todo 仍阻塞。
 
-文件系统事件之外，每约 2 秒重新读取全部原范围源码内容指纹作兜底；它只发现输入变化，不产生通过证据，也不用 mtime/历史哈希替代实际执行边界。大仓库的扫描有持续 CPU/磁盘成本，watch 重跑和 idle 时间单独记录，不能替代默认单次预算。事件缺路径、监听错误、执行脚本或实际 node_modules 安装变化会保守进入 `restart-required`，等当前轮回收后退出 1，要求重启；`npm ci`/依赖恢复不会在旧模块进程中悄悄继续。明确排除 node_modules/.vite 与 .vite-temp 等 Vite 执行器临时输出，避免自身触发循环；源码、配置、模板、helper、CSS 与清单变化继续沿单次入口保守扩大或拒绝。
+文件系统事件之外，每约 2 秒重新读取当前代码检查范围的完整内容指纹作兜底；它只发现输入变化，不产生通过证据，也不用 mtime/历史哈希替代实际执行边界。大仓库的扫描有持续 CPU/磁盘成本，watch 重跑和 idle 时间单独记录，不能替代默认单次预算。事件缺路径、监听错误、执行脚本或实际 node_modules 安装变化会保守进入 `restart-required`，等当前轮回收后退出 1，要求重启；`npm ci`/依赖恢复不会在旧模块进程中悄悄继续。明确排除 node_modules/.vite 与 .vite-temp 等 Vite 执行器临时输出，避免自身触发循环；源码、配置、模板、helper、CSS 与清单变化继续沿单次入口保守扩大或拒绝。
 
 Node 22 递归监听在临时子目录删除时可能发出 `ENOENT/scandir`，根监听仍保持。仅当错误路径 canonical 且位于已 attach 根内、现存祖先无未知符号别名、Git 确认已忽略且没有 tracked 后代时才把它记为 `ignoredDirectoryRaceCount`；路径任意祖先段含 node_modules 都属于真实依赖输入，普通变动及目录错误均要求重启，仅工作树根下既定 Vite 临时目录白名单适用。未忽略目录、忽略目录中的 tracked 输入和其他错误继续 fail closed；此分类不忽略源码事件，也不把丢失根句柄当作无事发生。
 
@@ -193,7 +201,7 @@ Node 22 递归监听在临时子目录删除时可能发出 `ENOENT/scandir`，�
 
 ## 启动准备与测量条件（#156）
 
-源码身份配置 `scripts/source-identity.json` 选择 `sha256-merkle-v1`，异步入口默认至多 4 个短期源码线程，API 可显式请求至多 8 个；无配置的历史目标继续原协议。每个边界仍读取全部当前内容，取消等待本次全部线程退出。单一 Vitest 可在读取期间预载纯框架，当前身份完成后才执行项目配置、setup 和测试；未知预载条件保守串行。协议及完整输入边界见 [试点记录](../research/test-executor-pilot.md#完整准备协议)。
+源码身份配置 `scripts/source-identity.json` 的 schema 2 选择 `sha256-merkle-v1` 与 `code-check-v1` 范围，异步入口默认至多 4 个短期源码线程，API 可显式请求至多 8 个；无配置的历史目标继续原协议。每个边界仍读取全部当前内容，取消等待本次全部线程退出。单一 Vitest 可在读取期间预载纯框架，当前身份完成后才执行项目配置、setup 和测试；未知预载条件保守串行。协议及完整输入边界见 [试点记录](../research/test-executor-pilot.md#完整准备协议)。
 
 核心仅在 segment、table、wide 三个已隔离文件内并行；speech 三场景与 CSS 两场景保持串行，CSS 共用扩展 test 的 worker pool 而不请求浏览器 fixture。并发上限仍为 2，扩展/未知集合仍保守降为 1。JS 开发 bundle 压缩并保留名称；CSS 框架在真实缓存 miss 时加载。准备路径变化后仍执行原脚本、等待、断言与独立 context/page，零重试。
 

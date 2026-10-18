@@ -1,5 +1,7 @@
 # Linux 导出拒绝进程追踪
 
+> 历史记录：原始材料已退出当前 Git 跟踪；复现前请按[原件保留与恢复说明](../README.md)恢复对应工程或证据。本页不代表当前版本验收。
+
 独立工作流 `process-trace.yml` 在推送和 PR 时运行，也支持手动触发。固定 Ubuntu 24.04 和 Node 22.23.3，安装 FFmpeg、ffprobe、fontconfig、Noto Sans CJK 字体及 strace，通过锁文件安装 npm 依赖。供应商响应受控，不调用真实收费供应商；这不是实际宿主或供应商验收。
 
 本地复现：

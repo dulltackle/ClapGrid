@@ -82,6 +82,19 @@ test('固定提交验收与开发目录的未提交修改隔离', async t => {
   assert.notEqual(result.checkout, root);
 });
 
+test('固定提交按代码输入范围验收，历史原件变化不伪装成受检源码变化', async t => {
+  const r = repository(t, "require('node:fs').writeFileSync('docs/productions/original.txt','changed history')");
+  mkdirSync(join(r.root, 'docs/productions'), { recursive: true });
+  writeFileSync(join(r.root, 'docs/productions/original.txt'), 'historical');
+  writeFileSync(join(r.root, 'scripts/source-identity.json'), JSON.stringify({ schemaVersion: 2, algorithm: 'sha256-merkle-v1', scope: 'code-check-v1' }));
+  r.git('add', '.'); r.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'code scope');
+  const result = await verify(r.root, r.git('rev-parse', 'HEAD'));
+  assert.equal(result.status, 'passed', result.error);
+  assert.equal(result.source.scope, 'code-check-v1'); assert.equal(result.sourceAfter.dirty, false);
+  assert.equal(readFileSync(join(result.checkout, 'docs/productions/original.txt'), 'utf8'), 'changed history');
+  assert.match(execFileSync('git', ['-C', result.checkout, 'status', '--porcelain'], { encoding: 'utf8' }), /original.txt/);
+});
+
 test('正式验收失败留存日志，不把退出失败记为通过', async t => {
   const { root, commit } = repository(t, 'process.exit(7)');
   const result = await verify(root, commit);

@@ -1,5 +1,7 @@
 # #55 验收前提与授权续接
 
+> 历史记录：原始材料已退出当前 Git 跟踪；复现前请按[原件保留与恢复说明](../README.md)恢复对应工程或证据。本页不代表当前版本验收。
+
 仓库交付为个人技能准确差异 `personal-skills.patch`、固定输入 `scenarios.json` 和回放方法 `replay.md`。没有新增通用验收工具、调度框架或夹具平台。
 
 个人环境已定向更新 `~/.skills-manager/skills/` 下的 `implement/SKILL.md`、`implement-spec/SKILL.md`、`implement-spec/acceptance.md`、`to-commit/SKILL.md`，新增共用普通参考 `acceptance-preflight.md`。三个入口在开始与续接时加载参考，最终验收再次核实入口；to-commit 单独区分无法执行与纯阅读判断。既有独立 OCR 审查和证据写回要求保留。

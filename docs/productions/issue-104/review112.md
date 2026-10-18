@@ -1,5 +1,7 @@
 # full-rough-v1 完整版本审阅与交付准备
 
+> 历史记录：原始材料已退出当前 Git 跟踪；复现前请按[原件保留与恢复说明](../README.md)恢复对应工程或证据。本页不代表当前版本验收。
+
 当前完整粗剪为 **full-rough-v1，原声及 MP4 实际全长 68.04 秒**。完整保留正常语速旁白，没有为约 90 秒预算裁切或加速。当前全片唯一采用 **FH10 slow-v3**，FH11–FH12 合并为一个口播片段，FH15 使用 **group109-v2 修正标记**。
 
 打开主工作空间的[完整审阅页](/home/forclaw/code/ClapGrid/docs/productions/issue-104/review111.html)、[WebM 浏览器预览](/home/forclaw/code/ClapGrid/docs/productions/issue-104/outputs/full-rough-v1.webm)或[正式 MP4](/home/forclaw/code/ClapGrid/docs/productions/issue-104/outputs/full-rough-v1.mp4)。WebM 为 960×540 的审阅副本，时长 68.056 秒；正式 MP4 为 1920×1080、30 fps。版本与完整校验值在[审阅准备状态](evidence/112-review-preparation.json)，避免反馈对应到旧片。

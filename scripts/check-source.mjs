@@ -9,6 +9,19 @@ import { randomUUID } from 'node:crypto';
 const algorithmPath = 'scripts/source-identity.json';
 const algorithm = 'sha256-merkle-v1';
 const workerKind = 'clapgrid-source-leaves-v1';
+const codeScope = 'code-check-v1';
+const historicalDirectories = ['docs/productions', 'docs/validation', 'docs/design'];
+
+function inputScope(configured) { return configured && JSON.parse(configured).scope; }
+function includesInput(file, scope) {
+  return scope !== codeScope || !historicalDirectories.some(directory => file === directory || file.startsWith(`${directory}/`));
+}
+
+/** 只有显式采用新范围的目标才排除历史材料；未知路径仍是受检输入。 */
+export function checkInputFilter(root) {
+  const scope = inputScope(algorithmSnapshot(root));
+  return file => includesInput(file, scope);
+}
 
 function regularContents(path, stat) {
   // 不跟随替换后的链接，也不因 lstat/open 之间的 FIFO 竞争阻塞线程收尾。
@@ -28,12 +41,16 @@ function algorithmSnapshot(root) {
   if (!stat.isFile()) throw Error('源码算法配置必须是普通文件');
   const bytes = regularContents(join(root, algorithmPath), stat);
   const value = JSON.parse(bytes);
-  if (value.schemaVersion !== 1 || value.algorithm !== algorithm || Object.keys(value).sort().join(',') !== 'algorithm,schemaVersion') throw Error('未知源码指纹算法配置');
+  const legacy = value.schemaVersion === 1 && Object.keys(value).sort().join(',') === 'algorithm,schemaVersion';
+  const scoped = value.schemaVersion === 2 && value.scope === codeScope && Object.keys(value).sort().join(',') === 'algorithm,schemaVersion,scope';
+  if ((!legacy && !scoped) || value.algorithm !== algorithm) throw Error('未知源码指纹算法配置');
   return bytes;
 }
 
-const sourceFiles = root => [...new Set(git(root, ['ls-files', '-z', '--cached', '--others', '--exclude-standard']).split('\0').filter(Boolean))].sort();
-const metadata = (root, fingerprint) => ({ commit: git(root, ['rev-parse', 'HEAD']), tree: git(root, ['rev-parse', 'HEAD^{tree}']), fingerprint, dirty: git(root, ['status', '--porcelain', '--untracked-files=all']) !== '' });
+const sourceFiles = (root, scope) => [...new Set(git(root, ['ls-files', '-z', '--cached', '--others', '--exclude-standard']).split('\0').filter(file => file && includesInput(file, scope)))].sort();
+const metadata = (root, fingerprint, scope) => ({ commit: git(root, ['rev-parse', 'HEAD']), tree: git(root, ['rev-parse', 'HEAD^{tree}']), fingerprint,
+  dirty: git(root, ['status', '--porcelain', '--untracked-files=all', ...(scope === codeScope ? ['--', '.', ...historicalDirectories.map(path => `:(exclude,literal)${path}`)] : [])]) !== '',
+  ...(scope ? { scope } : {}) });
 function stableAlgorithm(root, before) {
   const after = algorithmSnapshot(root);
   if (before === null ? after !== null : after === null || !before.equals(after)) throw Error('源码指纹算法在采集期间变化');
@@ -52,7 +69,7 @@ function leaf(root, file) {
   return hash.update(JSON.stringify([file, stat.isSymbolicLink() ? 'link' : 'file', stat.mode & 0o111, contents.length])).update(contents).digest('hex');
 }
 
-function merkle(files, rows) {
+function merkle(files, rows, scope) {
   const values = new Map();
   const expected = new Set(files);
   for (const row of rows) {
@@ -60,7 +77,7 @@ function merkle(files, rows) {
     values.set(row[0], row[1]);
   }
   if (values.size !== files.length) throw Error('源码线程返回集合缺口');
-  const hash = createHash('sha256').update(JSON.stringify(['clapgrid-source-merkle-v1', files.length]));
+  const hash = createHash('sha256').update(JSON.stringify(scope ? ['clapgrid-source-merkle-v1', scope, files.length] : ['clapgrid-source-merkle-v1', files.length]));
   for (const file of files) hash.update(JSON.stringify([file, values.get(file)]));
   return `${algorithm}:${hash.digest('hex')}`;
 }
@@ -74,14 +91,15 @@ export function git(root, args) {
   return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 }).trimEnd();
 }
 
-/** 跟踪文件与未忽略的新文件均计入；日志和构建输出沿用 Git 忽略规则。 */
+/** 按目标声明的输入范围读取；范围内跟踪文件及未忽略新文件均计入。 */
 export function sourceIdentity(root) {
   const configured = algorithmSnapshot(root);
-  const files = sourceFiles(root);
+  const scope = inputScope(configured);
+  const files = sourceFiles(root, scope);
   if (configured) {
-    const fingerprint = merkle(files, files.map(file => [file, leaf(root, file)]));
+    const fingerprint = merkle(files, files.map(file => [file, leaf(root, file)]), scope);
     stableAlgorithm(root, configured);
-    return metadata(root, fingerprint);
+    return metadata(root, fingerprint, scope);
   }
   const hash = createHash('sha256');
   for (const file of files) {
@@ -106,7 +124,8 @@ export async function sourceIdentityAsync(root, { signal, workers = Math.min(4, 
   if (!Number.isInteger(workers) || workers < 1 || workers > 8) throw Error('源码线程数量仅支持 1 至 8');
   const configured = algorithmSnapshot(root);
   if (!configured) return sourceIdentity(root);
-  const files = sourceFiles(root);
+  const scope = inputScope(configured);
+  const files = sourceFiles(root, scope);
   const bins = Array.from({ length: Math.min(workers, Math.max(1, files.length)) }, () => ({ files: [], bytes: 0 }));
   const sizes = files.map(file => {
     try { return { file, size: lstatSync(join(root, file)).size }; }
@@ -147,9 +166,9 @@ export async function sourceIdentityAsync(root, { signal, workers = Math.min(4, 
     await Promise.all(records.map(record => record.done));
     if (failure) throw failure;
     signal?.throwIfAborted();
-    const fingerprint = merkle(files, records.flatMap(record => record.message.rows));
+    const fingerprint = merkle(files, records.flatMap(record => record.message.rows), scope);
     stableAlgorithm(root, configured);
-    return metadata(root, fingerprint);
+    return metadata(root, fingerprint, scope);
   } finally {
     signal?.removeEventListener('abort', abort);
     for (const record of records) if (!record.exited) record.worker.terminate().catch(() => {});

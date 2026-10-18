@@ -1,6 +1,0 @@
-{
-  "extends": "../tsconfig.json",
-  "compilerOptions": {"resolveJsonModule": true},
-  "include": ["./**/*.tsx", "../src/**/*.tsx"],
-  "exclude": ["render-sources", "bundle", "bundle-render", "frames"]
-}

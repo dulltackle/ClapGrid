@@ -110,3 +110,13 @@ test('默认源码采集保留四线程资源上限并实际等候全部退出',
   assert.ok(actual.created<=actual.limit,`默认完整读取不为少量wall收益超出四线程CPU预算：${actual.created}`);
   assert.equal(actual.active.includes('MessagePort'),false);
 });
+
+test('代码输入边界排除历史材料，保留真实资源和未知文件，旧协议仍读取历史材料', t => {
+  const r = repository(t);
+  r.put('scripts/source-identity.json', '{"schemaVersion":2,"algorithm":"sha256-merkle-v1","scope":"code-check-v1"}\n');
+  for (const file of ['docs/productions/old.ts', 'docs/validation/result.png', 'docs/design/mock.png', 'docs/templates/video.md', 'tests/fixtures/font.ttf', 'unknown/input.bin']) r.put(file, 'first');
+  r.git('add', '.'); r.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'scoped');
+  const result = r.run(`import assert from'node:assert/strict';import fs from'node:fs';import{join}from'node:path';import{syncBuiltinESMExports}from'node:module';const first=source.sourceIdentity(root);const original=fs.openSync;fs.openSync=function(path,...args){assert.ok(!/docs\\/(productions|validation|design)\\//.test(String(path)),'不得读取排除材料');return original.call(this,path,...args)};syncBuiltinESMExports();for(const f of ['docs/productions/old.ts','docs/validation/result.png','docs/design/mock.png'])fs.writeFileSync(join(root,f),'other');fs.writeFileSync(join(root,'docs/productions/new.bin'),'new');const after=await source.sourceIdentityAsync(root);assert.deepEqual(after,first);assert.equal(first.scope,'code-check-v1');for(const f of ['docs/templates/video.md','tests/fixtures/font.ttf','unknown/input.bin']){const before=source.sourceIdentity(root);fs.writeFileSync(join(root,f),'other');assert.notEqual(source.sourceIdentity(root).fingerprint,before.fingerprint)}fs.openSync=original;syncBuiltinESMExports();fs.writeFileSync(join(root,'scripts/source-identity.json'),'~');assert.throws(()=>source.sourceIdentity(root));fs.writeFileSync(join(root,'scripts/source-identity.json'),JSON.stringify({schemaVersion:1,algorithm:'sha256-merkle-v1'}));const legacy=source.sourceIdentity(root);fs.writeFileSync(join(root,'docs/productions/old.ts'),'again');assert.notEqual(source.sourceIdentity(root).fingerprint,legacy.fingerprint);console.log('scoped-fresh-inputs-and-legacy');`);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /scoped-fresh-inputs-and-legacy/);
+});

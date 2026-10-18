@@ -52,6 +52,21 @@ test('日常计划按实际归属选择修改的测试，列明基准、未覆�
   assert.equal(plan.completeForFullCheck, false); assert.equal(plan.requiredFollowup, 'full-check-and-verify');
 });
 
+test('历史材料变化明确列为排除，不进入当前和基准依赖图；未知资源仍扩大检查', t => {
+  const r = repository(t);
+  r.put('docs/productions/old.ts', 'this is not valid typescript {'); r.commit();
+  r.put('docs/productions/old.ts', 'another invalid archived source {');
+  const excluded = r.plan();
+  assert.deepEqual(excluded.selected, []);
+  assert.equal(excluded.status, 'no-changes');
+  assert.deepEqual(excluded.excludedChanges.map((item: any) => item.path), ['docs/productions/old.ts']);
+  r.put('src/number.ts', 'export const value = 8;');
+  const plan = r.plan();
+  assert.deepEqual(plan.selected, ['tests/number.test.ts']);
+  r.put('new-resources/font.bin', 'fresh unknown input');
+  assert.equal(r.plan().selected.length, r.inventory.files.length);
+});
+
 test('逻辑源码通过 .js 扩展、export-from 与字面量动态导入选择消费者，不强制跑其他逻辑组', t => {
   const r = repository(t);
   r.put('src/barrel.ts', 'export {value} from "./number.js";\n');

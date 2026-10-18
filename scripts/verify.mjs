@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, existsSync, readdirSync, lstatSyn
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { git, sourceIdentity, sameSource } from './check-source.mjs';
+import { git, sourceIdentity, sameSource, checkInputFilter } from './check-source.mjs';
 import { runLogged, checkProgress } from './check-runner.mjs';
 import { withCheckRun, releaseCheckReservation } from './check-lifecycle.mjs';
 import { atomicJson, processIdentity, startVerification, verificationStatus, waitVerification, cancelVerification } from './verification-jobs.mjs';
@@ -41,7 +41,8 @@ export async function executeVerification(root, revision, outputRoot = join(root
       summary.phase = 'checkout'; save();
       git(root, ['clone', '--quiet', '--no-checkout', '--no-hardlinks', '--', root, checkout]);
       git(checkout, ['checkout', '--quiet', '--detach', commit]);
-      for (const entry of git(checkout, ['ls-files', '--stage', '-z']).split('\0').filter(Boolean)) {
+      const include = checkInputFilter(checkout);
+      for (const entry of git(checkout, ['ls-files', '--stage', '-z']).split('\0').filter(entry => entry && include(entry.slice(entry.indexOf('\t') + 1)))) {
         if (entry.startsWith('120000 ') || entry.startsWith('160000 ')) throw Error('正式验收暂不支持源码符号链接或子模块');
       }
       summary.source = sourceIdentity(checkout);

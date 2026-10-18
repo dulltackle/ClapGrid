@@ -3,7 +3,7 @@ import { isBuiltin } from 'node:module';
 import { readFileSync, lstatSync, existsSync } from 'node:fs';
 import { dirname, posix } from 'node:path';
 import { parseSync } from 'rolldown/utils';
-import { git } from './check-source.mjs';
+import { git, checkInputFilter } from './check-source.mjs';
 
 const code = file => /\.[cm]?[jt]sx?$/.test(file);
 const literal = node => node?.type === 'Literal' && typeof node.value === 'string' ? node.value : node?.type === 'TemplateLiteral' && node.expressions.length === 0 ? node.quasis[0]?.value.cooked : undefined;
@@ -135,7 +135,9 @@ function graph(root, sources, files, packages) {
 }
 
 export function relatedDependencies(root, commit, baseFiles) {
-  const currentFiles = new Set(git(root, ['ls-files', '-z', '--cached', '--others', '--exclude-standard']).split('\0').filter(Boolean));
+  const include = checkInputFilter(root);
+  baseFiles = new Set([...baseFiles].filter(include));
+  const currentFiles = new Set(git(root, ['ls-files', '-z', '--cached', '--others', '--exclude-standard']).split('\0').filter(file => file && include(file)));
   const sources = new Map();
   for (const file of currentFiles) if (code(file)) {
     try { if (lstatSync(`${root}/${file}`).isSymbolicLink()) continue; sources.set(file, readFileSync(`${root}/${file}`, 'utf8')); }

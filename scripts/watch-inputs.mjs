@@ -1,11 +1,12 @@
 import { watch, existsSync, realpathSync, lstatSync } from 'node:fs';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { join, resolve, relative, dirname, isAbsolute } from 'node:path';
-import { sourceIdentity, sameSource } from './check-source.mjs';
+import { sourceIdentity, sameSource, checkInputFilter } from './check-source.mjs';
 
 /** 事件给已观察变化保留generation；周期fresh全内容指纹补查源码，不产生通过证据。 */
 export function observeWatchInputs(root, onChange) {
   const initialStarted = performance.now();
+  const include = checkInputFilter(root);
   let snapshot = sourceIdentity(root), closed = false, timer;
   const metrics = { initialScanMs: performance.now() - initialStarted, probeCount: 0, probeTotalMs: 0, lastProbeMs: 0, ignoredDirectoryRaceCount: 0 };
   const handles = [], queued = new Set();
@@ -22,11 +23,16 @@ export function observeWatchInputs(root, onChange) {
     if (!candidates.length) return;
     const ignored = spawnSync('git', ['-C', root, 'check-ignore', '-z', '--stdin'], { input: candidates.join('\0') + '\0', encoding: 'utf8' });
     if (![0, 1].includes(ignored.status)) { notify('restart-required', candidates, '无法确认watch输入忽略规则'); return; }
-    const excluded = new Set(ignored.stdout.split('\0').filter(Boolean)), inputs = candidates.filter(path => !excluded.has(path));
+    const excluded = new Set(ignored.stdout.split('\0').filter(Boolean));
+    // Git 已跟踪输入即使后来匹配 ignore，仍须响应；历史材料按独立输入边界排除。
+    const tracked = spawnSync('git', ['-C', root, 'ls-files', '--cached', '-z', '--', ...candidates.map(path => `:(literal)${path}`)], { encoding: 'utf8' });
+    if (tracked.status !== 0) { notify('restart-required', candidates, '无法确认watch跟踪输入'); return; }
+    const trackedPaths = new Set(tracked.stdout.split('\0').filter(Boolean));
+    const inputs = candidates.filter(path => include(path) && (!excluded.has(path) || trackedPaths.has(path)));
     if (inputs.length) notify(inputs.some(path => path.startsWith('scripts/')) ? 'restart-required' : 'source', inputs, '文件系统实际输入事件');
   };
   const enqueue = path => {
-    if (closed || temporary(path)) return;
+    if (closed || temporary(path) || !include(path)) return;
     queued.add(path); clearTimeout(timer); timer = setTimeout(flush, 120);
   };
   const ignoredDirectoryRace = (attached, error) => {
@@ -38,7 +44,10 @@ export function observeWatchInputs(root, onChange) {
       for (;;) { try { lstatSync(ancestor); break; } catch (failure) { if (failure.code !== 'ENOENT' || dirname(ancestor) === ancestor) return false; ancestor = dirname(ancestor); } }
       if (realpathSync(ancestor) !== resolve(realpathSync(attached), relative(attached, ancestor))) return false;
       const local = relative(root, error.path).replaceAll('\\', '/');
-      if (!local || local === '..' || local.startsWith('../') || isAbsolute(local) || dependency(local) && !temporary(local)) return false;
+      if (!local || local === '..' || local.startsWith('../') || isAbsolute(local) || dependency(local) && !temporary(local) && include(local)) return false;
+      if (!include(local)) {
+        metrics.ignoredDirectoryRaceCount++; metrics.lastIgnoredDirectoryRace = { path: error.path, observedAt: new Date().toISOString() }; return true;
+      }
       const tracked = spawnSync('git', ['-C', root, 'ls-files', '--cached', '-z', '--', `:(literal)${local}`], { encoding: 'utf8' });
       if (tracked.status !== 0 || tracked.stdout) return false;
       if (!temporary(local) && spawnSync('git', ['-C', root, 'check-ignore', '-q', '--', local]).status !== 0) return false;

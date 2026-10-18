@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { git } from './check-source.mjs';
+import { git, checkInputFilter } from './check-source.mjs';
 import { testInventory, strictTestFiles } from './test-evidence.mjs';
 import { relatedDependencies } from './related-dependencies.mjs';
 import { isStaticStyleChange, extendedTests, componentTests } from './ui-check-plan.mjs';
@@ -35,7 +35,9 @@ export function createRelatedPlan(root, { base = 'HEAD', all = false } = {}) {
   const commit = git(root, ['rev-parse', '--verify', '--end-of-options', `${base}^{commit}`]);
   const baseFiles = new Set(git(root, ['ls-tree', '-r', '--name-only', '-z', commit]).split('\0').filter(Boolean));
   const paths = [...new Set([...git(root, ['diff', '--no-renames', '--name-only', '-z', commit, '--']).split('\0'), ...git(root, ['ls-files', '--others', '--exclude-standard', '-z']).split('\0')].filter(Boolean))].sort();
-  const changes = paths.map(path => ({ path, kind: !baseFiles.has(path) ? 'added' : existsSync(join(root, path)) ? 'modified' : 'deleted' }));
+  const include = checkInputFilter(root);
+  const describe = path => ({ path, kind: !baseFiles.has(path) ? 'added' : existsSync(join(root, path)) ? 'modified' : 'deleted' });
+  const changes = paths.filter(include).map(describe), excludedChanges = paths.filter(path => !include(path)).map(describe);
   const dependencies = changes.length && !all ? relatedDependencies(root, commit, baseFiles) : { diagnostics: [], dependents: file => new Set([file]), opaqueTests: [], inputs: [] };
   const selected = new Set(), reasons = [];
   let requiresBuild = all, completeForLocalUi = changes.length > 0 && !all;
@@ -89,7 +91,7 @@ export function createRelatedPlan(root, { base = 'HEAD', all = false } = {}) {
   if (all) { add(undefined, 'explicit-all', allFiles); completeForLocalUi = false; }
   const files = [...selected].sort();
   return {
-    schemaVersion: 1, kind: 'related-plan', base: { requested: base, commit }, changes,
+    schemaVersion: 1, kind: 'related-plan', base: { requested: base, commit }, changes, excludedChanges,
     status: files.length ? 'ready' : changes.length || all ? 'no-tests-selected' : 'no-changes', selected: files,
     executors: [...new Set(files.map(file => inventory.find(entry => entry.file === file).executor))].map(executor => ({ executor, files: files.filter(file => inventory.find(entry => entry.file === file).executor === executor) })),
     reasons, requiresBuild, completeForLocalUi: files.length > 0 && completeForLocalUi,

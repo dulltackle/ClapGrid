@@ -1,5 +1,7 @@
 # FH01–FH04 与 FH11–FH12 技术播放补充
 
+> 历史记录：原始材料已退出当前 Git 跟踪；复现前请按[原件保留与恢复说明](../../README.md)恢复对应工程或证据。本页不代表当前版本验收。
+
 本次只补归档协调者已实际执行的浏览器播放证据，没有重新生成配音、渲染视频或改变旧封存版本。完整独立补充档案为 `/home/forclaw/tmp/implement-spec-104/archives/technical-playback106108-v1`；对应清单 `106108-technical-playback-manifest.json` 包含四份实际记录与四份匹配的 WebM 文件校验值，不包含清单自身校验引用。
 
 | 记录 | 实际检查范围 |

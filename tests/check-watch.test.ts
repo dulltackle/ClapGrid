@@ -72,6 +72,21 @@ test('默认日常命令单次退出，显式watch空闲仍持锁且停止后释
   assert.equal(existsSync(join(r.root, 'logs/check-state/active')), false);
 });
 
+test('历史材料事件与周期探测不触发watch，模板输入仍执行新轮', async t => {
+  const r = repository(t);
+  r.put('docs/productions/old.ts', 'archived'); r.commit();
+  const w = r.start(); await w.wait(() => r.summary()?.state === 'idle');
+  r.put('docs/productions/old.ts', 'changed');
+  r.put('docs/productions/new.bin', 'new archived bytes');
+  r.put('docs/validation/shot.png', 'snapshot');
+  await delay(2400);
+  assert.equal(r.summary().state, 'idle'); assert.equal(r.summary().rounds.length, 1);
+  r.put('docs/templates/video.md', 'actual production template');
+  await w.wait(() => r.summary()?.rounds.length === 2 && r.summary()?.state === 'idle');
+  assert.equal(r.summary().rounds[1].status, 'passed');
+  w.child.kill('SIGTERM'); assert.equal(await w.closed, 130);
+});
+
 test('watch默认不创建字节码cache，首冷执行后idle且真实外部依赖仍要求重启', async t => {
   const r=repository(t);rmSync(join(r.root,'node_modules'));mkdirSync(join(r.root,'node_modules'));
   for(const name of readdirSync(join(project,'node_modules')))if(name!=='.cache')symlinkSync(join(project,'node_modules',name),join(r.root,'node_modules',name));
@@ -584,14 +599,16 @@ test('模板与配置按单次规则扩大重跑，Vite临时输出无自循环�
   assert.equal(existsSync(join(r.root, 'logs/check-state/active')), false);
 });
 
-test('真实scandir删除race只忽略无tracked输入的已忽略目录和Vite临时目录', async t => {
-  for (const kind of ['ignored', 'tracked-ignored', 'source', 'dependency', 'nested-dependency', 'vite-temporary']) {
-    const r = repository(t), positive = ['ignored', 'vite-temporary'].includes(kind);
+test('真实scandir删除race只忽略范围外历史、无tracked输入的已忽略目录和Vite临时目录', async t => {
+  for (const kind of ['ignored', 'tracked-ignored', 'source', 'dependency', 'nested-dependency', 'vite-temporary', 'historical']) {
+    const r = repository(t), positive = ['ignored', 'vite-temporary', 'historical'].includes(kind);
     if (['dependency', 'vite-temporary'].includes(kind)) {
       rmSync(join(r.root, 'node_modules')); mkdirSync(join(r.root, 'node_modules'));
       for (const name of ['tsx', 'rolldown']) symlinkSync(join(project, 'node_modules', name), join(r.root, 'node_modules', name), 'dir');
     }
-    const target = kind === 'source' ? 'src/race-dir' : kind === 'dependency' ? 'node_modules/.watch-race/subtree' : kind === 'nested-dependency' ? 'src/pkg/node_modules/.watch-race/subtree' : kind === 'vite-temporary' ? 'node_modules/.vite-temp/watch-race/subtree' : 'logs/generated-race/subtree';
+    const target = kind === 'historical' ? 'docs/productions/race-dir' : kind === 'source' ? 'src/race-dir' : kind === 'dependency' ? 'node_modules/.watch-race/subtree' : kind === 'nested-dependency' ? 'src/pkg/node_modules/.watch-race/subtree' : kind === 'vite-temporary' ? 'node_modules/.vite-temp/watch-race/subtree' : 'logs/generated-race/subtree';
+    // 实际仓库保留历史 Markdown；共同父目录的首次出现仍是需要保守处理的未知事件。
+    if (kind === 'historical') r.put('docs/productions/README.md', 'historical index');
     if (kind === 'nested-dependency') r.put('src/pkg/index.ts', 'export const nested=1;');
     if (kind === 'tracked-ignored') { r.put(`${target}/tracked.ts`, 'export const tracked=1;'); r.git('add', '-f', `${target}/tracked.ts`); }
     r.put('fault-watch.mjs', `import fs from'node:fs';import{resolve}from'node:path';if(process.argv.includes('--watch')){const target=resolve(${JSON.stringify(target)}),original=fs.readdirSync;let injected=false;fs.readdirSync=function(path,...args){if(String(path)===target&&fs.existsSync('logs/arm-race')&&!injected){injected=true;fs.rmSync(target,{recursive:true,force:true});try{return original.call(this,path,...args)}catch(error){fs.appendFileSync('logs/race-error',JSON.stringify({code:error.code,syscall:error.syscall,path:error.path})+'\\n');throw error}}return original.call(this,path,...args)}}`);
