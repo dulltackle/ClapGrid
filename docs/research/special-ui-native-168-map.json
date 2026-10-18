@@ -317,7 +317,12 @@
   ],
   "pending": [
     "同一脚本切换不同define的缓存隔离专项实际复验",
-    "候选代表热点三次测量",
     "固定提交正式全量验收和跨票审查"
-  ]
+  ],
+  "measurement": {
+    "beforeMedianSeconds": 13.66767086300024,
+    "afterMedianSeconds": 13.580130098001973,
+    "changePercent": -0.6404951207542475,
+    "evidence": "check-161/measurements.json"
+  }
 }

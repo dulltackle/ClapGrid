@@ -117,7 +117,7 @@ Vitest 保存可读日志及官方生命周期原始事件 JSON（#163 移除无
 
 ## Playwright UI 固定核心（#151）
 
-特殊主题、布局、悬停、草稿、目标入口及刷新构建参数的七文件16场景由同一 Playwright fixture 执行。`panel.check` 第五参数接受 `colorScheme` 和 `buildDefine`，保留原媒体特性与构建身份；原场景脚本、视口、超时和 scopes 不变。映射、公开开发报告来源及尚未完成的性能对照见[特殊条件批次记录](../research/special-ui-native-168.md)。
+特殊主题、布局、悬停、草稿、目标入口及刷新构建参数的七文件16场景由同一 Playwright fixture 执行。`panel.check` 第五参数接受 `colorScheme` 和 `buildDefine`，保留原媒体特性与构建身份；原场景脚本、视口、超时和 scopes 不变。映射、公开开发报告来源及已完成的三次性能对照与局限见[特殊条件批次记录](../research/special-ui-native-168.md)。
 
 固定 `@playwright/test` 1.64.1，迁移五个文件、14 项原场景，其中两项样式碰撞无需浏览器，另外 12 项实际运行本机 Chrome。`npm run check:ui -- --scope row --concurrency 1|2` 保留类型检查、固定核心、构建与生命周期清理；`npm run test:ui:core -- --concurrency 1|2` 只运行固定核心，不能当作完整入口预算。默认 UI 快检并发 2，含扩大范围或无法证明为静态样式的变更仍沿用计划器降为 1；最终并发选择与预算由同机三次对照证据决定。`npm run check:ui:native` 保留原生 14 场景对照。普通 all、rows、styles、failed 按清单分派，同次完整检查按累计规则去重。
 
@@ -132,7 +132,7 @@ Vitest 保存可读日志及官方生命周期原始事件 JSON（#163 移除无
 
 ## 表格编辑与选择原生批次（#165）
 
-11个表格编辑、粘贴、搜索、行菜单、选择和拖拽文件的36个既有场景改由同一Playwright fixture实际执行。原脚本、等待、真实键鼠、各例超时和视口保留；editing显式采用原窗口请求1600×1200，其余保留各自原值。每例独立context/page/DOM/storage/目录，worker复用Chrome；缺浏览器直接失败，无skip/todo或retry放行。默认并发保持1，不把未验证的并发2当作收益。
+11个表格编辑、粘贴、搜索、行菜单、选择和拖拽文件的36个既有场景改由同一Playwright fixture实际执行。原脚本、等待、真实键鼠、各例超时和视口保留；editing显式采用原窗口请求1600×1200，其余保留各自原值。每例独立context/page/DOM/storage/目录，worker复用Chrome；缺浏览器直接失败，无skip/todo或retry放行。该批开发测量采用并发1；后续默认调度及适用范围以#171记录为准，不将局部样本当作全量收益。
 
 唯一清单仅切换本批executor，all/rows/policy原样，原rows成员继续预检与同次累计；UI相关计划仍按原文件身份分派，不建立重复Node归属。原helper仍服务后续批次的调用者，保留其余测试。逐场景映射、editing执行时间语义、热点三次前后测与局部验收边界见[本批记录](../research/table-native-165.md)。
 
@@ -140,7 +140,7 @@ Vitest 保存可读日志及官方生命周期原始事件 JSON（#163 移除无
 
 相对添加/生命周期、普通添加、片段/详情焦点、删除确认及弹窗7文件98原场景交给同一Playwright fixture。原模板脚本、真实输入、跨渲染/迟到响应断言、视口与15/40秒上限保留，清单仅切换executor且scope/policy不变。实际保守并发1，每例独立页面、storage、选择与焦点状态，worker复用Chrome。原helper仍服务其他批次，不能删掉其剩余调用者。
 
-公开类型及98例功能定向通过不代表最终固定提交验收。旧代表组11例三次已保留；候选三次后测在45分钟预算门槛后未启动，AC5未验，等待用户明确续时。逐场景/原始报告身份、资源收尾及待验边界见[本批记录](../research/focus-native-166.md)。
+公开类型及98例功能定向通过不代表最终固定提交验收。旧代表组11例三次已保留；用户明确续时60分钟后完成三次候选，代表组中位下降6.24%且存在样本离散。该测量不代替最终固定提交完整验收。逐场景/原始报告身份、资源收尾及待验边界见[本批记录](../research/focus-native-166.md)。
 
 ## 浏览器编译产物缓存（#154）
 
@@ -244,7 +244,7 @@ watch 的异步派生链关闭自动默认，跨子孙传播该保守策略，�
 
 ## 配音、素材与导出面板原生执行（#167）
 
-八个媒体面板文件由唯一清单分派 Playwright，完整范围和原业务 UI 严格政策保留。`Panel.check` 的每例 resources 仍由真实 HTTP 随机端口服务，保留 Range 与 reduced-motion 偏好；每例 context、storage、目录、媒体与服务独立，worker 只复用 Chrome 和既有编译缓存。先关闭 context、关闭全部 HTTP 连接并等待服务 close 回调，再最终回收目录及记录清理，异常累计失败。生成媒体置于登记资源根，强杀时由原拥有者确认进程退出后回收。32项映射、开发与修补证据、未完成的三次候选测量见 [本切片记录](../research/media-167/README.md)。
+八个媒体面板文件由唯一清单分派 Playwright，完整范围和原业务 UI 严格政策保留。`Panel.check` 的每例 resources 仍由真实 HTTP 随机端口服务，保留 Range 与 reduced-motion 偏好；每例 context、storage、目录、媒体与服务独立，worker 只复用 Chrome 和既有编译缓存。先关闭 context、关闭全部 HTTP 连接并等待服务 close 回调，再最终回收目录及记录清理，异常累计失败。生成媒体置于登记资源根，强杀时由原拥有者确认进程退出后回收。32项映射、开发与修补证据、已完成的三次候选测量及无改善结论见 [本切片记录](../research/media-167/README.md)。
 
 ## 全量原生调度收口（#171）
 

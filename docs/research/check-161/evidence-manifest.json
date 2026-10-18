@@ -1,0 +1,2786 @@
+{
+  "schemaVersion": 1,
+  "archive": "evidence.tar.gz",
+  "sha256": "17c3ffc4547920720cf34b58afdd9c0f83d916c51df1287b9983e6c6f2defbaa",
+  "originalBytes": 16173992,
+  "files": [
+    {
+      "member": "external-log/0f3a11215ba535ec-1792303701374-714216-native.json",
+      "originalPath": "/home/forclaw/.codex/worktrees/spec-161-lifecycle/ClapGrid/logs/tests/1792303701374-714216-native.json",
+      "sha256": "0f3a11215ba535ec49ea1cb816fbeadbd5696e3cf05e86fe12a601b88453e990",
+      "bytes": 90130
+    },
+    {
+      "member": "external-log/a300ae06ed36cda1-1792303701374-714216.json.tap.log",
+      "originalPath": "/home/forclaw/.codex/worktrees/spec-161-lifecycle/ClapGrid/logs/tests/1792303701374-714216.json.tap.log",
+      "sha256": "a300ae06ed36cda1fe79463d063daad37caf60d14f0695ff3bcc7f6390d386d4",
+      "bytes": 44413
+    },
+    {
+      "member": "external-log/a56a3a07298e305e-1792304775864-801523-native.json",
+      "originalPath": "/home/forclaw/.codex/worktrees/spec-161-media/ClapGrid/logs/tests/1792304775864-801523-native.json",
+      "sha256": "a56a3a07298e305e127347e1d61b5a21f0189edf9c21f47d017821289cb338fa",
+      "bytes": 3551
+    },
+    {
+      "member": "external-log/2e1d529f2903b99e-1792304775864-801523.json.tap.log",
+      "originalPath": "/home/forclaw/.codex/worktrees/spec-161-media/ClapGrid/logs/tests/1792304775864-801523.json.tap.log",
+      "sha256": "2e1d529f2903b99e48757417123853304c25160883054ee54e4dd00857160830",
+      "bytes": 4246
+    },
+    {
+      "member": "external-log/2b58825eaaf7145d-1792304795230-803247-native.json",
+      "originalPath": "/home/forclaw/.codex/worktrees/spec-161-media/ClapGrid/logs/tests/1792304795230-803247-native.json",
+      "sha256": "2b58825eaaf7145d8364a46771c384953a5d9e9f6691cb98e8f174b65ce6a669",
+      "bytes": 3551
+    },
+    {
+      "member": "external-log/bd63caf910aa2f71-1792304795230-803247.json.tap.log",
+      "originalPath": "/home/forclaw/.codex/worktrees/spec-161-media/ClapGrid/logs/tests/1792304795230-803247.json.tap.log",
+      "sha256": "bd63caf910aa2f71d9101e8329b28a25bcb8ae2d384d183e6321224b225c534d",
+      "bytes": 4239
+    },
+    {
+      "member": "external-log/b9f6cc6e6599f178-1792304814427-804974-native.json",
+      "originalPath": "/home/forclaw/.codex/worktrees/spec-161-media/ClapGrid/logs/tests/1792304814427-804974-native.json",
+      "sha256": "b9f6cc6e6599f17870696139cd06e0458317ccfea3cbeff805eb73ad0566c512",
+      "bytes": 3552
+    },
+    {
+      "member": "external-log/9d4afe379110cfbe-1792304814427-804974.json.tap.log",
+      "originalPath": "/home/forclaw/.codex/worktrees/spec-161-media/ClapGrid/logs/tests/1792304814427-804974.json.tap.log",
+      "sha256": "9d4afe379110cfbeb833932689718f774495411575fc8d4d60d4f7968dbfbf7f",
+      "bytes": 4240
+    },
+    {
+      "member": "run/after-164/samples.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-164/samples.json",
+      "sha256": "b0e0c2e6baa35e1770b93d516099751debc0465a75417000b39a453d9f5892ba",
+      "bytes": 1129
+    },
+    {
+      "member": "run/after-164/vitest-1-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-164/vitest-1-native.json",
+      "sha256": "a017b118ba16a536ff28aec91d40ba87e7b76b22e8f8645744286a4a1a62d801",
+      "bytes": 13896
+    },
+    {
+      "member": "run/after-164/vitest-1.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-164/vitest-1.json",
+      "sha256": "ddbabc73b849f769f5c252fbd646e1d86712fd2b3b5d610ee76eec160dc6e7d4",
+      "bytes": 21193
+    },
+    {
+      "member": "run/after-164/vitest-1.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-164/vitest-1.json.log",
+      "sha256": "6fcefec465227d0c965ce192298dc8a504a569379b6f4608d086e9e3ad544cf6",
+      "bytes": 2903
+    },
+    {
+      "member": "run/after-164/vitest-1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-164/vitest-1.log",
+      "sha256": "6e62377ee050790eb063b96ca8a1da906f21defbcd311cdc138de9fb5b9449f6",
+      "bytes": 3037
+    },
+    {
+      "member": "run/after-164/vitest-2-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-164/vitest-2-native.json",
+      "sha256": "6dfc89bcd47641b48b41cb882d63bbcb9a742b9c9e32a47a688c695ee78df2b0",
+      "bytes": 13890
+    },
+    {
+      "member": "run/after-164/vitest-2.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-164/vitest-2.json",
+      "sha256": "cbda2b0cb686dd7aa80e2a920db6eb6ade49dec6aef6298d9a46b86b1cc749c1",
+      "bytes": 21187
+    },
+    {
+      "member": "run/after-164/vitest-2.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-164/vitest-2.json.log",
+      "sha256": "ad5d9daec8b12aaf5f6426481afa4489ff7a0147ad33c6d5c28d4362017126e7",
+      "bytes": 2912
+    },
+    {
+      "member": "run/after-164/vitest-2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-164/vitest-2.log",
+      "sha256": "09810aadab3476db6f069e4b79034f664aa75fe89f5617720682ba588086aed7",
+      "bytes": 3046
+    },
+    {
+      "member": "run/after-164/vitest-3-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-164/vitest-3-native.json",
+      "sha256": "5f71866a28ddd8242a9bdeea569d322dd59678d086b39b69f1cbe18fa3e88d25",
+      "bytes": 13894
+    },
+    {
+      "member": "run/after-164/vitest-3.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-164/vitest-3.json",
+      "sha256": "d1b6d0989fbcbaaf1dffc4ef0bf9140d0dd9ac7cde474dced4ccfe0ff4bacd67",
+      "bytes": 21191
+    },
+    {
+      "member": "run/after-164/vitest-3.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-164/vitest-3.json.log",
+      "sha256": "c8d22ca6df576228bb6e7cef696e1dd7428edacd5a904223f365f5fd81c3d42d",
+      "bytes": 2912
+    },
+    {
+      "member": "run/after-164/vitest-3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-164/vitest-3.log",
+      "sha256": "9dc4edc787e4fd3817e22a8be5261cadfb93904863d1a68a07add92c2451c38a",
+      "bytes": 3046
+    },
+    {
+      "member": "run/after-168-resume/1-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/1-native.json",
+      "sha256": "5819cf78de74a1a39bde5cc768c418659df9c65784f053fb2b36d54c3f10236b",
+      "bytes": 13042
+    },
+    {
+      "member": "run/after-168-resume/1-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/1-timings.jsonl",
+      "sha256": "799b3a7c752ee7f814983a67cfaefc80321bd507100be34a6181c3a65b603387",
+      "bytes": 6052
+    },
+    {
+      "member": "run/after-168-resume/1.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/1.json",
+      "sha256": "4a70676fa632e5dedc7565d1cf3618a69798373dd1a3809ceca599ed9de77691",
+      "bytes": 10288
+    },
+    {
+      "member": "run/after-168-resume/1.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/1.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/after-168-resume/1.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/1.json.log",
+      "sha256": "47238be6d11ecf5659b5b8fda71590562db135b0967fe8e0e1a9491c11ea3383",
+      "bytes": 6843
+    },
+    {
+      "member": "run/after-168-resume/1.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/1.json.playwright.log",
+      "sha256": "f6fdb5b68180f51ff663c0b6e5761ab18cdcd1705e18e9b485b5cf04f798a8a8",
+      "bytes": 6770
+    },
+    {
+      "member": "run/after-168-resume/1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/1.log",
+      "sha256": "4d8cdaa9a90e97c000e5911368b78dd5798e54da23c6378c911a08e43685a95f",
+      "bytes": 6911
+    },
+    {
+      "member": "run/after-168-resume/2-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/2-native.json",
+      "sha256": "992985e1973ab45f42c9d92badbe528edbdcb1099ecc7b2ce14a3d450f20d5bb",
+      "bytes": 13033
+    },
+    {
+      "member": "run/after-168-resume/2-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/2-timings.jsonl",
+      "sha256": "4bd0af3d3d3a2f40f2fd7cb97798636843f2be6690b9623921ae39ef47c4c594",
+      "bytes": 6042
+    },
+    {
+      "member": "run/after-168-resume/2.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/2.json",
+      "sha256": "db0f365e7087cc8eee65651cc9086758e41347045777d41c22ba9047ffa33289",
+      "bytes": 10288
+    },
+    {
+      "member": "run/after-168-resume/2.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/2.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/after-168-resume/2.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/2.json.log",
+      "sha256": "4ed7a2e69ef21bdfec1c45ee112602df964deac94ee1dffb634dfd4cde271a81",
+      "bytes": 6833
+    },
+    {
+      "member": "run/after-168-resume/2.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/2.json.playwright.log",
+      "sha256": "3879ae31eb3b0a091bb6b176633dee8278045b061d2b826bd9ef903e516db0c3",
+      "bytes": 6760
+    },
+    {
+      "member": "run/after-168-resume/2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/2.log",
+      "sha256": "cd2db1555e1fb2cdc02ae9a20cfe214a1fa7751f9a4b1baab5d22ba85e62f342",
+      "bytes": 6901
+    },
+    {
+      "member": "run/after-168-resume/3-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/3-native.json",
+      "sha256": "e8b6ff5fc43ca228cdb41fc215302009d220279f8ad821cc4b6cc537992afb45",
+      "bytes": 13055
+    },
+    {
+      "member": "run/after-168-resume/3-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/3-timings.jsonl",
+      "sha256": "d7e782055bb9d562ce7496d2fd76b2840dc7752f7874f57d5259bc9c9be60953",
+      "bytes": 6055
+    },
+    {
+      "member": "run/after-168-resume/3.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/3.json",
+      "sha256": "46598270738104e7377168816c6d3848f0eddf440b2e7e6742b74e9b74627e3b",
+      "bytes": 10288
+    },
+    {
+      "member": "run/after-168-resume/3.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/3.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/after-168-resume/3.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/3.json.log",
+      "sha256": "c70cda28d4acb9c6af3ac3825f70456f7bf0769b16cd2be2c1ea8da4c9472eb7",
+      "bytes": 6846
+    },
+    {
+      "member": "run/after-168-resume/3.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/3.json.playwright.log",
+      "sha256": "aa1681c705223b5d4d1ce22665288fc4d9a66f2b1c042ba5eb75b839ede7600e",
+      "bytes": 6773
+    },
+    {
+      "member": "run/after-168-resume/3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/3.log",
+      "sha256": "6ab60f9814b50bbc01158421da45c2c521f8888fdc99ec754e49c95ed1d7fd51",
+      "bytes": 6914
+    },
+    {
+      "member": "run/after-168-resume/playwright-resource-4a51db1c-8814-4591-8100-5890750c8c44-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resource-4a51db1c-8814-4591-8100-5890750c8c44-cleanup.json",
+      "sha256": "73f38c6b2ef4bfe7612f0416d355139a4da46e099bc9be1e2d224a7b964d2fc7",
+      "bytes": 447
+    },
+    {
+      "member": "run/after-168-resume/playwright-resource-4a51db1c-8814-4591-8100-5890750c8c44-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resource-4a51db1c-8814-4591-8100-5890750c8c44-cleanup.json.intent.json",
+      "sha256": "01eee8e99e845189a89ea3e684eb0f523fbef910513574cdc365efba566c280b",
+      "bytes": 846
+    },
+    {
+      "member": "run/after-168-resume/playwright-resource-cb88ca2e-51c7-419d-bd7b-d536e8e41c93-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resource-cb88ca2e-51c7-419d-bd7b-d536e8e41c93-cleanup.json",
+      "sha256": "9d9855f24d6226f46412a7af0768142b38caec7cddd9e4a68a761c7578b22dc2",
+      "bytes": 447
+    },
+    {
+      "member": "run/after-168-resume/playwright-resource-cb88ca2e-51c7-419d-bd7b-d536e8e41c93-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resource-cb88ca2e-51c7-419d-bd7b-d536e8e41c93-cleanup.json.intent.json",
+      "sha256": "fa53628335bb648e93e192162914ed45130cb178f1067c7ecde9b1896783e029",
+      "bytes": 846
+    },
+    {
+      "member": "run/after-168-resume/playwright-resource-fc864e67-850f-45b3-aff7-2128a0c1920d-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resource-fc864e67-850f-45b3-aff7-2128a0c1920d-cleanup.json",
+      "sha256": "ffbb6c37de3d3922a290e323a93d49bb8b7cc01d707ec445f3f9a37b2a25b18e",
+      "bytes": 447
+    },
+    {
+      "member": "run/after-168-resume/playwright-resource-fc864e67-850f-45b3-aff7-2128a0c1920d-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/playwright-resource-fc864e67-850f-45b3-aff7-2128a0c1920d-cleanup.json.intent.json",
+      "sha256": "2b072c1bb40fb5ef403f6f6d1813df0325f3b6841ca24fc68fec739fa884799e",
+      "bytes": 846
+    },
+    {
+      "member": "run/after-168-resume/samples.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/after-168-resume/samples.json",
+      "sha256": "325292e622ab567548808be8feb59e271038649fb2ca332a1146a87356729b1e",
+      "bytes": 12830
+    },
+    {
+      "member": "run/baseline-164-integrated/node-1-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-164-integrated/node-1-native.json",
+      "sha256": "9fcdb81f066b1c5294e82dd6e82127aefc934d4cbd604a4fa41bad1a707a7a8a",
+      "bytes": 14577
+    },
+    {
+      "member": "run/baseline-164-integrated/node-1.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-164-integrated/node-1.json",
+      "sha256": "97dd29d82f615ae904080556c5d381d47dbc1fc2cb2ed15f83a88e0dfaa24e60",
+      "bytes": 21908
+    },
+    {
+      "member": "run/baseline-164-integrated/node-1.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-164-integrated/node-1.json.tap.log",
+      "sha256": "aa26962e40a82e51a908a7980f48f602e4f38bd887bab979dbb284ee3ad4ce07",
+      "bytes": 7350
+    },
+    {
+      "member": "run/baseline-164-integrated/node-1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-164-integrated/node-1.log",
+      "sha256": "1c81c07f27c7706054c63fd0face0d005f3249d1b4f0ee677466387ecd7e05a0",
+      "bytes": 7746
+    },
+    {
+      "member": "run/baseline-164-integrated/node-2-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-164-integrated/node-2-native.json",
+      "sha256": "975d17aab37839d34bb2d35c7c5ef5a8f37ae7817de05bea0e17d9ab959249ee",
+      "bytes": 14579
+    },
+    {
+      "member": "run/baseline-164-integrated/node-2.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-164-integrated/node-2.json",
+      "sha256": "00dd99af489e4ced4d1effc484a8231926643b47a44ad30a265d2c9ae6eaa0e9",
+      "bytes": 21910
+    },
+    {
+      "member": "run/baseline-164-integrated/node-2.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-164-integrated/node-2.json.tap.log",
+      "sha256": "7e367ec416e6e3fa465c7783934d6f08c876288ee2e86327452ac8492a4f128a",
+      "bytes": 7362
+    },
+    {
+      "member": "run/baseline-164-integrated/node-2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-164-integrated/node-2.log",
+      "sha256": "7ae6683cac4608aa096f22e925febf394a3c8f374cc874c4bdc8ff2046ba8401",
+      "bytes": 7759
+    },
+    {
+      "member": "run/baseline-164-integrated/node-3-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-164-integrated/node-3-native.json",
+      "sha256": "2e9b002c52b8135e595611438d7d6a6bd51e0da0ef4f947252bd77a5121bcaea",
+      "bytes": 14579
+    },
+    {
+      "member": "run/baseline-164-integrated/node-3.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-164-integrated/node-3.json",
+      "sha256": "1629ea84e546cdf56cc974d25468e557aaec87e8b63c71f452d313a534f8a6c4",
+      "bytes": 21910
+    },
+    {
+      "member": "run/baseline-164-integrated/node-3.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-164-integrated/node-3.json.tap.log",
+      "sha256": "fcac4f17d1de91747df8231295f21f54e27c53fc223b1ab608814825de59fdb3",
+      "bytes": 7362
+    },
+    {
+      "member": "run/baseline-164-integrated/node-3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-164-integrated/node-3.log",
+      "sha256": "2e35b76c46b05f4e32e3f79ad793f384c191cac0c52b96fc0c8ef2495b4a1393",
+      "bytes": 7759
+    },
+    {
+      "member": "run/baseline-164-integrated/samples.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-164-integrated/samples.json",
+      "sha256": "38ebefa22602fe692d36a55e8ea0fb45c10eb2e948db183dc3dafc433a51b369",
+      "bytes": 1070
+    },
+    {
+      "member": "run/baseline-manifest.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-manifest.json",
+      "sha256": "f883809076d3cefd0bfdddaac018f03aee74074a2eb587091d51fcfbe8cbcc15",
+      "bytes": 10076
+    },
+    {
+      "member": "run/baseline-pr160/ci-timing.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/ci-timing.json",
+      "sha256": "e56664442ce78c1a5a5739c1e8e5eb12103681d0a583980723926f9df4482387",
+      "bytes": 562
+    },
+    {
+      "member": "run/baseline-pr160/environment.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/environment.log",
+      "sha256": "099800751586ce0a3cc396d68cbbcdd79e6234c5030191e950abae705598f2a6",
+      "bytes": 4140
+    },
+    {
+      "member": "run/baseline-pr160/system-dependencies.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/system-dependencies.log",
+      "sha256": "4ae768de1f1a084cbfa0ac72cf5ca0281bd26ba9d7eff06809ecd99e76bea9aa",
+      "bytes": 41916
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/check.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/check.log",
+      "sha256": "84fc8acdb144ced4d9489783267a192c9df72a8a71d62f4858349b6301f44cd6",
+      "bytes": 597384
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/install.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/install.log",
+      "sha256": "3f3e501e2981d980c9edd5e662cee862812b94084faea02df6125afd233ef62f",
+      "bytes": 305
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/build.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/build.log",
+      "sha256": "2c05d27c4ed8f0467e27e31890a469d54e007871ff8c22e24d0d73d48b47062e",
+      "bytes": 33588
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/playwright-resource-46ccbb76-1188-4519-9d5f-400e0c2091e6-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/playwright-resource-46ccbb76-1188-4519-9d5f-400e0c2091e6-cleanup.json",
+      "sha256": "26d48f432eede3726b8b4248b44b1a0544df16b427798a53bc6ecd77a1c2054e",
+      "bytes": 563
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/playwright-resource-46ccbb76-1188-4519-9d5f-400e0c2091e6-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/playwright-resource-46ccbb76-1188-4519-9d5f-400e0c2091e6-cleanup.json.intent.json",
+      "sha256": "890baa893337c9bffc578dc74a94063fa036acc6cf75ca4597f6a53be25d1390",
+      "bytes": 972
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/playwright-resource-6fc8ec0b-cd3a-40e4-9200-071f42de4286-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/playwright-resource-6fc8ec0b-cd3a-40e4-9200-071f42de4286-cleanup.json",
+      "sha256": "089391a89b5a56e4b7a6c5a8e89eb4ef3d29a66436f2d3afadee2a394825779a",
+      "bytes": 583
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/playwright-resource-6fc8ec0b-cd3a-40e4-9200-071f42de4286-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/playwright-resource-6fc8ec0b-cd3a-40e4-9200-071f42de4286-cleanup.json.intent.json",
+      "sha256": "fc390e3bf4bfcb660a4b4ed37f6c3786db6b40af7e5c50baf72e19f247ef5b24",
+      "bytes": 992
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/summary.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/summary.json",
+      "sha256": "996dc2d3a1fad28f1f79971deb672a7bf4d4fe5f756e4fe3c8f4caab80850987",
+      "bytes": 8383
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-environment-tests-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-environment-tests-native.json",
+      "sha256": "88269006712cb28a315e8f57f8946c1d54903a823b159f81b20138bda2d90324",
+      "bytes": 71181
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-environment-tests.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-environment-tests.json",
+      "sha256": "dbe9d92d926098e87a37bd82bf36f94f3b83e24f5079285dcae4782a7bfabcf8",
+      "bytes": 70100
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-environment-tests.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-environment-tests.json.tap.log",
+      "sha256": "327880503ecd23a9e89c5e40174d8781455725cd56e8d716a7982887ccf873d4",
+      "bytes": 38170
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-environment.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-environment.log",
+      "sha256": "0e8bb7906870e43c11c74dd797ee60467505a7e0a91f4f338751a6da1c8ae885",
+      "bytes": 38647
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows-tests-node-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows-tests-node-native.json",
+      "sha256": "295e56fb1dd5e3ad6a794d6e99af6167128855301d1baceb540ec93ba2b8a439",
+      "bytes": 17334
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows-tests-node.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows-tests-node.json",
+      "sha256": "70b11ee7ad3b7528294db5c0ec4717048db774ef188d5d2363441feb643fd7d2",
+      "bytes": 23595
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows-tests-node.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows-tests-node.json.tap.log",
+      "sha256": "e1b56023a1e61dbe52a3ff696b5bbe05b33b73eb02df0a6efff4e666670c6b3b",
+      "bytes": 25160
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows-tests-playwright-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows-tests-playwright-native.json",
+      "sha256": "cb014daafbb65e4625b9640e80f905bc4c8a20e9ddf3f4de110d231b9cf4020c",
+      "bytes": 39412
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows-tests-playwright.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows-tests-playwright.json",
+      "sha256": "3a274b807e659ed83872bc92f5bafae3332373dd705c44939466c8c4be20239e",
+      "bytes": 15260
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows-tests-playwright.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows-tests-playwright.json.playwright.log",
+      "sha256": "a391fe25071eef49569c6d13e1bccddbd315bf69439aa662753a218904581f80",
+      "bytes": 20393
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows-tests.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows-tests.json",
+      "sha256": "95a936cd6649837fa8c1bd7db5d4343be943ceb790de3eb3b372ba282a29fbdc",
+      "bytes": 74211
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-rows.log",
+      "sha256": "7b23b69e5f37a1c5c4703e732d238a82bebb30fec2ed77cfe270832e35d1bb52",
+      "bytes": 46328
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-tooling-executed-tests-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-tooling-executed-tests-native.json",
+      "sha256": "7d3ce860660af8c462cee9f2a6bc92e2045e886c3d82c7a8cde9ef369a31418b",
+      "bytes": 133163
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-tooling-executed-tests.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-tooling-executed-tests.json",
+      "sha256": "a4d160bf094e8ecde5d5cb9c03ef680f53dd27b14baa7bd76af93826df97851b",
+      "bytes": 125124
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-tooling-executed-tests.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-tooling-executed-tests.json.tap.log",
+      "sha256": "fb4b0974bca116ac4b8bc68042683d9074bc469dc9bc6ccd1cd5823cbb7571a7",
+      "bytes": 112588
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-tooling-tests.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-tooling-tests.json",
+      "sha256": "2f8606828b3fce4a22a31b56b9ed151f00deeb95b9c0525462737a1134a17174",
+      "bytes": 180055
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-tooling.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/test-tooling.log",
+      "sha256": "ca10c2a69db98f2a384db92014dbeb78a7b37ed27d2cb34f45eb286b45271db1",
+      "bytes": 113730
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/typecheck.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/preflight/typecheck.log",
+      "sha256": "f1339e010535056c985f23d4bb419e1231bc77cfdf9a63bba09f50f39c6a970d",
+      "bytes": 79
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/stage-proof-1.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/stage-proof-1.json",
+      "sha256": "99147279f1875cca531306478b9e92ffbcf67e27b9a6293055272864f89ca651",
+      "bytes": 4073
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/stage-proof-2.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/stage-proof-2.json",
+      "sha256": "77f916fa159562353411a883d80792e9e3c17dbdc59f213dd7eee4da043a730b",
+      "bytes": 4738
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/stage-proof-3.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/stage-proof-3.json",
+      "sha256": "6eec71b720d8fbbd6a6582e832cab4d17be494bcfc7981fa55aaba353f36a740",
+      "bytes": 5104
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/stage-proof-4.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/stage-proof-4.json",
+      "sha256": "ca6c2973a45bb79b1de06d38cb307bf39f1d2c1d906c77d6e34d5ee8bf4668e4",
+      "bytes": 5656
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/stage-proof-5.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/stage-proof-5.json",
+      "sha256": "5afa85da0d11f3ed49d8744b669594653a3be58cb9345e2dc7c8f3f7282b8e4d",
+      "bytes": 10815
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/stage-proof-6.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/stage-proof-6.json",
+      "sha256": "8ad3cb93c14d4cdabf1e66572db74ff0b13e366d5205a59d25fd4b0fa5e7373e",
+      "bytes": 4057
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/summary.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/summary.json",
+      "sha256": "66c241fff244085da97dd4a602fc1ecc09a9f3de8491700797434b9afc2686c7",
+      "bytes": 23206
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-node-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-node-native.json",
+      "sha256": "f4c5a595e4bddf78f9c09b83b03c662b66be8ab18c706afb31383a2ca3411fc8",
+      "bytes": 586018
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-node.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-node.json",
+      "sha256": "eeeef4782007495320592aabb07f2258d95e092ce4039248742481c82b588d6e",
+      "bytes": 526286
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-node.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-node.json.tap.log",
+      "sha256": "accb7e5f2f5d27a1587abb304d695a95d93a46dba3da9cb6cc5f5920e068f66d",
+      "bytes": 348696
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-playwright-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-playwright-native.json",
+      "sha256": "475f247064a24da41a64b7f95cee63c98aaffd0bc88f9e5045d7d210523cdc9c",
+      "bytes": 20613
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-playwright.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-playwright.json",
+      "sha256": "a3c4420e29ffb7d5fd334ae987a63a288c24f6cf43e2bacc223dcfb6c527eb5d",
+      "bytes": 12317
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-playwright.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-playwright.json.playwright.log",
+      "sha256": "c409fe22c1e3f55c9ba2296152f02dcdd2918e60a9ee1d3a0a091e831982ee5a",
+      "bytes": 7630
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-vitest-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-vitest-native.json",
+      "sha256": "b8d26e3893793533cf5be3b30895c605d47c5c57967d60045caa05c1fa02dd52",
+      "bytes": 15527
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-vitest-native.json.vitest.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-vitest-native.json.vitest.json",
+      "sha256": "df22c89885577d59cf11b36ed40959cc996e3d264facdeea064b5757ec7b3d1d",
+      "bytes": 8079
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-vitest.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-vitest.json",
+      "sha256": "3b69a180662898fb36f4ba35d0e3157dd8d99166acb7c73c1ecba44fee690043",
+      "bytes": 21827
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-vitest.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests-vitest.json.log",
+      "sha256": "1e57577291558af859e60508327af70fd9c15899ef98e37130d489c3ca634219",
+      "bytes": 1971
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-executed-tests.json",
+      "sha256": "ab5854c4ed6a1192a56383b334c9c8a2db855248994b70779c97b420f09037ee",
+      "bytes": 1172942
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-tests.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test-tests.json",
+      "sha256": "3e031bcb0ad793591088134985ef229781298d4a19e9508c4728b78a063c6d19",
+      "bytes": 741179
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/source/logs/check/2026-10-18T04-02-39.838Z-4170/test.log",
+      "sha256": "aae1b6870d6565ca7b8c080047fe08a9ac639008ea42d8afcab0a0ac086a1712",
+      "bytes": 364482
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/summary.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/summary.json",
+      "sha256": "e16a9e97d582a12c2d424a4214df4d523bcb6bc2bb2fa5dc2e4421825f0c32fa",
+      "bytes": 22576
+    },
+    {
+      "member": "run/baseline-pr160/verify/run-4gUAgz/worker.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-pr160/verify/run-4gUAgz/worker.log",
+      "sha256": "a1af15cf5b344b2ee6084cb57a0944b6c709edfda0fd2d5214edb56e6de02cfd",
+      "bytes": 597769
+    },
+    {
+      "member": "run/baseline-push160/ci-timing.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/ci-timing.json",
+      "sha256": "165127ad586c7f7562f8e33a68198a3bcbf6e8d9dcdaa39f1d5223b9b1ee5c38",
+      "bytes": 570
+    },
+    {
+      "member": "run/baseline-push160/environment.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/environment.log",
+      "sha256": "099800751586ce0a3cc396d68cbbcdd79e6234c5030191e950abae705598f2a6",
+      "bytes": 4140
+    },
+    {
+      "member": "run/baseline-push160/system-dependencies.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/system-dependencies.log",
+      "sha256": "46eda2c76ff09be97427b3d31535908a54d85ab85efbb826e999e5eb2730b74b",
+      "bytes": 41916
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/check.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/check.log",
+      "sha256": "abd8d235405eec4f3e0a66fce5c1a47b31a97ee460adfd0d2a8b0d7afd78c162",
+      "bytes": 597201
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/install.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/install.log",
+      "sha256": "c274db8f53dfe038a74e00682453c03b3e3fdf7e207a7c101699ac2e81a5a3c4",
+      "bytes": 305
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/build.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/build.log",
+      "sha256": "13782eadc3ecce73b807dc9bf2786daf9b1745c45d72016e5b3686fd75c3ba07",
+      "bytes": 33588
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/playwright-resource-2e0065ee-bef0-4bba-be42-0d5632515d4d-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/playwright-resource-2e0065ee-bef0-4bba-be42-0d5632515d4d-cleanup.json",
+      "sha256": "f79098879ce68e5904a27c1bec4358bd6217c1f8528c66732946c9218eb8fb23",
+      "bytes": 563
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/playwright-resource-2e0065ee-bef0-4bba-be42-0d5632515d4d-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/playwright-resource-2e0065ee-bef0-4bba-be42-0d5632515d4d-cleanup.json.intent.json",
+      "sha256": "87decd7a49c98c7316bc7be07fecf83456119dcda541e6a372eeb4f771908b31",
+      "bytes": 972
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/playwright-resource-e4950d72-53f2-4d76-a2e3-ec5b60306b67-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/playwright-resource-e4950d72-53f2-4d76-a2e3-ec5b60306b67-cleanup.json",
+      "sha256": "b5f97edc2df54655d0cedb8718dfbeadd004ae6e56e5261bea9837f2474c9f0b",
+      "bytes": 583
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/playwright-resource-e4950d72-53f2-4d76-a2e3-ec5b60306b67-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/playwright-resource-e4950d72-53f2-4d76-a2e3-ec5b60306b67-cleanup.json.intent.json",
+      "sha256": "cc51128c8b0e1fca03e886c5561e41f16b0896cc445822ae7f2ed21bb263bf84",
+      "bytes": 992
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/summary.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/summary.json",
+      "sha256": "787af24fe11add4e379c2c8a1bdebaf1ea615626beae504e1eccdee0f73e9aa6",
+      "bytes": 8383
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-environment-tests-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-environment-tests-native.json",
+      "sha256": "1ad8b0bea64fcd5f76bd4edec5626056974855f9e6a0cd4e18bb4bd97dddc0bd",
+      "bytes": 71179
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-environment-tests.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-environment-tests.json",
+      "sha256": "e15acfb967014085a1c5831933f01a79384a9050c722e373fa20a55410426935",
+      "bytes": 70098
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-environment-tests.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-environment-tests.json.tap.log",
+      "sha256": "7ee9a2507a880aefd5b27dceec2c65155c896369975e32e571c982c19ab3978d",
+      "bytes": 38168
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-environment.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-environment.log",
+      "sha256": "a1d9c56b3b6cd6dbd342f9fa2c222e4bfa056e9b399a356d9836879f4395caed",
+      "bytes": 38645
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows-tests-node-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows-tests-node-native.json",
+      "sha256": "6ca8379798a54365c150cd0429825318d629738e42944694d6a65cb1b9b0c2ce",
+      "bytes": 17333
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows-tests-node.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows-tests-node.json",
+      "sha256": "5b7cfeb8b275841350d836806d81333f991bd1d8424a77d18f5bcd7e85c85ec9",
+      "bytes": 23594
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows-tests-node.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows-tests-node.json.tap.log",
+      "sha256": "447e83f3eb19148ecceae79f8ea6ee798839a05a728710eafbb0f626ec863f12",
+      "bytes": 25211
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows-tests-playwright-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows-tests-playwright-native.json",
+      "sha256": "317902a6005628dddd64fdd565042b769742e4b4acafdf35f07cd56a12ee1967",
+      "bytes": 41411
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows-tests-playwright.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows-tests-playwright.json",
+      "sha256": "958a1211b5ccd875e1048077aba1f8c9c210c0561a68f6c8ebddeaf8ed0657ea",
+      "bytes": 15260
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows-tests-playwright.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows-tests-playwright.json.playwright.log",
+      "sha256": "0a09fdfa3d4d20d968b8387fc08f30f24840b614a49f97c2540da3783d71be2e",
+      "bytes": 20427
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows-tests.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows-tests.json",
+      "sha256": "e82e6be50fc579bb0861c1057bf658f4e7c57e5c6e7bdc252e65a31b62fa00d7",
+      "bytes": 74209
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-rows.log",
+      "sha256": "39934ccc75e939fa7729df471358c28af1064d639f2a00fc89d311b39f0a3ec6",
+      "bytes": 46413
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-tooling-executed-tests-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-tooling-executed-tests-native.json",
+      "sha256": "4a76b1c192da656e29d5b226d4c5baa4070688ef72dbf761a86aa539c41cad53",
+      "bytes": 133158
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-tooling-executed-tests.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-tooling-executed-tests.json",
+      "sha256": "ab7881bbf0c46d45123ff701c5d58872dea2c50b287f4b5ae316133f010b4704",
+      "bytes": 125119
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-tooling-executed-tests.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-tooling-executed-tests.json.tap.log",
+      "sha256": "812b69d10dc0c2a0992cb4b0b2fa1a7c7bf4b305201cca3ce509b615c8b3efb5",
+      "bytes": 112593
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-tooling-tests.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-tooling-tests.json",
+      "sha256": "ef78fabd6d7104da0eba7dc8d75f6c251d54cb60e8c25532203bb271ea838873",
+      "bytes": 180048
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-tooling.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/test-tooling.log",
+      "sha256": "5b9fbdaaa3cfd72ecb048d3e5ff8804dc8a3a9e7596d5ea0753d603b2581266a",
+      "bytes": 113735
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/typecheck.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/preflight/typecheck.log",
+      "sha256": "f1339e010535056c985f23d4bb419e1231bc77cfdf9a63bba09f50f39c6a970d",
+      "bytes": 79
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/stage-proof-1.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/stage-proof-1.json",
+      "sha256": "0f0f092255f2e2dc56b68a4082be982d1bb8916175a8952f81b113dcc6f75716",
+      "bytes": 4073
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/stage-proof-2.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/stage-proof-2.json",
+      "sha256": "3a647a5f868e525a1007db09c954507fdc513c07013008526f9876c2eedc4236",
+      "bytes": 4738
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/stage-proof-3.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/stage-proof-3.json",
+      "sha256": "cb87482afaa09a1ebb521503801100c61d057a34233c13ec67868b3cf5c1cdd5",
+      "bytes": 5104
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/stage-proof-4.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/stage-proof-4.json",
+      "sha256": "8e6480848e91fd0309e52b43f23b41103ddd4b89aea8e66c78836d16b0b1c6b5",
+      "bytes": 5656
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/stage-proof-5.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/stage-proof-5.json",
+      "sha256": "9020ce96da6bf00f1fb0506bab5477683825dca078b87f3ab7feb23e0e07fb18",
+      "bytes": 10815
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/stage-proof-6.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/stage-proof-6.json",
+      "sha256": "23a59742765bbc73dc76e81aba3e93def398df222951ffc011e7b20b8930b3d1",
+      "bytes": 4057
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/summary.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/summary.json",
+      "sha256": "2876a907a5c8e1962d432fa45d47c319a4670f6b644965ab8fc4772964496089",
+      "bytes": 23206
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-node-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-node-native.json",
+      "sha256": "d0fa63e0373c55a521500e96be7760b315e2d45909e2e4b1f09360d959d02bce",
+      "bytes": 586001
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-node.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-node.json",
+      "sha256": "23bd30527454f9a4bd7b04d8b78e728577a823469104a969547bcc020324fa76",
+      "bytes": 526269
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-node.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-node.json.tap.log",
+      "sha256": "7bb4789f96fbf1a279ec5a36c8079c06b6ccaa675c227185778339d38a0c508b",
+      "bytes": 348411
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-playwright-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-playwright-native.json",
+      "sha256": "a022f7246c0bb29641e61d43675a2dc20a9b2059e759426c06c93aeb27d6973a",
+      "bytes": 22592
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-playwright.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-playwright.json",
+      "sha256": "e21f5908a3b367e1c61353b1793fbabfc683559946198eade44ad7b7ad038da7",
+      "bytes": 12317
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-playwright.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-playwright.json.playwright.log",
+      "sha256": "6bf284b27cef1ae002541a8c9d0457caa377c78ce5dbedef1534b309676c535d",
+      "bytes": 7644
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-vitest-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-vitest-native.json",
+      "sha256": "4557e22e860386222bc6a16a08c6de7db049594f91b0ebdd628c51b7c0f9c70c",
+      "bytes": 15530
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-vitest-native.json.vitest.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-vitest-native.json.vitest.json",
+      "sha256": "7cd636c37a5ec425a857372773f386d0b6526c240b1d3238e5a4aa1ecf31205b",
+      "bytes": 8081
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-vitest.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-vitest.json",
+      "sha256": "10f511d5e964cf9d56455e8bb66810ff0294b77ae3e4ba558015572fbdef6d80",
+      "bytes": 21830
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-vitest.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests-vitest.json.log",
+      "sha256": "c68c6d2df86d31ed478de336e17ddae459ab03894d87d45540080bbb3a7f5015",
+      "bytes": 1971
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-executed-tests.json",
+      "sha256": "9fdce6d06d8fcd80312b05ccaa565b3bff092ab69defd05ef82eb2f2ffb62443",
+      "bytes": 1172914
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-tests.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test-tests.json",
+      "sha256": "20e91564e0c6ddefca407142fc9a55596a74ff16cdb3ea41a3bc8c9ce31174e0",
+      "bytes": 741157
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/source/logs/check/2026-10-18T04-02-34.627Z-4116/test.log",
+      "sha256": "0e926fe2cdac4b93ee7b509c5230462ae2e21e1c0c578afcb5d2aefa1a6ca669",
+      "bytes": 364211
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/summary.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/summary.json",
+      "sha256": "7b681c51f70539820a0966de8b53a6ba80d61f26b97cfbda1ca99ca0946b0f5e",
+      "bytes": 22576
+    },
+    {
+      "member": "run/baseline-push160/verify/run-ANU6m2/worker.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/baseline-push160/verify/run-ANU6m2/worker.log",
+      "sha256": "9bdc16f93d851e899b1dfef8cfc82503ea81992a91b628b4040a3718502b041d",
+      "bytes": 597586
+    },
+    {
+      "member": "run/before-168/1-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/1-native.json",
+      "sha256": "258993e340483a82228b17c3d0e84acbc31cbbc2115983c60956ccb180e1d1db",
+      "bytes": 2778
+    },
+    {
+      "member": "run/before-168/1.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/1.json",
+      "sha256": "10b03176d90fbf740b52eab2cfafe6cd1703526573fae97c41b720926bc69413",
+      "bytes": 10260
+    },
+    {
+      "member": "run/before-168/1.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/1.json.tap.log",
+      "sha256": "1c152c4737ee14a0cd4438ee04fb849a4fa21cd7e1c707b02acef659d9d0d4c2",
+      "bytes": 3309
+    },
+    {
+      "member": "run/before-168/1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/1.log",
+      "sha256": "3ff38165dcb9f534df4ee60f6904a969e24dac2e18a23c3a104810bf1ba047cd",
+      "bytes": 3635
+    },
+    {
+      "member": "run/before-168/2-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/2-native.json",
+      "sha256": "0d4713c87d4c8b6603dad771a5cfa0094554eb52ae39734f82ffce67f06ae250",
+      "bytes": 2778
+    },
+    {
+      "member": "run/before-168/2.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/2.json",
+      "sha256": "f0f35d34e9e98b9d3eab58a75250e9bd2877cad0f5739db6dc095e3f227bfe1e",
+      "bytes": 10260
+    },
+    {
+      "member": "run/before-168/2.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/2.json.tap.log",
+      "sha256": "2ccad5c178c009a2aaf9ee0dbad2fbc2f2a2cbd87afadb070875d48438e06120",
+      "bytes": 3311
+    },
+    {
+      "member": "run/before-168/2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/2.log",
+      "sha256": "ec0149dd110c0701be37db5049376ee1064cfbe5ef1e0ee02ca00e107c04a08e",
+      "bytes": 3638
+    },
+    {
+      "member": "run/before-168/3-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/3-native.json",
+      "sha256": "74d416950cc1337920d8ce9df3df15beff33aeea9a1c193a06e90cc031c4ae48",
+      "bytes": 2778
+    },
+    {
+      "member": "run/before-168/3.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/3.json",
+      "sha256": "304c9e9d4e9d1c5524d9514749f286711c96c8cf375b3a295b83466c74fd7bf5",
+      "bytes": 10260
+    },
+    {
+      "member": "run/before-168/3.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/3.json.tap.log",
+      "sha256": "9571e37d6862008ab804d8dd7e2d555eb2ef5f169934defe5abbbd663abb4668",
+      "bytes": 3303
+    },
+    {
+      "member": "run/before-168/3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/3.log",
+      "sha256": "8cd8aa0a9ec05154a1759048e1ef06f066a7a01b3bf6fe8f6886bbe8241526f0",
+      "bytes": 3631
+    },
+    {
+      "member": "run/before-168/4-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/4-native.json",
+      "sha256": "5d67a47a809c30dd131baa4c9e2cc025825b07fefca2b4e8b817d818a9523699",
+      "bytes": 2778
+    },
+    {
+      "member": "run/before-168/4.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/4.json",
+      "sha256": "2bd254acff908aae4915e25b8ef1b37189b7dba25ef4e770a65be6b71b018008",
+      "bytes": 10260
+    },
+    {
+      "member": "run/before-168/4.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/4.json.tap.log",
+      "sha256": "f7fda68b9cf7f564d9a2a8f76959f4d64d6d1bad64a4475b9c17fe1fb2581138",
+      "bytes": 3303
+    },
+    {
+      "member": "run/before-168/4.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/4.log",
+      "sha256": "ad364491a5c471836c0be0b202d95de53ff80bbe90603c78ea5653e3ba7d3689",
+      "bytes": 3629
+    },
+    {
+      "member": "run/before-168/samples.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/before-168/samples.json",
+      "sha256": "4c6e5d861cf47a8deac0f98becba522f99ad97e11a7db51983d4016a6719df56",
+      "bytes": 1270
+    },
+    {
+      "member": "run/lifecycle-170/acceptance-map-draft.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/acceptance-map-draft.json",
+      "sha256": "d936bd6a4037049485e3140f62eb45a17aeb3b1945c216a6f985ac0e90ccf3d9",
+      "bytes": 3388
+    },
+    {
+      "member": "run/lifecycle-170/after/1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/after/1.log",
+      "sha256": "3502692220d6a9865e35ce600d0a08d8b7eba10e4e078991d1393a7ff1038570",
+      "bytes": 2255
+    },
+    {
+      "member": "run/lifecycle-170/after/2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/after/2.log",
+      "sha256": "6dfd48e59db86ffec54f05d0c9e446e5fedae47533be0b05f007dea754e3ba12",
+      "bytes": 2254
+    },
+    {
+      "member": "run/lifecycle-170/after/3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/after/3.log",
+      "sha256": "24529b1119e375fc0da4ec2d05014e589d3c8e2d7dc3c716408a8d01b4464df2",
+      "bytes": 2254
+    },
+    {
+      "member": "run/lifecycle-170/after/samples.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/after/samples.json",
+      "sha256": "39c214ca0e22ae641665e2da1b6cbca7a25dc10e3077306004c595cb23029456",
+      "bytes": 1349
+    },
+    {
+      "member": "run/lifecycle-170/after-envelope.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/after-envelope.json",
+      "sha256": "13eebab8ce8ac166c110f7eae80e727784e3543877b4566f8067cdb08218e006",
+      "bytes": 394
+    },
+    {
+      "member": "run/lifecycle-170/after-observe.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/after-observe.json",
+      "sha256": "5001d70d32986988c1771928316cc157f114a695e3ad0f8f67305c34abacb84c",
+      "bytes": 1113
+    },
+    {
+      "member": "run/lifecycle-170/before/1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/before/1.log",
+      "sha256": "1cbff16a23a8d87ed22b924c910647b8d6f876c146cf165973081351c8438f29",
+      "bytes": 2257
+    },
+    {
+      "member": "run/lifecycle-170/before/2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/before/2.log",
+      "sha256": "387c8c4ac068c4b1021df3e8b55c91c91896cbf05e412462df2e28cd3ccf0d4b",
+      "bytes": 2256
+    },
+    {
+      "member": "run/lifecycle-170/before/3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/before/3.log",
+      "sha256": "48dff4d8d753ec276422a0bdc6cf422d790a3cd1bb0c55588f452fdf4f9a8cd9",
+      "bytes": 2255
+    },
+    {
+      "member": "run/lifecycle-170/before/coverage.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/before/coverage.json",
+      "sha256": "9ece843be0878d4e0af1752fb4fb202da5a9aaf6f96630fe818f6fec5fa40aef",
+      "bytes": 1626
+    },
+    {
+      "member": "run/lifecycle-170/before/samples.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/before/samples.json",
+      "sha256": "737db2cb6e134b4248d150badcfeaaf4b7130e625b4f407b94702504f558966a",
+      "bytes": 1350
+    },
+    {
+      "member": "run/lifecycle-170/before-envelope.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/before-envelope.json",
+      "sha256": "c4ab488fcb21fdb84c2b409dece33068cf94b7745af8acfde8f780522acbaf26",
+      "bytes": 395
+    },
+    {
+      "member": "run/lifecycle-170/before-observe.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/before-observe.json",
+      "sha256": "14a92aa3b9a43849b5ab198d95f135cd8beb9b59861f2ba3c0015e42db20a307",
+      "bytes": 665
+    },
+    {
+      "member": "run/lifecycle-170/before-observe2.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/before-observe2.json",
+      "sha256": "ab4daeda47bc6f601b71b8d6f83f58f15eb27024589202b860411c440cbc1805",
+      "bytes": 889
+    },
+    {
+      "member": "run/lifecycle-170/evidence-index.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/evidence-index.json",
+      "sha256": "bdad49cbb9306d2a34e28c632a49bb09be7228a32a460f99ac8dadb80c14caf4",
+      "bytes": 2987
+    },
+    {
+      "member": "run/lifecycle-170/green.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/green.log",
+      "sha256": "913fb9eed4801f1057284865fdcfa04feaa43c8743e81ffe838af10439bff8be",
+      "bytes": 356
+    },
+    {
+      "member": "run/lifecycle-170/measure.py",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/measure.py",
+      "sha256": "64a77b29d99ab2a16ef2fae0a8b282093eba3580e18d3e4688362bd1f7f0eaf1",
+      "bytes": 1147
+    },
+    {
+      "member": "run/lifecycle-170/per-entry-timings.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/per-entry-timings.json",
+      "sha256": "b0848838102be0e4a81090b45a0b3f1b48c71a755a8d49a603130b9e86c2cfec",
+      "bytes": 3645
+    },
+    {
+      "member": "run/lifecycle-170/raw-reports/1792303701374-714216-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/raw-reports/1792303701374-714216-native.json",
+      "sha256": "0f3a11215ba535ec49ea1cb816fbeadbd5696e3cf05e86fe12a601b88453e990",
+      "bytes": 90130
+    },
+    {
+      "member": "run/lifecycle-170/raw-reports/1792303701374-714216.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/raw-reports/1792303701374-714216.json",
+      "sha256": "672d05c8cc73e5e96e272ee61977b088a22876d4f50288f46dfad883f06796b0",
+      "bytes": 87981
+    },
+    {
+      "member": "run/lifecycle-170/raw-reports/1792303701374-714216.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/raw-reports/1792303701374-714216.json.tap.log",
+      "sha256": "a300ae06ed36cda1fe79463d063daad37caf60d14f0695ff3bcc7f6390d386d4",
+      "bytes": 44413
+    },
+    {
+      "member": "run/lifecycle-170/red.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/red.log",
+      "sha256": "2c578327e8cfc281bac2eacfced0b944246df39f2f1904948f4b768f69d827cd",
+      "bytes": 1143
+    },
+    {
+      "member": "run/lifecycle-170/regression-envelope.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/regression-envelope.json",
+      "sha256": "fd2bab850cab8acd6c684718d9405aa595a7d5e26d106046497402021f70ad96",
+      "bytes": 391
+    },
+    {
+      "member": "run/lifecycle-170/regression-observe.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/regression-observe.json",
+      "sha256": "53c4b895135d6541d8ba6c3cc7ee7f7bfcb9e4dcfbd4a5ea7b3ba574528a3cb9",
+      "bytes": 423
+    },
+    {
+      "member": "run/lifecycle-170/regression.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/regression.log",
+      "sha256": "a9a1b7135c5840419717db0a635f572376240f7fdb717a31a3dfdb071f357049",
+      "bytes": 44826
+    },
+    {
+      "member": "run/lifecycle-170/typecheck-envelope.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/typecheck-envelope.json",
+      "sha256": "5b7df8fa79d840bca9fc2a71537c94ba6014dd08e6b7b3e075545e9d2035a942",
+      "bytes": 360
+    },
+    {
+      "member": "run/lifecycle-170/typecheck-observe.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/typecheck-observe.json",
+      "sha256": "6a8d1f185fb46733e1497178f62f9585659a67e401d13b4cce8849ec91b63efc",
+      "bytes": 414
+    },
+    {
+      "member": "run/lifecycle-170/typecheck.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/lifecycle-170/typecheck.log",
+      "sha256": "f1339e010535056c985f23d4bb419e1231bc77cfdf9a63bba09f50f39c6a970d",
+      "bytes": 79
+    },
+    {
+      "member": "run/measure-165-after/1-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/1-native.json",
+      "sha256": "d6aec137262dbc9be78fe6024c0c2a3f3871193930e3c4513937f094fbf793e2",
+      "bytes": 13271
+    },
+    {
+      "member": "run/measure-165-after/1-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/1-timings.jsonl",
+      "sha256": "0d24a290a175b7f591e0ae1e99681fd819d4da572fcbd3da5a0b318e80fd71a1",
+      "bytes": 6064
+    },
+    {
+      "member": "run/measure-165-after/1.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/1.json",
+      "sha256": "7cd40ea6082d4aee27c608cec5cb88409689e51ee235c9662cbc86a486d9d2a5",
+      "bytes": 10235
+    },
+    {
+      "member": "run/measure-165-after/1.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/1.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/measure-165-after/1.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/1.json.log",
+      "sha256": "39ff9e7ad0c9311d344a512c9562640a1626f000518537014caa4bc3d606638d",
+      "bytes": 6836
+    },
+    {
+      "member": "run/measure-165-after/1.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/1.json.playwright.log",
+      "sha256": "642ebecd73b7b315bee6cc5596b5798fac00d9dc486de49b8d4e260dbfde31e6",
+      "bytes": 6769
+    },
+    {
+      "member": "run/measure-165-after/1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/1.log",
+      "sha256": "1ab92998b87cbc55effda3175ec36a74f79803a6e7a14afb18d571d44cbf5e1f",
+      "bytes": 6898
+    },
+    {
+      "member": "run/measure-165-after/2-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/2-native.json",
+      "sha256": "10aa00c6c88e155d47d956336c018bcf306b2b2a31e2c60d630106665e19d818",
+      "bytes": 13298
+    },
+    {
+      "member": "run/measure-165-after/2-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/2-timings.jsonl",
+      "sha256": "8de25cc58bbd4ed60b5200d8bdca280aa58d7d4f398bd5cfa9233ab30619084d",
+      "bytes": 6091
+    },
+    {
+      "member": "run/measure-165-after/2.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/2.json",
+      "sha256": "4235145a7a9c00cbef235b3e9ce49f9d8419e182c9221f4a916a6c705b212305",
+      "bytes": 10235
+    },
+    {
+      "member": "run/measure-165-after/2.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/2.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/measure-165-after/2.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/2.json.log",
+      "sha256": "544eb6c7c87ae0950e33f6c1d78e90daf0489b13cfd060970397032d57dd41ac",
+      "bytes": 6863
+    },
+    {
+      "member": "run/measure-165-after/2.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/2.json.playwright.log",
+      "sha256": "bd5c9232e5e2eb5e9fecade983dd010ce8333f71999241070ef129be40a2ee54",
+      "bytes": 6796
+    },
+    {
+      "member": "run/measure-165-after/2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/2.log",
+      "sha256": "08896e6e1707e92581ebe6a854f8ef05bafc82b1ecd81644ddf97205982c5282",
+      "bytes": 6925
+    },
+    {
+      "member": "run/measure-165-after/3-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/3-native.json",
+      "sha256": "5f93356309e190403676b75ee6ebd9ce470d98d57f3b9293786c23f3f20ab4e4",
+      "bytes": 13266
+    },
+    {
+      "member": "run/measure-165-after/3-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/3-timings.jsonl",
+      "sha256": "61456cd305a67011a1d013daee2bef95656bcae94b6766fe9d1bb4a1e2b8e4ec",
+      "bytes": 6059
+    },
+    {
+      "member": "run/measure-165-after/3.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/3.json",
+      "sha256": "02aa0751a4178d85fc5cde15a90c54a45139cbe86d41bb25e5c06d38824b8cc8",
+      "bytes": 10235
+    },
+    {
+      "member": "run/measure-165-after/3.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/3.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/measure-165-after/3.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/3.json.log",
+      "sha256": "d9d094320567477b3a13ffafb46473424f2918b43c1b98cd2d9feba9490459f7",
+      "bytes": 6831
+    },
+    {
+      "member": "run/measure-165-after/3.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/3.json.playwright.log",
+      "sha256": "25fdc23e8d3b6dbf9d631814da2755fc4d0ae9b24ecff163f7e67c2a697134b4",
+      "bytes": 6764
+    },
+    {
+      "member": "run/measure-165-after/3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/3.log",
+      "sha256": "fc086f6e827cbfdb6ab8241db4b1645201fea0fc59a086d02bc777624bb469d0",
+      "bytes": 6893
+    },
+    {
+      "member": "run/measure-165-after/playwright-resource-19f8caf1-1fd3-4976-81d9-d25bddfbeb5d-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/playwright-resource-19f8caf1-1fd3-4976-81d9-d25bddfbeb5d-cleanup.json",
+      "sha256": "9f06dd718400ec929f373682c8ee2cd1660fc554a49bb1d0ea959681bf8cf3b1",
+      "bytes": 449
+    },
+    {
+      "member": "run/measure-165-after/playwright-resource-19f8caf1-1fd3-4976-81d9-d25bddfbeb5d-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/playwright-resource-19f8caf1-1fd3-4976-81d9-d25bddfbeb5d-cleanup.json.intent.json",
+      "sha256": "47194927aeee5ed912725605a5b1478c852eb683163b472fb148449f43ffe72d",
+      "bytes": 904
+    },
+    {
+      "member": "run/measure-165-after/playwright-resource-794221ff-8e43-42cf-bdb8-f4df1109f774-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/playwright-resource-794221ff-8e43-42cf-bdb8-f4df1109f774-cleanup.json",
+      "sha256": "44c6562286fd9b39b0eec56787ca2a67635430e1cd56ae2377c99c02583b33e6",
+      "bytes": 449
+    },
+    {
+      "member": "run/measure-165-after/playwright-resource-794221ff-8e43-42cf-bdb8-f4df1109f774-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/playwright-resource-794221ff-8e43-42cf-bdb8-f4df1109f774-cleanup.json.intent.json",
+      "sha256": "756d9f79e8a04b3332f64769f8567b1ebb32b6fa3c182e1189a13ce32af54ca0",
+      "bytes": 904
+    },
+    {
+      "member": "run/measure-165-after/playwright-resource-fd3e7297-5f35-4f1c-aad2-986e00d28b00-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/playwright-resource-fd3e7297-5f35-4f1c-aad2-986e00d28b00-cleanup.json",
+      "sha256": "f35835e6745e80aadc64d52bcb2560912db864f6d57349361b3d4c2936eb7eaf",
+      "bytes": 449
+    },
+    {
+      "member": "run/measure-165-after/playwright-resource-fd3e7297-5f35-4f1c-aad2-986e00d28b00-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/playwright-resource-fd3e7297-5f35-4f1c-aad2-986e00d28b00-cleanup.json.intent.json",
+      "sha256": "2c0c2e2acc7539887985e81f3fc7fd79073976fb1441576b9f268f8adb466c29",
+      "bytes": 904
+    },
+    {
+      "member": "run/measure-165-after/results.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-after/results.json",
+      "sha256": "aab0313ac6e189593dea9ec1217a5b98b373992b853acdf7fa75d003e537468d",
+      "bytes": 12746
+    },
+    {
+      "member": "run/measure-165-before/1-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/1-native.json",
+      "sha256": "d767082fc7b789f0ceabd4faec92a98516bb79457ebdd3df5d7b9adcdaa1bddb",
+      "bytes": 2941
+    },
+    {
+      "member": "run/measure-165-before/1-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/1-timings.jsonl",
+      "sha256": "e9fa5d9e74f8032456533218596f3f90dd31e91a9799a304bac01ef27f626875",
+      "bytes": 2527
+    },
+    {
+      "member": "run/measure-165-before/1.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/1.json",
+      "sha256": "e154d58c57a0d741c2637375d025ea26b9cefd12653e611bd5b83ceca1411a28",
+      "bytes": 10225
+    },
+    {
+      "member": "run/measure-165-before/1.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/1.json.tap.log",
+      "sha256": "7ed0a658708008541cc77ee9bc026753341aa45df5719c9b651a723557292d54",
+      "bytes": 3321
+    },
+    {
+      "member": "run/measure-165-before/1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/1.log",
+      "sha256": "1a5b2ff9f53754f0cdbb335dc02a7e8b3109f73498c217fd1ec03c5de351928c",
+      "bytes": 3645
+    },
+    {
+      "member": "run/measure-165-before/2-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/2-native.json",
+      "sha256": "ae89b50a2c73045a595ab79d9c7b2fa141c476cb6b2f80298fe1ad5b8d4d43bc",
+      "bytes": 2941
+    },
+    {
+      "member": "run/measure-165-before/2-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/2-timings.jsonl",
+      "sha256": "efef72b5e0c9b0386fab6a846804cfee4baa9a152655ef8bf586bdd341133fb4",
+      "bytes": 2532
+    },
+    {
+      "member": "run/measure-165-before/2.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/2.json",
+      "sha256": "afe5d3355d8b3f698655242915f1e20ff557bba1119d1da73db86ade8027aa20",
+      "bytes": 10225
+    },
+    {
+      "member": "run/measure-165-before/2.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/2.json.tap.log",
+      "sha256": "99dd9d44c689395633297324e775fbc78cb3914cae6323512a427fe6c19e8cbb",
+      "bytes": 3326
+    },
+    {
+      "member": "run/measure-165-before/2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/2.log",
+      "sha256": "7807f5765340af35d86fda8bad2b39fa32ed584379d3995847e56a9b9729c5c7",
+      "bytes": 3650
+    },
+    {
+      "member": "run/measure-165-before/3-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/3-native.json",
+      "sha256": "1a82c4ed146277f8b4bd93d936370336b9105cefaedd33b0153ff0d4302dabda",
+      "bytes": 2941
+    },
+    {
+      "member": "run/measure-165-before/3-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/3-timings.jsonl",
+      "sha256": "9495054bc0e29d6f5d49aa2d1ddfe7c761b53c1e10bace460296f68d9d1a26b7",
+      "bytes": 2553
+    },
+    {
+      "member": "run/measure-165-before/3.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/3.json",
+      "sha256": "041d4474c60a14662de10ac4ddb7c7de8eed07840477b4a4f52bf5fb0ccce962",
+      "bytes": 10225
+    },
+    {
+      "member": "run/measure-165-before/3.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/3.json.tap.log",
+      "sha256": "deb125794887fa8cb1b8f2d4d0c0c59bc239f11442081d4a35520f653622d4db",
+      "bytes": 3347
+    },
+    {
+      "member": "run/measure-165-before/3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/3.log",
+      "sha256": "073de4e5c1ca73167abdb07e6c0eb32eedebc5b8429caf65a5862c8c688b5623",
+      "bytes": 3671
+    },
+    {
+      "member": "run/measure-165-before/results.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-165-before/results.json",
+      "sha256": "90ddff59b7d0c880a9d5d562883aa5b44856281c71e9e7f64404a68ef335527e",
+      "bytes": 12736
+    },
+    {
+      "member": "run/measure-166-after/1-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/1-native.json",
+      "sha256": "5820bb703b6dbe6447966285e6b16545b8baeb377f7e454fe11d7db6b06dd123",
+      "bytes": 39057
+    },
+    {
+      "member": "run/measure-166-after/1-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/1-timings.jsonl",
+      "sha256": "f64da7b0928c4e2d729add8dc081ac411e951e56307b675c44f5d92b135ad117",
+      "bytes": 20184
+    },
+    {
+      "member": "run/measure-166-after/1.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/1.json",
+      "sha256": "678a1ad033065e642f94ddd7560d23e9b08b3ac9607660daf2e714d5e3b19213",
+      "bytes": 15968
+    },
+    {
+      "member": "run/measure-166-after/1.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/1.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/measure-166-after/1.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/1.json.log",
+      "sha256": "0f8dbdfb8ae5c26cada3902681ccad5cb34ff07e73d59cd12ab435094c30093a",
+      "bytes": 22254
+    },
+    {
+      "member": "run/measure-166-after/1.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/1.json.playwright.log",
+      "sha256": "209e67c1fc5235c6655973e028deceda50bf27be1dfff6d33397a7682738e910",
+      "bytes": 22132
+    },
+    {
+      "member": "run/measure-166-after/1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/1.log",
+      "sha256": "4039f5129a939b60801f9e4989b63e56d78945e8588443fcf325c59cee1c2501",
+      "bytes": 22371
+    },
+    {
+      "member": "run/measure-166-after/2-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/2-native.json",
+      "sha256": "205f9e3c21c0ddbe3a35dea14215f6eca8eeb76d51efdee4d737c43623538123",
+      "bytes": 39067
+    },
+    {
+      "member": "run/measure-166-after/2-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/2-timings.jsonl",
+      "sha256": "31b4fadd757c90b801069b8a1cac1adfad59174643844f531382a4cb8765100b",
+      "bytes": 20186
+    },
+    {
+      "member": "run/measure-166-after/2.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/2.json",
+      "sha256": "e3574699c0104cd04b9001afd54a57297a2788d44cf7879c8fc888bbf04c8671",
+      "bytes": 15968
+    },
+    {
+      "member": "run/measure-166-after/2.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/2.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/measure-166-after/2.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/2.json.log",
+      "sha256": "e8b0207609d53876f706d7a9830f221cdeadd8a17571e17b0d73a5182bdccf98",
+      "bytes": 22256
+    },
+    {
+      "member": "run/measure-166-after/2.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/2.json.playwright.log",
+      "sha256": "f5b02b3938b3de617ef773b66ce67e730695c55d8f47b3c84f32c5259c7b2564",
+      "bytes": 22134
+    },
+    {
+      "member": "run/measure-166-after/2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/2.log",
+      "sha256": "89c586a27f11fa0187a5a8a994f7bfbdab6d28006e89ae4eeabd7ed68701128b",
+      "bytes": 22373
+    },
+    {
+      "member": "run/measure-166-after/3-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/3-native.json",
+      "sha256": "4b000cbc5871e7fcfe732e5b8ea2b87104660095ad008de326d31d57d27e4db0",
+      "bytes": 39065
+    },
+    {
+      "member": "run/measure-166-after/3-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/3-timings.jsonl",
+      "sha256": "7e1b31a03c4a65bf9d2eb747726c8df9cfa63fa615b653b2735bb2d1ff3a8a02",
+      "bytes": 20185
+    },
+    {
+      "member": "run/measure-166-after/3.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/3.json",
+      "sha256": "322c610bf49d494cec417c3b85c28cd590d0076fadfc715a4cffaf7600cac888",
+      "bytes": 15968
+    },
+    {
+      "member": "run/measure-166-after/3.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/3.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/measure-166-after/3.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/3.json.log",
+      "sha256": "e7bd67b5a22e193192bbdfea3641b4550ac49b6d38f037256eb9a91d0f6d8c3c",
+      "bytes": 22255
+    },
+    {
+      "member": "run/measure-166-after/3.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/3.json.playwright.log",
+      "sha256": "ab693d66892332326e64ce699c3350d8148c90b52f108bfdb32feb614ec664c8",
+      "bytes": 22133
+    },
+    {
+      "member": "run/measure-166-after/3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/3.log",
+      "sha256": "576ff930b55993af8b7a8dd8f6e0937d651a1fa972a1ddb2c3769d145c9fddd4",
+      "bytes": 22372
+    },
+    {
+      "member": "run/measure-166-after/playwright-resource-a9318926-03dd-41e8-b2d2-8f8a83263768-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resource-a9318926-03dd-41e8-b2d2-8f8a83263768-cleanup.json",
+      "sha256": "900776a22c9ea3e8b90efee390fd94515208092c761537ccfef706770b6034e0",
+      "bytes": 449
+    },
+    {
+      "member": "run/measure-166-after/playwright-resource-a9318926-03dd-41e8-b2d2-8f8a83263768-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resource-a9318926-03dd-41e8-b2d2-8f8a83263768-cleanup.json.intent.json",
+      "sha256": "49c7939b801634249b5dae3589fae36e0502e44b5a389f782c6ca9f18ac481ad",
+      "bytes": 904
+    },
+    {
+      "member": "run/measure-166-after/playwright-resource-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resource-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34-cleanup.json",
+      "sha256": "f13241e75e69706c2179b7e522c707b4c9f5dd95984a517e5b81795f2185d284",
+      "bytes": 449
+    },
+    {
+      "member": "run/measure-166-after/playwright-resource-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resource-aa4e5fab-bd47-4c3c-8622-6bd052bb4e34-cleanup.json.intent.json",
+      "sha256": "1a6a55185d94c5c05e80632177f59a72ecbd85355971213a867bcc3d2360e2d8",
+      "bytes": 904
+    },
+    {
+      "member": "run/measure-166-after/playwright-resource-cebc730e-0291-4554-ba39-e241f49db390-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resource-cebc730e-0291-4554-ba39-e241f49db390-cleanup.json",
+      "sha256": "c1c269b21b2908f8b33e72bdf2544e7439740c9cace600e67a1692895ad35794",
+      "bytes": 449
+    },
+    {
+      "member": "run/measure-166-after/playwright-resource-cebc730e-0291-4554-ba39-e241f49db390-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/playwright-resource-cebc730e-0291-4554-ba39-e241f49db390-cleanup.json.intent.json",
+      "sha256": "107ccd4e0946d6827af310aba444a522b4ab9881c66ec2286c8a9d3a31280145",
+      "bytes": 904
+    },
+    {
+      "member": "run/measure-166-after/results.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-after/results.json",
+      "sha256": "beeb8dffee470c2888b1446463426c10c7ce4d17c313f3d254e5faf8a8a40059",
+      "bytes": 12923
+    },
+    {
+      "member": "run/measure-166-before/1-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/1-native.json",
+      "sha256": "17165d43f036cfcf21f141db01db50cf498a39a7165f9a3075e3b5b6cef19c95",
+      "bytes": 8612
+    },
+    {
+      "member": "run/measure-166-before/1-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/1-timings.jsonl",
+      "sha256": "bee0b232425f4036700eb608f7f93b3c97235bc742e86b2bf6b2bb8ac567493d",
+      "bytes": 9178
+    },
+    {
+      "member": "run/measure-166-before/1.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/1.json",
+      "sha256": "9573ca8f4acf920fb3da6dcd4607c8ec8bd04db146a41f44439eb6d15c54126f",
+      "bytes": 15465
+    },
+    {
+      "member": "run/measure-166-before/1.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/1.json.tap.log",
+      "sha256": "9b0a781ea0ac1776f91abacda33bb129ad2e499b383a6721891e453ffdfd0f94",
+      "bytes": 11392
+    },
+    {
+      "member": "run/measure-166-before/1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/1.log",
+      "sha256": "deb289fe457f740fc2404f3bc57eb8ce0cf9cef0530c9757700f5ba746a16009",
+      "bytes": 11771
+    },
+    {
+      "member": "run/measure-166-before/2-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/2-native.json",
+      "sha256": "0c72ef3605834fe27ed48ed26d5caa67ab05b709cbce55119a995461be980fb8",
+      "bytes": 8610
+    },
+    {
+      "member": "run/measure-166-before/2-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/2-timings.jsonl",
+      "sha256": "9f671be9d807efb3b89bf94f16f35bd4deaebd56da9ad3a8c98b9cb03ca220cf",
+      "bytes": 9218
+    },
+    {
+      "member": "run/measure-166-before/2.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/2.json",
+      "sha256": "c4f764f4f4e34795fda5f582d2b8e2b44cd50fb076365eba50b6180bc4ecc3c9",
+      "bytes": 15463
+    },
+    {
+      "member": "run/measure-166-before/2.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/2.json.tap.log",
+      "sha256": "20ca1e5e6f42f76981cdf43694fc876fc3991da7bded26d757a796737597cd23",
+      "bytes": 11430
+    },
+    {
+      "member": "run/measure-166-before/2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/2.log",
+      "sha256": "cb3dff6dda936bd381ccdee560817eaf7982ed755ff4157188e27f7311985983",
+      "bytes": 11809
+    },
+    {
+      "member": "run/measure-166-before/3-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/3-native.json",
+      "sha256": "28038a26987197879083861a848c097281baa935c1ba70915c2256b152751bac",
+      "bytes": 8613
+    },
+    {
+      "member": "run/measure-166-before/3-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/3-timings.jsonl",
+      "sha256": "a9e1d1bacc3abb84fea7224eecb007258dc2f80bc0f5835aa51df03f558f6dbc",
+      "bytes": 9164
+    },
+    {
+      "member": "run/measure-166-before/3.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/3.json",
+      "sha256": "29eedf3de2ae4c72dfaded2f4f4656b165ae3bb4f4a819ee4c6f10e012436eab",
+      "bytes": 15466
+    },
+    {
+      "member": "run/measure-166-before/3.json.tap.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/3.json.tap.log",
+      "sha256": "78385192203b5e6930e986131b00cefe19346bdf6317fc89e641f104082fe25c",
+      "bytes": 11379
+    },
+    {
+      "member": "run/measure-166-before/3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/3.log",
+      "sha256": "cac3a24f047ca484a2d3ca2292f6e6531f28f6b8c074eb7976b80c11702286b3",
+      "bytes": 11758
+    },
+    {
+      "member": "run/measure-166-before/results.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/measure-166-before/results.json",
+      "sha256": "6777ada55938daf57a8450479eaaaae1fab85a1778fa1e9656be8653f89316d5",
+      "bytes": 12915
+    },
+    {
+      "member": "run/media-167/after-resume/1-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/1-native.json",
+      "sha256": "a37835556288883a90b5bed337037b9bc1bc0427e36694335b80860a8b5f69e7",
+      "bytes": 24410
+    },
+    {
+      "member": "run/media-167/after-resume/1-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/1-timings.jsonl",
+      "sha256": "ecc75a49b2ffbed1c6bed1c78786f3bbd4cc97f7bb8c156630ac45d870bf060b",
+      "bytes": 13185
+    },
+    {
+      "member": "run/media-167/after-resume/1.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/1.json",
+      "sha256": "afcca258cb34cc1fd58b5ecc197fe35124bf1046d11de7bc904c7bccdf9d7885",
+      "bytes": 10900
+    },
+    {
+      "member": "run/media-167/after-resume/1.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/1.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/media-167/after-resume/1.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/1.json.log",
+      "sha256": "6b9f5bf0e740e59f7af1656a0399d89ddb12a022ae410e3cb544d3b85b8dd65e",
+      "bytes": 14346
+    },
+    {
+      "member": "run/media-167/after-resume/1.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/1.json.playwright.log",
+      "sha256": "84d24168494d7215b1e33875852509db4fd553cbbe273b157927379099b7a1a6",
+      "bytes": 14272
+    },
+    {
+      "member": "run/media-167/after-resume/1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/1.log",
+      "sha256": "28a5547f5a4e5ab4a2bc5b699690af36cb43f4b1a164ba863d1608b454c5f572",
+      "bytes": 14415
+    },
+    {
+      "member": "run/media-167/after-resume/2-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/2-native.json",
+      "sha256": "ffc9b582b635cf1dea4c6b63062cf8cc45c3b03d6ed98a7cd5748473919495e6",
+      "bytes": 24405
+    },
+    {
+      "member": "run/media-167/after-resume/2-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/2-timings.jsonl",
+      "sha256": "42803c72ec2f34ff15010fade3b06df98712d34717ad3f2c1cb33a14011c8e55",
+      "bytes": 13179
+    },
+    {
+      "member": "run/media-167/after-resume/2.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/2.json",
+      "sha256": "2ccb95a54da1a7414883144b441fe045933a2d3e8533fcdfcf66ce7e5e3d1030",
+      "bytes": 10900
+    },
+    {
+      "member": "run/media-167/after-resume/2.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/2.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/media-167/after-resume/2.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/2.json.log",
+      "sha256": "23c8a798b7a6485f64e6a7a954f166315b494e6125c9de682a4a2166247555c1",
+      "bytes": 14340
+    },
+    {
+      "member": "run/media-167/after-resume/2.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/2.json.playwright.log",
+      "sha256": "1a0f0dc70ac6db2d4eee4d5683896fe5cb2ec9ca6fb5dc03f23a77a4dc41480b",
+      "bytes": 14266
+    },
+    {
+      "member": "run/media-167/after-resume/2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/2.log",
+      "sha256": "a932d2a290e4233a947f38ce84a87c2b52278be3ce8b9fda8cd589961505cc23",
+      "bytes": 14409
+    },
+    {
+      "member": "run/media-167/after-resume/3-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/3-native.json",
+      "sha256": "535adc838561268d013cb79b7e55071c817a5c089aede71fa895395efb611a85",
+      "bytes": 24389
+    },
+    {
+      "member": "run/media-167/after-resume/3-timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/3-timings.jsonl",
+      "sha256": "642958419a2316a906b04ed8ab70be42d8d3ac5607e0a58baa9a4b8a29c4523d",
+      "bytes": 13163
+    },
+    {
+      "member": "run/media-167/after-resume/3.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/3.json",
+      "sha256": "a1d45bb505ade29c6f9fd0372aed8b4e34feab7d4ac946f7fbfee72959e269ae",
+      "bytes": 10900
+    },
+    {
+      "member": "run/media-167/after-resume/3.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/3.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/media-167/after-resume/3.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/3.json.log",
+      "sha256": "4df7954559f141a090478159164a02bcfa80e900fb5ee425f6accc9fa662d20a",
+      "bytes": 14324
+    },
+    {
+      "member": "run/media-167/after-resume/3.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/3.json.playwright.log",
+      "sha256": "7df28d0438c811640a88dd813bfc287604c9ef877f5784bdbbd8fe445fa26492",
+      "bytes": 14250
+    },
+    {
+      "member": "run/media-167/after-resume/3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/3.log",
+      "sha256": "ffc17c22fab696c5e32e41bd46a8e43374bff037a31156431c1652f93b445bf0",
+      "bytes": 14393
+    },
+    {
+      "member": "run/media-167/after-resume/playwright-resource-0b451365-9593-4eae-b247-0926e0d83119-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resource-0b451365-9593-4eae-b247-0926e0d83119-cleanup.json",
+      "sha256": "2328e5a2f545b61dec494141c8db14d2740750aabc20d3d1dda2463d23b5f091",
+      "bytes": 459
+    },
+    {
+      "member": "run/media-167/after-resume/playwright-resource-0b451365-9593-4eae-b247-0926e0d83119-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resource-0b451365-9593-4eae-b247-0926e0d83119-cleanup.json.intent.json",
+      "sha256": "bc843c316f229876b3a9ca4dc9e15db9de0495fdf94b6478e3a789e3433f826c",
+      "bytes": 912
+    },
+    {
+      "member": "run/media-167/after-resume/playwright-resource-9570d4dc-8564-4d43-813c-db82a7a59702-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resource-9570d4dc-8564-4d43-813c-db82a7a59702-cleanup.json",
+      "sha256": "0e737ea386cb84c008da05f874e17863700e69b9415e5238b836d7599800f297",
+      "bytes": 459
+    },
+    {
+      "member": "run/media-167/after-resume/playwright-resource-9570d4dc-8564-4d43-813c-db82a7a59702-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resource-9570d4dc-8564-4d43-813c-db82a7a59702-cleanup.json.intent.json",
+      "sha256": "fcb73c85b4a9184f2daea3abc285b2732d68aa97416afbf1c8cef18eb3548320",
+      "bytes": 912
+    },
+    {
+      "member": "run/media-167/after-resume/playwright-resource-b993b662-395e-4da2-979c-81892d98ca8e-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resource-b993b662-395e-4da2-979c-81892d98ca8e-cleanup.json",
+      "sha256": "50b6759aa8655ec400a1feb1d905f91f47fe13c57abdaa22d7a2c45a910d46de",
+      "bytes": 459
+    },
+    {
+      "member": "run/media-167/after-resume/playwright-resource-b993b662-395e-4da2-979c-81892d98ca8e-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/playwright-resource-b993b662-395e-4da2-979c-81892d98ca8e-cleanup.json.intent.json",
+      "sha256": "ed1d60b26ae9debb62754e28b4db86dbadc6c035b206f589e362a638dfaad10c",
+      "bytes": 912
+    },
+    {
+      "member": "run/media-167/after-resume/samples.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/after-resume/samples.json",
+      "sha256": "9f5b43fc18b8c12c6e0f3ad36c55a2a700b119507a81281ac4e35fe845f5fb61",
+      "bytes": 12877
+    },
+    {
+      "member": "run/media-167/before/1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/before/1.log",
+      "sha256": "28f78a356152e3f6d4b562b2e79603c7365ec0eb9f00ebd6489a190edee9eb8e",
+      "bytes": 4577
+    },
+    {
+      "member": "run/media-167/before/2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/before/2.log",
+      "sha256": "38187debe74e5ffbd9fd3baaba08fb541bffa99918a071c90463ffe35d5f57e3",
+      "bytes": 4570
+    },
+    {
+      "member": "run/media-167/before/3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/before/3.log",
+      "sha256": "202d4d2676f80f333055cf9679e17e8dbc1096252a77db0c8ec88dcbb11b1de9",
+      "bytes": 4571
+    },
+    {
+      "member": "run/media-167/before/samples.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/before/samples.json",
+      "sha256": "e360a8242f233d530553a23420d71aad16456512ff777a503ed0b2c6f6e8c840",
+      "bytes": 1092
+    },
+    {
+      "member": "run/media-167/raw-reports/1792304775864-801523.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/raw-reports/1792304775864-801523.json",
+      "sha256": "cd47b4337f94514299672eee2845c41843e96af9a1e823e5ab40e06934153eb8",
+      "bytes": 10859
+    },
+    {
+      "member": "run/media-167/raw-reports/1792304795230-803247.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/raw-reports/1792304795230-803247.json",
+      "sha256": "c4f4f0a545288be25ace150a7f4c721d68170488f6e82e706183398780016fbd",
+      "bytes": 10859
+    },
+    {
+      "member": "run/media-167/raw-reports/1792304814427-804974.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/media-167/raw-reports/1792304814427-804974.json",
+      "sha256": "679652f1d46ac4f7fcf00b0ce7d2e0d5d16f460af0479fc06125656287237e7e",
+      "bytes": 10860
+    },
+    {
+      "member": "run/scheduling-171/README-draft.md",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/README-draft.md",
+      "sha256": "1cd73567004d20007dcdd322a77e8c6e13b679ce50c49ff44b3cfb7d3c259004",
+      "bytes": 4466
+    },
+    {
+      "member": "run/scheduling-171/README-final.md",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/README-final.md",
+      "sha256": "7b8772c365e65d4ff8171a952a7233653f1041519a2efacccd44dee318579132",
+      "bytes": 5419
+    },
+    {
+      "member": "run/scheduling-171/branch-start.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/branch-start.json",
+      "sha256": "9fd3dbdf50eb88ed2ddf3ba82d5eedd725d729dd11b10d19448b107f2f2685fa",
+      "bytes": 444
+    },
+    {
+      "member": "run/scheduling-171/c1-1-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-1-native.json",
+      "sha256": "2acc0767da7752b1c2a0c1c3158a4f7af6b7832d2fe02f9d5cb2368280ae9b49",
+      "bytes": 33343
+    },
+    {
+      "member": "run/scheduling-171/c1-1.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-1.json",
+      "sha256": "a701a6a5df0ff0dfa52394f11124e41ad06061e9c9b948e24a766efa829fb348",
+      "bytes": 14804
+    },
+    {
+      "member": "run/scheduling-171/c1-1.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-1.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/scheduling-171/c1-1.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-1.json.log",
+      "sha256": "1b248733137042f2a8d27ca2ccc8b2bbae69c9f3da8a79f5b6c4fb285398c62a",
+      "bytes": 18426
+    },
+    {
+      "member": "run/scheduling-171/c1-1.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-1.json.playwright.log",
+      "sha256": "49f5b6cd8049ce6aad0e0db0234728214df189c7465928bbcccc03da6dc9149d",
+      "bytes": 18264
+    },
+    {
+      "member": "run/scheduling-171/c1-1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-1.log",
+      "sha256": "1034952cfa18c48a88cbb485db510f7cb0e079f4ad6bc437c64feeacbbb895ff",
+      "bytes": 18583
+    },
+    {
+      "member": "run/scheduling-171/c1-1.timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-1.timings.jsonl",
+      "sha256": "c0c614a341fd837646095b4e7fa3bf64fda31cce4a7fadc155c02ff2d486d954",
+      "bytes": 16705
+    },
+    {
+      "member": "run/scheduling-171/c1-2-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-2-native.json",
+      "sha256": "dffe525dbc7057819d82d97c5a5c1caaa6d30f6ce3c74472d9340596e8b21d60",
+      "bytes": 33342
+    },
+    {
+      "member": "run/scheduling-171/c1-2.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-2.json",
+      "sha256": "cbc57d716a8732b5e0cfa09fec54573b0034864c0c23a4c05fa3813816e006cc",
+      "bytes": 14804
+    },
+    {
+      "member": "run/scheduling-171/c1-2.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-2.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/scheduling-171/c1-2.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-2.json.log",
+      "sha256": "cd52718f0cfc8e55a1db2eef02ea750ebcc889027f257f277be8c23b24ef5aea",
+      "bytes": 18426
+    },
+    {
+      "member": "run/scheduling-171/c1-2.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-2.json.playwright.log",
+      "sha256": "523b4cb905a9abe51e671b4fa5daa2b65fd6f1c34d6409cbb9f28bce4590b19a",
+      "bytes": 18264
+    },
+    {
+      "member": "run/scheduling-171/c1-2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-2.log",
+      "sha256": "904e6d88853e85bdb96653716b0e8783ffb6276c35eb50a83186789e09bd521a",
+      "bytes": 18583
+    },
+    {
+      "member": "run/scheduling-171/c1-2.timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-2.timings.jsonl",
+      "sha256": "2757086663764132264393d2a5974fc9e3b81bd52eab52d479e9ab8fc0c5f3e9",
+      "bytes": 16705
+    },
+    {
+      "member": "run/scheduling-171/c1-3-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-3-native.json",
+      "sha256": "fa7319e7b5b6a224951961b479292ba8faff6e7e6ec543fc6d2cabb77bd1c4ad",
+      "bytes": 33351
+    },
+    {
+      "member": "run/scheduling-171/c1-3.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-3.json",
+      "sha256": "215a2f1fb8d26449c4c7c39e783e22cf006c40e73861242708bead62d0c48b4c",
+      "bytes": 14804
+    },
+    {
+      "member": "run/scheduling-171/c1-3.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-3.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/scheduling-171/c1-3.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-3.json.log",
+      "sha256": "582093b10b9e805fc9179525031a32142fb20882fe4cd22b9432174f79321858",
+      "bytes": 18424
+    },
+    {
+      "member": "run/scheduling-171/c1-3.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-3.json.playwright.log",
+      "sha256": "b8167d673229e5ec7cff63af9781f2b04b6e3da3d38cdcfcaca887e4b23d9d18",
+      "bytes": 18262
+    },
+    {
+      "member": "run/scheduling-171/c1-3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-3.log",
+      "sha256": "96d4e7724c9577123b9ef8338278a172ef8fb100b67ab7f9b672e363920a2b81",
+      "bytes": 18581
+    },
+    {
+      "member": "run/scheduling-171/c1-3.timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c1-3.timings.jsonl",
+      "sha256": "1070eefc0a69573ca8598aba919b0ae18ebeb019c031dc37eac088dcc870a86f",
+      "bytes": 16703
+    },
+    {
+      "member": "run/scheduling-171/c2-1-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-1-native.json",
+      "sha256": "b72ab518a9e789a11203f7a1532f048ed4a388c4c3d10608a7e2752c996c991b",
+      "bytes": 33838
+    },
+    {
+      "member": "run/scheduling-171/c2-1.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-1.json",
+      "sha256": "10c31edc80a92172f6b7bb07b9d0beb45bc42d069247e1efbb10b7508b413866",
+      "bytes": 14804
+    },
+    {
+      "member": "run/scheduling-171/c2-1.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-1.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/scheduling-171/c2-1.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-1.json.log",
+      "sha256": "a99ab7178b73268e6ac42d906c208f1870f8ef1502213b6706de6281ae10e14c",
+      "bytes": 19296
+    },
+    {
+      "member": "run/scheduling-171/c2-1.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-1.json.playwright.log",
+      "sha256": "1fe1b6ea93ac3a70cf1d47b4c9126421701c3fd24a8ee84460d78c3f29f078aa",
+      "bytes": 19134
+    },
+    {
+      "member": "run/scheduling-171/c2-1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-1.log",
+      "sha256": "5bf4284943a58cb3373875b4d15c71d39b1828341b315b2047da547e3e18f2bb",
+      "bytes": 19453
+    },
+    {
+      "member": "run/scheduling-171/c2-1.timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-1.timings.jsonl",
+      "sha256": "944b19789afec173a338d227f4f61891f3b248dc5a358ccc8d9313dfa8835536",
+      "bytes": 17377
+    },
+    {
+      "member": "run/scheduling-171/c2-2-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-2-native.json",
+      "sha256": "0922bffea0ec62f7794bea61b61c2ae36cd995d1bc64ba6f2642b2aa4cfd5b46",
+      "bytes": 33784
+    },
+    {
+      "member": "run/scheduling-171/c2-2.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-2.json",
+      "sha256": "2d931a8c11ca5367e2f91d5fc086c8559bb2276d13c327c27e4da18b4f3f68c6",
+      "bytes": 14804
+    },
+    {
+      "member": "run/scheduling-171/c2-2.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-2.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/scheduling-171/c2-2.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-2.json.log",
+      "sha256": "28d371c35e8396b4a59604d8e1bf8bb0139f2331752a610f36ffa50f083fbb13",
+      "bytes": 19242
+    },
+    {
+      "member": "run/scheduling-171/c2-2.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-2.json.playwright.log",
+      "sha256": "84951084d507fb5a12f1c2d7bac7fea2ce28439c39ca6d74374b83408f6b4871",
+      "bytes": 19080
+    },
+    {
+      "member": "run/scheduling-171/c2-2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-2.log",
+      "sha256": "8455e91328901dd295d180699d95ee9ca414312a19d119923cf6337e59ec7cc9",
+      "bytes": 19399
+    },
+    {
+      "member": "run/scheduling-171/c2-2.timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-2.timings.jsonl",
+      "sha256": "c2e0bdf1d10a0688a10122f247006f8aa988e12afd1bdc8c610c39f1338b9456",
+      "bytes": 17323
+    },
+    {
+      "member": "run/scheduling-171/c2-3-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-3-native.json",
+      "sha256": "3a5f6b4a5c6965f3fa0e26fac4a00f0df3f6a44d63980778cb06eea904c809f3",
+      "bytes": 33849
+    },
+    {
+      "member": "run/scheduling-171/c2-3.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-3.json",
+      "sha256": "a28f7bd85a3ad13e93c85a224cbb616252793585bdbf77f484ca9146b7e21f6f",
+      "bytes": 14804
+    },
+    {
+      "member": "run/scheduling-171/c2-3.json-results/.last-run.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-3.json-results/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    {
+      "member": "run/scheduling-171/c2-3.json.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-3.json.log",
+      "sha256": "fcf17240b4b84e2e6a9b3018c60cd2754ae21a1a4c41dac6eb5c89707a4da7a1",
+      "bytes": 19306
+    },
+    {
+      "member": "run/scheduling-171/c2-3.json.playwright.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-3.json.playwright.log",
+      "sha256": "1b5bc1ddc22cbb5f81afc584cbb19a93d3df19d5e7b35e6c0f4a8eeab3f497fb",
+      "bytes": 19144
+    },
+    {
+      "member": "run/scheduling-171/c2-3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-3.log",
+      "sha256": "882b547c96f9d8a12b05889d27ea7566546e6671f6ca144a93995012937e4a36",
+      "bytes": 19463
+    },
+    {
+      "member": "run/scheduling-171/c2-3.timings.jsonl",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/c2-3.timings.jsonl",
+      "sha256": "29595d2d664852a82ba3a67765b08dcd6a0f8ddded3905604f198af89bd372df",
+      "bytes": 17387
+    },
+    {
+      "member": "run/scheduling-171/capture-171-development-ended.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/capture-171-development-ended.json",
+      "sha256": "e0994f75cd4fa2f6d693d25d5004847a9b9580fa48b296210118fa35755a3dbb",
+      "bytes": 445
+    },
+    {
+      "member": "run/scheduling-171/capture-171-development.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/capture-171-development.json",
+      "sha256": "2415e55cc3c0ea6c6e06a2c74f6d62a22fe12e1f80a6a9ba4b3256d17a7785d8",
+      "bytes": 371
+    },
+    {
+      "member": "run/scheduling-171/capture-171-measure-ended.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/capture-171-measure-ended.json",
+      "sha256": "44f2b0678934cbda9a59a3976ec4047e22f02a4157ca93a4a1c9bcca8aac882b",
+      "bytes": 411
+    },
+    {
+      "member": "run/scheduling-171/capture-171-vitest-measure-ended.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/capture-171-vitest-measure-ended.json",
+      "sha256": "b7703084a9f94956d824157080311d36970e8fd8ffe9ff33fbe32cb546a4c374",
+      "bytes": 462
+    },
+    {
+      "member": "run/scheduling-171/capture-171-vitest-measure.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/capture-171-vitest-measure.json",
+      "sha256": "d5d7add0f88aca4e045c7082ee77bd55df073a7bef1d9ccee50ab196f6154a21",
+      "bytes": 396
+    },
+    {
+      "member": "run/scheduling-171/capture-171-vitest-projects-ended.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/capture-171-vitest-projects-ended.json",
+      "sha256": "de6bcaac2595ad40cdf1638d0c65f597248398324f94898b07d3e9cd31d970a3",
+      "bytes": 450
+    },
+    {
+      "member": "run/scheduling-171/capture-171-vitest-projects-repaired.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/capture-171-vitest-projects-repaired.json",
+      "sha256": "a31a6a3dd1b79fa23701f75f47e274dfbf71297d63210d1ddc774a89791f5d8b",
+      "bytes": 404
+    },
+    {
+      "member": "run/scheduling-171/default-green.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/default-green.log",
+      "sha256": "e29fae7dda35a166759a9044f94cd7e2de998de1325b55135496eda9e520e137",
+      "bytes": 11716
+    },
+    {
+      "member": "run/scheduling-171/development.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/development.json",
+      "sha256": "ed65a45152edccb6e2a0141e045e676828189e1a7d9efda411ec2a9e7296473c",
+      "bytes": 626
+    },
+    {
+      "member": "run/scheduling-171/development.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/development.log",
+      "sha256": "bdf53211ae4d224535326ac6b822f8b89ea5cb845c36618fe225c1dd576fef3f",
+      "bytes": 28
+    },
+    {
+      "member": "run/scheduling-171/development.py",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/development.py",
+      "sha256": "d2fbb58bccb5d77fd077ef18169034486332d345acde27c85e5537194a60c887",
+      "bytes": 845
+    },
+    {
+      "member": "run/scheduling-171/execution-scope.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/execution-scope.json",
+      "sha256": "4bee19180ca0b1ddcdff251dfd135df9e896bc21ac55696cabff45d762f5f6ee",
+      "bytes": 146695
+    },
+    {
+      "member": "run/scheduling-171/final-protocol.md",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/final-protocol.md",
+      "sha256": "deec313eb1608f5958230bc97348c63465d1a3d7fd1cc814541ee3a08ebe4a98",
+      "bytes": 1595
+    },
+    {
+      "member": "run/scheduling-171/forks-1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/forks-1.log",
+      "sha256": "cc4a6cb01e027c41af2294d16e7e4a350b00e12d62239d3350166c28388191c5",
+      "bytes": 940
+    },
+    {
+      "member": "run/scheduling-171/forks-1.native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/forks-1.native.json",
+      "sha256": "24c167910978eaf9502e35f4a655202ed4f1356aab41d90664a6fdcac67a4760",
+      "bytes": 2891
+    },
+    {
+      "member": "run/scheduling-171/forks-2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/forks-2.log",
+      "sha256": "184d133c51fcfbdc65b7495729fff715c59d649f88aca44af8add6cc2673512f",
+      "bytes": 940
+    },
+    {
+      "member": "run/scheduling-171/forks-2.native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/forks-2.native.json",
+      "sha256": "58dc2c424b2675a53b7addd4a05dd3194133024c8fd13f983d56850bc8f4c14c",
+      "bytes": 2882
+    },
+    {
+      "member": "run/scheduling-171/forks-3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/forks-3.log",
+      "sha256": "8ecc4e900e0082eecd1dba6a96c7d8344a427cebfbb801761daa466cb69107ad",
+      "bytes": 940
+    },
+    {
+      "member": "run/scheduling-171/forks-3.native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/forks-3.native.json",
+      "sha256": "c1aeb3f62fa5022802a63de213371ef2ebffc6ade37e85900f6a9ee074cf5675",
+      "bytes": 2880
+    },
+    {
+      "member": "run/scheduling-171/forks.config.mjs",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/forks.config.mjs",
+      "sha256": "48afc9ccb0bd4884f9c5a9f915c7d7518a88a86b76026d29f05fe792f2dd56dd",
+      "bytes": 488
+    },
+    {
+      "member": "run/scheduling-171/measure-capture.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/measure-capture.json",
+      "sha256": "764d2515199fb71dac3801fc78e053973bb17636203d227a22ee3b78e721bec6",
+      "bytes": 383
+    },
+    {
+      "member": "run/scheduling-171/measure-vitest-projects-repaired.py",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/measure-vitest-projects-repaired.py",
+      "sha256": "a8b55d55ec7fb2cef2441be59c5581f55b080b4135b92d24dca22d24d6b82c93",
+      "bytes": 3547
+    },
+    {
+      "member": "run/scheduling-171/measure-vitest.py",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/measure-vitest.py",
+      "sha256": "bcf146281d920b264701d534c135a6652d86622d5ffe5b6b7d8cfa41cab35665",
+      "bytes": 3507
+    },
+    {
+      "member": "run/scheduling-171/measure.py",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/measure.py",
+      "sha256": "3567100b4610fd321142caa629f3040f34a725a29f9b111d1a37455b3f09367c",
+      "bytes": 3278
+    },
+    {
+      "member": "run/scheduling-171/measurement.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/measurement.log",
+      "sha256": "14cddb2a28a7798bf180deacfdf6f70dc2a1418122648428960ac778cd72e90c",
+      "bytes": 384
+    },
+    {
+      "member": "run/scheduling-171/measurements.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/measurements.json",
+      "sha256": "4778978810b612bb5e9c2f7519b4ba1bdfb66bb0c2e20682546b4653d3fe5c14",
+      "bytes": 10066
+    },
+    {
+      "member": "run/scheduling-171/playwright-resource-02535302-c622-4a75-ba16-67dbd5f494f0-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/playwright-resource-02535302-c622-4a75-ba16-67dbd5f494f0-cleanup.json",
+      "sha256": "00587395eba914c073b7015446db8031a9411773da06f92be6fbfbdb129e598c",
+      "bytes": 443
+    },
+    {
+      "member": "run/scheduling-171/playwright-resource-02535302-c622-4a75-ba16-67dbd5f494f0-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/playwright-resource-02535302-c622-4a75-ba16-67dbd5f494f0-cleanup.json.intent.json",
+      "sha256": "d50676861117e24145756f7beb6b45b1e560deeb3213706d6e081c320b141e79",
+      "bytes": 900
+    },
+    {
+      "member": "run/scheduling-171/playwright-resource-0c0f327c-1f20-4c54-9ec9-c3b806134bc8-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/playwright-resource-0c0f327c-1f20-4c54-9ec9-c3b806134bc8-cleanup.json",
+      "sha256": "89eba2b995d7643c1379aebbcce0a8f6c864ae76552b147d348bb73ad0f4ddea",
+      "bytes": 443
+    },
+    {
+      "member": "run/scheduling-171/playwright-resource-0c0f327c-1f20-4c54-9ec9-c3b806134bc8-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/playwright-resource-0c0f327c-1f20-4c54-9ec9-c3b806134bc8-cleanup.json.intent.json",
+      "sha256": "d5655c30daa4c82c53307b83b8bb7f7077d4e517ebf4a8298672d1b5d10a3a81",
+      "bytes": 900
+    },
+    {
+      "member": "run/scheduling-171/playwright-resource-71f7b476-e4ad-4779-a069-ffc5286f4c78-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/playwright-resource-71f7b476-e4ad-4779-a069-ffc5286f4c78-cleanup.json",
+      "sha256": "ff970a221075d94bdad877ab7f448ade15361d9066c481875df120b151df7be6",
+      "bytes": 443
+    },
+    {
+      "member": "run/scheduling-171/playwright-resource-71f7b476-e4ad-4779-a069-ffc5286f4c78-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/playwright-resource-71f7b476-e4ad-4779-a069-ffc5286f4c78-cleanup.json.intent.json",
+      "sha256": "37de11d7eb13f0ee6c2989f8698d22bb30a5e5a1687d74cedbcf7254e8e3797b",
+      "bytes": 900
+    },
+    {
+      "member": "run/scheduling-171/playwright-resource-83182c01-aac9-44af-a4fc-fcb2cfb95bfa-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/playwright-resource-83182c01-aac9-44af-a4fc-fcb2cfb95bfa-cleanup.json",
+      "sha256": "0ff84be45e54852088a8579657ad7b48903eaeaacfe52d7258adbcd2a8118751",
+      "bytes": 443
+    },
+    {
+      "member": "run/scheduling-171/playwright-resource-83182c01-aac9-44af-a4fc-fcb2cfb95bfa-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/playwright-resource-83182c01-aac9-44af-a4fc-fcb2cfb95bfa-cleanup.json.intent.json",
+      "sha256": "6fdc6585912d0b2fcabbc398b7eb3a64b34090d4604193a97e8b20eab93490c5",
+      "bytes": 900
+    },
+    {
+      "member": "run/scheduling-171/playwright-resource-a554e851-8bdc-4354-b055-9cdaf8596239-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/playwright-resource-a554e851-8bdc-4354-b055-9cdaf8596239-cleanup.json",
+      "sha256": "5fae06459c1383013b971d575314deecfa2bd41c51a8a675a9b143186b577aed",
+      "bytes": 443
+    },
+    {
+      "member": "run/scheduling-171/playwright-resource-a554e851-8bdc-4354-b055-9cdaf8596239-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/playwright-resource-a554e851-8bdc-4354-b055-9cdaf8596239-cleanup.json.intent.json",
+      "sha256": "a4cd9ac11336bdc95671cdb07177c88251f25989088c258275de1bf2cafd46e2",
+      "bytes": 900
+    },
+    {
+      "member": "run/scheduling-171/playwright-resource-ff936f51-b02c-45d7-929c-33e0168f9571-cleanup.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/playwright-resource-ff936f51-b02c-45d7-929c-33e0168f9571-cleanup.json",
+      "sha256": "e7cb781eb3ca6ab4290d53561f103c7f55f00593dc560e09d0a98c597782e5ea",
+      "bytes": 443
+    },
+    {
+      "member": "run/scheduling-171/playwright-resource-ff936f51-b02c-45d7-929c-33e0168f9571-cleanup.json.intent.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/playwright-resource-ff936f51-b02c-45d7-929c-33e0168f9571-cleanup.json.intent.json",
+      "sha256": "e29c9fbd09f1e47845bfcf9036d66b6dc5898252460121a23efee5068f66d678",
+      "bytes": 900
+    },
+    {
+      "member": "run/scheduling-171/projects-1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/projects-1.log",
+      "sha256": "bca305b010b873fd69258b23be7c2c05d28b5e0e203d7403b02a68733f59ac4d",
+      "bytes": 1793
+    },
+    {
+      "member": "run/scheduling-171/projects-1.native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/projects-1.native.json",
+      "sha256": "91dad9b8dcf7c720b87474eae26dc230bafdd5a7339ba2f375c0746325054de0",
+      "bytes": 5285
+    },
+    {
+      "member": "run/scheduling-171/projects-separated-1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/projects-separated-1.log",
+      "sha256": "6b1164c5353c603d86b1ae4d93e600430811047a77b324cdba59b81bd582c9d3",
+      "bytes": 953
+    },
+    {
+      "member": "run/scheduling-171/projects-separated-1.native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/projects-separated-1.native.json",
+      "sha256": "c38bb50f5fb5df67564dbb0b9c21307b87ca6cab217c7042be75150d3bf7eecc",
+      "bytes": 2875
+    },
+    {
+      "member": "run/scheduling-171/projects-separated-2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/projects-separated-2.log",
+      "sha256": "629ea24083803145782f1320f21fbb6f0fd06a08f8bc8fd52ea7daf79444dd6b",
+      "bytes": 953
+    },
+    {
+      "member": "run/scheduling-171/projects-separated-2.native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/projects-separated-2.native.json",
+      "sha256": "272e9038826b0c6ca34f256469304851cbb76f6eaea5f989ff3fadc5c932a44f",
+      "bytes": 2890
+    },
+    {
+      "member": "run/scheduling-171/projects-separated-3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/projects-separated-3.log",
+      "sha256": "ee89f49afdd4ad58a8acfe730fb817a1d25b4a13c2b032920345d319b0ac0d98",
+      "bytes": 953
+    },
+    {
+      "member": "run/scheduling-171/projects-separated-3.native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/projects-separated-3.native.json",
+      "sha256": "d03578a65b56afaad9d9458d8b15b17a6a868a6e95a7c6810641f2133a43dd6d",
+      "bytes": 2882
+    },
+    {
+      "member": "run/scheduling-171/projects-separated.config.mjs",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/projects-separated.config.mjs",
+      "sha256": "fa3611b1e308c6f69e25bd17a3be3a1a090ffb39b3ed9d8b2f90d1bd864c058b",
+      "bytes": 987
+    },
+    {
+      "member": "run/scheduling-171/projects.config.mjs",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/projects.config.mjs",
+      "sha256": "979b353953883d6d8e05a244d36a67b4883b6442f9b98cf34ecdfbee441c75e7",
+      "bytes": 1018
+    },
+    {
+      "member": "run/scheduling-171/red-capture.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/red-capture.json",
+      "sha256": "00788eb100bc56a28de8ed232363b00e1058153dc40aea81cfd1529c6c45a93a",
+      "bytes": 381
+    },
+    {
+      "member": "run/scheduling-171/red-ended.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/red-ended.json",
+      "sha256": "3439294b4ff275f0b33c32e6b97b6482eaec43c8275f3018d4811014c58f53cc",
+      "bytes": 413
+    },
+    {
+      "member": "run/scheduling-171/red.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/red.log",
+      "sha256": "38e5e189f759434c622e1928410d63a56a9e84df7774ba60253b2ed70600b1bb",
+      "bytes": 12019
+    },
+    {
+      "member": "run/scheduling-171/remove-unused-browser.patch",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/remove-unused-browser.patch",
+      "sha256": "aa93fa2ce8cb676a7b0995a2ce726859e86700df5b9379b1a763899ced91bac1",
+      "bytes": 2459
+    },
+    {
+      "member": "run/scheduling-171/samples.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/samples.json",
+      "sha256": "d51824673878e4040e36e34eb9390a5a8b83f255d937a1f0fd1f30a80482d40a",
+      "bytes": 27685
+    },
+    {
+      "member": "run/scheduling-171/summary.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/summary.json",
+      "sha256": "f5e9796749b3f6d6dd1f34b57cf53dedada377a7a14993256622d84a7ca01252",
+      "bytes": 368
+    },
+    {
+      "member": "run/scheduling-171/threads-1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/threads-1.log",
+      "sha256": "7b1861561d49bdf30fae02bdd5cd9748bd92f9ce470612400ef9f3110ef78a09",
+      "bytes": 942
+    },
+    {
+      "member": "run/scheduling-171/threads-1.native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/threads-1.native.json",
+      "sha256": "c446ed936a5195a75960c966033637188d17ee84e7edb9dc3d51df1ffa832221",
+      "bytes": 2882
+    },
+    {
+      "member": "run/scheduling-171/threads-2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/threads-2.log",
+      "sha256": "2c444e4ef8646174952eefcc50d97ff258128177789cb31323d7b5132db23954",
+      "bytes": 942
+    },
+    {
+      "member": "run/scheduling-171/threads-2.native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/threads-2.native.json",
+      "sha256": "34eee5b63312af91cb96a37d1b9de9d9dca693e0f425f29f034da4a0bec775fb",
+      "bytes": 2890
+    },
+    {
+      "member": "run/scheduling-171/threads-3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/threads-3.log",
+      "sha256": "4760866ec339ecbeaac0600aa0feb68d9c76b75d9488344d9bb2ed1f1fa5ecd9",
+      "bytes": 942
+    },
+    {
+      "member": "run/scheduling-171/threads-3.native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/threads-3.native.json",
+      "sha256": "f5c66509d7a26b69aa315aac4566233b1d7192d87a9c58e93edd9b636b01c936",
+      "bytes": 2887
+    },
+    {
+      "member": "run/scheduling-171/threads.config.mjs",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/threads.config.mjs",
+      "sha256": "5a022b02e7ef4a5c7aca6b1e73d367eabe81274fb223ed3b74f2a47c066dcb2e",
+      "bytes": 490
+    },
+    {
+      "member": "run/scheduling-171/typecheck.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/typecheck.log",
+      "sha256": "f1339e010535056c985f23d4bb419e1231bc77cfdf9a63bba09f50f39c6a970d",
+      "bytes": 79
+    },
+    {
+      "member": "run/scheduling-171/vitest-measurement.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/vitest-measurement.log",
+      "sha256": "f7671f51950d675d630ed950083609e1a5bb3e00fc243584b4e4e2a61d475a6a",
+      "bytes": 183
+    },
+    {
+      "member": "run/scheduling-171/vitest-projects-repaired-samples.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/vitest-projects-repaired-samples.json",
+      "sha256": "e546dc5ddad8b33e30b98c8bbdd32fcbb4a7ceaf4830119093df6b76cd0c260b",
+      "bytes": 24252
+    },
+    {
+      "member": "run/scheduling-171/vitest-projects-repaired-summary.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/vitest-projects-repaired-summary.json",
+      "sha256": "423f1f307fd34d2050acbd45a5e3e2e556d220987fd9b43c2c4543f1da0adee0",
+      "bytes": 178
+    },
+    {
+      "member": "run/scheduling-171/vitest-projects-repaired.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/vitest-projects-repaired.log",
+      "sha256": "6c2b3247e6178673f787a25c226c16d8bd916cbae4ec05146c20a4d69aed0964",
+      "bytes": 233
+    },
+    {
+      "member": "run/scheduling-171/vitest-samples.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/vitest-samples.json",
+      "sha256": "a0f04bb0741ab4147c1305d88a8d66c87a7b816c992c55d6545f2eee1f5c1161",
+      "bytes": 56180
+    },
+    {
+      "member": "run/scheduling-171/worktree-observation-result.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/worktree-observation-result.json",
+      "sha256": "0f44640bcefe9a67abd5e6b5d8cafc6cf27b148fd497019ef41e72033ae09957",
+      "bytes": 140
+    },
+    {
+      "member": "run/scheduling-171/worktree-observation.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/scheduling-171/worktree-observation.json",
+      "sha256": "83722ee040e7d15615ea71f48a06b5f016ac8e0a052fba2686bfd9df2d1a92cd",
+      "bytes": 406
+    },
+    {
+      "member": "run/serial-after-summary.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/serial-after-summary.json",
+      "sha256": "516d878892bb5dc3e181148ee550927106e0605fa45e896911ea476caa4e1b2c",
+      "bytes": 66948
+    },
+    {
+      "member": "run/tooling-169/after/1-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/tooling-169/after/1-native.json",
+      "sha256": "9402d671ac17e9ba90d3fac67d0f81483762d04df17b3df631c0522473db6ed7",
+      "bytes": 6011
+    },
+    {
+      "member": "run/tooling-169/after/1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/tooling-169/after/1.log",
+      "sha256": "4bc20b07c70e056d638a9fe6bc507d674d04ab8eabe9f06e25b6f0a65b7868cb",
+      "bytes": 7021
+    },
+    {
+      "member": "run/tooling-169/after/2-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/tooling-169/after/2-native.json",
+      "sha256": "45e8f5a72e5eb6032cf1f950fe836464f1fd9fb7bf4fd3b9f51405f00f2adee2",
+      "bytes": 6012
+    },
+    {
+      "member": "run/tooling-169/after/2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/tooling-169/after/2.log",
+      "sha256": "dd203eb8666f868039baf1b0b624ea0154b15fe3edef21d60350d2c03d1a5e63",
+      "bytes": 7013
+    },
+    {
+      "member": "run/tooling-169/after/3-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/tooling-169/after/3-native.json",
+      "sha256": "debe083c8e94ee05901f4e593f1c6f1e14414e785467191e425d47dfb8eef639",
+      "bytes": 6011
+    },
+    {
+      "member": "run/tooling-169/after/3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/tooling-169/after/3.log",
+      "sha256": "8a601188e22322d470c9875f405455d6ec9a8f530e861610102308faf675d47a",
+      "bytes": 7021
+    },
+    {
+      "member": "run/tooling-169/after/results.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/tooling-169/after/results.json",
+      "sha256": "dff5be5c170634c70646fc7af117bb8987e9ea21af1a65d5668477a100efb8e9",
+      "bytes": 5283
+    },
+    {
+      "member": "run/tooling-169/before/1-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/tooling-169/before/1-native.json",
+      "sha256": "9f51390c072f1216fbd5d40e669dcea096c4f7fdf2385b8ac2a2cafc2f4ad12a",
+      "bytes": 8156
+    },
+    {
+      "member": "run/tooling-169/before/1.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/tooling-169/before/1.log",
+      "sha256": "edf1dae0ab1605511a532f6928e35d5286964a2f7ba307de746b90ec11bc3e69",
+      "bytes": 11337
+    },
+    {
+      "member": "run/tooling-169/before/2-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/tooling-169/before/2-native.json",
+      "sha256": "1dee13f5226a1c6713a24b88d9fe224e30c44a24d8dcf6aeaddd619976d73adb",
+      "bytes": 8156
+    },
+    {
+      "member": "run/tooling-169/before/2.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/tooling-169/before/2.log",
+      "sha256": "657eb02ce461faf86a64757c0b551efdeaa9c109dd847a11514c5a1444e3eed2",
+      "bytes": 11347
+    },
+    {
+      "member": "run/tooling-169/before/3-native.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/tooling-169/before/3-native.json",
+      "sha256": "03d2f74390857a9d7e1b5a32bcdf347a40d6b8a97c4bbab96e6a465ccd64ebf1",
+      "bytes": 8156
+    },
+    {
+      "member": "run/tooling-169/before/3.log",
+      "originalPath": "/home/forclaw/tmp/implement-161/tooling-169/before/3.log",
+      "sha256": "bf46457f50c3d7bc3cca4ad2399be0510f772397699cc55763156edf58a9c4c9",
+      "bytes": 11353
+    },
+    {
+      "member": "run/tooling-169/before/results.json",
+      "originalPath": "/home/forclaw/tmp/implement-161/tooling-169/before/results.json",
+      "sha256": "256a4dad47ff9f7350c784b45aefe08b5967e8f318476057a2e46a39632c5ff8",
+      "bytes": 5287
+    }
+  ]
+}
