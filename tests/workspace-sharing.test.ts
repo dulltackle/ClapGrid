@@ -138,3 +138,38 @@ test('绑定入口两端共享修改权、任务和去重，另一个工作空�
   assert.equal((await tool(2, 'clapgrid_submit_speech', otherRequest)).isError, undefined);
   assert.deepEqual(gates.map(gate => gate.calls), [1, 1], '重连和重发不重复请求供应商');
 });
+
+test('并发打开全部返回后停止服务，不得由迟到启动候选复活', { timeout: 60000 }, async t => {
+  const root = mkdtempSync(join(tmpdir(), 'clapgrid-sharing-stop-'));
+  const workspace = join(root, 'workspace'); const dist = join(root, 'dist');
+  mkdirSync(workspace); mkdirSync(join(dist, 'panel'), { recursive: true });
+  writeFileSync(join(root, 'package.json'), '{"type":"module"}');
+  writeFileSync(join(dist, 'panel', 'index.html'), 'ClapGrid');
+  const threads = [randomUUID(), randomUUID()]; const host = join(root, 'host.cjs');
+  writeFileSync(host, `#!/usr/bin/env node\nrequire('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:{id:r.params.threadId,cwd:${JSON.stringify(workspace)}}}}));});`, { mode: 0o700 });
+  const identities = join(root, 'started-processes.jsonl'); const observer = join(root, 'observe-starts.mjs');
+  // 只观察公开 CLI 真正创建的子进程；保留原 spawn 行为、出生身份和所有候选，不按进程名筛选。
+  writeFileSync(observer, `import cp from'node:child_process';import{appendFileSync}from'node:fs';import{syncBuiltinESMExports}from'node:module';import{processIdentity}from${JSON.stringify(new URL('../scripts/verification-jobs.mjs', import.meta.url).href)};const original=cp.spawn;cp.spawn=(...args)=>{const child=original(...args);child.once('spawn',()=>{const identity=processIdentity(child.pid);if(!identity)throw Error('无法确认启动候选的出生身份');appendFileSync(${JSON.stringify(identities)},JSON.stringify(identity)+'\\n');});return child;};syncBuiltinESMExports();`);
+  await build({ entryPoints: ['src/runtime.ts', 'src/service/main.ts', 'src/business/media-worker.ts'], outbase: 'src', outdir: dist, bundle: true, platform: 'node', format: 'esm', target: 'node22', external: ['vite'], banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" } });
+  const cli = async (action: string, thread = threads[0]!, extra: string[] = []) => JSON.parse((await promisify(execFile)(process.execPath, ['--import', observer, join(dist, 'runtime.js'), action, '--workspace', workspace, '--thread', thread, ...extra], { env: { ...process.env, CLAPGRID_CODEX_BIN: host } })).stdout);
+  t.onTestFinished(async () => {
+    const status = await cli('workspace-status', threads[0], ['--allow-offline']);
+    if (status.state !== 'offline') {
+      const original = serviceProcess(status.pid);
+      await cli('workspace-stop'); await waitForServiceExit(original);
+    }
+    rmSync(root, { recursive: true, force: true });
+  });
+  const opened = await Promise.all(threads.map(thread => cli('open', thread)));
+  assert.equal(opened[0].instanceId, opened[1].instanceId);
+  const original = serviceProcess(opened[0].pid);
+  // 返回赢家退出不足以证明另一个启动候选已经收尾。
+  const candidates = readFileSync(identities, 'utf8').trim().split('\n').map(line => JSON.parse(line) as ReturnType<typeof serviceProcess>);
+  await cli('workspace-stop'); await waitForServiceExit(original);
+  await new Promise(resolve => setTimeout(resolve, 1200));
+  const status = await cli('workspace-status', threads[0], ['--allow-offline']);
+  const ended = await Promise.allSettled(candidates.map(identity => waitForServiceExit(identity, { timeoutMs: 2000 })));
+  await t.annotate(JSON.stringify({ event: 'concurrent-open-candidates-ended', candidates, allOriginalCandidatesExited: ended.every(result => result.status === 'fulfilled'), stateAfterStop: status.state ?? 'online' }));
+  assert.equal(status.state, 'offline', '所有 open 返回后停止，服务不得被迟到候选重新打开');
+  assert.ok(ended.every(result => result.status === 'fulfilled'), '必须确认原出生身份的全部启动候选已退出');
+});
