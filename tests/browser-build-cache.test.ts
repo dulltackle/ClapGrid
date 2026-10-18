@@ -1,22 +1,26 @@
 import assert from 'node:assert/strict';
-import { test, beforeEach, type TestContext } from 'node:test';
+import { test, beforeEach, vi, type TestContext } from 'vitest';
 import { spawnSync, spawn } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, cpSync, mkdirSync, symlinkSync, readdirSync, statSync, utimesSync, renameSync, chmodSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync, cpSync, mkdirSync, symlinkSync, readdirSync, statSync, utimesSync, renameSync, chmodSync, existsSync, realpathSync } from 'node:fs';
+import { join, basename } from 'node:path';
 import { tmpdir } from 'node:os';
 import { buildBrowserScript } from './helpers/browser-build.js';
+import { dependencyView } from './helpers/temporary-repository.js';
 import { buildPanelStyles } from './helpers/panel-styles.js';
+
+// 原 Node 默认未限时；保留每例显式测试及下游准备/清理时限。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 beforeEach(t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-test-cache-'));
   const previous = process.env.CLAPGRID_BROWSER_BUILD_CACHE_DIR;
   process.env.CLAPGRID_BROWSER_BUILD_CACHE_DIR = directory;
-  (t as TestContext).after(() => { if (previous === undefined) delete process.env.CLAPGRID_BROWSER_BUILD_CACHE_DIR; else process.env.CLAPGRID_BROWSER_BUILD_CACHE_DIR = previous; rmSync(directory, { recursive: true, force: true }); });
+  t.onTestFinished(() => { if (previous === undefined) delete process.env.CLAPGRID_BROWSER_BUILD_CACHE_DIR; else process.env.CLAPGRID_BROWSER_BUILD_CACHE_DIR = previous; rmSync(directory, { recursive: true, force: true }); });
 });
 
 test('真实 esbuild 跨尺寸复用字节，fixture 和导入文件变更均失效', async t => {
-  const dir = mkdtempSync(join(tmpdir(), 'clapgrid-bundle-test-')); t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const dir = mkdtempSync(join(tmpdir(), 'clapgrid-bundle-test-')); t.onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
   const dependency = join(dir, 'value.js'); writeFileSync(dependency, 'export const value = "first";');
   const script = `import { value } from ${JSON.stringify(dependency)}; console.log(value);`;
   assert.equal((await buildBrowserScript(dir, script, 'fixture-1')).cacheHit, false);
@@ -36,7 +40,7 @@ test('真实 esbuild 跨尺寸复用字节，fixture 和导入文件变更均失
 
 test('生产同源 CSS 在同一进程复用字节，各场景仍输出到自己的目录', async t => {
   const first = mkdtempSync(join(tmpdir(), 'clapgrid-css-first-')); const second = mkdtempSync(join(tmpdir(), 'clapgrid-css-second-'));
-  t.after(() => { rmSync(first, { recursive: true, force: true }); rmSync(second, { recursive: true, force: true }); });
+  t.onTestFinished(() => { rmSync(first, { recursive: true, force: true }); rmSync(second, { recursive: true, force: true }); });
   await buildPanelStyles(first);
   assert.equal((await buildPanelStyles(second)).cacheHit, true);
   assert.deepEqual(readFileSync(join(first, 'test.css')), readFileSync(join(second, 'test.css')));
@@ -45,7 +49,7 @@ test('生产同源 CSS 在同一进程复用字节，各场景仍输出到自己
 
 test('真实 JS helper 跨进程复用匹配的编译字节，冷和热都产生当前可执行输出', t => {
   const directory=mkdtempSync(join(tmpdir(),'clapgrid-persistent-build-'));
-  t.after(()=>rmSync(directory,{recursive:true,force:true}));
+  t.onTestFinished(()=>rmSync(directory,{recursive:true,force:true}));
   const helper=new URL('./helpers/browser-build.ts',import.meta.url).href;
   const source=`import {buildBrowserScript} from ${JSON.stringify(helper)};import fs from 'node:fs';import vm from 'node:vm';const result=await buildBrowserScript(${JSON.stringify(directory)},'globalThis.__cache_probe = 41;','');const bytes=fs.readFileSync(${JSON.stringify(join(directory,'test.js'))},'utf8');const context={};vm.runInNewContext(bytes,context);console.log('CACHE-PROBE '+JSON.stringify({...result,value:context.__cache_probe}));`;
   const execute=()=>{
@@ -60,14 +64,21 @@ test('真实 JS helper 跨进程复用匹配的编译字节，冷和热都产生
 });
 
 
-function buildRepository(t: {after: (cleanup:()=>void)=>void}) {
+/** 工作树依赖视图的包入口可能是软链；变造工具必须复制真实包根，保持共享安装只读。 */
+function copyInstalledPackage(installed: string, name: string, destination: string) {
+  const shared = realpathSync(join(installed, name));
+  cpSync(shared, destination, { recursive: true });
+  assert.notEqual(realpathSync(destination), shared, '变造工具必须为本例独立副本，不能复制共享安装软链');
+}
+
+function buildRepository(t: TestContext) {
   const project=fileURLToPath(new URL('../',import.meta.url));
   const root=mkdtempSync(join(tmpdir(),'clapgrid-build-inputs-'));
-  t.after(()=>rmSync(root,{recursive:true,force:true}));
+  t.onTestFinished(()=>rmSync(root,{recursive:true,force:true}));
   cpSync(join(project,'tests/helpers'),join(root,'tests/helpers'),{recursive:true});
   cpSync(join(project,'src'),join(root,'src'),{recursive:true});
   for(const file of ['package.json','package-lock.json','tsconfig.json','vite.config.ts'])cpSync(join(project,file),join(root,file));
-  symlinkSync(join(project,'node_modules'),join(root,'node_modules'),'dir');
+  dependencyView(root, join(project, 'node_modules'));
   const output=join(root,'out');mkdirSync(output);
   const execute=(script:string,kind='js',extraEnv:NodeJS.ProcessEnv={},destination=mkdtempSync(join(output,'case-')))=>{
     const helper=pathToFileURL(join(root,'tests/helpers',kind==='js'?'browser-build.ts':'panel-styles.ts')).href;
@@ -118,9 +129,9 @@ test('实际 import 的外部 package 解析配置变化后，重建并使用新
 
 test('实际安装的构建工具文件变化不能沿用仅版本相同的缓存', t => {
   const {root,execute}=buildRepository(t), installed=fileURLToPath(new URL('../node_modules/',import.meta.url));
-  rmSync(join(root,'node_modules'));mkdirSync(join(root,'node_modules'));
-  for(const name of readdirSync(installed))symlinkSync(join(installed,name),join(root,'node_modules',name),'dir');
-  for(const name of ['esbuild','tsx']){rmSync(join(root,'node_modules',name));cpSync(join(installed,name),join(root,'node_modules',name),{recursive:true});}
+  rmSync(join(root,'node_modules'), { recursive: true });
+  dependencyView(root, installed);
+  for(const name of ['esbuild','tsx']){rmSync(join(root,'node_modules',name));copyInstalledPackage(installed, name, join(root, 'node_modules', name));}
   const script='globalThis.__cache_probe=73;';assert.equal(execute(script).cacheHit,false);assert.equal(execute(script).cacheHit,true);
   const tool=join(root,'node_modules/esbuild/package.json'),metadata=JSON.parse(readFileSync(tool,'utf8'));
   metadata.description='actual tool input changed while the declared version stays fixed';writeFileSync(tool,JSON.stringify(metadata));
@@ -142,7 +153,7 @@ test('实际编译读取输入后源文件变化，跨次缓存不得给新输�
   const child=spawn(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,stdio:['ignore','pipe','pipe']});
   let transcript='';child.stdout.on('data',data=>transcript+=data);child.stderr.on('data',data=>transcript+=data);
   const closed=new Promise<number|null>(resolve=>child.once('close',resolve));
-  t.after(()=>{try{child.kill('SIGKILL')}catch{}});
+  t.onTestFinished(async()=>{if(child.exitCode===null&&child.signalCode===null)child.kill('SIGKILL');await closed;});
   const deadline=Date.now()+10000;
   while(statSync(dependency).atimeMs===0 && Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,1));
   assert.notEqual(statSync(dependency).atimeMs,0,'实际编译器必须已读取真实依赖');
@@ -197,8 +208,8 @@ test('CSS 显式外部扫描根新增或删除文件时，当前工具类不能�
 
 test('实际 bare import 的符号链接解析目标改变后，重建并读取新包行为', t => {
   const {root,execute}=buildRepository(t), installed=fileURLToPath(new URL('../node_modules/',import.meta.url));
-  rmSync(join(root,'node_modules'));mkdirSync(join(root,'node_modules'));
-  for(const name of readdirSync(installed))symlinkSync(join(installed,name),join(root,'node_modules',name),'dir');
+  rmSync(join(root,'node_modules'), { recursive: true });
+  dependencyView(root, installed);
   for(const [name,value] of [['first',41],['second',99]] as const){const directory=join(root,name);mkdirSync(directory);writeFileSync(join(directory,'package.json'),JSON.stringify({name:'cache-probe-package',main:'index.js'}));writeFileSync(join(directory,'index.js'),`export const value=${value};`);}
   const target=join(root,'node_modules/cache-probe-package');symlinkSync(join(root,'first'),target,'dir');
   const script="import {value} from 'cache-probe-package';globalThis.__cache_probe=value;";
@@ -220,9 +231,9 @@ test('同内容符号链接入口切换到不同相对依赖时，不能命中�
 
 test('已加载工具的长进程遇到工具字节变化时拒绝旧实现，新进程使用新工具行为', t => {
   const {root,output,execute}=buildRepository(t), installed=fileURLToPath(new URL('../node_modules/',import.meta.url));
-  rmSync(join(root,'node_modules'));mkdirSync(join(root,'node_modules'));
-  for(const name of readdirSync(installed))symlinkSync(join(installed,name),join(root,'node_modules',name),'dir');
-  rmSync(join(root,'node_modules/esbuild'));cpSync(join(installed,'esbuild'),join(root,'node_modules/esbuild'),{recursive:true});
+  rmSync(join(root,'node_modules'), { recursive: true });
+  dependencyView(root, installed);
+  rmSync(join(root,'node_modules/esbuild'));copyInstalledPackage(installed, 'esbuild', join(root, 'node_modules/esbuild'));
   const helper=pathToFileURL(join(root,'tests/helpers/browser-build.ts')).href;
   const tool=join(root,'node_modules/esbuild/lib/main.js');
   const extension=`
@@ -261,6 +272,16 @@ test('不确定 JSONC 配置与 Node 预载边界保守构建，每次仍执行�
 
 test('共享缓存目录中的不同真实工作树分别核对输入与产物', t => {
   const first=buildRepository(t),second=buildRepository(t),shared=join(first.root,'shared-cache');
+  // 两个实际构建夹具共享包读取，但同名可写执行器缓存必须留在各自安装视图。
+  for (const cache of ['.cache', '.vite', '.vite-temp', '.vitest-cache']) {
+    const relative = join(cache, 'isolation-' + basename(first.root), 'same');
+    for (const [fixture, value] of [[first, 'first'], [second, 'second']] as const) {
+      const file = join(fixture.root, 'node_modules', relative); mkdirSync(join(file, '..'), { recursive: true }); writeFileSync(file, value);
+    }
+    assert.equal(readFileSync(join(first.root, 'node_modules', relative), 'utf8'), 'first');
+    assert.equal(readFileSync(join(second.root, 'node_modules', relative), 'utf8'), 'second');
+    assert.equal(existsSync(join(fileURLToPath(new URL('../node_modules/', import.meta.url)), relative)), false);
+  }
   writeFileSync(join(first.root,'src/probe.js'),'export const value=41;');writeFileSync(join(second.root,'src/probe.js'),'export const value=99;');
   const script="import {value} from './src/probe.js';globalThis.__cache_probe=value;",env={CLAPGRID_BROWSER_BUILD_CACHE_DIR:shared};
   const a=first.execute(script,'js',env),b=second.execute(script,'js',env);assert.equal(a.cacheHit,false);assert.equal(b.cacheHit,false);assert.equal(a.value,41);assert.equal(b.value,99);assert.notEqual(a.cacheKey,b.cacheKey);
@@ -271,7 +292,7 @@ test('并发真实 worker 原子发布同一键，各独立目录得到完整当
   const {root,output,execute}=buildRepository(t),helper=pathToFileURL(join(root,'tests/helpers/browser-build.ts')).href;
   const script='globalThis.__cache_probe=41;';
   const env:NodeJS.ProcessEnv={...process.env,CLAPGRID_BROWSER_BUILD_CACHE_DIR:join(root,'cache')};delete env.NODE_TEST_CONTEXT;
-  const children=Array.from({length:3},()=>{const destination=mkdtempSync(join(output,'worker-'));const code=`import {buildBrowserScript} from ${JSON.stringify(helper)};await buildBrowserScript(${JSON.stringify(destination)},${JSON.stringify(script)},'');`;const child=spawn(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,stdio:['ignore','pipe','pipe']});let transcript='';child.stdout.on('data',data=>transcript+=data);child.stderr.on('data',data=>transcript+=data);t.after(()=>{if(child.exitCode===null)child.kill('SIGKILL')});return new Promise<void>((resolve,reject)=>child.once('close',code=>code===0?resolve():reject(Error(transcript))));});
+  const children=Array.from({length:3},()=>{const destination=mkdtempSync(join(output,'worker-'));const code=`import {buildBrowserScript} from ${JSON.stringify(helper)};await buildBrowserScript(${JSON.stringify(destination)},${JSON.stringify(script)},'');`;const child=spawn(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,stdio:['ignore','pipe','pipe']});let transcript='';child.stdout.on('data',data=>transcript+=data);child.stderr.on('data',data=>transcript+=data);const closed=new Promise<number|null>(resolveClose=>child.once('close',resolveClose));t.onTestFinished(async()=>{if(child.exitCode===null&&child.signalCode===null)child.kill('SIGKILL');await closed;});return closed.then(code=>{if(code!==0)throw Error(transcript)});});
   await Promise.all(children);
   const hot=execute(script);assert.equal(hot.cacheHit,true);assert.equal(hot.value,41);
   assert.equal(readdirSync(join(root,'cache')).filter(file=>file.endsWith('.json')).length,1);
@@ -285,7 +306,7 @@ test('发布临时产物后真实取消或强杀，不发布半成品且下次�
     const script='globalThis.__cache_probe=41;';
     const code=`import fs from 'node:fs';import {syncBuiltinESMExports} from 'node:module';const original=fs.writeFileSync;fs.writeFileSync=function(file,...args){const result=original.call(this,file,...args);if(String(file).startsWith(${JSON.stringify(join(root,'cache'))})&&String(file).endsWith('.tmp')){original(${JSON.stringify(marker)},'temporary-written');Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0);}return result;};syncBuiltinESMExports();const {buildBrowserScript}=await import(${JSON.stringify(helper)});await buildBrowserScript(${JSON.stringify(output)},${JSON.stringify(script)},'');`;
     const env:NodeJS.ProcessEnv={...process.env,CLAPGRID_BROWSER_BUILD_CACHE_DIR:join(root,'cache')};delete env.NODE_TEST_CONTEXT;
-    const child=spawn(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,stdio:['ignore','pipe','pipe']});let transcript='';child.stdout.on('data',data=>transcript+=data);child.stderr.on('data',data=>transcript+=data);const closed=new Promise(resolve=>child.once('close',(code,signal)=>resolve({code,signal})));t.after(()=>{if(child.exitCode===null)child.kill('SIGKILL')});
+    const child=spawn(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,stdio:['ignore','pipe','pipe']});let transcript='';child.stdout.on('data',data=>transcript+=data);child.stderr.on('data',data=>transcript+=data);const closed=new Promise(resolve=>child.once('close',(code,signal)=>resolve({code,signal})));t.onTestFinished(async()=>{if(child.exitCode===null&&child.signalCode===null)child.kill('SIGKILL');await closed;});
     const deadline=Date.now()+15000;while(!readdirSync(root).includes('publication-reached')&&child.exitCode===null&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,5));
     assert.equal(readFileSync(marker,'utf8'),'temporary-written',transcript);child.kill(signal);await closed;
     assert.equal(readdirSync(join(root,'cache')).filter(file=>file.endsWith('.json')).length,0,'未rename的写入不能成为可命中记录');
@@ -304,9 +325,9 @@ test('Vite 自动发现的动态 PostCSS 配置不能给未确认的外部读取
 
 test('CSS 构建的实际已安装 peer 工具字节改变，不能仅凭包版本命中', t => {
   const {root,execute}=buildRepository(t),installed=fileURLToPath(new URL('../node_modules/',import.meta.url));
-  rmSync(join(root,'node_modules'));mkdirSync(join(root,'node_modules'));
-  for(const name of readdirSync(installed))symlinkSync(join(installed,name),join(root,'node_modules',name),'dir');
-  for(const name of ['vite','esbuild']){rmSync(join(root,'node_modules',name));cpSync(join(installed,name),join(root,'node_modules',name),{recursive:true});}
+  rmSync(join(root,'node_modules'), { recursive: true });
+  dependencyView(root, installed);
+  for(const name of ['vite','esbuild']){rmSync(join(root,'node_modules',name));copyInstalledPackage(installed, name, join(root, 'node_modules', name));}
   const cold=execute('','css'),hot=execute('','css');assert.equal(cold.cacheHit,false);assert.equal(hot.cacheHit,true);
   const path=join(root,'node_modules/esbuild/package.json'),metadata=JSON.parse(readFileSync(path,'utf8'));metadata.description='installed peer bytes changed without version change';writeFileSync(path,JSON.stringify(metadata));
   const changed=execute('','css');assert.equal(changed.cacheHit,false);assert.equal(changed.identity,hot.identity);assert.match(changed.bytes,/display:flex/);
@@ -314,9 +335,9 @@ test('CSS 构建的实际已安装 peer 工具字节改变，不能仅凭包版�
 
 test('已加载工具的符号链接绑定切换后，不能信任 Node 缓存的旧解析路径', t => {
   const {root,output,execute}=buildRepository(t),installed=fileURLToPath(new URL('../node_modules/',import.meta.url));
-  rmSync(join(root,'node_modules'));mkdirSync(join(root,'node_modules'));
-  for(const name of readdirSync(installed))symlinkSync(join(installed,name),join(root,'node_modules',name),'dir');
-  for(const name of ['first-tool','second-tool'])cpSync(join(installed,'esbuild'),join(root,name),{recursive:true});
+  rmSync(join(root,'node_modules'), { recursive: true });
+  dependencyView(root, installed);
+  for(const name of ['first-tool','second-tool'])copyInstalledPackage(installed, 'esbuild', join(root, name));
   const target=join(root,'node_modules/esbuild');rmSync(target);symlinkSync(join(root,'first-tool'),target,'dir');
   const helper=pathToFileURL(join(root,'tests/helpers/browser-build.ts')).href,script='globalThis.__cache_probe=41;';
   const code=`import {buildBrowserScript} from ${JSON.stringify(helper)};import fs from 'node:fs';await buildBrowserScript(${JSON.stringify(output)},${JSON.stringify(script)},'');fs.rmSync(${JSON.stringify(target)});fs.symlinkSync(${JSON.stringify(join(root,'second-tool'))},${JSON.stringify(target)},'dir');let rejected=false;try{await buildBrowserScript(${JSON.stringify(output)},${JSON.stringify(script)},'');}catch(error){rejected=/构建工具输入已变化/.test(error.message);}console.log('TOOL-PROBE '+JSON.stringify({rejected}));`;
@@ -335,25 +356,25 @@ test('CSS helper 的实际构建选项实现改变后，跨进程缓存须重建
   const changed=execute('','css');assert.equal(changed.cacheHit,false);assert.notEqual(changed.identity,first.identity);assert.match(changed.bytes,/display: flex/);
 });
 
-test('工具包内部符号链接目录的实际代码变化必须重建，目录环不能掩盖输入', t => {
+test('工具包内部符号链接目录的实际代码变化必须重建，目录环不能掩盖输入', async t => {
   const {root,execute}=buildRepository(t),installed=fileURLToPath(new URL('../node_modules/',import.meta.url));
-  rmSync(join(root,'node_modules'));mkdirSync(join(root,'node_modules'));
-  for(const name of readdirSync(installed))symlinkSync(join(installed,name),join(root,'node_modules',name),'dir');
-  const tool=join(root,'node_modules/esbuild');rmSync(tool);cpSync(join(installed,'esbuild'),tool,{recursive:true});
+  rmSync(join(root,'node_modules'), { recursive: true });
+  dependencyView(root, installed);
+  const tool=join(root,'node_modules/esbuild');rmSync(tool);copyInstalledPackage(installed, 'esbuild', tool);
   mkdirSync(join(root,'external-tool'));const library=join(root,'external-tool/lib');renameSync(join(tool,'lib'),library);writeFileSync(join(library,'package.json'),'{"type":"commonjs"}');symlinkSync(library,join(tool,'lib'),'dir');
   symlinkSync(tool,join(library,'back'),'dir');
   const script='globalThis.__cache_probe=41;',cold=execute(script),hot=execute(script);assert.equal(cold.cacheHit,false);assert.equal(hot.cacheHit,false);assert.equal(hot.cacheReason,'unverified-inputs');
   const main=join(library,'main.js');writeFileSync(main,readFileSync(main,'utf8')+'\nconst originalExports=module.exports;module.exports={...originalExports,build:async options=>{const result=await originalExports.build(options);for(const file of result.outputFiles??[])if(file.path.endsWith(".js"))file.contents=Buffer.concat([Buffer.from("globalThis.__tool_marker=99;"),file.contents]);return result;}};');
   const changed=execute(script),disabled=execute(script,'js',{CLAPGRID_BROWSER_BUILD_CACHE:'0'});
-  t.diagnostic(JSON.stringify({coldHit:cold.cacheHit,hotHit:hot.cacheHit,changedHit:changed.cacheHit,changedMarker:changed.toolMarker,disabledMarker:disabled.toolMarker}));
+  await t.annotate(JSON.stringify({coldHit:cold.cacheHit,hotHit:hot.cacheHit,changedHit:changed.cacheHit,changedMarker:changed.toolMarker,disabledMarker:disabled.toolMarker}));
   assert.equal(disabled.toolMarker,99,'真实编译须实际使用内部链接指向的新工具实现');
   assert.equal(changed.cacheHit,false);assert.equal(changed.toolMarker,99);assert.equal(changed.value,41);
 });
 
-test('长进程配置包 extends 的符号链接切换后，保守真实构建当前行为', t => {
+test('长进程配置包 extends 的符号链接切换后，保守真实构建当前行为', async t => {
   const {root,output}=buildRepository(t),installed=fileURLToPath(new URL('../node_modules/',import.meta.url));
-  rmSync(join(root,'node_modules'));mkdirSync(join(root,'node_modules'));
-  for(const name of readdirSync(installed))symlinkSync(join(installed,name),join(root,'node_modules',name),'dir');
+  rmSync(join(root,'node_modules'), { recursive: true });
+  dependencyView(root, installed);
   for(const [name,define] of [['first-config',false],['second-config',true]] as const){mkdirSync(join(root,name));writeFileSync(join(root,name,'package.json'),'{"name":"cache-config-probe"}');writeFileSync(join(root,name,'base.json'),JSON.stringify({compilerOptions:{useDefineForClassFields:define}}));}
   const binding=join(root,'node_modules/cache-config-probe');symlinkSync(join(root,'first-config'),binding,'dir');
   const config=JSON.parse(readFileSync(join(root,'tsconfig.json'),'utf8'));config.extends='cache-config-probe/base.json';writeFileSync(join(root,'tsconfig.json'),JSON.stringify(config));
@@ -362,15 +383,15 @@ test('长进程配置包 extends 的符号链接切换后，保守真实构建�
   const code=`import {buildBrowserScript} from ${JSON.stringify(helper)};import fs from 'node:fs';import vm from 'node:vm';const run=async()=>{const r=await buildBrowserScript(${JSON.stringify(output)},"import './src/probe.ts';",'');const c={};vm.runInNewContext(fs.readFileSync(${JSON.stringify(join(output,'test.js'))},'utf8'),c);return {...r,value:c.__cache_probe};};const cold=await run(),hot=await run();fs.rmSync(${JSON.stringify(binding)});fs.symlinkSync(${JSON.stringify(join(root,'second-config'))},${JSON.stringify(binding)},'dir');const changed=await run();process.env.CLAPGRID_BROWSER_BUILD_CACHE='0';const actual=await run();console.log('CONFIG-PROBE '+JSON.stringify({cold,hot,changed,actual}));`;
   const env:NodeJS.ProcessEnv={...process.env,CLAPGRID_BROWSER_BUILD_CACHE_DIR:join(root,'cache')};delete env.NODE_TEST_CONTEXT;
   const child=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,encoding:'utf8'});assert.equal(child.status,0,child.stdout+child.stderr);
-  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('CONFIG-PROBE '))!.slice(13));t.diagnostic(JSON.stringify(observed));
+  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('CONFIG-PROBE '))!.slice(13));await t.annotate(JSON.stringify(observed));
   assert.equal(observed.cold.value,42);assert.equal(observed.hot.cacheHit,false);assert.equal(observed.hot.cacheReason,'unverified-inputs');assert.equal(observed.actual.value,0);
   assert.equal(observed.changed.cacheHit,false);assert.equal(observed.changed.value,0);
 });
 
-test('包名 extends 的编译器 tsconfig 字段无法确认时，重复也真实构建当前配置', t => {
+test('包名 extends 的编译器 tsconfig 字段无法确认时，重复也真实构建当前配置', async t => {
   const {root,execute}=buildRepository(t),installed=fileURLToPath(new URL('../node_modules/',import.meta.url));
-  rmSync(join(root,'node_modules'));mkdirSync(join(root,'node_modules'));
-  for(const name of readdirSync(installed))symlinkSync(join(installed,name),join(root,'node_modules',name),'dir');
+  rmSync(join(root,'node_modules'), { recursive: true });
+  dependencyView(root, installed);
   const dependency=join(root,'node_modules/cache-config-probe');mkdirSync(dependency);
   writeFileSync(join(dependency,'package.json'),JSON.stringify({name:'cache-config-probe',main:'base.json',tsconfig:'other.json'}));
   writeFileSync(join(dependency,'base.json'),JSON.stringify({compilerOptions:{useDefineForClassFields:false}}));
@@ -379,16 +400,16 @@ test('包名 extends 的编译器 tsconfig 字段无法确认时，重复也真�
   writeFileSync(join(root,'src/probe.ts'),'globalThis.__cache_probe=0;class Base {set value(x){globalThis.__cache_probe=x+1}}class Child extends Base {value=41}new Child();');
   const script="import './src/probe.ts';",cold=execute(script),repeated=execute(script);assert.equal(cold.value,42);assert.equal(repeated.value,42);
   writeFileSync(join(dependency,'other.json'),JSON.stringify({compilerOptions:{useDefineForClassFields:true}}));
-  const changed=execute(script),actual=execute(script,'js',{CLAPGRID_BROWSER_BUILD_CACHE:'0'});t.diagnostic(JSON.stringify({cold,repeated,changed,actual}));
+  const changed=execute(script),actual=execute(script,'js',{CLAPGRID_BROWSER_BUILD_CACHE:'0'});await t.annotate(JSON.stringify({cold,repeated,changed,actual}));
   assert.equal(actual.value,0);assert.equal(changed.value,0);assert.equal(changed.cacheHit,false);
   assert.equal(cold.cacheHit,false);assert.equal(repeated.cacheHit,false);assert.equal(repeated.cacheReason,'unverified-inputs');
 });
 
 
-test('未知 baseUrl 和自定义 paths 的新候选不能复用旧字节，普通 alias 仍热命中', t => {
+test('未知 baseUrl 和自定义 paths 的新候选不能复用旧字节，普通 alias 仍热命中', async t => {
   const {root,execute}=buildRepository(t),installed=fileURLToPath(new URL('../node_modules/',import.meta.url));
-  rmSync(join(root,'node_modules'));mkdirSync(join(root,'node_modules'));
-  for(const name of readdirSync(installed))symlinkSync(join(installed,name),join(root,'node_modules',name),'dir');
+  rmSync(join(root,'node_modules'), { recursive: true });
+  dependencyView(root, installed);
   const dependency=join(root,'node_modules/cache-base-probe');mkdirSync(dependency);
   writeFileSync(join(dependency,'package.json'),'{"name":"cache-base-probe","main":"index.js"}');writeFileSync(join(dependency,'index.js'),'export const value=41;');
   const config=JSON.parse(readFileSync(join(root,'tsconfig.json'),'utf8')),original=structuredClone(config);
@@ -397,7 +418,7 @@ test('未知 baseUrl 和自定义 paths 的新候选不能复用旧字节，普�
   assert.equal(cold.value,41);assert.equal(repeated.value,41);
   writeFileSync(join(external,'cache-base-probe.js'),'export const value=99;');
   const changed=execute(script),actual=execute(script,'js',{CLAPGRID_BROWSER_BUILD_CACHE:'0'});
-  t.diagnostic(JSON.stringify({cold,repeated,changed,actual}));assert.equal(actual.value,99);assert.equal(changed.value,99);assert.equal(changed.cacheHit,false);
+  await t.annotate(JSON.stringify({cold,repeated,changed,actual}));assert.equal(actual.value,99);assert.equal(changed.value,99);assert.equal(changed.cacheHit,false);
   assert.equal(repeated.cacheHit,false);assert.equal(repeated.cacheReason,'unverified-inputs');
   delete config.compilerOptions.baseUrl;config.compilerOptions.paths={'cache-base-probe':['./external-base/cache-base-probe.js']};writeFileSync(join(root,'tsconfig.json'),JSON.stringify(config));
   const custom=execute(script),customRepeated=execute(script);assert.equal(custom.value,99);assert.equal(customRepeated.value,99);assert.equal(customRepeated.cacheHit,false);assert.equal(customRepeated.cacheReason,'unverified-inputs');
@@ -407,83 +428,83 @@ test('未知 baseUrl 和自定义 paths 的新候选不能复用旧字节，普�
 });
 
 
-test('热命中恢复外层 await 前工具字节变化，必须重新核对并拒绝旧输出', t => {
+test('热命中恢复外层 await 前工具字节变化，必须重新核对并拒绝旧输出', async t => {
   const {root,output}=buildRepository(t),installed=fileURLToPath(new URL('../node_modules/',import.meta.url));
-  rmSync(join(root,'node_modules'));mkdirSync(join(root,'node_modules'));
-  for(const name of readdirSync(installed))symlinkSync(join(installed,name),join(root,'node_modules',name),'dir');
-  const tool=join(root,'node_modules/esbuild');rmSync(tool);cpSync(join(installed,'esbuild'),tool,{recursive:true});
+  rmSync(join(root,'node_modules'), { recursive: true });
+  dependencyView(root, installed);
+  const tool=join(root,'node_modules/esbuild');rmSync(tool);copyInstalledPackage(installed, 'esbuild', tool);
   const helper=pathToFileURL(join(root,'tests/helpers/browser-build.ts')).href,newOutput=join(output,'after-await');mkdirSync(newOutput);
   const metadata=join(tool,'package.json');
   const code=`import {buildBrowserScript} from ${JSON.stringify(helper)};import fs from 'node:fs';const run=()=>buildBrowserScript(${JSON.stringify(output)},'globalThis.__cache_probe=41;','');await run();const hot=await run();queueMicrotask(()=>{const data=JSON.parse(fs.readFileSync(${JSON.stringify(metadata)},'utf8'));data.description='changed during outer await';fs.writeFileSync(${JSON.stringify(metadata)},JSON.stringify(data));});let rejected=false;try{await buildBrowserScript(${JSON.stringify(newOutput)},'globalThis.__cache_probe=41;','');}catch(error){rejected=/构建工具输入已变化/.test(error.message);}console.log('AWAIT-PROBE '+JSON.stringify({hot:hot.cacheHit,rejected,outputExists:fs.existsSync(${JSON.stringify(join(newOutput,'test.js'))})}));`;
   const env:NodeJS.ProcessEnv={...process.env,CLAPGRID_BROWSER_BUILD_CACHE_DIR:join(root,'cache')};delete env.NODE_TEST_CONTEXT;
   const child=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,encoding:'utf8'});assert.equal(child.status,0,child.stdout+child.stderr);
-  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('AWAIT-PROBE '))!.slice(12));t.diagnostic(JSON.stringify(observed));
+  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('AWAIT-PROBE '))!.slice(12));await t.annotate(JSON.stringify(observed));
   assert.equal(observed.hot,true);assert.equal(observed.rejected,true);assert.equal(observed.outputExists,false);
 });
 
 
-test('实际编译 await 内工具改写自身后，独立 fresh 核对拒绝产物', t => {
+test('实际编译 await 内工具改写自身后，独立 fresh 核对拒绝产物', async t => {
   const {root,output}=buildRepository(t),installed=fileURLToPath(new URL('../node_modules/',import.meta.url));
-  rmSync(join(root,'node_modules'));mkdirSync(join(root,'node_modules'));
-  for(const name of readdirSync(installed))symlinkSync(join(installed,name),join(root,'node_modules',name),'dir');
-  const tool=join(root,'node_modules/esbuild');rmSync(tool);cpSync(join(installed,'esbuild'),tool,{recursive:true});
+  rmSync(join(root,'node_modules'), { recursive: true });
+  dependencyView(root, installed);
+  const tool=join(root,'node_modules/esbuild');rmSync(tool);copyInstalledPackage(installed, 'esbuild', tool);
   const main=join(tool,'lib/main.js');writeFileSync(main,readFileSync(main,'utf8')+`\nconst beforeExports=module.exports;module.exports={...beforeExports,build:async options=>{const result=await beforeExports.build(options);require('node:fs').appendFileSync(__filename,'\\n// changed after actual build await');return result;}};`);
   const helper=pathToFileURL(join(root,'tests/helpers/browser-build.ts')).href;
   const code=`import {buildBrowserScript} from ${JSON.stringify(helper)};import fs from 'node:fs';let rejected=false;try{await buildBrowserScript(${JSON.stringify(output)},'globalThis.__cache_probe=41;','');}catch(error){rejected=/构建工具输入已变化/.test(error.message);}console.log('BUILD-PROBE '+JSON.stringify({rejected,outputExists:fs.existsSync(${JSON.stringify(join(output,'test.js'))})}));`;
   const env:NodeJS.ProcessEnv={...process.env,CLAPGRID_BROWSER_BUILD_CACHE_DIR:join(root,'cache')};delete env.NODE_TEST_CONTEXT;
   const child=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,encoding:'utf8'});assert.equal(child.status,0,child.stdout+child.stderr);
-  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('BUILD-PROBE '))!.slice(12));t.diagnostic(JSON.stringify(observed));assert.equal(observed.rejected,true);assert.equal(observed.outputExists,false);
+  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('BUILD-PROBE '))!.slice(12));await t.annotate(JSON.stringify(observed));assert.equal(observed.rejected,true);assert.equal(observed.outputExists,false);
 });
 
-test('旧任意输入 callback 在每次调用先执行，真实编译反映其当前文件改动', t => {
+test('旧任意输入 callback 在每次调用先执行，真实编译反映其当前文件改动', async t => {
   const {root,output}=buildRepository(t);writeFileSync(join(root,'src/legacy-input.js'),'export const value=41;');
   const helper=pathToFileURL(join(root,'tests/helpers/persistent-build-cache.ts')).href,input=join(root,'src/legacy-input.js');
   const code=`import {PersistentBuildCache} from ${JSON.stringify(helper)};import {build}from 'esbuild';import fs from 'node:fs';import vm from 'node:vm';const cache=new PersistentBuildCache(${JSON.stringify(root)});let change=false;const inputs=()=>{if(change){fs.writeFileSync(${JSON.stringify(input)},'export const value=99;');change=false;}return [${JSON.stringify(input)}];};const run=async()=>{const result=await cache.get('legacy-callback',inputs,async()=>{const out=await build({absWorkingDir:${JSON.stringify(root)},stdin:{contents:"import {value}from './src/legacy-input.js';globalThis.__cache_probe=value;",resolveDir:${JSON.stringify(root)}},bundle:true,write:false,format:'iife'});return{bytes:out.outputFiles[0].contents,dependencies:[${JSON.stringify(input)}]};});const c={};vm.runInNewContext(Buffer.from(result.bytes).toString(),c);return {cacheHit:result.cacheHit,value:c.__cache_probe};};const cold=await run(),hot=await run();change=true;const changed=await run(),after=await run();console.log('LEGACY-PROBE '+JSON.stringify({cold,hot,changed,after}));`;
   const env:NodeJS.ProcessEnv={...process.env,CLAPGRID_BROWSER_BUILD_CACHE_DIR:join(root,'cache')};delete env.NODE_TEST_CONTEXT;
   const child=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,encoding:'utf8'});assert.equal(child.status,0,child.stdout+child.stderr);
-  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('LEGACY-PROBE '))!.slice(13));t.diagnostic(JSON.stringify(observed));assert.deepEqual(observed,{cold:{cacheHit:false,value:41},hot:{cacheHit:true,value:41},changed:{cacheHit:false,value:99},after:{cacheHit:true,value:99}});
+  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('LEGACY-PROBE '))!.slice(13));await t.annotate(JSON.stringify(observed));assert.deepEqual(observed,{cold:{cacheHit:false,value:41},hot:{cacheHit:true,value:41},changed:{cacheHit:false,value:99},after:{cacheHit:true,value:99}});
 });
 
-test('带写盘副作用的任意函数不能取得只读计划资格，旧入口仍真实编译当前输入', t => {
+test('带写盘副作用的任意函数不能取得只读计划资格，旧入口仍真实编译当前输入', async t => {
   const {root}=buildRepository(t),input=join(root,'src/untrusted-plan.js');writeFileSync(input,'export const value=41;');
   const helper=pathToFileURL(join(root,'tests/helpers/persistent-build-cache.ts')).href;
   const code=`import {PersistentBuildCache,buildInputPlan} from ${JSON.stringify(helper)};import {build}from 'esbuild';import fs from 'node:fs';import vm from 'node:vm';const cache=new PersistentBuildCache(${JSON.stringify(root)}),input=${JSON.stringify(input)};const compile=async()=>{const out=await build({absWorkingDir:${JSON.stringify(root)},stdin:{contents:"import {value}from './src/untrusted-plan.js';globalThis.__cache_probe=value;",resolveDir:${JSON.stringify(root)}},bundle:true,write:false,format:'iife'});return{bytes:out.outputFiles[0].contents,dependencies:[input]};};const value=r=>{const c={};vm.runInNewContext(Buffer.from(r.bytes).toString(),c);return c.__cache_probe;};await cache.get('plan',[input],compile);let rejected=false,staleValue;try{const stale=await cache.get('plan',buildInputPlan(read=>{read.fs.readFileSync(input);fs.writeFileSync(input,'export const value=99;');return[input];}),compile);staleValue=value(stale);}catch(error){rejected=/声明式/.test(error.message);}fs.writeFileSync(input,'export const value=41;');await cache.get('legacy',[input],compile);const current=await cache.get('legacy',()=>{fs.readFileSync(input);fs.writeFileSync(input,'export const value=99;');return[input];},compile);console.log('PLAN-PROBE '+JSON.stringify({rejected,staleValue,currentHit:current.cacheHit,currentValue:value(current)}));`;
   const env:NodeJS.ProcessEnv={...process.env,CLAPGRID_BROWSER_BUILD_CACHE_DIR:join(root,'cache')};delete env.NODE_TEST_CONTEXT;
   const child=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,encoding:'utf8'});assert.equal(child.status,0,child.stdout+child.stderr);
-  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('PLAN-PROBE '))!.slice(11));t.diagnostic(JSON.stringify(observed));
+  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('PLAN-PROBE '))!.slice(11));await t.annotate(JSON.stringify(observed));
   assert.equal(observed.rejected,true);assert.equal(observed.currentHit,false);assert.equal(observed.currentValue,99);
 });
 
-test('声明式计划复制外部数据并使用真实工具绑定，覆写公开属性不能注入写盘函数', t => {
+test('声明式计划复制外部数据并使用真实工具绑定，覆写公开属性不能注入写盘函数', async t => {
   const {root}=buildRepository(t),input=join(root,'src/closed-plan.js');writeFileSync(input,'export const value=41;');
   const helper=pathToFileURL(join(root,'tests/helpers/persistent-build-cache.ts')).href;
   const code=`import {PersistentBuildCache,buildInputPlan,bindBuildTools} from ${JSON.stringify(helper)};import {build}from 'esbuild';import fs from 'node:fs';import vm from 'node:vm';const root=${JSON.stringify(root)},input=${JSON.stringify(input)},cache=new PersistentBuildCache(root),names=['esbuild','tsx'],tools=bindBuildTools(root,names),directories=[root+'/src'],files=[input],plan=buildInputPlan({tools,directories,files});names[0]='unexpected-after-bind';directories[0]=root+'/missing-after-plan';files[0]=root+'/also-missing';Object.defineProperty(tools,'cacheInputs',{get(){fs.writeFileSync(input,'export const value=99;');throw Error('不可执行外部getter');}});const compile=async()=>{const out=await build({absWorkingDir:root,stdin:{contents:"import {value}from './src/closed-plan.js';globalThis.__cache_probe=value;",resolveDir:root},bundle:true,write:false,format:'iife'});return{bytes:out.outputFiles[0].contents,dependencies:[input]};};const run=async()=>{const result=await cache.get('closed',plan,compile);const c={};vm.runInNewContext(Buffer.from(result.bytes).toString(),c);return {hit:result.cacheHit,value:c.__cache_probe};};const cold=await run(),hot=await run();console.log('CLOSED-PROBE '+JSON.stringify({cold,hot,disk:fs.readFileSync(input,'utf8')}));`;
   const env:NodeJS.ProcessEnv={...process.env,CLAPGRID_BROWSER_BUILD_CACHE_DIR:join(root,'cache')};delete env.NODE_TEST_CONTEXT;
   const child=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,encoding:'utf8'});assert.equal(child.status,0,child.stdout+child.stderr);
-  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('CLOSED-PROBE '))!.slice(13));t.diagnostic(JSON.stringify(observed));assert.deepEqual(observed,{cold:{hit:false,value:41},hot:{hit:true,value:41},disk:'export const value=41;'});
+  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('CLOSED-PROBE '))!.slice(13));await t.annotate(JSON.stringify(observed));assert.deepEqual(observed,{cold:{hit:false,value:41},hot:{hit:true,value:41},disk:'export const value=41;'});
 });
 
-test('真实编译 await 或旧输入 callback 改变受键覆盖环境时，不发布或命中过期环境字节', t => {
+test('真实编译 await 或旧输入 callback 改变受键覆盖环境时，不发布或命中过期环境字节', async t => {
   const {root}=buildRepository(t),input=join(root,'src/environment-probe.js');writeFileSync(input,'globalThis.__cache_probe=Number(process.env.VITE_REVIEW_VALUE);');
   const helper=pathToFileURL(join(root,'tests/helpers/persistent-build-cache.ts')).href;
   const code=`import {PersistentBuildCache} from ${JSON.stringify(helper)};import {build}from 'esbuild';import fs from 'node:fs';import vm from 'node:vm';const input=${JSON.stringify(input)},cache=new PersistentBuildCache(${JSON.stringify(root)});const compile=async(change=false)=>{await Promise.resolve();if(change)process.env.VITE_REVIEW_VALUE='99';const out=await build({entryPoints:[input],write:false,bundle:true,format:'iife',define:{'process.env.VITE_REVIEW_VALUE':JSON.stringify(process.env.VITE_REVIEW_VALUE)}});return{bytes:out.outputFiles[0].contents,dependencies:[input]};};const observe=r=>{const c={};vm.runInNewContext(Buffer.from(r.bytes).toString(),c);return {hit:r.cacheHit,value:c.__cache_probe,key:r.cacheKey};};process.env.VITE_REVIEW_VALUE='41';const first=observe(await cache.get('env',[input],()=>compile(true)));process.env.VITE_REVIEW_VALUE='41';const current=observe(await cache.get('env',[input],()=>compile())),hot=observe(await cache.get('env',[input],()=>compile()));const callback=observe(await cache.get('env',()=>{process.env.VITE_REVIEW_VALUE='99';return[input];},()=>compile()));process.env.CLAPGRID_BROWSER_BUILD_CACHE='0';const disabled=observe(await cache.get('env',[input],()=>compile()));console.log('ENV-PROBE '+JSON.stringify({first,current,hot,callback,disabled}));`;
   const env:NodeJS.ProcessEnv={...process.env,CLAPGRID_BROWSER_BUILD_CACHE_DIR:join(root,'cache')};delete env.NODE_TEST_CONTEXT;
   const child=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,encoding:'utf8'});assert.equal(child.status,0,child.stdout+child.stderr);
-  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('ENV-PROBE '))!.slice(10));t.diagnostic(JSON.stringify(observed));
+  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('ENV-PROBE '))!.slice(10));await t.annotate(JSON.stringify(observed));
   assert.equal(observed.first.value,99);assert.equal(observed.first.key,undefined);assert.equal(observed.current.hit,false);assert.equal(observed.current.value,41);assert.equal(observed.hot.hit,true);assert.equal(observed.hot.value,41);assert.equal(observed.callback.hit,false);assert.equal(observed.callback.value,99);assert.equal(observed.callback.key,undefined);assert.equal(observed.disabled.value,99);
 });
 
-test('热命中外层 await 后受键覆盖环境改变时，helper拒绝消费旧字节', t => {
+test('热命中外层 await 后受键覆盖环境改变时，helper拒绝消费旧字节', async t => {
   const {root,output}=buildRepository(t),newOutput=join(output,'after-environment-await');mkdirSync(newOutput);
   const helper=pathToFileURL(join(root,'tests/helpers/browser-build.ts')).href;
   const code=`import {buildBrowserScript} from ${JSON.stringify(helper)};import fs from 'node:fs';process.env.VITE_REVIEW_VALUE='41';const run=()=>buildBrowserScript(${JSON.stringify(output)},'globalThis.__cache_probe=41;','');await run();const hot=await run();queueMicrotask(()=>{process.env.VITE_REVIEW_VALUE='99';});let rejected=false;try{await buildBrowserScript(${JSON.stringify(newOutput)},'globalThis.__cache_probe=41;','');}catch(error){rejected=/构建环境输入已变化/.test(error.message);}console.log('ENV-AWAIT '+JSON.stringify({hot:hot.cacheHit,rejected,outputExists:fs.existsSync(${JSON.stringify(join(newOutput,'test.js'))})}));`;
   const env:NodeJS.ProcessEnv={...process.env,CLAPGRID_BROWSER_BUILD_CACHE_DIR:join(root,'cache')};delete env.NODE_TEST_CONTEXT;
   const child=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,encoding:'utf8'});assert.equal(child.status,0,child.stdout+child.stderr);
-  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('ENV-AWAIT '))!.slice(10));t.diagnostic(JSON.stringify(observed));assert.equal(observed.hot,true);assert.equal(observed.rejected,true);assert.equal(observed.outputExists,false);
+  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('ENV-AWAIT '))!.slice(10));await t.annotate(JSON.stringify(observed));assert.equal(observed.hot,true);assert.equal(observed.rejected,true);assert.equal(observed.outputExists,false);
 });
 
 
-test('公开输入指纹保持真实链接、路径故障和权限边界的冻结语义', t => {
+test('公开输入指纹保持真实链接、路径故障和权限边界的冻结语义', async t => {
   const root=mkdtempSync(join(tmpdir(),'clapgrid-filesystem-frame-')),data=join(root,'filesystem-frame');mkdirSync(data);
   const regular=join(data,'value');writeFileSync(regular,Buffer.from([0,255,195,169]));
   const empty=join(data,'empty');writeFileSync(empty,'');
@@ -492,13 +513,13 @@ test('公开输入指纹保持真实链接、路径故障和权限边界的冻�
   symlinkSync('absent',join(data,'broken'));symlinkSync('cycle-b',join(data,'cycle-a'));symlinkSync('cycle-a',join(data,'cycle-b'));
   const denied=join(data,'denied');writeFileSync(denied,'private');chmodSync(denied,0o000);
   const locked=join(data,'locked');mkdirSync(locked);writeFileSync(join(locked,'child'),'private');chmodSync(locked,0o000);
-  t.after(()=>{chmodSync(denied,0o600);chmodSync(locked,0o700);rmSync(root,{recursive:true,force:true});});
+  t.onTestFinished(()=>{chmodSync(denied,0o600);chmodSync(locked,0o700);rmSync(root,{recursive:true,force:true});});
   const paths=[regular,empty,directory,join(directory,'空 格'),join(data,'file-link'),join(data,'directory-link'),join(data,'directory-link/空 格'),join(data,'broken'),join(data,'missing'),join(regular,'not-directory'),join(data,'cycle-a'),denied,join(locked,'child')];
   const frozen=new URL('./fixtures/cache-fingerprint-9ef.ts',import.meta.url).href,candidate=new URL('./helpers/persistent-build-cache.ts',import.meta.url).href;
   const code=`import * as old from ${JSON.stringify(frozen)};import * as current from ${JSON.stringify(candidate)};const paths=${JSON.stringify(paths)};const observe=module=>paths.map(file=>{try{return{file,fingerprint:module.fingerprint([file])};}catch(error){return{file,error:error.code??error.message};}});console.log('FILESYSTEM-FRAME '+JSON.stringify({frozen:observe(old),candidate:observe(current)}));`;
   const env:NodeJS.ProcessEnv={...process.env};delete env.NODE_TEST_CONTEXT;
   const child=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:fileURLToPath(new URL('../',import.meta.url)),env,encoding:'utf8'});assert.equal(child.status,0,child.stdout+child.stderr);
-  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('FILESYSTEM-FRAME '))!.slice(17));t.diagnostic(JSON.stringify(observed));
+  const observed=JSON.parse(child.stdout.split('\n').find(line=>line.startsWith('FILESYSTEM-FRAME '))!.slice(17));await t.annotate(JSON.stringify(observed));
   assert.deepEqual(observed.candidate,observed.frozen);
   assert.equal(observed.candidate.find((item:{file:string})=>item.file===join(data,'cycle-a')).error,'ELOOP');
   assert.equal(observed.candidate.find((item:{file:string})=>item.file===regular).fingerprint.length,64);
@@ -524,7 +545,7 @@ test('默认工具环境仍是完整缓存键，显式其它值单独构建且�
 
 test('真实浏览器脚本的冷产物与热产物保留函数、类及错误名称和执行行为', async t => {
   const dir = mkdtempSync(join(tmpdir(), 'clapgrid-browser-names-'));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
   const script = `function SegmentPanel(){return 41} class SegmentError extends Error{}; globalThis.__names = [SegmentPanel.name, SegmentError.name, SegmentPanel(), new SegmentError('current').message];`;
   const { runInNewContext } = await import('node:vm');
   for (const hot of [false, true]) {
