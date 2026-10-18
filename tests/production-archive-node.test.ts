@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, cpSync, rmSync, readFileSync, writeFileSync, existsSync, symlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -8,6 +8,9 @@ import { archiveBaseline, archiveBaselinePath } from './helpers/archive-baseline
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
+
+// 原 Node 文件未设置默认测试及清理时限；显式 timeout 选项继续优先。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const cli = resolve('scripts/production.mjs');
 function fixture() {
@@ -25,7 +28,7 @@ function verify(project: string, archive: string, env = process.env) {
 }
 
 test('verify-package 全程使用 Node 核对固定旧 v1 包，PATH 中没有 Python 仍保留成员顺序与审阅含义', t => {
-  const project = fixture(); t.after(() => rmSync(project, { recursive: true, force: true }));
+  const project = fixture(); t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
   const result = verify(project, archiveBaselinePath('valid.tar.gz'), { ...process.env, PATH: project });
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.equal(result.report.status, 'passed');
@@ -36,7 +39,7 @@ test('verify-package 全程使用 Node 核对固定旧 v1 包，PATH 中没有 P
 
 for (const path of ['valid.tar.gz', 'pax-overrides.tar.gz', 'valid-python-3.12.tar.gz']) {
   test(`真实 Node 入口接受独立旧成功包 ${path}`, t => {
-    const project = fixture(); t.after(() => rmSync(project, { recursive: true, force: true }));
+    const project = fixture(); t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
     const before = readFileSync(join(project, 'production.json'));
     const result = verify(project, archiveBaselinePath(path), { ...process.env, PATH: project });
     assert.equal(result.status, 0, result.stdout + result.stderr);
@@ -47,7 +50,7 @@ for (const path of ['valid.tar.gz', 'pax-overrides.tar.gz', 'valid-python-3.12.t
 
 for (const name of ['positive-nanoseconds', 'negative-nanoseconds']) {
   test(`真实 Node 入口接受旧统一入口实际写出的 PAX 科学记数时间 ${name}`, t => {
-    const project = fixture(); t.after(() => rmSync(project, { recursive: true, force: true }));
+    const project = fixture(); t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
     const root = resolve('tests/fixtures/production-archive-pax-time');
     const provenance = JSON.parse(readFileSync(join(root, 'catalog.json'), 'utf8'));
     assert.equal(provenance.source.archiveSha256, archiveBaseline.source.sha256);
@@ -71,7 +74,7 @@ for (const name of ['positive-nanoseconds', 'negative-nanoseconds']) {
 
 for (const sample of archiveBaseline.corrupt) {
   test(`真实 Node 入口按旧完整流语义核对独立样本 ${sample.name}`, t => {
-    const project = fixture(); t.after(() => rmSync(project, { recursive: true, force: true }));
+    const project = fixture(); t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
     const before = readFileSync(join(project, 'production.json'));
     const result = verify(project, archiveBaselinePath(sample.path), { ...process.env, PATH: project });
     assert.equal(result.status, sample.requiredStatus === 'passed' ? 0 : 1, result.stdout + result.stderr);
@@ -92,7 +95,7 @@ test('复杂 v1 数字直接字节约定覆盖科学阈值、最小非零值、�
 
 for (const mode of ['escape', 'absolute', 'backslash', 'noncanonical', 'duplicate', 'self', 'reserved', 'category', 'digest-shape', 'omitted-required', 'symlink', 'changed-source']) {
   test(`真实 Node 入口保持成员声明 ${mode} 的拒绝规则`, t => {
-    const project = fixture(); t.after(() => rmSync(project, { recursive: true, force: true }));
+    const project = fixture(); t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
     const path = join(project, 'production.json');
     const manifest = JSON.parse(readFileSync(path, 'utf8'));
     let expected: RegExp;
@@ -139,7 +142,7 @@ function checksum(tar: Buffer, offset: number) {
 }
 for (const type of ['1', '2', '3', '4', '5', '6', '7', 'S', 'L', 'K', 'Q']) {
   test(`真实 Node 入口明确拒绝范围外 tar 成员类型 ${type}`, t => {
-    const project = fixture(); t.after(() => rmSync(project, { recursive: true, force: true }));
+    const project = fixture(); t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
     const tar = gunzipSync(readFileSync(archiveBaselinePath('valid.tar.gz')));
     const member = physical(tar).find(entry => entry.name === 'src.ts')!;
     tar.write(type, member.offset + 156, 'ascii'); checksum(tar, member.offset);
@@ -166,7 +169,7 @@ function paxBlock(template: Buffer, body: Buffer, type = 'x') {
 for (const key of ['mtime', 'atime', 'ctime']) {
   for (const value of ['1e-07', '-1e-07', 'NaN', 'Infinity', '1e400', '1e-', '1e-07junk']) {
     test(`真实 Node 入口核对 PAX 时间 ${key}=${value} 的完整有限数值`, t => {
-      const project = fixture(); t.after(() => rmSync(project, { recursive: true, force: true }));
+      const project = fixture(); t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
       const tar = gunzipSync(readFileSync(archiveBaselinePath('valid.tar.gz')));
       const local = physical(tar).find(entry => entry.type === 'x')!;
       const bytes = Buffer.concat([tar.subarray(0, local.offset), paxBlock(tar.subarray(local.offset, local.offset + 512), paxRecord(key, value)), tar.subarray(local.offset + 512 + Math.ceil(local.size / 512) * 512)]);
@@ -180,7 +183,7 @@ for (const key of ['mtime', 'atime', 'ctime']) {
 }
 for (const mode of ['wrong-byte-length', 'truncated-record', 'invalid-utf8', 'empty-path', 'bad-size', 'negative-size', 'sparse', 'bad-octal', 'bad-header-utf8', 'unknown-format', 'after-end-member', 'nonaligned-zero-tail', 'duplicate-pax-key', 'consecutive-local-pax', 'global-pax-effective']) {
   test(`真实 Node 入口严格核对 tar/PAX 物理规则 ${mode}`, t => {
-    const project = fixture(); t.after(() => rmSync(project, { recursive: true, force: true }));
+    const project = fixture(); t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
     let tar = gunzipSync(readFileSync(archiveBaselinePath('valid.tar.gz')));
     const entries = physical(tar);
     const local = entries.find(entry => entry.type === 'x')!;
@@ -247,7 +250,7 @@ test('完整 gzip 对照在逐字节输入切块下仍消费零尾之后的后�
 });
 
 test('真实 Node 入口顺序核对较大成员，独立旧索引和原字节只变更相应内容身份', t => {
-  const project = fixture(); t.after(() => rmSync(project, { recursive: true, force: true }));
+  const project = fixture(); t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
   const hash = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
   const originalAudio = readFileSync(join(project, 'audio.wav'));
   const audio = Buffer.alloc(16 * 1024 * 1024);

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { test, type TestContext } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -7,10 +7,13 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 
+// 原 Node 文件未设置测试及清理时限；仅本迁移文件保留相同语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 const entry = fileURLToPath(new URL('../scripts/production.mjs', import.meta.url));
 function fixture(t: TestContext) {
   const project = mkdtempSync(join(tmpdir(), '制作证据 中文 '));
-  t.after(() => rmSync(project, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
   writeFileSync(join(project, '产物.txt'), '已审阅内容');
   const sha256 = createHash('sha256').update('已审阅内容').digest('hex');
   const evidence = {

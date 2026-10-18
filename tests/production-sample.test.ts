@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { test, type TestContext } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -7,12 +7,15 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 
+// 原 Node 文件未设置测试及清理时限；仅本迁移文件保留相同语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 const entry = fileURLToPath(new URL('../scripts/production.mjs', import.meta.url));
 type RecordEntry = { id: string; requirement: string; criterion: string; kind: string; reviewVersion: string; artifact: { path: string; sha256: string }; scope: string[]; status: string; source: string;
   provenance: { actor: string; record: string; observedAt: string }; reuseOf?: string };
 function fixture(t: TestContext) {
   const project = mkdtempSync(join(tmpdir(), '样片 中文 项目 '));
-  t.after(() => rmSync(project, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
   const media = spawnSync('ffmpeg', ['-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i', 'testsrc2=s=64x48:r=10:d=0.3', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', join(project, '动态样片.mp4')], { encoding: 'utf8' });
   assert.equal(media.status, 0, media.stderr);
   writeFileSync(join(project, '模拟确认原件.txt'), '隔离模拟机制测试；没有实际用户看过或批准项目，不构成实际制作许可。\n');
