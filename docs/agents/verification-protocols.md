@@ -117,6 +117,8 @@ Vitest 保存可读日志及官方生命周期原始事件 JSON（#163 移除无
 
 ## Playwright UI 固定核心（#151）
 
+特殊主题、布局、悬停、草稿、目标入口及刷新构建参数的七文件16场景由同一 Playwright fixture 执行。`panel.check` 第五参数接受 `colorScheme` 和 `buildDefine`，保留原媒体特性与构建身份；原场景脚本、视口、超时和 scopes 不变。映射、公开开发报告来源及尚未完成的性能对照见[特殊条件批次记录](../research/special-ui-native-168.md)。
+
 固定 `@playwright/test` 1.64.1，迁移五个文件、14 项原场景，其中两项样式碰撞无需浏览器，另外 12 项实际运行本机 Chrome。`npm run check:ui -- --scope row --concurrency 1|2` 保留类型检查、固定核心、构建与生命周期清理；`npm run test:ui:core -- --concurrency 1|2` 只运行固定核心，不能当作完整入口预算。默认 UI 快检并发 2，含扩大范围或无法证明为静态样式的变更仍沿用计划器降为 1；最终并发选择与预算由同机三次对照证据决定。`npm run check:ui:native` 保留原生 14 场景对照。普通 all、rows、styles、failed 按清单分派，同次完整检查按累计规则去重。
 
 `playwright.config.ts` 关闭重试、禁止 only。worker 手动启动 Chrome 并通过 CDP 连接，浏览器及其后代留在已有受控进程组；不会下载或改用 bundled Chromium。一个 worker 顺序复用一个 Chrome，每例新建 context/page、实际视口与窗口、DOM/storage、独立编译目录；保留原生鼠标/键盘传输、原脚本等待与断言、AG Grid 及生产同源 CSS，仅保留既有 HTTP 客户端替身边界。缺浏览器、skip、取消、零收集及未捕获错误都不能作为 UI 通过。

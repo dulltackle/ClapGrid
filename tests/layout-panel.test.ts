@@ -1,7 +1,7 @@
-import { test } from 'node:test';
-import { chrome } from './helpers/browser.js';
+import { test } from './helpers/playwright-browser.js';
+
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
 
 const script = String.raw`
   import { act } from 'react';
@@ -62,14 +62,10 @@ const script = String.raw`
   })();
 `;
 for (const width of [1600, 420]) {
-  test(`主视图入口迁移与剩余空间布局（${width}px）`, {
-    skip: chrome ? false : '未执行：需要 Chrome/Chromium', timeout: 40000,
-  }, t => checkInteractiveBrowser(t, script, fixture, width));
+  test(`主视图入口迁移与剩余空间布局（${width}px）`, async ({ panel }) => { test.setTimeout(40000); await (panel.check(script, fixture, width)); });
 }
 
-test('读取状态及迁移表单保留保存、取消与互斥规则', {
-  skip: chrome ? false : '未执行：需要 Chrome/Chromium', timeout: 40000,
-}, t => checkInteractiveBrowser(t, String.raw`
+test('读取状态及迁移表单保留保存、取消与互斥规则', async ({ panel }) => { test.setTimeout(40000); await (panel.check(String.raw`
   import { act } from 'react';
   import { createRoot } from 'react-dom/client';
   import { App } from './src/panel/app.tsx';
@@ -128,4 +124,4 @@ test('读取状态及迁移表单保留保存、取消与互斥规则', {
       document.getElementById('result').dataset.state = 'passed';
     } catch (error) { document.getElementById('result').dataset.state = 'failed'; document.getElementById('result').textContent = error.stack; }
   })();
-`, fixture));
+`, fixture)); });

@@ -1,11 +1,11 @@
-import { test } from 'node:test';
+import { test } from './helpers/playwright-browser.js';
 import assert from 'node:assert/strict';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
-import { chrome } from './helpers/browser.js';
 
-test('定位助手适应行高变化和覆盖区，实际就绪晚于固定延时仍可等待', { timeout: 30000 }, t => {
-  assert.ok(chrome, '定位助手回归需要真实 Chrome');
-  return checkInteractiveBrowser(t, String.raw`
+
+
+test('定位助手适应行高变化和覆盖区，实际就绪晚于固定延时仍可等待', async ({ panel }) => { test.setTimeout(30000);
+  
+  return panel.check(String.raw`
 import { waitForPanel, visiblePanelPoint, rowScrollDistance } from './tests/helpers/panel-targets.ts';
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 (async()=>{try {

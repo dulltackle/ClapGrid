@@ -1,6 +1,6 @@
-import { test } from 'node:test';
+import { test } from './helpers/playwright-browser.js';
 import { fixture } from './helpers/editing-fixture.js';
-import { checkInteractiveBrowser } from './helpers/interactive-browser.js';
+
 
 const loaded = { schemaVersion: 2, state: 'known', version: 'panel-test', source: { commit: null, state: 'clean' },
   contentFingerprint: `sha256:${'a'.repeat(64)}`, runtimeFingerprint: `sha256:${'b'.repeat(64)}`, panelFingerprint: `sha256:${'a'.repeat(64)}`, protocolVersion: 1 };
@@ -63,8 +63,8 @@ const restore = common + String.raw`
 }catch(error){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=error.stack;}})();
 `;
 
-test('面板快更新在编辑、播放与任务期间保持草稿并禁止刷新', { timeout: 30000 }, t => checkInteractiveBrowser(t, busy, updateFixture, 780, 579, { buildDefine: { __CLAPGRID_BUILD_IDENTITY__: JSON.stringify(loaded) } }));
-test('面板刷新后的真实表格重连恢复稳定勾选且断线仍清除', { timeout: 30000 }, t => checkInteractiveBrowser(t, restore, updateFixture, 780, 579, { buildDefine: { __CLAPGRID_BUILD_IDENTITY__: JSON.stringify(loaded) } }));
+test('面板快更新在编辑、播放与任务期间保持草稿并禁止刷新', async ({ panel }) => { test.setTimeout(30000); await (panel.check(busy, updateFixture, 780, 579, { buildDefine: { __CLAPGRID_BUILD_IDENTITY__: JSON.stringify(loaded) } })); });
+test('面板刷新后的真实表格重连恢复稳定勾选且断线仍清除', async ({ panel }) => { test.setTimeout(30000); await (panel.check(restore, updateFixture, 780, 579, { buildDefine: { __CLAPGRID_BUILD_IDENTITY__: JSON.stringify(loaded) } })); });
 
 const manual = common + String.raw`
 (async()=>{try{
@@ -80,4 +80,4 @@ const manual = common + String.raw`
  document.getElementById('result').dataset.state='passed';
 }catch(error){document.getElementById('result').dataset.state='failed';document.getElementById('result').textContent=error.stack;}})();
 `;
-test('迟到的刷新恢复让位于用户的新勾选', { timeout: 30000 }, t => checkInteractiveBrowser(t, manual, updateFixture.replace('export async function connectTable() {', 'export async function connectTable() { if(state.tableGate)await state.tableGate.promise;'), 780, 579, { buildDefine: { __CLAPGRID_BUILD_IDENTITY__: JSON.stringify(loaded) } }));
+test('迟到的刷新恢复让位于用户的新勾选', async ({ panel }) => { test.setTimeout(30000); await (panel.check(manual, updateFixture.replace('export async function connectTable() {', 'export async function connectTable() { if(state.tableGate)await state.tableGate.promise;'), 780, 579, { buildDefine: { __CLAPGRID_BUILD_IDENTITY__: JSON.stringify(loaded) } })); });
