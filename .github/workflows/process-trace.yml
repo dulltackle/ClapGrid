@@ -5,6 +5,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# 自动初次运行同 workflow/event/ref 替换；手动及 rerun 独占组，不让旧提交重跑取消新提交。
+concurrency:
+  group: ${{ github.workflow }}-${{ (github.event_name == 'workflow_dispatch' || github.run_attempt != '1') && format('isolated-{0}-{1}', github.run_id, github.run_attempt) || format('{0}-{1}', github.event_name, github.ref) }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' && github.run_attempt == '1' }}
+
 permissions:
   contents: read
 
@@ -13,6 +18,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
+      - name: 记录作业观察起点
+        run: echo "CLAPGRID_CI_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -37,6 +44,11 @@ jobs:
             printf '%s\n' '# Linux 导出拒绝进程追踪' '' '未执行：前置安装或工作流步骤失败；请检查作业日志和 setup.log/npm-ci.log。' '' '受控供应商测试，不作为真实供应商或宿主验收。' > .cache/process-trace/summary.md
           fi
           cat .cache/process-trace/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: 记录 CI 状态、耗时及作业余量
+        if: always()
+        env:
+          CLAPGRID_CI_JOB_STATUS: ${{ job.status }}
+        run: node scripts/ci-observation.mjs --output .cache/process-trace/ci-timing.json --timeout-minutes 15 --status "$CLAPGRID_CI_JOB_STATUS"
       - name: 留存原始追踪、测试日志和结果摘要
         if: always()
         uses: actions/upload-artifact@v4

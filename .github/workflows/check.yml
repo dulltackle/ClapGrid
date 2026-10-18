@@ -3,6 +3,11 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+# 自动初次运行同 workflow/event/ref 替换；手动及 rerun 独占组，不让旧提交重跑取消新提交。
+concurrency:
+  group: ${{ github.workflow }}-${{ (github.event_name == 'workflow_dispatch' || github.run_attempt != '1') && format('isolated-{0}-{1}', github.run_id, github.run_attempt) || format('{0}-{1}', github.event_name, github.ref) }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' && github.run_attempt == '1' }}
+
 permissions:
   contents: read
 jobs:
@@ -10,6 +15,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
+      - name: 记录作业观察起点
+        run: echo "CLAPGRID_CI_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -36,12 +43,18 @@ jobs:
         env:
           CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
         run: npm run verify -- --revision HEAD
+      - name: 记录 CI 状态、耗时及作业余量
+        if: always()
+        env:
+          CLAPGRID_CI_JOB_STATUS: ${{ job.status }}
+        run: node scripts/ci-observation.mjs --output logs/ci-timing.json --timeout-minutes 60 --status "$CLAPGRID_CI_JOB_STATUS"
       - name: 保留完整检查日志（包括失败）
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: checks-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
+            logs/ci-timing.json
             logs/*.log
             logs/check/**
             logs/verify/*/*.log

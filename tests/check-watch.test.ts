@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test, type TestContext } from 'node:test';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -9,7 +9,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { createHash } from 'node:crypto';
 
 const project = fileURLToPath(new URL('../', import.meta.url));
-function repository(t: TestContext) {
+function repository(t: TestContext, dependencies = join(project, 'node_modules')) {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-watch-'));
   const workers: Array<{ child: ReturnType<typeof spawn>, closed: Promise<number | null> }> = [];
   t.after(async () => {
@@ -30,7 +30,8 @@ function repository(t: TestContext) {
   const put = (file: string, text: string) => { mkdirSync(join(root, file, '..'), { recursive: true }); writeFileSync(join(root, file), text); };
   const git = (...args: string[]) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   git('init', '-q'); cpSync(join(process.env.CLAPGRID_WATCH_TEST_SCRIPT_BASE ?? project, 'scripts'), join(root, 'scripts'), { recursive: true });
-  symlinkSync(join(project, 'node_modules'), join(root, 'node_modules'), 'dir');
+  mkdirSync(join(root, 'node_modules'));
+  for (const name of readdirSync(dependencies)) if (!['.cache', '.vite', '.vite-temp'].includes(name)) symlinkSync(join(dependencies, name), join(root, 'node_modules', name));
   put('.gitignore', 'logs/\nnode_modules\ndist/\n');
   put('package.json', JSON.stringify({ type: 'module', scripts: { 'check:related': 'node scripts/check-related.mjs', check: 'node scripts/check.mjs', 'test:failed': 'node scripts/test-runner.mjs --suite failed', typecheck: 'node task.mjs', build: 'node task.mjs' }, devDependencies: { tsx: '4.23.15' } }));
   put('task.mjs', 'console.log("fixture stage");');
@@ -58,6 +59,23 @@ function repository(t: TestContext) {
   };
   return { root, put, git, commit, base, inventory, cli, summary, start, own };
 }
+
+test('watch夹具独立可写缓存且包仍只读共享', t => {
+  const dependencies = mkdtempSync(join(tmpdir(), 'clapgrid-watch-packages-'));
+  t.after(() => rmSync(dependencies, { recursive: true, force: true }));
+  symlinkSync(join(project, 'node_modules/tsx'), join(dependencies, 'tsx'));
+  for (const cache of ['.cache', '.vite', '.vite-temp']) mkdirSync(join(dependencies, cache));
+  const r = repository(t, dependencies);
+  for (const cache of ['.cache', '.vite', '.vite-temp']) {
+    r.put(`node_modules/${cache}/fixture-isolation/probe`, 'local');
+    assert.equal(existsSync(join(dependencies, cache, 'fixture-isolation/probe')), false, `${cache} 只能写夹具本地`);
+  }
+  assert.notEqual(realpathSync(join(r.root, 'node_modules')), realpathSync(join(project, 'node_modules')));
+  r.put('node_modules/.cache/fixture-isolation/probe', 'local');
+  assert.equal(readFileSync(join(r.root, 'node_modules/.cache/fixture-isolation/probe'), 'utf8'), 'local');
+  assert.equal(existsSync(join(project, 'node_modules/.cache/fixture-isolation/probe')), false);
+  assert.equal(realpathSync(join(r.root, 'node_modules/tsx')), realpathSync(join(project, 'node_modules/tsx')));
+});
 
 test('默认日常命令单次退出，显式watch空闲仍持锁且停止后释放', async t => {
   const r = repository(t);
@@ -88,8 +106,7 @@ test('历史材料事件与周期探测不触发watch，模板输入仍执行新
 });
 
 test('watch默认不创建字节码cache，首冷执行后idle且真实外部依赖仍要求重启', async t => {
-  const r=repository(t);rmSync(join(r.root,'node_modules'));mkdirSync(join(r.root,'node_modules'));
-  for(const name of readdirSync(join(project,'node_modules')))if(name!=='.cache')symlinkSync(join(project,'node_modules',name),join(r.root,'node_modules',name));
+  const r=repository(t);
   const directory=join(r.root,'node_modules/.cache/clapgrid-node-compile-v1');assert.equal(existsSync(directory),false);
   r.put('tests/value.test.ts',`import{test}from'node:test';import{getCompileCacheDir}from'node:module';test('watch cache off',()=>{if(getCompileCacheDir()||process.env.NODE_COMPILE_CACHE!==undefined)throw Error('watch自动cache仍启用');});`);r.commit();
   r.put('src/value.ts','export const value=8;\n');
@@ -105,8 +122,7 @@ test('watch默认不创建字节码cache，首冷执行后idle且真实外部依
 
 test('默认字节码namespace内部真实导入的JS依赖变更必须要求重启', async t => {
   const r=repository(t), input='node_modules/.cache/clapgrid-node-compile-v1/foreign.js';
-  rmSync(join(r.root,'node_modules'));mkdirSync(join(r.root,'node_modules'));
-  for(const name of readdirSync(join(project,'node_modules')))if(name!=='.cache')symlinkSync(join(project,'node_modules',name),join(r.root,'node_modules',name));
+
   r.put(input,'export const dependency=1;');
   r.put('tests/value.test.ts',`import{test}from'node:test';import{dependency}from'../${input}';test('foreign dependency',()=>{if(dependency!==1)throw Error('changed')});`);
   r.commit();r.put('src/value.ts','export const value=8;\n');
@@ -117,8 +133,7 @@ test('默认字节码namespace内部真实导入的JS依赖变更必须要求重
 });
 
 test('默认字节码8hex形状的已解析真实依赖优先于产物白名单',async t=>{
-  const r=repository(t);rmSync(join(r.root,'node_modules'));mkdirSync(join(r.root,'node_modules'));
-  for(const name of readdirSync(join(project,'node_modules')))if(name!=='.cache')symlinkSync(join(project,'node_modules',name),join(r.root,'node_modules',name));
+  const r=repository(t);
   const{cachedDataVersionTag}=await import('node:v8');const version=`${process.version}-${process.arch}-${cachedDataVersionTag().toString(16).padStart(8,'0')}-${process.getuid!()}`;
   const input=`node_modules/.cache/clapgrid-node-compile-v1/${version}/deadbeef`;
   r.put(input,'export const dependency=1;');r.put('tests/value.test.ts',`import{test}from'node:test';import{dependency}from'../${input}';test('hex dependency',()=>{if(dependency!==1)throw Error('changed')});`);
@@ -135,8 +150,7 @@ for(const suffix of ['unknown.cache','nested/node_modules/foreign/index.js'])tes
 });
 
 test('watch跨进程嵌套工作树共享安装也保持自动cache关闭，不触发自身新轮',async t=>{
-  const r=repository(t);rmSync(join(r.root,'node_modules'));mkdirSync(join(r.root,'node_modules'));
-  for(const name of readdirSync(join(project,'node_modules')))if(name!=='.cache')symlinkSync(join(project,'node_modules',name),join(r.root,'node_modules',name));
+  const r=repository(t);
   const nestedSource=`import{test}from'node:test';import{getCompileCacheDir}from'node:module';test('nested cache off',()=>{if(process.env.NODE_COMPILE_CACHE!==undefined||getCompileCacheDir())throw Error('nested default重新开启');});`;
   const nested=join(r.root,'logs/nested');mkdirSync(nested,{recursive:true});cpSync(join(r.root,'scripts'),join(nested,'scripts'),{recursive:true});mkdirSync(join(nested,'tests'));symlinkSync(join(r.root,'node_modules'),join(nested,'node_modules'),'dir');
   writeFileSync(join(nested,'.gitignore'),'logs/\nnode_modules\n');writeFileSync(join(nested,'package.json'),'{"type":"module"}');writeFileSync(join(nested,'tests/nested.test.mjs'),nestedSource);
@@ -267,9 +281,6 @@ test('父检查取消嵌套watch的真实Chrome，完整ancestor登记与profile
 
 test('watch空闲拒绝完整和UI检查，另一真实Git工作树仍能实际检查', async t => {
   const r = repository(t);
-  // 拒锁探针仍可继承外层测试child的默认cache；watch夹具也须隔离可写安装目录。
-  rmSync(join(r.root, 'node_modules')); mkdirSync(join(r.root, 'node_modules'));
-  for (const name of readdirSync(join(project, 'node_modules'))) if (name !== '.cache') symlinkSync(join(project, 'node_modules', name), join(r.root, 'node_modules', name));
   const w = r.start(); await w.wait(() => r.summary()?.state === 'idle');
   for (const args of [['scripts/check.mjs'], ['scripts/check-ui.mjs', '--scope', 'row']]) {
     const conflict = spawnSync(process.execPath, args, { cwd: r.root, encoding: 'utf8', timeout: 10000 });
@@ -279,7 +290,7 @@ test('watch空闲拒绝完整和UI检查，另一真实Git工作树仍能实际�
   r.git('worktree', 'add', '--quiet', '--detach', other, r.base);
   // 包只读共享；另一独立任务的默认字节码输出不能写回watch正在观察的安装。
   mkdirSync(join(other, 'node_modules'));
-  for (const name of readdirSync(join(project, 'node_modules'))) if (name !== '.cache') symlinkSync(join(project, 'node_modules', name), join(other, 'node_modules', name));
+  for (const name of readdirSync(join(project, 'node_modules'))) if (!['.cache', '.vite', '.vite-temp'].includes(name)) symlinkSync(join(project, 'node_modules', name), join(other, 'node_modules', name));
   const independentCache = join(other, 'node_modules/.cache/clapgrid-node-compile-v1');
   assert.equal(existsSync(independentCache), false);
   writeFileSync(join(other, 'src/value.ts'), 'export const value=8;\n');
@@ -579,7 +590,7 @@ test('单轮测试后准备步骤损坏原始报告也不能留下watch通过结
 
 test('模板与配置按单次规则扩大重跑，Vite临时输出无自循环；实际依赖恢复要求重启', async t => {
   const r = repository(t);
-  rmSync(join(r.root, 'node_modules')); mkdirSync(join(r.root, 'node_modules'));
+  rmSync(join(r.root, 'node_modules'), { recursive: true }); mkdirSync(join(r.root, 'node_modules'));
   for (const name of ['tsx', 'rolldown']) symlinkSync(join(project, 'node_modules', name), join(r.root, 'node_modules', name), 'dir');
   const w = r.start(); await w.wait(() => r.summary()?.state === 'idle');
   r.put('docs/templates/runtime.md', 'production input\n');
@@ -603,7 +614,7 @@ test('真实scandir删除race只忽略范围外历史、无tracked输入的已�
   for (const kind of ['ignored', 'tracked-ignored', 'source', 'dependency', 'nested-dependency', 'vite-temporary', 'historical']) {
     const r = repository(t), positive = ['ignored', 'vite-temporary', 'historical'].includes(kind);
     if (['dependency', 'vite-temporary'].includes(kind)) {
-      rmSync(join(r.root, 'node_modules')); mkdirSync(join(r.root, 'node_modules'));
+      rmSync(join(r.root, 'node_modules'), { recursive: true }); mkdirSync(join(r.root, 'node_modules'));
       for (const name of ['tsx', 'rolldown']) symlinkSync(join(project, 'node_modules', name), join(r.root, 'node_modules', name), 'dir');
     }
     const target = kind === 'historical' ? 'docs/productions/race-dir' : kind === 'source' ? 'src/race-dir' : kind === 'dependency' ? 'node_modules/.watch-race/subtree' : kind === 'nested-dependency' ? 'src/pkg/node_modules/.watch-race/subtree' : kind === 'vite-temporary' ? 'node_modules/.vite-temp/watch-race/subtree' : 'logs/generated-race/subtree';
