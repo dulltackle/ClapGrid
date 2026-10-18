@@ -51,3 +51,11 @@ Node 字节码自动默认限于单次受控测试 child，watch 派生链关闭
 用户进一步确认允许精简甚至移除自研测试执行层，充分使用 Vitest 和 Playwright 原生的收集、调度、隔离、浏览器复用及报告能力；必须保留全量行为覆盖和必要验证保障。现有执行层结构不再是必须保留的约束，删除或替换前须证明完整性核对、失败反馈、固定提交来源及取消清理仍可靠。项目特有且框架不能直接提供的保障可保留最小适配，不以原生退出码代替完整验收。
 
 本段记录已确认的设计方向，不表示工作流或测试迁移已经实现。实施规格见 [#161](https://github.com/dulltackle/ClapGrid/issues/161)；实现、性能测量和固定提交完整验收分别提供证据。
+
+## 全量原生调度收口（#171）
+
+常规清单110文件由38 Playwright、18 Vitest和54 Node唯一承接，预检范围不变，历史对照仅comparison-only。Playwright沿原文件级模式使用原生worker池，每例仍隔离context/page/目录与资源端口；普通test-runner默认请求2，显式--concurrency 1保留。UI快检/相关入口继续执行计划器的maxConcurrency，不将非静态或未知范围自动提升为并发2；Node生命周期/共享环境专项与Vitest服务保持原有串行/isolate边界。没有增加机器或分片。
+
+废弃checkBrowser的dumpDOM启动/独立构建路径已无调用者并删除；Chrome发现及四个历史原生对照使用的interactive-browser保留。已删除的重复报告、MemoryBuildCache和内部冗余对照与替代保障见[最终职责/完整范围/测量材料](../research/native-scheduling-171/README.md)。自研只保留唯一归属、严格UI、源码/环境身份、原始报告完整性、同次累计与复验、工作树锁与拥有者取消清理、可核对输入的准备缓存；原生框架负责收集、调度、worker池与原始逐例生命周期。
+
+调度选择以同候选同覆盖真实资源隔离的三次代表测量为依据；Vitest threads/forks与单/双project同样保留实际原件，不把子集wall-clock或运行器选择当作全量CI收益。性能数字不替代最终固定候选的独立完整验收。缓存命中仍实际执行，历史passed不自动累计，retry仍为0，缺浏览器/零收集/严格UI skip或todo/取消/报告缺损与错身份仍失败。
