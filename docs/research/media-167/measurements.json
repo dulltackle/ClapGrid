@@ -34,7 +34,16 @@
     }
   ],
   "after": {
-    "status": "not-measured",
-    "reason": "共享45分钟预算达到门槛；等待用户选择，未获续时前不开新测量。"
+    "status": "measured",
+    "commit": "af62a49c97e34203f15b3452961c9d1fe8aa706e",
+    "seconds": [
+      20.646931207000307,
+      19.524792673000775,
+      19.358582823999313
+    ],
+    "medianSeconds": 19.524792673000775,
+    "changePercent": 1.1812412505592063,
+    "evidence": "../check-161/measurements.json",
+    "limits": "相同主机/Node22.23.3/串行公开入口/实际worker1；协调静默；禁Node字节码缓存和浏览器构建缓存；OS页缓存未控制。候选输出外置，167/168基线输出原目录，因此输出I/O并非严格逐字一致。"
   }
 }

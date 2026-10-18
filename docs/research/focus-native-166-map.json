@@ -1547,9 +1547,15 @@
     "nativeSha256": "334122a8f49102c1eda592c4ee44e416e1a27babb128efeb5bb13087978eccb4"
   },
   "afterMeasurements": {
-    "status": "not-run",
-    "reason": "共享45分钟预算到达，等待用户明确续时决定",
-    "acceptanceCriterion": 5,
-    "earned": false
+    "status": "measured",
+    "seconds": [
+      31.996805667877197,
+      34.0128378868103,
+      35.0053653717041
+    ],
+    "medianSeconds": 34.0128378868103,
+    "changePercent": -6.235237047416186,
+    "evidence": "check-161/measurements.json",
+    "fixedCommitAcceptance": "pending"
   }
 }
