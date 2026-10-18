@@ -332,17 +332,43 @@ test('显式停止可恢复拥有者异常退出后的锁，并清理其仍运�
 
 test('停止通过控制通道交给拥有者，不依赖调用者可见的 PID', async t => {
   const { root } = repository(t, 'require("node:fs").writeFileSync("started","yes");setTimeout(()=>{},20000)');
+  // 只改变独立 caller 的系统可见性；拥有者磁盘绑定和真实控制 socket 保持原样。
+  writeFileSync(join(root, 'caller.mjs'), String.raw`
+    import assert from 'node:assert/strict';
+    import fs from 'node:fs';
+    import { syncBuiltinESMExports } from 'node:module';
+    const ownerPath = 'logs/check-state/active/owner.json';
+    const originalRead = fs.readFileSync, originalReadlink = fs.readlinkSync;
+    const bytes = originalRead(ownerPath, 'utf8'), owner = JSON.parse(bytes);
+    fs.readFileSync = (path, ...args) => {
+      if (String(path) === '/proc/' + owner.pid + '/stat') throw Object.assign(new Error('caller cannot see owner'), { code: 'ENOENT' });
+      return originalRead(path, ...args);
+    };
+    fs.readlinkSync = (path, ...args) => String(path) === '/proc/self/ns/pid' ? owner.namespace + '-caller' : originalReadlink(path, ...args);
+    syncBuiltinESMExports();
+    assert.throws(() => fs.readFileSync('/proc/' + owner.pid + '/stat'), { code: 'ENOENT' });
+    assert.notEqual(fs.readlinkSync('/proc/self/ns/pid'), owner.namespace);
+    assert.equal(originalRead(ownerPath, 'utf8'), bytes);
+    const { stopCheckRun } = await import('./scripts/check-lifecycle.mjs');
+    const result = await stopCheckRun(process.cwd());
+    assert.equal(result.status, 'cancelled');
+    assert.deepEqual(result.run, owner);
+    console.log(JSON.stringify({ status: result.status, simulatedProcInvisible: true, namespaceDifferent: true, ownerBindingUnchanged: true }));
+  `);
   const child = spawn(process.execPath, ['scripts/check.mjs'], { cwd: root, stdio: 'ignore' });
-  const exited = new Promise(resolve => child.once('exit', resolve));
-  await until(() => existsSync(join(root, 'started')), '拥有者已开始运行');
-  const path = join(root, 'logs/check-state/active/owner.json');
-  const owner = JSON.parse(readFileSync(path, 'utf8'));
-  // 模拟另一个终端命名空间：记录的 PID 对当前调用者不可见。
-  writeFileSync(path, JSON.stringify({ ...owner, pid: 2147483647, namespace: 'other-namespace' }));
-  const { stopCheckRun } = await import(new URL('../scripts/check-lifecycle.mjs', import.meta.url).href);
-  assert.equal((await stopCheckRun(root)).status, 'cancelled');
-  await exited;
-  assert.equal(existsSync(join(root, 'logs/check-state/active')), false);
+  const exited = new Promise<number | null>(resolve => child.once('exit', resolve));
+  try {
+    await until(() => existsSync(join(root, 'started')), '拥有者已开始运行');
+    const callerEnv = { ...process.env }; delete callerEnv.NODE_TEST_CONTEXT;
+    const caller = spawnSync(process.execPath, ['caller.mjs'], { cwd: root, env: callerEnv, encoding: 'utf8' });
+    writeFileSync(join(root, 'logs/caller-result.json'), JSON.stringify({ status: caller.status, stdout: caller.stdout, stderr: caller.stderr }));
+    assert.equal(caller.status, 0, caller.stderr);
+    assert.deepEqual(JSON.parse(caller.stdout), { status: 'cancelled', simulatedProcInvisible: true, namespaceDifferent: true, ownerBindingUnchanged: true });
+    assert.equal(await exited, 130, '拥有者通过真实控制通道自行取消');
+    assert.equal(existsSync(join(root, 'logs/check-state/active')), false);
+  } finally {
+    if (child.exitCode === null && child.signalCode === null) { child.kill('SIGTERM'); await exited; }
+  }
 });
 
 test('控制通道不可达且无法确认跨命名空间拥有者已死时保留锁', async t => {

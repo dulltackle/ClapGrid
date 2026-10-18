@@ -118,6 +118,18 @@ function groups(directory) {
   });
 }
 
+/** 停止快照期间仍可能有已拥有的子任务迟到登记，直到重新读取的整份登记都结束。 */
+async function drainRegisteredGroups(directory, confirmOwner) {
+  for (;;) {
+    confirmOwner();
+    for (const group of groups(directory)) {
+      confirmOwner(); await stopGroup(group); confirmOwner();
+    }
+    confirmOwner();
+    if (groups(directory).every(group => !groupAlive(group))) return;
+  }
+}
+
 async function terminate(group, signal) {
   if (!groupAlive(group)) return;
   try {
@@ -175,12 +187,14 @@ export async function withCheckRun(root, kind, work, options = {}) {
   const token = process.env.CLAPGRID_CHECK_TOKEN;
   let upstream;
   let ancestors = [];
+  const ancestorBindings = new Map();
   if (process.env.CLAPGRID_CHECK_REGISTRY) {
     upstream = JSON.parse(process.env.CLAPGRID_CHECK_REGISTRY);
     ancestors = [{ root: upstream.root, token: upstream.token }, ...(upstream.ancestors ?? [])].map(ancestor => ({ root: realpathSync(ancestor.root), token: ancestor.token }));
     for (const ancestor of ancestors) {
       const registryOwner = read(join(lockDirectory(ancestor.root), 'owner.json'));
       if (registryOwner.token !== ancestor.token) throw Error('上游检查身份已失效');
+      ancestorBindings.set(ancestor.root, registryOwner);
       if (existsSync(join(lockDirectory(ancestor.root), 'cancelled'))) throw Object.assign(Error('上游检查已取消，不启动新的子检查'), { cancelled: true });
     }
   }
@@ -224,10 +238,14 @@ export async function withCheckRun(root, kind, work, options = {}) {
     } catch { /* 未确认逻辑身份时只取消本地控制器，不写其他拥有者的目录。 */ }
     controller.abort();
   };
-  const ancestorActive = ancestor => {
-    try { return read(join(lockDirectory(ancestor.root), 'owner.json')).token === ancestor.token && !existsSync(join(lockDirectory(ancestor.root), 'cancelled')); }
+  const ancestorBound = ancestor => {
+    try {
+      const actual = read(join(lockDirectory(ancestor.root), 'owner.json'));
+      return actual.token === ancestor.token && sameOwnerBinding(actual, ancestorBindings.get(ancestor.root));
+    }
     catch { return false; }
   };
+  const ancestorActive = ancestor => ancestorBound(ancestor) && !existsSync(join(lockDirectory(ancestor.root), 'cancelled'));
   ancestors = ancestors.filter(ancestor => ancestor.root !== owner.root || ancestor.token !== owner.token);
   let server, closingServer;
   const closeLocalServer = () => closingServer ??= new Promise(resolveClose => server.close(resolveClose));
@@ -268,9 +286,10 @@ export async function withCheckRun(root, kind, work, options = {}) {
       const group = { pid, birth: birth(pid) };
       if (!group.birth) throw Error(`无法确认检查子进程 ${pid} 的身份`);
       // 独立工作树的子检查仍是本次命令的后代，取消时也必须覆盖其新进程组。
-      const activeAncestors = ancestors.filter(ancestorActive);
-      if (activeAncestors.length !== ancestors.length) cancel();
-      group.paths = [...new Set([directory, ...activeAncestors.map(ancestor => lockDirectory(ancestor.root))])].map(path => join(path, `group-${pid}.json`));
+      const boundAncestors = ancestors.filter(ancestorBound);
+      if (boundAncestors.length !== ancestors.length || !ancestors.every(ancestorActive)) cancel();
+      // 取消阻止新业务进入；已存在拥有者的迟到后代仍须归属所有未被替换的祖先。
+      group.paths = [...new Set([directory, ...boundAncestors.map(ancestor => lockDirectory(ancestor.root))])].map(path => join(path, `group-${pid}.json`));
       for (const path of group.paths) atomicJson(path, group);
       return group;
     },
@@ -282,11 +301,7 @@ export async function withCheckRun(root, kind, work, options = {}) {
       if (!owns || owner.pid !== process.pid || owner.birth !== birth(process.pid)) throw Error('只有实际拥有者可以回收整个检查的登记组');
       strictCleanup = true;
       confirmCleanupOwner();
-      for (const group of groups(directory)) {
-        confirmCleanupOwner();
-        await stopGroup(group);
-        confirmCleanupOwner();
-      }
+      await drainRegisteredGroups(directory, confirmCleanupOwner);
       // 不删除登记来取得通过；后到的新组必须真实退出，否则保守拒绝资源清理。
       if (checkRunGroupsEnded(owner.root, owner.token) !== true) throw Error('仍有已登记子组运行，保留锁和资源');
     },
@@ -296,16 +311,20 @@ export async function withCheckRun(root, kind, work, options = {}) {
   finally {
     try {
       if (owns) {
+        strictCleanup = true;
         confirmCleanupOwner();
-        // 包括组长提前退出但孙进程仍运行的情况，退出确认前不释放锁。
-        for (const group of groups(directory)) {
-          confirmCleanupOwner(); await stopGroup(group); confirmCleanupOwner();
+        // 资源清理及控制通道关闭均有 await；每次重新收齐组与资源后才允许解锁。
+        for (;;) {
+          await drainRegisteredGroups(directory, confirmCleanupOwner);
+          if (readdirSync(directory).some(name => name.startsWith('resource-'))) {
+            const { cleanupCheckResources } = await import('./playwright-resources.mjs'); confirmCleanupOwner();
+            await cleanupCheckResources(directory, owner.token, context.confirmGroupsEnded); confirmCleanupOwner();
+          }
+          await closeLocalServer(); confirmCleanupOwner();
+          const ended = context.confirmGroupsEnded();
+          if (ended === null) throw Error('无法确认完整登记组结束，保留锁和资源');
+          if (ended && !readdirSync(directory).some(name => name.startsWith('resource-'))) break;
         }
-        if (readdirSync(directory).some(name => name.startsWith('resource-'))) {
-          const { cleanupCheckResources } = await import('./playwright-resources.mjs'); confirmCleanupOwner();
-          await cleanupCheckResources(directory, owner.token, context.confirmGroupsEnded); confirmCleanupOwner();
-        }
-        await closeLocalServer(); confirmCleanupOwner();
         if (owner.verificationDirectory) atomicJson(join(owner.verificationDirectory, 'lifecycle-ended.json'), { token: owner.token, endedAt: new Date().toISOString() });
         confirmCleanupOwner();
         rmSync(directory, { recursive: true });
@@ -356,9 +375,21 @@ export async function stopCheckRun(root, options = {}) {
     while (existsSync(directory) && (acknowledged || birth(owner.pid) === owner.birth) && Date.now() < deadline) await delay(50);
     if (existsSync(directory)) {
       if (acknowledged || birth(owner.pid) === owner.birth) throw Error(`检查 ${owner.pid} 尚未完成停止，保留锁；请查看日志`);
-      for (const group of groups(directory)) await stopGroup(group);
-      if (read(join(directory, 'owner.json')).token !== owner.token) throw Error('运行身份已变化，拒绝清理');
-      if (readdirSync(directory).some(name => name.startsWith('resource-'))) await (await import('./playwright-resources.mjs')).cleanupCheckResources(directory, owner.token, checkRunGroupsEnded);
+      const confirmRecoveryOwner = () => {
+        const actual = currentCheckRun(root);
+        if (!actual || actual.token !== owner.token || !sameOwnerBinding(actual, owner) || actual.namespace !== namespace()) throw Error('运行拥有者绑定已变化，保留锁和登记');
+      };
+      for (;;) {
+        await drainRegisteredGroups(directory, confirmRecoveryOwner);
+        if (readdirSync(directory).some(name => name.startsWith('resource-'))) {
+          const confirmEnded = () => { confirmRecoveryOwner(); return checkRunGroupsEnded(root, owner.token); };
+          await (await import('./playwright-resources.mjs')).cleanupCheckResources(directory, owner.token, confirmEnded);
+        }
+        confirmRecoveryOwner();
+        const ended = checkRunGroupsEnded(root, owner.token);
+        if (ended === null) throw Error('无法确认恢复登记组结束，保留锁和资源');
+        if (ended && !readdirSync(directory).some(name => name.startsWith('resource-'))) break;
+      }
       if (owner.verificationDirectory) atomicJson(join(owner.verificationDirectory, 'lifecycle-ended.json'), { token: owner.token, endedAt: new Date().toISOString() });
       rmSync(directory, { recursive: true });
       if (process.platform !== 'win32' && owner.socket) rmSync(owner.socket, { force: true });

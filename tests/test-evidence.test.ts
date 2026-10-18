@@ -621,3 +621,184 @@ test('并发子报告损坏仍保留另一lane完整原件和失败范围，不�
   assert.equal(JSON.parse(readFileSync(stage.lanes[2].report,'utf8')).status,'passed');
   assert.equal(existsSync(join(root,'logs/check-state/active')),false);
 });
+
+/** 188 在同一公开完整入口增加第二个已显式取得夹具资格的 PW 文件。 */
+function overlapQuotaRepository(t: TestContext, quota: 1 | 2, synchronize = true) {
+  const fixture=overlapRepository(t), {root,policy}=fixture;
+  const inventory=JSON.parse(readFileSync(join(root,'scripts/test-inventory.json'),'utf8'));
+  inventory.files.push({file:'tests/video-panel.test.ts',executor:'playwright',scopes:['all']});
+  writeFileSync(join(root,'scripts/test-inventory.json'),JSON.stringify(inventory));
+  writeFileSync(join(root,'tests/export-tasks.test.ts'),`import{test,expect}from'vitest';import{writeFileSync,existsSync}from'node:fs';import{isMainThread}from'node:worker_threads';test('VT单fork实际执行',async()=>{expect(isMainThread).toBe(true);expect(typeof process.send).toBe('function');expect(existsSync('logs/exclusive')).toBe(true);writeFileSync('logs/vt-start','');await new Promise(r=>setTimeout(r,400));});`);
+  for(const [name,other] of [['audio','video'],['video','audio']]) {
+    writeFileSync(join(root,`tests/${name}-panel.test.ts`),`import{test,expect}from'@playwright/test';import{appendFileSync,writeFileSync,existsSync}from'node:fs';test('PW ${name}真实worker',async({},info)=>{expect(existsSync('logs/exclusive')).toBe(true);writeFileSync('logs/pw-start','');writeFileSync('logs/${name}-ready','');appendFileSync('logs/pw-workers',JSON.stringify({file:'${name}',pid:process.pid,worker:info.workerIndex})+'\\n');${quota===2&&synchronize?`const end=Date.now()+8000;while(!existsSync('logs/${other}-ready')&&Date.now()<end)await new Promise(r=>setTimeout(r,20));expect(existsSync('logs/${other}-ready')).toBe(true);`:''}await new Promise(r=>setTimeout(r,100));});`);
+  }
+  policy.files.push({file:'tests/video-panel.test.ts',executor:'playwright',qualified:true,isolation:'本受控夹具原生worker与文件标记独立'});
+  policy.inventorySha256=createHash('sha256').update(readFileSync(join(root,'scripts/test-inventory.json'))).digest('hex');
+  const bind=()=>{
+    for(const entry of policy.files)entry.sha256=createHash('sha256').update(readFileSync(join(root,entry.file))).digest('hex');
+    writeFileSync(join(root,'scripts/test-overlap.json'),JSON.stringify(policy));
+  };
+  bind();
+  return {...fixture,quota,inventory,bind};
+}
+function overlapOutcome(root: string) {
+  const path=readdirSync(join(root,'logs/check'),{recursive:true}).filter(path=>String(path).endsWith('summary.json')&&!String(path).includes('preflight')).sort().at(-1);
+  const summary=JSON.parse(readFileSync(join(root,'logs/check',String(path)),'utf8'));
+  const stage=summary.results.find((item:any)=>item.name==='test');
+  const log=join(summary.directory,'test.log');
+  const lanes=stage?.lanes??(existsSync(log)?readFileSync(log,'utf8').trim().split('\n').map(line=>JSON.parse(line)):[]);
+  return {summary,stage,lanes};
+}
+for(const quota of [1,2] as const)test(`1+${quota}公开入口按实际原生配额收齐完整范围，未知文件先独占`, t=>{
+  const {root,command}=overlapQuotaRepository(t,quota);
+  const result=command('scripts/check.mjs','--execution',`overlap-1+${quota}`);
+  assert.equal(result.status,0,result.stdout+result.stderr);
+  const {summary,stage,lanes}=overlapOutcome(root);
+  assert.equal(summary.executionMode,`overlap-1+${quota}`);assert.equal(lanes.length,3);
+  const pw=JSON.parse(readFileSync(lanes[2].report,'utf8'));
+  const native=JSON.parse(readFileSync(pw.sources.native.path,'utf8'));
+  assert.equal(native.config.workers,quota);assert.equal(native.config.projects[0].retries,0);
+  assert.equal(new Set(pw.actual.cases.map((item:any)=>item.workerIndex)).size,quota);
+  assert.deepEqual(pw.actual.files.map((item:any)=>item.file).sort(),['tests/audio-panel.test.ts','tests/video-panel.test.ts']);
+  assert.equal(JSON.parse(readFileSync(stage.actualProof.path,'utf8')).result.lanes.length,3);
+  assert.equal(existsSync(join(root,'logs/check-state/active')),false);
+});
+
+const overlapFaults=['普通失败','报告丢失','报告截断','原件篡改','错身份','漏文件','worker退出','未捕获错误','零收集','源码变化','累计损坏','UI跳过','UItodo','缺浏览器','重复归属'] as const;
+for(const quota of [1,2] as const)for(const fault of overlapFaults)test(`1+${quota}真实故障 ${fault} 拒绝完整通过并在当前源码实际集中复验恢复`,t=>{
+  const {root,command,env,policy,pkg,inventory,bind}=overlapQuotaRepository(t,quota,false);
+  const vt=join(root,'tests/export-tasks.test.ts'),pw=join(root,'tests/audio-panel.test.ts');
+  const mutateVT=(body:string)=>writeFileSync(vt,readFileSync(vt,'utf8').replace('await new Promise(r=>setTimeout(r,400));',body));
+  if(fault==='普通失败')mutateVT("throw Error('ordinary-failure-188');");
+  if(fault==='worker退出')mutateVT('process.exit(23);');
+  if(fault==='未捕获错误')mutateVT("setTimeout(()=>{throw Error('uncaught-188')},0);await new Promise(r=>setTimeout(r,50));");
+  if(fault==='零收集')writeFileSync(vt,'export {};');
+  if(fault==='源码变化'){writeFileSync(join(root,'source-input'),'original');mutateVT("writeFileSync('source-input','changed-during-execution');");}
+  if(fault==='UI跳过'||fault==='UItodo')writeFileSync(pw,`import{test}from'@playwright/test';test.${fault==='UI跳过'?'skip':'fixme'}('严格UI必须实际执行',()=>{});`);
+  if(fault==='缺浏览器'){
+    env.CHROME_BIN='/clapgrid/missing-chrome-188';
+    writeFileSync(pw,`import{test}from${JSON.stringify(pathToFileURL(join(project,'tests/helpers/playwright-browser.ts')).href)};test('真实浏览器不可缺失',async({panel})=>{});`);
+  }
+  const mutations:Record<string,string>={
+    '报告丢失':"fs.rmSync(path)",
+    '报告截断':"fs.writeFileSync(path,'{truncated:')",
+    '原件篡改':"const report=JSON.parse(fs.readFileSync(path,'utf8'));fs.appendFileSync(report.sources.native.path,' ')",
+    '错身份':"const report=JSON.parse(fs.readFileSync(path,'utf8'));report.identity.executionId='ffffffff-ffff-4fff-afff-ffffffffffff';fs.writeFileSync(path,JSON.stringify(report))",
+    '漏文件':"const report=JSON.parse(fs.readFileSync(path,'utf8'));report.actual.files=[];fs.writeFileSync(path,JSON.stringify(report))",
+    '累计损坏':"const summary=JSON.parse(fs.readFileSync(dirname(path)+'/preflight/summary.json','utf8'));const original=JSON.parse(fs.readFileSync(summary.results.find(item=>item.testReport).testReport,'utf8'));fs.appendFileSync(original.sources.native.path,' ')",
+  };
+  if(mutations[fault]){
+    writeFileSync(join(root,'fault.mjs'),`import{spawnSync}from'node:child_process';import*as fs from'node:fs';import{dirname}from'node:path';const args=process.argv.slice(2);const child=spawnSync(process.execPath,['scripts/test-runner.mjs',...args],{stdio:'inherit'});if(args.join(' ').includes('export-tasks')){const path=process.env.CLAPGRID_TEST_REPORT;${mutations[fault]};}process.exitCode=child.status??1;`);
+    pkg.scripts.test='node fault.mjs';writeFileSync(join(root,'package.json'),JSON.stringify(pkg));
+  }
+  bind();
+  if(fault==='重复归属'){inventory.files.push(inventory.files.find((item:any)=>item.executor==='vitest'));writeFileSync(join(root,'scripts/test-inventory.json'),JSON.stringify(inventory));}
+  const args=['scripts/check.mjs','--execution',`overlap-1+${quota}`];
+  mkdirSync(join(root,'logs'),{recursive:true});
+  writeFileSync(join(root,'logs/fault-input.json'),JSON.stringify({fault,quota,args,expected:'失败且无自动重试；正常对侧仍完整收集；随后当前源码集中复验'},null,2));
+  const result=command(...args);
+  writeFileSync(join(root,'logs/fault-command.json'),JSON.stringify(result,null,2));
+  assert.notEqual(result.status,0,`${fault}: ${result.stdout}${result.stderr}`);
+  if(fault==='重复归属')assert.equal(existsSync(join(root,'logs/pw-start')),false,'清单不完整在调度前失败');
+  else {
+    const {summary,lanes}=overlapOutcome(root);
+    assert.notEqual(summary.status,'passed');assert.equal(lanes.length,3,'不能以串行fallback伪装并发故障覆盖');
+    const opposite=lanes.find((lane:any)=>lane.files.some((file:string)=>file.includes(['UI跳过','UItodo','缺浏览器'].includes(fault)?'export-tasks':'audio-panel')));
+    assert.ok(opposite,'另一lane必须有实际执行记录');
+    const report=JSON.parse(readFileSync(opposite.report,'utf8'));
+    assert.ok(report.actual.cases.length,'另一lane仍完整收集实际用例');
+    if(fault!=='源码变化')assert.equal(opposite.status,'passed',JSON.stringify(opposite));
+    if(fault==='worker退出'||fault==='未捕获错误'){
+      const own=lanes.find((lane:any)=>lane.files.includes('tests/export-tasks.test.ts'));
+      assert.equal(own.status,'failed');
+      assert.match(readFileSync(own.log,'utf8'),fault==='worker退出'?/Worker|worker|exited|exit/i:/uncaught-188/);
+    }
+  }
+  assert.equal(existsSync(join(root,'logs/check-state/active')),false,'故障收齐后释放拥有者锁');
+  assert.equal(existsSync(join(root,'logs/check-state/failures.json')),true,'失败待办真实存在');
+  // 当前源码修复后实际运行公开集中复验；不把清单存在冒充恢复完成。
+  delete env.CHROME_BIN;
+  inventory.files=inventory.files.filter((item:any,index:number,all:any[])=>all.findIndex(other=>other.file===item.file)===index);
+  writeFileSync(join(root,'scripts/test-inventory.json'),JSON.stringify(inventory));
+  for(const file of ['export-tasks','new'])writeFileSync(join(root,`tests/${file}.test.ts`),`import{test}from'vitest';test('当前源码修复后实际复验',()=>{});`);
+  for(const file of ['audio','video'])writeFileSync(join(root,`tests/${file}-panel.test.ts`),`import{test}from'@playwright/test';test('严格UI当前源码实际复验',()=>{});`);
+  pkg.scripts.test='node scripts/test-runner.mjs';writeFileSync(join(root,'package.json'),JSON.stringify(pkg));
+  const recovered=command('scripts/check.mjs','--failed');
+  writeFileSync(join(root,'logs/recheck-command.json'),JSON.stringify(recovered,null,2));
+  assert.equal(recovered.status,0,`${fault}集中复验: ${recovered.stdout}${recovered.stderr}`);
+  assert.equal(existsSync(join(root,'logs/check-state/failures.json')),false,'实际完整复验后才清待办');
+  assert.equal(existsSync(join(root,'logs/check-state/active')),false);
+});
+
+for(const quota of [1,2] as const)test(`1+${quota}取消在drain期间收齐迟到登记及嵌套子测试，另一真实worktree继续完成`,async t=>{
+  const {root,env,policy,bind}=overlapQuotaRepository(t,quota,false);
+  const put=(name:string,source:string)=>writeFileSync(join(root,name),source);
+  mkdirSync(join(root,'logs'),{recursive:true});
+  put('other-task.mjs',`import{withCheckRun}from'./scripts/check-lifecycle.mjs';import{runLogged}from'./scripts/check-runner.mjs';import{writeFileSync}from'node:fs';const result=await withCheckRun(process.cwd(),'unrelated-worktree',context=>runLogged(process.execPath,['-e',"const fs=require('fs');setInterval(()=>{fs.appendFileSync('logs/heartbeat',Date.now()+String.fromCharCode(10));if(fs.existsSync('logs/release'))process.exit(0)},40)"],process.cwd(),'logs/task.log',context));writeFileSync('logs/result.json',JSON.stringify(result));process.exitCode=result.status==='passed'?0:1;`);
+  put('registrar.mjs',`import{spawn}from'node:child_process';import{mkdirSync,writeFileSync}from'node:fs';import{withCheckRun}from'./scripts/check-lifecycle.mjs';const base=process.cwd();setInterval(()=>{},1000);mkdirSync(base+'/logs/registrar-root',{recursive:true});await withCheckRun(base+'/logs/registrar-root','already-started-subtest',async context=>{const child=spawn(process.execPath,['late-owner.mjs'],{cwd:base,env:context.env,detached:true,stdio:'ignore'});const group=context.register(child.pid);writeFileSync(base+'/logs/registrar-ready',JSON.stringify(group));await new Promise(()=>{});});`);
+  put('late-owner.mjs',`import{spawn}from'node:child_process';import{randomUUID}from'node:crypto';import{mkdirSync,writeFileSync,readFileSync,existsSync}from'node:fs';import{withCheckRun,currentCheckRun}from'./scripts/check-lifecycle.mjs';import{registerPlaywrightResources}from'./scripts/playwright-resources.mjs';const base=process.cwd();setInterval(()=>{},1000);let term;const terminated=new Promise(resolve=>term=resolve);process.on('SIGTERM',()=>term());mkdirSync(base+'/logs/slow-root',{recursive:true});await withCheckRun(base+'/logs/slow-root','late-registering-owner',async context=>{writeFileSync(base+'/logs/slow-ready','');await terminated;await new Promise(r=>setTimeout(r,100));const child=spawn(process.execPath,['deep-child.mjs'],{cwd:base,env:context.env,detached:true,stdio:'ignore'});const group=context.register(child.pid);process.env.CLAPGRID_CHECK_REGISTRY=context.env.CLAPGRID_CHECK_REGISTRY;mkdirSync(base+'/logs/late-container',{recursive:true});const resource=registerPlaywrightResources(base+'/logs/late-container',randomUUID());mkdirSync(base+'/logs/forbidden-root',{recursive:true});let newCheckRejected=false;try{await withCheckRun(base+'/logs/forbidden-root','forbidden-new-task',async()=>writeFileSync(base+'/logs/forbidden-start',''));}catch(error){newCheckRejected=/上游检查已取消/.test(error.message);}const end=Date.now()+1000;while(!existsSync(base+'/logs/deep-ready')&&Date.now()<end)await new Promise(r=>setTimeout(r,10));writeFileSync(base+'/logs/late-during.json',JSON.stringify({group,resource,newCheckRejected,ownOwner:currentCheckRun(base+'/logs/slow-root'),parentOwner:currentCheckRun(base),cancelAlreadyRequested:existsSync(base+'/logs/check-state/active/cancelled'),at:new Date().toISOString()},null,2));await new Promise(()=>{});});`);
+  put('deep-child.mjs',`import{spawn}from'node:child_process';import{writeFileSync}from'node:fs';const ffmpeg=spawn('ffmpeg',['-v','error','-re','-f','lavfi','-i','sine=frequency=440','-f','null','-'],{stdio:'ignore'});const subtest=spawn(process.execPath,['--test','subtask.mjs'],{stdio:'ignore'});writeFileSync('logs/deep-ready',JSON.stringify({pid:process.pid,ffmpegPid:ffmpeg.pid,subtestPid:subtest.pid}));setInterval(()=>{},1000);`);
+  put('subtask.mjs',`import{test}from'node:test';import{writeFileSync}from'node:fs';test('真实嵌套子测试任务',async()=>{writeFileSync('logs/subtask-pid',String(process.pid));setInterval(()=>{},1000);await new Promise(()=>{});});`);
+  put('tests/export-tasks.test.ts',`import{test}from'vitest';import{spawn}from'node:child_process';import{writeFileSync,existsSync}from'node:fs';test('已开始的嵌套任务与媒体',async()=>{const ffmpeg=spawn('ffmpeg',['-v','error','-re','-f','lavfi','-i','sine=frequency=220','-f','null','-'],{stdio:'ignore'});writeFileSync('logs/vt-ffmpeg',String(ffmpeg.pid));spawn(process.execPath,['registrar.mjs'],{stdio:'ignore'});const end=Date.now()+8000;while(!existsSync('logs/slow-ready')&&Date.now()<end)await new Promise(r=>setTimeout(r,20));writeFileSync('logs/vt-start','');await new Promise(()=>{});},60000);`);
+  for(const name of ['audio','video'])put(`tests/${name}-panel.test.ts`,`import{test}from${JSON.stringify(pathToFileURL(join(project,'tests/helpers/playwright-browser.ts')).href)};import{writeFileSync}from'node:fs';test('真实Chrome ${name}',async({panel})=>{writeFileSync('logs/${name}-ready','');await new Promise(()=>{});});`);
+  bind();
+  const git=(...args:string[])=>execFileSync('git',['-C',root,...args],{encoding:'utf8'}).trim();
+  git('add','.');git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','-c','commit.gpgsign=false','commit','-qm','late registration fixture');
+  const other=root+'-other-worktree';
+  const creation=git('worktree','add','--detach',other,'HEAD');
+  dependencyView(other,join(project,'node_modules'));mkdirSync(join(other,'logs'));
+  writeFileSync(join(root,'logs/worktree-creation.json'),JSON.stringify({creation,other,registration:git('worktree','list','--porcelain')},null,2));
+  const foreignEnv={...env,CLAPGRID_CHECK_SCOPE:undefined,CLAPGRID_CHECK_TOKEN:undefined,CLAPGRID_CHECK_REGISTRY:undefined,CLAPGRID_CHECK_CHILD_ROOT:undefined};
+  const foreign=spawn(process.execPath,['other-task.mjs'],{cwd:other,env:foreignEnv,stdio:'ignore'}),foreignClosed=new Promise<number|null>(resolve=>foreign.once('close',resolve));
+  const child=spawn(process.execPath,['scripts/check.mjs','--execution',`overlap-1+${quota}`],{cwd:root,env,stdio:'ignore'}),closed=new Promise<number|null>(resolve=>child.once('close',resolve));
+  const until=async(check:()=>boolean,message:string)=>{const end=Date.now()+15000;while(!check()&&Date.now()<end)await new Promise(r=>setTimeout(r,25));assert.ok(check(),message);};
+  const stop=()=>spawnSync(process.execPath,['scripts/check-lifecycle.mjs'],{cwd:root,env,encoding:'utf8',timeout:20000});
+  // 原控制入口恢复对应nested owner；不按新采样PID追认或杀其他任务。
+  const cleanupNested=async(where:string)=>{
+    const {stopCheckRun}=await import(new URL('../scripts/check-lifecycle.mjs',import.meta.url).href);
+    if(existsSync(join(where,'logs/check-state/active')))await stopCheckRun(where);
+  };
+  try {
+    await until(()=>existsSync(join(root,'logs/vt-start'))&&existsSync(join(root,'logs/audio-ready'))&&(quota===1||existsSync(join(root,'logs/video-ready')))&&existsSync(join(other,'logs/heartbeat')),'本次两路与另一真实worktree必须实际非终态');
+    const otherOwner=JSON.parse(readFileSync(join(other,'logs/check-state/active/owner.json'),'utf8'));
+    const beforeHeartbeat=readFileSync(join(other,'logs/heartbeat'),'utf8');
+    const before={rootOwner:JSON.parse(readFileSync(join(root,'logs/check-state/active/owner.json'),'utf8')),otherOwner,beforeHeartbeat,registrar:JSON.parse(readFileSync(join(root,'logs/registrar-ready'),'utf8'))};
+    writeFileSync(join(root,'logs/late-before.json'),JSON.stringify(before,null,2));
+    const stopped=stop();writeFileSync(join(root,'logs/late-stop-result.json'),JSON.stringify(stopped,null,2));
+    await closed;
+    assert.equal(existsSync(join(root,'logs/late-during.json')),true,'必须实际在取消后首组drain期间登记');
+    const during=JSON.parse(readFileSync(join(root,'logs/late-during.json'),'utf8'));
+    assert.equal(during.cancelAlreadyRequested,true);
+    assert.equal(during.newCheckRejected,true,'保留祖先归属不允许取消后启动新独立任务');
+    assert.equal(existsSync(join(root,'logs/forbidden-start')),false);
+    let lateProcess;try{const raw=readFileSync(`/proc/${during.group.pid}/stat`,'utf8');const fields=raw.slice(raw.lastIndexOf(') ')+2).split(' ');lateProcess={pid:during.group.pid,state:fields[0],birth:fields[19],matchesRegisteredBirth:fields[19]===during.group.birth};}catch(error:any){lateProcess={pid:during.group.pid,absent:error.code==='ENOENT'};}
+    writeFileSync(join(root,'logs/late-after-stop-observation.json'),JSON.stringify({rootLockPresent:existsSync(join(root,'logs/check-state/active')),lateProcess,otherOwner:JSON.parse(readFileSync(join(other,'logs/check-state/active/owner.json'),'utf8')),otherStillRunning:foreign.exitCode===null},null,2));
+    assert.ok(during.group.paths.includes(join(root,'logs/check-state/active',`group-${during.group.pid}.json`)),'迟到group必须继续登记仍绑定的已取消祖先');
+    assert.equal(stopped.status,0,stopped.stdout+stopped.stderr);
+    assert.equal(child.exitCode,130);
+    assert.equal(existsSync(join(root,'logs/check-state/active')),false);
+    const deep=JSON.parse(readFileSync(join(root,'logs/deep-ready'),'utf8'));
+    const logs=readdirSync(join(root,'logs/check'),{recursive:true}).filter(path=>String(path).endsWith('.log')).map(path=>readFileSync(join(root,'logs/check',String(path)),'utf8')).join('\n');
+    const chromePids=[...new Set([...logs.matchAll(/"chromePid":(\d+)/g)].map(match=>Number(match[1])))];
+    assert.equal(chromePids.length,quota,'两种配额都实际启动全部Chrome worker');
+    const pids=[...Object.values(deep),Number(readFileSync(join(root,'logs/vt-ffmpeg'),'utf8')),...chromePids,...(existsSync(join(root,'logs/subtask-pid'))?[Number(readFileSync(join(root,'logs/subtask-pid'),'utf8'))]:[])];
+    const exited=(pid:any)=>{try{const raw=readFileSync(`/proc/${pid}/stat`,'utf8');return ['Z','X'].includes(raw.slice(raw.lastIndexOf(') ')+2).split(' ')[0]!);}catch(error:any){if(error.code==='ENOENT')return true;throw error;}};
+    assert.ok(pids.every(exited),`全部实际后代结束：${JSON.stringify(pids)}`);
+    assert.equal(existsSync(during.resource.directory),false,'迟到资源仅在全部组退出后清理');
+    await until(()=>readFileSync(join(other,'logs/heartbeat'),'utf8').length>beforeHeartbeat.length,'取消后另一worktree继续产出');
+    assert.equal(existsSync(join(other,'logs/check-state/active')),true);
+    assert.equal(foreign.exitCode,null);writeFileSync(join(other,'logs/release'),'normal completion');
+    assert.equal(await foreignClosed,0);assert.equal(JSON.parse(readFileSync(join(other,'logs/result.json'),'utf8')).status,'passed');
+    writeFileSync(join(root,'logs/late-after.json'),JSON.stringify({childExitCode:130,allDescendantsExited:true,pids,lateResourceRemoved:true,rootLockAbsent:true,otherOwner,otherHeartbeatAfter:readFileSync(join(other,'logs/heartbeat'),'utf8'),otherCompleted:true},null,2));
+  } finally {
+    if(child.exitCode===null&&child.signalCode===null){child.kill('SIGTERM');await closed;}
+    // 红测也通过同一root/nested控制入口逐个恢复，身份不明时保留并报错。
+    await cleanupNested(root);
+    await cleanupNested(join(root,'logs/slow-root'));
+    await cleanupNested(join(root,'logs/registrar-root'));
+    if(foreign.exitCode===null&&foreign.signalCode===null){writeFileSync(join(other,'logs/release'),'normal completion');await foreignClosed;}
+    cpSync(join(other,'logs'),join(root,'logs/other-worktree-evidence'),{recursive:true});
+    git('worktree','remove',other);
+    writeFileSync(join(root,'logs/worktree-cleanup.json'),JSON.stringify({removed:!existsSync(other),registration:git('worktree','list','--porcelain')},null,2));
+  }
+});
