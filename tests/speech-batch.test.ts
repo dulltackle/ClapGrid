@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -42,7 +42,7 @@ test('批量固定勾选、局部失败继续、整批终态解锁且重发不�
     assert.deepEqual(result.results.map(item => item.outcome), ['existing', 'existing']);
     assert.equal(result.summary.completed, 2); assert.equal(result.summary.succeeded, 1);
     assert.equal(calls, 2);
-  } finally { business.close(); rmSync(directory, { recursive: true, force: true }); }
+  } finally { await business.close(); rmSync(directory, { recursive: true, force: true }); }
 });
 
 test('失败范围限定操作，显式重试读取最新输入并跳过已成功与已删除目标', async () => {
@@ -72,7 +72,7 @@ test('失败范围限定操作，显式重试读取最新输入并跳过已成�
     const deleted = business.submitSpeechBatch({ requestId: randomUUID(), mode: 'retry', scope: { kind: 'failed_operation', operationId: first.id } });
     assert.match(deleted.results[0]!.message, /已删除/);
     assert.deepEqual(texts, ['第一批', '第二批', '最新文案', '第二批']);
-  } finally { business.close(); rmSync(directory, { recursive: true, force: true }); }
+  } finally { await business.close(); rmSync(directory, { recursive: true, force: true }); }
 });
 
 test('缺失或待更新范围、空选择及逐项拒绝不会静默扩大或追加任务', async () => {
@@ -97,7 +97,7 @@ test('缺失或待更新范围、空选择及逐项拒绝不会静默扩大或�
     const lease = business.acquire('user');
     const rejected = business.submitSpeechBatch({ requestId: randomUUID(), mode: 'generate', scope: { kind: 'ids', ids: [business.getSnapshot().segments[2]!.id] } });
     assert.match(rejected.results[0]!.message, /正在修改/); business.release(lease);
-  } finally { business.close(); rmSync(directory, { recursive: true, force: true }); }
+  } finally { await business.close(); rmSync(directory, { recursive: true, force: true }); }
 });
 
 test('重开批量操作保留成功结果，未完成显示已中断，不续跑且重发不产生请求', async () => {
@@ -110,10 +110,10 @@ test('重开批量操作保留成功结果，未完成显示已中断，不续�
     const input = { requestId: randomUUID(), mode: 'generate' as const, scope: { kind: 'all' as const } };
     const batch = business.submitSpeechBatch(input);
     for (let i = 0; i < 100 && calls < 2; i++) await new Promise(resolve => setTimeout(resolve, 5));
-    business.close(); business = openBusiness(directory, runtime);
+    await business.close(); business = openBusiness(directory, runtime);
     const replay = business.submitSpeechBatch(input);
     assert.equal(replay.id, batch.id); assert.equal(replay.summary.succeeded, 1); assert.equal(replay.summary.interrupted, 2);
     assert.match(replay.results[1]!.message, /已中断/);
     assert.equal(calls, 2); assert.equal(business.getSpeechStatus().locked, false);
-  } finally { business.close(); rmSync(directory, { recursive: true, force: true }); }
+  } finally { await business.close(); rmSync(directory, { recursive: true, force: true }); }
 });

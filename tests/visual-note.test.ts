@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -10,20 +10,23 @@ import { batchSchema, editSegmentSchema } from '../src/shared/contracts.js';
 
 test('旧项目补齐空画面说明，独立修改、清空、重开及新增均保留正确内容', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-visual-note-'));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
   const id = randomUUID();
   const legacy = new DatabaseSync(join(directory, 'clapgrid.sqlite'));
-  legacy.exec('CREATE TABLE segments (id TEXT PRIMARY KEY, position INTEGER NOT NULL UNIQUE, text TEXT NOT NULL)');
-  legacy.prepare('INSERT INTO segments VALUES (?, 1, ?)').run(id, '旧文案');
-  legacy.close();
+  try {
+    legacy.exec('CREATE TABLE segments (id TEXT PRIMARY KEY, position INTEGER NOT NULL UNIQUE, text TEXT NOT NULL)');
+    legacy.prepare('INSERT INTO segments VALUES (?, 1, ?)').run(id, '旧文案');
+  } finally { legacy.close(); }
   const business = openBusiness(directory);
+  let initialClosed = false;
+  t.onTestFinished(async () => { if (!initialClosed) await business.close(); });
   assert.equal(business.getSnapshot().segments[0]!.visualNote, '');
   business.updateSegment(id, { visualNote: '产品特写\n切换全景' });
   business.editSegment(id, '新文案');
   assert.equal(business.getSnapshot().segments[0]!.visualNote, '产品特写\n切换全景');
-  await business.close();
+  await business.close(); initialClosed = true;
   const reopened = openBusiness(directory);
-  t.after(() => reopened.close());
+  t.onTestFinished(() => reopened.close());
   assert.deepEqual(reopened.getSnapshot().segments[0], { id, order: 1, text: '新文案', visualNote: '产品特写\n切换全景', video: null });
   reopened.updateSegment(id, { visualNote: '' });
   assert.equal(reopened.getSnapshot().segments[0]!.text, '新文案');
@@ -36,9 +39,9 @@ test('旧项目补齐空画面说明，独立修改、清空、重开及新增�
 
 test('说明变化使旧完整快照失效，范围编辑只更改说明，查找仍只搜索文案', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-note-conflict-'));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
   const business = openBusiness(directory);
-  t.after(() => business.close());
+  t.onTestFinished(() => business.close());
   const original = business.addSegment('原文').segments[0]!;
   business.updateSegment(original.id, { visualNote: '仅说明包含的关键词' });
   const token = business.acquire('codex');
