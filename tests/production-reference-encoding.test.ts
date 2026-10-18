@@ -1,10 +1,13 @@
-import { test, type TestContext } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, cpSync, readFileSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+
+// 原 Node 文件未设置测试及清理时限；仅本迁移文件保留相同语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const root = resolve('tests/fixtures/production-reference-encoding');
 const cli = resolve('scripts/production.mjs');
@@ -16,7 +19,7 @@ function fixture(t: TestContext, name: string) {
   assert.ok(item, name);
   const project = mkdtempSync(join(tmpdir(), 'clapgrid-reference-encoding-'));
   cpSync(join(root, name, 'project'), project, { recursive: true });
-  t.after(() => rmSync(project, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
   const manifest = JSON.parse(readFileSync(join(project, 'production.json'), 'utf8')) as { files: { path: string }[] };
   const save = () => writeFileSync(join(project, 'production.json'), JSON.stringify(manifest));
   const run = (report = join(project, 'report.json'), archive = item.versions[0]!.archive) => {

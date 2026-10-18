@@ -1,15 +1,19 @@
 import assert from 'node:assert/strict';
-import { test, type TestContext } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
+
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 
+// 原 Node 文件未设置测试及清理时限；仅本迁移文件保留相同语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 // 隔离机制测试：声明的真实来源仅用于验证规则，不构成实际用户审阅或制作许可。
 const api = await import(new URL('../scripts/production/evidence.mjs', import.meta.url).href);
 function fixture(t: TestContext) {
   const project = mkdtempSync(join(tmpdir(), '证据复核 机制测试 '));
-  t.after(() => rmSync(project, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
   for (const id of ['A', 'B']) writeFileSync(join(project, `${id}.txt`), `已审阅产物 ${id}`);
   const required = ['A', 'B'].map(id => ({ id, kind: 'user', artifact: `${id}.txt`, scope: [id] }));
   const records = required.flatMap(criterion => {
