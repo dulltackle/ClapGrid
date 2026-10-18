@@ -350,21 +350,21 @@
     },
     {
       "file": "tests/production-archive-baseline.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-archive-node.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-archive-publication.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -406,14 +406,14 @@
     },
     {
       "file": "tests/production-package-restore.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-package.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
