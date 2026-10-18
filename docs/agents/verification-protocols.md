@@ -42,7 +42,7 @@ UI 测试同时保存 TAP 和原生事件 JSON；失败文件写入同一失败�
 
 ## 预检与失败复验
 
-`npm run check:preflight` 执行 `package.json` 中的 `checkPreflight`；当前依次为类型检查、`npm run test:environment`、`npm run test:tooling` 及 `npm run test:rows`。环境预检前置 watch、检查生命周期与独立正式检出三个文件，已通过文件由同次累计机制计入后续 tooling/all，不重复执行。watch 公共夹具将 .cache/.vite/.vite-temp 可写缓存留在夹具内，包链接只读共享。工具专项覆盖检查生命周期和失败报告，行布局专项覆盖定位助手、说明展开、配音布局、滚轮拖拽、文案编辑、宽面板联动、行菜单及长文案。开发检查及正式验收都强制先预检，失败或源码失效时停止，完整检查范围仍为 typecheck/test/build。
+`npm run check:preflight` 执行 `package.json` 中的 `checkPreflight`；当前依次为类型检查、`npm run test:environment`、`npm run test:tooling` 及 `npm run test:rows`。环境预检前置 watch、检查生命周期与独立正式检出三个文件，已通过文件由同次累计机制计入后续 tooling/all，不重复执行。watch 公共夹具将 .cache/.vite/.vite-temp/.vitest-cache 可写缓存留在夹具内，启动前预建缓存目录，包链接只读共享。工具专项覆盖检查生命周期和失败报告，行布局专项覆盖定位助手、说明展开、配音布局、滚轮拖拽、文案编辑、宽面板联动、行菜单及长文案。开发检查及正式验收都强制先预检，失败或源码失效时停止，完整检查范围仍为 typecheck/test/build。
 
 原生 Node 测试事件同时产生 TAP 原始日志与 JSON 失败清单，包含全部失败文件、名称和位置。阶段日志记录起止时间；取消和不完整测试报告不能作为通过证据。失败待办保存于本工作树的 `logs/check-state/failures.json`。再次完整检查之前，先在当前受检源码中集中运行失败文件（文件中的其他用例也一起运行）及失败的非测试阶段；全部通过且源码稳定才解除阻塞。未知测试失败缺少精确文件时复跑完整测试，缺失或越界的已知文件则报错，不能静默漏掉。
 
@@ -107,7 +107,7 @@ Playwright 继续直接消费官方 JSON，只按每个 test 的原生 results �
 
 `vitest.config.ts` 显式采用仓库根，沿用生产 `@` alias，include 从唯一执行者清单派生全部 Vitest 文件。生产 Vite 的 `src/panel` 根和 Tailwind CSS 插件继续用于面板构建；Node 试点不加载该 CSS 插件。框架配置纳入类型检查，框架不替代类型检查和生产构建。
 
-`test-runner.mjs` 根据唯一文件归属顺序调用 Node、Vitest（及后续浏览器执行者），未迁移测试、生命周期及原生报告专项保留 Node。显式 `--files '["tests/text-search.test.ts"]'` 可交付精确集合；错误归属、遗漏、重复与空集合仍失败。默认 all、预检、集中失败复验与正式验收使用同一分派；预检与完整范围按下述同次累计规则去重。
+`test-runner.mjs` 根据唯一文件归属串行调用执行者；#174 第一阶段常规文件已全部由 Vitest 与 Playwright 承接，真实 Node/TAP 夹具及 comparison-only 历史对照保留 Node adapter。显式 `--files '["tests/text-search.test.ts"]'` 可交付精确集合；错误归属、遗漏、重复与空集合仍失败。默认 all、预检、集中失败复验与正式验收使用同一分派；预检与完整范围按下述同次累计规则去重。
 
 Vitest 保存可读日志及官方生命周期原始事件 JSON（#163 移除无语义消费者的重复官方 JSON reporter）。`onTestModuleCollected` 登记的用例与完成事件分别留证，报告区分收集失败、未捕获错误、失败、中断、skip/todo，原始来源均保存摘要。普通 Node/Vitest 范围沿用非 UI 的 skip/todo 政策，逐项明确显示；浏览器严格政策不因此放宽。执行者版本须与实际安装一致。
 
@@ -192,7 +192,7 @@ JS/CSS helper 默认把完整编译字节保存在当前真实工作树的 `.cac
 
 静态图不单独证明全部影响。面板交互、编辑及无法证明为静态样式的输入会加入全部面板、固定核心和静态消费者，补齐字符串浏览器脚本；逻辑依赖传递到面板时也加入这些消费者。静态样式复用既有组件映射及固定扩展范围，主题和生产 CSS 输入扩大到全部面板；CSS 导入、扫描或插件规则改变扩大到全部测试。依赖、配置、执行/打包工具、共享 helper、协议/运行入口、生产模板及 fixture 保守扩大；文件读取、外部进程、未知导入、解析错误或没有可靠映射的输入不会被当作完整的静态闭包。仅明确列出的协作文档可产生无测试状态，`docs/templates/` 等生产输入不能按文档忽略。新增正确登记或同步删除测试仍因清单/基准覆盖变化保守扩大。
 
-执行继续使用公共分派与同一统一证据校验器，未迁移 Node 测试在扩大范围和完整入口中保留。缺报告、来源/身份/集合损坏、收集错误和零用例都失败；普通 Node/Vitest 的既有 skip/todo 政策明确呈现，UI 场景必须实际通过。失败进入同一 `logs/check-state/failures.json`，由当前源码集中复验接口处理，复验通过不取得旧运行的累计资格。
+执行继续使用公共分派与同一统一证据校验器；Node adapter 继续服务真实子进程夹具与历史对照。缺报告、来源/身份/集合损坏、收集错误和零用例都失败；普通 Node/Vitest 的既有 skip/todo 政策明确呈现，UI 场景必须实际通过。失败进入同一 `logs/check-state/failures.json`，由当前源码集中复验接口处理，复验通过不取得旧运行的累计资格。
 
 本入口与完整检查、UI 快检和正式验收共用工作树锁及取消、进程组与资源登记机制。阶段和计划边界发现源码变化即 `invalidated`，取消先回收本次进程/浏览器/目录再释放锁，其他工作树不受影响。`checkRelated(root, options)` 提供可复用的单次运行接口；持续 watch 由后续独立功能提供，本票不会隐式进入 watch。
 
@@ -250,8 +250,16 @@ watch 的异步派生链关闭自动默认，跨子孙传播该保守策略，�
 
 ## 全量原生调度收口（#171）
 
-常规清单110文件由38 Playwright、18 Vitest和54 Node唯一承接，预检范围不变，历史对照仅comparison-only。Playwright沿原文件级模式使用原生worker池，每例仍隔离context/page/目录与资源端口；普通test-runner默认请求2，显式--concurrency 1保留。UI快检/相关入口继续执行计划器的maxConcurrency，不将非静态或未知范围自动提升为并发2；Node生命周期/共享环境专项与Vitest服务保持原有串行/isolate边界。没有增加机器或分片。
+以下记录 #171 当时的调度选择；当前 #174 第一阶段的串行配置见下节。#171 的常规清单110文件由38 Playwright、18 Vitest和54 Node唯一承接，预检范围不变，历史对照仅comparison-only。Playwright沿原文件级模式使用原生worker池，每例仍隔离context/page/目录与资源端口；普通test-runner默认请求2，显式--concurrency 1保留。UI快检/相关入口继续执行计划器的maxConcurrency，不将非静态或未知范围自动提升为并发2；Node生命周期/共享环境专项与Vitest服务保持原有串行/isolate边界。没有增加机器或分片。
 
 废弃checkBrowser的dumpDOM启动/独立构建路径已无调用者并删除；Chrome发现及四个历史原生对照使用的interactive-browser保留。已删除的重复报告、MemoryBuildCache和内部冗余对照与替代保障见[最终职责/完整范围/测量材料](../research/native-scheduling-171/README.md)。自研只保留唯一归属、严格UI、源码/环境身份、原始报告完整性、同次累计与复验、工作树锁与拥有者取消清理、可核对输入的准备缓存；原生框架负责收集、调度、worker池与原始逐例生命周期。
 
 调度选择以同候选同覆盖真实资源隔离的三次代表测量为依据；Vitest threads/forks与单/双project同样保留实际原件，不把子集wall-clock或运行器选择当作全量CI收益。性能数字不替代最终固定候选的独立完整验收。缓存命中仍实际执行，历史passed不自动累计，retry仍为0，缺浏览器/零收集/严格UI skip或todo/取消/报告缺损与错身份仍失败。
+
+## 第一步串行等价边界（#186）
+
+当前常规清单为 72 Vitest、38 Playwright，共 110 文件；54 个原 Node 文件全部迁入 Vitest，旧 18 个 Vitest 文件也使用统一 forks、一个 worker、文件串行、isolate、retry 0。执行者之间串行；Playwright 保持既有执行方式，普通完整入口默认请求 2，相关/UI 入口继续服从原 maxConcurrency。原生对照仍仅为 comparison-only，Node/TAP adapter 保留真实夹具与历史兼容调用。
+
+[阶段审计与逐项索引](../research/native-migration-186/README.md)分别记录 817 原 Node、86 原 Vitest、196 Playwright 与 14 新增回归，保留原时限、普通非 UI 平台 skip 理由及逐例清理/mock/环境恢复。预检顺序、同次累计、严格 UI、失败复验、code-check-v1、拥有者取消和清理沿用本协议。
+
+本提交确立第一步串行配置；等价结论以对应固定提交 verify 的独立检出、npm ci、完整 typecheck/test/build、源码及原始来源核对为准。正式 runId、目标提交和真实结论保存在外部验收记录及 #186 事项证据，不为回填结果修改受检输入。第二步执行者重叠与资源配额尚未实施或验收，只有 #186 全部验收成立后才进入 #187；等价不以加速为条件。
