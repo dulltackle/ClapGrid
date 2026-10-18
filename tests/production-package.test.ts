@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -7,6 +7,9 @@ import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { inspect, rewrite, corruptRawPackage, restorePackage } from './helpers/production-package.js';
+
+// 原 Node 文件未设置默认测试及清理时限；显式 timeout 选项继续优先。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const cli = resolve('scripts/production.mjs');
 const hash = (data: string | Buffer) => createHash('sha256').update(data).digest('hex');
@@ -36,7 +39,7 @@ function run(project: string, command: string, args: string[] = []) {
   return { ...result, report: JSON.parse(readFileSync(report, 'utf8')) };
 }
 test('真实入口从清单生成完整归档，清单自身及不同大小成员字节准确，历史与人工记录原样保留', async t => {
-  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  const f = fixture(); t.onTestFinished(() => rmSync(f.project, { recursive: true, force: true }));
   const result = run(f.project, 'pack');
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.equal(result.report.status, 'passed');
@@ -58,7 +61,7 @@ test('真实入口从清单生成完整归档，清单自身及不同大小成�
 });
 
 test('输出路径不得覆盖制作成员或清单，失败保留原输入', t => {
-  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  const f = fixture(); t.onTestFinished(() => rmSync(f.project, { recursive: true, force: true }));
   for (const name of ['src.ts', 'production.json']) {
     const before = readFileSync(join(f.project, name));
     const result = run(f.project, 'pack', ['--output', name]);
@@ -69,7 +72,7 @@ test('输出路径不得覆盖制作成员或清单，失败保留原输入', t 
 });
 
 test('重复成员和清单自引用被拒绝，不覆盖已有有效交付包', t => {
-  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  const f = fixture(); t.onTestFinished(() => rmSync(f.project, { recursive: true, force: true }));
   assert.equal(run(f.project, 'pack').status, 0);
   const previous = readFileSync(join(f.project, 'delivery.tar.gz'));
   f.manifest.files.push({ ...f.manifest.files[0]! }); f.save();
@@ -87,7 +90,7 @@ test('重复成员和清单自引用被拒绝，不覆盖已有有效交付包',
 
 for (const mode of ['missing', 'extra', 'duplicate', 'digest', 'manifest', 'gzip-crc', 'truncated', 'invalid-header', 'nonzero-tail', 'bad-header-at-end', 'missing-end-blocks', 'single-end-block']) {
   test(`真实归档拒绝 ${mode} 并保留完整失败报告与输入`, async t => {
-    const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+    const f = fixture(); t.onTestFinished(() => rmSync(f.project, { recursive: true, force: true }));
     assert.equal(run(f.project, 'pack').status, 0);
     const archive = join(f.project, 'delivery.tar.gz');
     if (['invalid-header', 'nonzero-tail', 'bad-header-at-end', 'missing-end-blocks', 'single-end-block'].includes(mode)) {
@@ -107,7 +110,7 @@ for (const mode of ['missing', 'extra', 'duplicate', 'digest', 'manifest', 'gzip
 }
 
 test('输入缺失或内容变化时不发布半成品，原有效包字节保持', t => {
-  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  const f = fixture(); t.onTestFinished(() => rmSync(f.project, { recursive: true, force: true }));
   assert.equal(run(f.project, 'pack').status, 0);
   const previous = readFileSync(join(f.project, 'delivery.tar.gz'));
   writeFileSync(join(f.project, 'src.ts'), 'changed');
@@ -122,9 +125,9 @@ test('输入缺失或内容变化时不发布半成品，原有效包字节保�
 
 for (const mode of ['escape', 'absolute', 'empty', 'omitted-source', 'invalid-category']) {
   test(`清单 ${mode} 不能发布为完整制作交付包`, t => {
-    const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+    const f = fixture(); t.onTestFinished(() => rmSync(f.project, { recursive: true, force: true }));
     const outside = mkdtempSync(join(tmpdir(), 'clapgrid-outside-'));
-    t.after(() => rmSync(outside, { recursive: true, force: true }));
+    t.onTestFinished(() => rmSync(outside, { recursive: true, force: true }));
     writeFileSync(join(outside, 'outside.txt'), 'outside');
     if (mode === 'escape') f.manifest.files.push({ path: '../' + outside.split('/').at(-1) + '/outside.txt', sha256: hash('outside'), category: 'production' });
     if (mode === 'absolute') f.manifest.files.push({ path: join(outside, 'outside.txt'), sha256: hash('outside'), category: 'production' });
@@ -140,7 +143,7 @@ for (const mode of ['escape', 'absolute', 'empty', 'omitted-source', 'invalid-ca
 }
 
 test('发布失败保留可定位候选与已有有效包，独立恢复后全部成员可再核对', async t => {
-  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  const f = fixture(); t.onTestFinished(() => rmSync(f.project, { recursive: true, force: true }));
   assert.equal(run(f.project, 'pack').status, 0);
   const archive = join(f.project, 'delivery.tar.gz');
   const previous = readFileSync(archive);
@@ -151,7 +154,7 @@ test('发布失败保留可定位候选与已有有效包，独立恢复后全�
   assert.ok(readdirSync(f.project).some(x => x.startsWith('.拒绝发布.candidate-')));
   assert.deepEqual(readFileSync(archive), previous);
   const restored = mkdtempSync(join(tmpdir(), 'clapgrid-restore-'));
-  t.after(() => rmSync(restored, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(restored, { recursive: true, force: true }));
   const restoredMembers = await restorePackage(archive, restored);
   for (const member of restoredMembers) assert.deepEqual(readFileSync(join(restored, member.header.name)), member.body);
   assert.deepEqual(readFileSync(join(restored, 'production.json')), readFileSync(join(f.project, 'production.json')));
@@ -161,7 +164,7 @@ test('发布失败保留可定位候选与已有有效包，独立恢复后全�
 });
 
 test('清单不能使用工具索引保留名，原清单保持且不发布错误包', t => {
-  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  const f = fixture(); t.onTestFinished(() => rmSync(f.project, { recursive: true, force: true }));
   const original = readFileSync(join(f.project, 'production.json'));
   writeFileSync(join(f.project, '.clapgrid-package.json'), original);
   const result = run(f.project, 'pack', ['--manifest', '.clapgrid-package.json']);
@@ -172,7 +175,7 @@ test('清单不能使用工具索引保留名，原清单保持且不发布错�
 });
 
 test('报告指向默认交付路径时提前拒绝，失败保留旧包并另存报告', t => {
-  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  const f = fixture(); t.onTestFinished(() => rmSync(f.project, { recursive: true, force: true }));
   assert.equal(run(f.project, 'pack').status, 0);
   const archive = join(f.project, 'delivery.tar.gz');
   const previous = readFileSync(archive);
@@ -196,7 +199,7 @@ for (const [field, declarations] of [
   ['sample-plan', { video: { path: '审阅.mp4' }, plan: { path: '新增素材.png' } }],
 ] as const) {
   test(`打包必须保留已声明 ${field}，不能以依赖图缺省跳过`, t => {
-    const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+    const f = fixture(); t.onTestFinished(() => rmSync(f.project, { recursive: true, force: true }));
     const bytes = Buffer.from('归档成员字节，不声明为有效媒体');
     writeFileSync(join(f.project, '新增素材.png'), bytes);
     f.manifest.files.push({ path: '新增素材.png', sha256: hash(bytes), category: 'production' });
@@ -216,7 +219,7 @@ for (const [field, declarations] of [
 
 for (const target of ['existing-directory', 'non-report-file', 'file-parent']) {
   test(`报告目标 ${target} 在发布前拒绝，旧有效包及报告原件保持`, t => {
-    const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+    const f = fixture(); t.onTestFinished(() => rmSync(f.project, { recursive: true, force: true }));
     assert.equal(run(f.project, 'pack').status, 0);
     const archive = join(f.project, 'delivery.tar.gz');
     const previous = readFileSync(archive);
@@ -239,7 +242,7 @@ for (const target of ['existing-directory', 'non-report-file', 'file-parent']) {
 
 for (const field of ['assets', 'lastFrame', 'transitions']) {
   test(`声明的 ${field} 即使是旧报告JSON也不能被新报告覆盖`, t => {
-    const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+    const f = fixture(); t.onTestFinished(() => rmSync(f.project, { recursive: true, force: true }));
     const artifact = join(f.project, '关联技术原件.json');
     const bytes = JSON.stringify({ schemaVersion: 1, report: artifact, startedAt: '2026-10-13T00:00:00Z', checks: [] });
     writeFileSync(artifact, bytes);
@@ -253,7 +256,7 @@ for (const field of ['assets', 'lastFrame', 'transitions']) {
 
 for (const omitted of ['当前技术产物.json', '当前证明原件.json']) {
   test(`当前审阅引用的 ${omitted} 必须入包，独立恢复后证据仍可核对`, async t => {
-    const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+    const f = fixture(); t.onTestFinished(() => rmSync(f.project, { recursive: true, force: true }));
     const artifact = '当前技术产物.json'; const proof = '当前证明原件.json';
     const data = '隔离归档及证据机械核对产物';
     const evidence = { schemaVersion: 1, reviewVersion: 'current-review',
@@ -274,7 +277,7 @@ for (const omitted of ['当前技术产物.json', '当前证明原件.json']) {
     assert.equal(failed.status, 1, failed.stdout);
     assert.match(JSON.stringify(failed.report), /遗漏/);
     assert.deepEqual(readFileSync(archive), previous);
-    const restored = mkdtempSync(join(tmpdir(), 'clapgrid-proof-restore-')); t.after(() => rmSync(restored, { recursive: true, force: true }));
+    const restored = mkdtempSync(join(tmpdir(), 'clapgrid-proof-restore-')); t.onTestFinished(() => rmSync(restored, { recursive: true, force: true }));
     const restoredMembers = await restorePackage(archive, restored);
     for (const member of restoredMembers) assert.deepEqual(readFileSync(join(restored, member.header.name)), member.body);
     assert.equal(readFileSync(join(restored, '证据.json'), 'utf8'), JSON.stringify(evidence));
@@ -289,7 +292,7 @@ for (const omitted of ['当前技术产物.json', '当前证明原件.json']) {
 }
 
 test('打包保留待审及历史记录，不强求尚未生成或历史失效的原件', async t => {
-  const f = fixture(); t.after(() => rmSync(f.project, { recursive: true, force: true }));
+  const f = fixture(); t.onTestFinished(() => rmSync(f.project, { recursive: true, force: true }));
   const evidence = { schemaVersion: 1, reviewVersion: 'current', requirements: [{ id: 'future', required: [{ id: 'pending', artifact: '未制作样片.mp4' }] }],
     records: [{ reviewVersion: 'old', artifact: { path: '旧版已失效.mp4' }, provenance: { record: '旧版记录.txt' } }, { reviewVersion: 'current', provenance: { record: 'https://example.invalid/user-review' } }] };
   const bytes = JSON.stringify(evidence); writeFileSync(join(f.project, '待审历史.json'), bytes);
