@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto';
 import { test, vi, type TestContext } from 'vitest';
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawnSync, spawn } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, cpSync, symlinkSync, readdirSync, existsSync, statSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dependencyView } from './helpers/temporary-repository.js';
 
 // 保留原 Node 外层文件未显式设置的测试及清理无限时语义。
@@ -14,7 +14,15 @@ vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 const project = fileURLToPath(new URL('../', import.meta.url));
 function repository(t: TestContext) {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-evidence-'));
-  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => {
+    if(process.env.CLAPGRID_OVERLAP_TEST_EVIDENCE && existsSync(join(root,'overlap-fixture'))) {
+      assert.equal(existsSync(join(root,'logs/check-state/active')),false,'活动fixture必须保留并先清理');
+      mkdirSync(process.env.CLAPGRID_OVERLAP_TEST_EVIDENCE,{recursive:true});
+      writeFileSync(join(process.env.CLAPGRID_OVERLAP_TEST_EVIDENCE,root.split('/').at(-1)!+'.json'),JSON.stringify({root,retainedAs:'原始报告及固定源码证据；无活动owner'},null,2));
+      return;
+    }
+    rmSync(root, { recursive: true, force: true });
+  });
   mkdirSync(join(root, 'scripts')); mkdirSync(join(root, 'tests'));
   for (const name of readdirSync(join(project, 'scripts')).filter(name => name.endsWith('.mjs'))) cpSync(join(project, 'scripts', name), join(root, 'scripts', name));
   const files = [{ file: 'tests/sample.test.ts', executor: 'node', scopes: ['all', 'tooling', 'rows'] }];
@@ -474,4 +482,142 @@ test('实际结束身份校验返回新采集身份，拒绝旧报告掩盖源�
   assert.notEqual(validate().status,0,'真实原始证据损坏仍被完整校验拒绝');writeFileSync(report.sources.native.path,raw);
   const stat=statSync(input);writeFileSync(input,Buffer.from([99]));utimesSync(input,stat.atime,stat.mtime);
   const changed=validate();assert.notEqual(changed.status,0,'不能沿用磁盘报告自报的结束身份');assert.match(changed.stderr,/源码/);
+});
+
+function overlapRepository(t: TestContext) {
+  const { root, command, files, env } = repository(t);
+  dependencyView(root, join(project, 'node_modules'));
+  cpSync(join(project, 'playwright.config.ts'), join(root, 'playwright.config.ts'));
+  writeFileSync(join(root, 'vitest.config.ts'), `export default {test:{include:['tests/*.test.ts'],pool:'forks',maxWorkers:1,fileParallelism:false,isolate:true,retry:0}};`);
+  const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+  pkg.devDependencies = { vitest: '5.0.5', '@playwright/test': '1.64.1' };
+  pkg.checkPreflight = ['typecheck', 'test:environment', 'test:tooling', 'test:rows'];
+  pkg.scripts['test:environment'] = 'node scripts/test-runner.mjs --suite environment';
+  pkg.scripts['test:rows'] = 'node scripts/test-runner.mjs --suite rows';
+  files[0]!.scopes.push('environment');
+  files.push({ file: 'tests/export-tasks.test.ts', executor: 'vitest', scopes: ['all'] }, { file: 'tests/audio-panel.test.ts', executor: 'playwright', scopes: ['all'] }, { file: 'tests/new.test.ts', executor: 'vitest', scopes: ['all'] });
+  writeFileSync(join(root, 'scripts/test-inventory.json'), JSON.stringify({schemaVersion:1, files}));
+  // 两路均通过原生用例观察另一侧实际开始；串行会在有界等待内失败。
+  writeFileSync(join(root, 'tests/export-tasks.test.ts'), `import{test,expect}from'vitest';import{writeFileSync,existsSync}from'node:fs';test('真实fork与另一lane重叠',async()=>{expect(existsSync('logs/exclusive')).toBe(true);writeFileSync('logs/vt-start','');const end=Date.now()+8000;while(!existsSync('logs/pw-start')&&Date.now()<end)await new Promise(r=>setTimeout(r,20));expect(existsSync('logs/pw-start')).toBe(true);});`);
+  writeFileSync(join(root, 'tests/new.test.ts'), `import{test,expect}from'vitest';import{writeFileSync,existsSync}from'node:fs';test('新增文件独占',()=>{expect(existsSync('logs/vt-start')).toBe(false);expect(existsSync('logs/pw-start')).toBe(false);writeFileSync('logs/exclusive','');});`);
+  writeFileSync(join(root, 'tests/audio-panel.test.ts'), `import{test,expect}from'@playwright/test';import{writeFileSync,existsSync}from'node:fs';test('真实PW与fork重叠',async()=>{expect(existsSync('logs/exclusive')).toBe(true);writeFileSync('logs/pw-start','');const end=Date.now()+8000;while(!existsSync('logs/vt-start')&&Date.now()<end)await new Promise(r=>setTimeout(r,20));expect(existsSync('logs/vt-start')).toBe(true);});`);
+  writeFileSync(join(root, 'package.json'), JSON.stringify(pkg));
+  const policy = JSON.parse(readFileSync(join(project,'scripts/test-overlap.json'),'utf8'));
+  policy.inventorySha256=createHash('sha256').update(readFileSync(join(root,'scripts/test-inventory.json'))).digest('hex');
+  policy.files = policy.files.filter((item:any)=>files.some(file=>file.file===item.file)).map((item:any)=>({...item,sha256:createHash('sha256').update(readFileSync(join(root,item.file))).digest('hex')}));
+  writeFileSync(join(root,'scripts/test-overlap.json'),JSON.stringify(policy));
+  writeFileSync(join(root,'overlap-fixture'),'真实公开入口受控fixture证据');
+  return {root, command, env, policy, pkg};
+}
+
+test('完整公开入口仅在完整预检后重叠取得资格的原生执行者，未知文件保持独占', t => {
+  const {root,command}=overlapRepository(t);
+  const result = command('scripts/check.mjs', '--execution', 'overlap-1+1');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  const summaries = readdirSync(join(root, 'logs/check'), {recursive:true}).filter(path=>String(path).endsWith('summary.json')&&!String(path).includes('preflight'));
+  const summary = JSON.parse(readFileSync(join(root,'logs/check',String(summaries[0])), 'utf8'));
+  assert.equal(summary.executionMode, 'overlap-1+1');
+  const report = JSON.parse(readFileSync(summary.results.find((item:any)=>item.name==='test').testReport,'utf8'));
+  const stage = summary.results.find((item:any)=>item.name==='test');
+  const aggregate = JSON.parse(readFileSync(JSON.parse(readFileSync(stage.actualProof.path,'utf8')).result.testReport,'utf8'));
+  assert.equal(aggregate.childIdentityPolicy,'parent-derived-v1');
+  assert.equal(new Set(aggregate.executions.map((item:any)=>item.identity.executionId)).size,3);
+  assert.deepEqual(aggregate.actual.files.map((item:any)=>item.file).sort(),['tests/audio-panel.test.ts','tests/export-tasks.test.ts','tests/new.test.ts']);
+  assert.equal(existsSync(join(root, 'logs/check-state/active')), false);
+});
+
+
+test('完整入口拒绝清单外残留并发资格，避免同名新增文件继承权限', t => {
+  const {root,command,policy}=overlapRepository(t);
+  policy.files.push({file:'tests/deleted.test.ts',executor:'vitest',qualified:true,sha256:'0'.repeat(64)});
+  writeFileSync(join(root,'scripts/test-overlap.json'),JSON.stringify(policy));
+  const result=command('scripts/check.mjs','--execution','overlap-1+1');
+  assert.notEqual(result.status,0,'不存在owner的资格必须拒绝');
+  assert.equal(existsSync(join(root,'logs/vt-start')),false);
+  assert.equal(existsSync(join(root,'logs/pw-start')),false);
+});
+
+
+test('已获资格文件改写后自动独占，旧文件身份不能授予新内容重叠资格', t => {
+  const {root,command,policy}=overlapRepository(t);
+  writeFileSync(join(root,'tests/export-tasks.test.ts'),`import{test,expect}from'vitest';import{writeFileSync,existsSync}from'node:fs';test('改写文件保持独占',async()=>{expect(existsSync('logs/pw-start')).toBe(false);writeFileSync('logs/changed-exclusive','');await new Promise(r=>setTimeout(r,500));expect(existsSync('logs/pw-start')).toBe(false);});`);
+  writeFileSync(join(root,'tests/audio-panel.test.ts'),`import{test,expect}from'@playwright/test';import{writeFileSync,existsSync,rmSync}from'node:fs';test('改写文件保持独占',async()=>{expect(existsSync('logs/changed-exclusive')).toBe(false);writeFileSync('logs/pw-start','');await new Promise(r=>setTimeout(r,500));expect(existsSync('logs/changed-exclusive')).toBe(false);rmSync('logs/pw-start');});`);
+  policy.files.find((item:any)=>item.executor==='playwright').sha256=createHash('sha256').update(readFileSync(join(root,'tests/audio-panel.test.ts'))).digest('hex');
+  writeFileSync(join(root,'scripts/test-overlap.json'),JSON.stringify(policy));
+  const result=command('scripts/check.mjs','--execution','overlap-1+1');
+  assert.equal(result.status,0,result.stdout+result.stderr);
+});
+
+test('重叠模式仍以全部强制预检成功为前提，预检失败不启动任何lane', t => {
+  const {root,command,pkg}=overlapRepository(t);
+  pkg.scripts.typecheck='node -e "process.exit(7)"';
+  writeFileSync(join(root,'package.json'),JSON.stringify(pkg));
+  const result=command('scripts/check.mjs','--execution','overlap-1+1');
+  assert.notEqual(result.status,0);
+  for(const file of ['exclusive','vt-start','pw-start'])assert.equal(existsSync(join(root,'logs',file)),false);
+});
+
+test('一路普通失败仍收齐另一lane的原生报告，记录全部实际范围并进入集中复验', t => {
+  const {root,command,policy}=overlapRepository(t);
+  const source=join(root,'tests/export-tasks.test.ts');
+  writeFileSync(source,readFileSync(source,'utf8').replace("expect(existsSync('logs/pw-start')).toBe(true);", "expect(existsSync('logs/pw-start')).toBe(true);throw Error('lane-normal-failure');"));
+  policy.files[0].sha256=createHash('sha256').update(readFileSync(source)).digest('hex');
+  writeFileSync(join(root,'scripts/test-overlap.json'),JSON.stringify(policy));
+  const result=command('scripts/check.mjs','--execution','overlap-1+1');
+  assert.notEqual(result.status,0);
+  const summaries = readdirSync(join(root,'logs/check'),{recursive:true}).filter(path=>String(path).endsWith('summary.json')&&!String(path).includes('preflight'));
+  const summary=JSON.parse(readFileSync(join(root,'logs/check',String(summaries[0])),'utf8'));
+  const stage=summary.results.find((item:any)=>item.name==='test');
+  assert.equal(stage.lanes.length,3);
+  assert.equal(stage.lanes[2].status,'passed');
+  assert.equal(JSON.parse(readFileSync(stage.lanes[2].report,'utf8')).actual.cases[0].status,'passed');
+  assert.equal(existsSync(join(root,'logs/check-state/active')),false);
+  assert.ok(JSON.parse(readFileSync(join(root,'logs/check-state/failures.json'),'utf8')).stages.includes('test'));
+});
+
+
+test('取消重叠公开入口先收齐两lane及Chrome和FFmpeg后代，再释放本工作树锁', async t => {
+  const {root,env,policy}=overlapRepository(t);
+  const helper=pathToFileURL(join(project,'tests/helpers/playwright-browser.ts')).href;
+  writeFileSync(join(root,'tests/export-tasks.test.ts'),`import{test}from'vitest';import{spawn}from'node:child_process';import{writeFileSync}from'node:fs';test('真实媒体后代',async()=>{const child=spawn('ffmpeg',['-v','error','-re','-f','lavfi','-i','sine=frequency=440','-f','null','-'],{stdio:'ignore'});writeFileSync('logs/vt-pid',String(child.pid));await new Promise(()=>{});},60000);`);
+  writeFileSync(join(root,'tests/audio-panel.test.ts'),`import{test}from${JSON.stringify(helper)};import{writeFileSync}from'node:fs';test('真实Chrome后代',async({panel})=>{writeFileSync('logs/pw-ready','');await new Promise(()=>{});});`);
+  for(const entry of policy.files)entry.sha256=createHash('sha256').update(readFileSync(join(root,entry.file))).digest('hex');
+  writeFileSync(join(root,'scripts/test-overlap.json'),JSON.stringify(policy));
+  const child=spawn(process.execPath,['scripts/check.mjs','--execution','overlap-1+1'],{cwd:root,env,stdio:'ignore'});
+  const closed=new Promise<number|null>(resolve=>child.once('close',resolve));
+  const until=async(check:()=>boolean,message:string)=>{const end=Date.now()+15000;while(!check()&&Date.now()<end)await new Promise(r=>setTimeout(r,25));assert.ok(check(),message);};
+  try {
+    await until(()=>existsSync(join(root,'logs/vt-pid'))&&existsSync(join(root,'logs/pw-ready')),'两lane及真实后代必须实际开始');
+    const owner=JSON.parse(readFileSync(join(root,'logs/check-state/active/owner.json'),'utf8'));
+    const active=join(root,'logs/check-state/active');
+    const run=readdirSync(active).filter(name=>name.startsWith('group-')||name.startsWith('resource-')).map(name=>({name,record:JSON.parse(readFileSync(join(active,name),'utf8'))}));
+    writeFileSync(join(root,'logs/cancel-before.json'),JSON.stringify({owner,run},null,2));
+    const stop=spawnSync(process.execPath,['scripts/check-lifecycle.mjs'],{cwd:root,env,encoding:'utf8',timeout:15000});
+    assert.equal(stop.status,0,stop.stdout+stop.stderr);
+    assert.equal(await closed,130);
+    assert.equal(existsSync(join(root,'logs/check-state/active')),false);
+    const pid=Number(readFileSync(join(root,'logs/vt-pid'),'utf8'));
+    assert.throws(()=>process.kill(pid,0),/ESRCH/,'媒体后代实际退出');
+    const logs=readdirSync(join(root,'logs/check'),{recursive:true}).filter(path=>String(path).endsWith('.log'));
+    const combined=logs.map(path=>readFileSync(join(root,'logs/check',String(path)),'utf8')).join('\n');
+    const match=combined.match(/"chromePid":(\d+)/);assert.ok(match,'确有真实Chrome启动原件');
+    assert.throws(()=>process.kill(Number(match[1]),0),/ESRCH/,'浏览器后代实际退出');
+    writeFileSync(join(root,'logs/cancel-after.json'),JSON.stringify({exitCode:130,lockAbsent:true,ffmpegPid:pid,chromePid:Number(match[1]),descendantsAbsent:true},null,2));
+  } finally {
+    if(child.exitCode===null&&child.signalCode===null){child.kill('SIGTERM');await closed;}
+  }
+});
+
+test('并发子报告损坏仍保留另一lane完整原件和失败范围，不留下完整通过', t => {
+  const {root,command,pkg}=overlapRepository(t);
+  writeFileSync(join(root,'inject.mjs'),`import{spawnSync}from'node:child_process';import{writeFileSync}from'node:fs';const args=process.argv.slice(2);const child=spawnSync(process.execPath,['scripts/test-runner.mjs',...args],{stdio:'inherit'});if(args.join(' ').includes('export-tasks'))writeFileSync(process.env.CLAPGRID_TEST_REPORT,'{"truncated":');process.exitCode=child.status??1;`);
+  pkg.scripts.test='node inject.mjs';writeFileSync(join(root,'package.json'),JSON.stringify(pkg));
+  const result=command('scripts/check.mjs','--execution','overlap-1+1');
+  assert.notEqual(result.status,0);
+  const path=readdirSync(join(root,'logs/check'),{recursive:true}).find(path=>String(path).endsWith('summary.json')&&!String(path).includes('preflight'));
+  const summary=JSON.parse(readFileSync(join(root,'logs/check',String(path)),'utf8'));
+  const stage=summary.results.find((item:any)=>item.name==='test');
+  assert.equal(stage.status,'failed');assert.equal(stage.lanes[2].status,'passed');
+  assert.equal(JSON.parse(readFileSync(stage.lanes[2].report,'utf8')).status,'passed');
+  assert.equal(existsSync(join(root,'logs/check-state/active')),false);
 });

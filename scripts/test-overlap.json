@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "defaultMode": "serial",
+  "files": [
+    {
+      "file": "tests/export-tasks.test.ts",
+      "executor": "vitest",
+      "qualified": true,
+      "isolation": "每例 mkdtemp/SQLite/媒体文件及 FFmpeg 子任务；逐例关闭业务层后删除目录",
+      "sha256": "d0c92c1f8b99db6814b4a0451329015d5d149d2eaef0547c3627c3ba1fd5a308"
+    },
+    {
+      "file": "tests/audio-panel.test.ts",
+      "executor": "playwright",
+      "qualified": true,
+      "isolation": "每例 context、page、媒体临时根、随机 HTTP 端口；原拥有者登记回收",
+      "sha256": "9a9dc3a86722d17c20d82be2b068eb9cac938a69613b90eb29617b2c5ea7da0f"
+    },
+    {
+      "file": "tests/video-panel.test.ts",
+      "executor": "playwright",
+      "qualified": true,
+      "isolation": "每例 context、page、媒体临时根、随机 HTTP 端口；原拥有者登记回收",
+      "sha256": "df12f934f4bb0568b6f491d20fcb50e881bcb92750c2309834b26c2a35ffd438"
+    }
+  ],
+  "inventorySha256": "e7466b19d749e37c94ae87c45d232baec9ae24cdaf83d6b3a3e46376134ce484"
+}

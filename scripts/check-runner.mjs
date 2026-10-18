@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { createWriteStream, mkdirSync, readFileSync, existsSync, rmSync, realpathSync } from 'node:fs';
+import { createWriteStream, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync, realpathSync } from 'node:fs';
 import { resolve, relative, join } from 'node:path';
 import { sameSource, sourceIdentity } from './check-source.mjs';
 import { withCheckRun, stopGroup, stopCommandGroup, stateDirectory, atomicJson, currentCheckRun } from './check-lifecycle.mjs';
@@ -96,11 +96,63 @@ async function revalidatePassedProofs(root, context, summary) {
   }
 }
 
+/** 只在完整预检后的剩余 test 集合上分成独占段与两个原生 lane。 */
+async function runOverlappingTests(root, plan, report, log, identity, context, env) {
+  const evidence = await import('./test-evidence.mjs');
+  const policy = read(join(root, 'scripts/test-overlap.json'));
+  if (policy.schemaVersion !== 1 || !Array.isArray(policy.files) || !['serial', 'overlap-1+1', 'overlap-1+2'].includes(policy.defaultMode)) throw Error('并发资格格式无效');
+  if (new Set(policy.files.map(entry => entry.file)).size !== policy.files.length) throw Error('并发资格重复');
+  const inventory = evidence.ownedTests(root);
+  for (const entry of policy.files) {
+    const owner = inventory.find(item => item.file === entry.file);
+    if (typeof entry.qualified !== 'boolean' || !['vitest', 'playwright'].includes(entry.executor) || (!owner || owner.executor !== entry.executor)) throw Error('并发资格与执行归属不符');
+  }
+  const qualified = file => policy.files.some(entry => entry.file === file && entry.qualified === true && policy.inventorySha256 === evidence.digest(join(root, 'scripts/test-inventory.json')) && entry.sha256 === evidence.digest(join(root, file)));
+  const owner = file => inventory.find(entry => entry.file === file)?.executor;
+  const exclusive = plan.files.filter(file => !qualified(file));
+  const vitest = plan.files.filter(file => qualified(file) && owner(file) === 'vitest');
+  const playwright = plan.files.filter(file => qualified(file) && owner(file) === 'playwright');
+  if (!vitest.length || !playwright.length) return { ...await runLogged(npm, ['run', 'test', '--', '--files', JSON.stringify(plan.files), '--concurrency', context.executionMode === 'overlap-1+1' ? '1' : '2'], root, log, context, { ...env, CLAPGRID_TEST_REPORT: report, CLAPGRID_TEST_EXECUTION_ID: identity.executionId }), effectiveExecutionMode: 'serial', executionMode: context.executionMode };
+  const slices = [exclusive, vitest, playwright].filter(files => files.length);
+  const paths = [], results = [];
+  const execute = async files => {
+    const index = slices.indexOf(files), target = report.replace(/\.json$/, '') + `-slice-${index}.json`;
+    const laneLog = `${log}.slice-${index}.log`;
+    const nonce = evidence.childExecutionId(identity.executionId, index);
+    const childPlan = evidence.executionPlan(root, { suite: plan.suite, files });
+    const args = ['run', 'test', '--', '--files', JSON.stringify(files), '--concurrency', context.executionMode === 'overlap-1+1' ? '1' : '2'];
+    const startedAt = new Date().toISOString();
+    const result = await runLogged(npm, args, root, laneLog, context,
+      { ...env, CLAPGRID_TEST_REPORT: target, CLAPGRID_TEST_EXECUTION_ID: nonce });
+    paths[index] = target; results[index] = { ...result, files, args, startedAt, completedAt: new Date().toISOString(), log: laneLog, report: target, testExecutionId: nonce };
+    if (result.status !== 'cancelled') {
+      try { evidence.validateExecution(root, read(target), childPlan, { ...identity, executionId: nonce }, { checkSource: true }); }
+      catch (error) { results[index].status = 'failed'; results[index].error = error.message; }
+    }
+  };
+  if (exclusive.length) await execute(exclusive);
+  // 正常失败继续收集完整范围；取消由同一 context 的拥有者收齐全部登记组。
+  if (!context.signal.aborted && sameSource(identity.source, sourceIdentity(root))) {
+    await Promise.allSettled([...(vitest.length ? [execute(vitest)] : []), ...(playwright.length ? [execute(playwright)] : [])]);
+  }
+  writeFileSync(log, results.filter(Boolean).map(result => JSON.stringify(result)).join('\n') + '\n');
+  let aggregate, aggregateError;
+  if (slices.every((_,index) => paths[index] && existsSync(paths[index]))) {
+    try {
+      aggregate = evidence.aggregateEvidence(root, plan, paths, identity, { independentChildren: true });
+      atomicJson(report, aggregate);
+    } catch (error) { aggregateError = `并发子报告缺失或无效：${error.message}`; }
+  }
+  return { status: context.signal.aborted ? 'cancelled' : results.length === slices.length && results.every(result => result?.status === 'passed') && aggregate?.status === 'passed' ? 'passed' : 'failed',
+    exitCode: context.signal.aborted ? 130 : results.every(result => result?.status === 'passed') && aggregate?.status === 'passed' ? 0 : 1,
+    signal: null, ...(aggregateError ? { error: aggregateError } : {}), lanes: results, executionMode: context.executionMode };
+}
+
 async function phases(root, directory, names, mode, context, env = {}) {
   mkdirSync(directory, { recursive: true });
   context.recordLog(directory);
   checkProgress(`检查日志：${directory}`);
-  const summary = { mode, directory, startedAt: new Date().toISOString(), node: process.version, source: sourceIdentity(root), status: 'running', results: [], failures: [], pending: [...names], note: '阶段指纹只用于发现变化，不证明期间从未修改。跳过不代表通过，详见测试原始日志及结构化报告。' };
+  const summary = { mode, executionMode: context.executionMode ?? 'serial', directory, startedAt: new Date().toISOString(), node: process.version, source: sourceIdentity(root), status: 'running', results: [], failures: [], pending: [...names], note: '阶段指纹只用于发现变化，不证明期间从未修改。跳过不代表通过，详见测试原始日志及结构化报告。' };
   const ledger = ledgers.get(context);
   const strictTestFiles = env.CLAPGRID_FAILURE_MANIFEST ? read(env.CLAPGRID_FAILURE_MANIFEST).strictTestFiles ?? [] : [];
   const save = () => { if (ledger) { summary.runId = ledger.runId; summary.proofs = [...ledger.proofs]; summary.referenceFiles = [...ledger.referenceFiles]; summary.strictTestFiles = [...ledger.strictTestFiles]; } summary.heartbeatAt = new Date().toISOString(); atomicJson(resolve(directory, 'summary.json'), summary); };
@@ -132,8 +184,10 @@ async function phases(root, directory, names, mode, context, env = {}) {
         result = { name, status: 'passed', exitCode: 0, signal: null, execution: 'counted', countedAt: new Date().toISOString(), log: origin.log, startedAt: origin.startedAt, completedAt: origin.completedAt };
       } else {
         checkProgress(`开始 ${name}${selection?.origins.length ? `（仅剩余 ${remaining.length} 文件）` : ''}`);
-        result = { name, ...await runLogged(npm, ['run', name, ...(selection?.origins.length ? ['--', '--files', JSON.stringify(remaining)] : [])], root, log, context,
-          { ...env, CLAPGRID_TEST_REPORT: actualReport, ...(testExecutionId ? { CLAPGRID_TEST_EXECUTION_ID: testExecutionId } : {}) }),
+        result = { name, ...await (name === 'test' && mode !== 'preflight' && mode !== 'recheck' && context.executionMode !== 'serial' && plan
+          ? runOverlappingTests(root, executedPlan, actualReport, log, identity, context, env)
+          : runLogged(npm, ['run', name, ...(selection?.origins.length ? ['--', '--files', JSON.stringify(remaining)] : [])], root, log, context,
+          { ...env, CLAPGRID_TEST_REPORT: actualReport, ...(testExecutionId ? { CLAPGRID_TEST_EXECUTION_ID: testExecutionId } : {}) })),
           execution: 'executed', ...(testExecutionId ? { testExecutionId, testPlan: executedPlan, ...(effectiveStrictFiles.length ? { strictTestFiles: effectiveStrictFiles.filter(file => executedPlan.files.includes(file)) } : {}) } : {}), log, startedAt, completedAt: new Date().toISOString() };
         if ((plan || existsSync(actualReport)) && result.status !== 'cancelled') {
           result.testReport = actualReport;
@@ -203,6 +257,8 @@ export async function recheckFailures(root, directory, context) {
 export async function runCheck(root, directory, options = {}) {
   return withCheckRun(root, options.mode ?? 'development', async context => {
     const mode = options.mode ?? 'development';
+    context.executionMode = options.executionMode ?? (existsSync(join(root, 'scripts/test-overlap.json')) ? read(join(root, 'scripts/test-overlap.json')).defaultMode : 'serial');
+    if (!['serial', 'overlap-1+1', 'overlap-1+2'].includes(context.executionMode)) throw Error('未知执行模式');
     directory ??= nextDirectory(root, mode === 'development' ? 'check' : mode);
     if (usesEvidence(root)) {
       const { CheckEvidenceLedger } = await import('./check-evidence.mjs');
