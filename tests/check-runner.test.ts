@@ -432,24 +432,24 @@ test('正式验收拒绝缺失提交以及安装过程中改变源码', async t 
 });
 
 test('CI 观察入口保留取消状态与受检目标，记录执行耗时及作业余量', t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-ci-observation-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const { root, commit } = repository(t);
   const result = spawnSync(process.execPath, [join(scripts, 'ci-observation.mjs'), '--output', join(root, 'timing.json'), '--timeout-minutes', '15', '--status', 'cancelled'], {
-    encoding: 'utf8', env: { ...process.env, CLAPGRID_CI_STARTED_AT: new Date(Date.now() - 2000).toISOString(), GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/pull/42/merge', GITHUB_SHA: 'merge-result', GITHUB_RUN_ID: '123', GITHUB_RUN_ATTEMPT: '2', GITHUB_STEP_SUMMARY: join(root, 'summary.md') },
+    cwd: root, encoding: 'utf8', env: { ...process.env, CLAPGRID_CI_STARTED_AT: new Date(Date.now() - 2000).toISOString(), GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/pull/42/merge', GITHUB_SHA: 'merge-result', GITHUB_RUN_ID: '123', GITHUB_RUN_ATTEMPT: '2', GITHUB_STEP_SUMMARY: join(root, 'summary.md') },
   });
   assert.equal(result.status, 0, result.stderr);
   const record = JSON.parse(readFileSync(join(root, 'timing.json'), 'utf8'));
   assert.equal(record.status, 'cancelled'); assert.equal(record.passed, false);
+  assert.equal(record.checkout, commit);
   assert.equal(record.target, 'merge-result'); assert.equal(record.attempt, '2');
   assert.ok(record.durationSeconds >= 2 && record.durationSeconds < 10);
   assert.ok(record.timeoutMarginSeconds < 899 && record.timeoutMarginSeconds > 890);
   assert.match(readFileSync(join(root, 'summary.md'), 'utf8'), /cancelled/);
 });
 
-test('CI 自动替换按工作流事件引用分组，手动及旧提交重跑隔离', () => {
+test('CI 仅自动检查 PR 和 main push，手动及旧提交重跑隔离', () => {
   for (const filename of ['check.yml', 'process-trace.yml']) {
     const yaml = readFileSync(new URL(`../.github/workflows/${filename}`, import.meta.url), 'utf8');
-    assert.match(yaml, /  push:\n  pull_request:\n  workflow_dispatch:/);
+    assert.match(yaml, /  push:\n    branches: \[main\]\n  pull_request:\n  workflow_dispatch:/);
     const groupLine = yaml.split('\n').find(line => line.startsWith('  group:'))!;
     const expressions = [...groupLine.matchAll(/\$\{\{ (.*?) \}\}/g)].map(match => match[1]!);
     const cancel = yaml.split('\n').find(line => line.startsWith('  cancel-in-progress:'))!.match(/\$\{\{ (.*?) \}\}/)![1]!;
