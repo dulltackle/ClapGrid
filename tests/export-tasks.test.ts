@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -9,6 +9,9 @@ import fs from 'node:fs/promises';
 import { DatabaseSync } from 'node:sqlite';
 import { openBusiness } from '../src/business/index.js';
 import type { ExportTask } from '../src/shared/contracts.js';
+
+// 保留原 Node 文件未显式设置的测试与清理无限时语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 async function finished(business: ReturnType<typeof openBusiness>, id: string): Promise<ExportTask> {
   const deadline = Date.now() + 60000;
@@ -22,8 +25,9 @@ async function finished(business: ReturnType<typeof openBusiness>, id: string): 
 
 test('先受理再汇总空项目及设置问题，重复请求共享任务且校验期间锁定', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-task-'));
+  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
   const business = openBusiness(directory);
-  t.after(async () => { await business.close(); rmSync(directory, { recursive: true, force: true }); });
+  t.onTestFinished(() => business.close());
   const task = business.submitExport();
   assert.equal(task.state, 'accepted');
   assert.equal(business.submitExport().id, task.id);
@@ -40,8 +44,9 @@ test('先受理再汇总空项目及设置问题，重复请求共享任务且�
 
 test('汇总逐片段缺失视频和配音，不自动配音或跳过片段', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-invalid-'));
+  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
   const business = openBusiness(directory);
-  t.after(async () => { await business.close(); rmSync(directory, { recursive: true, force: true }); });
+  t.onTestFinished(() => business.close());
   const first = business.addSegment('甲').segments[0]!;
   const second = business.addSegment('乙').segments[1]!;
   const task = business.submitExport();
@@ -56,8 +61,9 @@ test('汇总逐片段缺失视频和配音，不自动配音或跳过片段', as
 
 for (const owner of ['user', 'codex'] as const) test(`${owner} 持有修改权时拒绝导出，不创建任务且原编辑可以继续`, async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-editing-'));
+  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
   const business = openBusiness(directory);
-  t.after(async () => { await business.close(); rmSync(directory, { recursive: true, force: true }); });
+  t.onTestFinished(() => business.close());
   const token = business.acquire(owner);
   const before = business.getSnapshot();
   assert.throws(() => business.submitExport(), owner === 'user' ? /用户正在编辑/ : /Codex 正在修改/);
@@ -72,8 +78,9 @@ for (const owner of ['user', 'codex'] as const) test(`${owner} 持有修改权�
   assert.equal((await finished(business, task.id)).state, 'failed');
 });
 
-async function ready(t: import('node:test').TestContext, options: { duration?: number; sar?: number } = {}) {
+async function ready(t: TestContext, options: { duration?: number; sar?: number } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-render-'));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   const source = join(root, 'source.mp4'); const audio = join(root, 'speech.mp3');
   execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=96x96:r=25:d=0.4', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:r=25:d=0.6', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=1', '-filter_complex', `[0:v][1:v]concat=n=2:v=1:a=0,setsar=${options.sar ?? 1}[v]`, '-map', '[v]', '-map', '2:a', '-c:v', 'libx264', '-c:a', 'aac', source]);
   execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', `sine=frequency=440:duration=${options.duration ?? 0.8}`, '-ar', '24000', audio]);
@@ -85,7 +92,7 @@ async function ready(t: import('node:test').TestContext, options: { duration?: n
     : new Response(`data: {"code":0,"data":"${payload}"}\n\ndata: {"code":20000000}\n\n`)) as typeof fetch });
   let closing: Promise<void> | undefined;
   const close = () => closing ??= business.close();
-  t.after(async () => { await close(); rmSync(root, { recursive: true, force: true }); });
+  t.onTestFinished(close);
   const token = business.acquire('codex');
   const asset = await business.importVideo(token, { sourcePath: source });
   const first = business.addSegment('第一句字幕，整句随配音显示。', token).segments[0]!;
@@ -144,11 +151,11 @@ test('成片和预览已发布后在清理期间取消：撤销两份文件，�
   const paused = new Promise<void>(resolve => { resume = resolve; });
   const remove = fs.rm;
   // 只延迟本次真实目录删除，精确控制取消发生在清理尚未完成时。
-  const mock = t.mock.method(fs, 'rm', async (...[path, options]: Parameters<typeof fs.rm>) => {
+  const mock = vi.spyOn(fs, 'rm').mockImplementation(async (...[path, options]: Parameters<typeof fs.rm>) => {
     if (path === workspace) { cleaning = true; await paused; }
     return remove(path, options);
   });
-  t.after(() => { resume(); mock.mock.restore(); });
+  t.onTestFinished(() => { resume(); mock.mockRestore(); });
   try {
     await until(() => cleaning);
     const preview = join(business.getSnapshot().storage.mediaDirectory, `${task.id}.export.webm`);
@@ -166,6 +173,14 @@ test('成片和预览已发布后在清理期间取消：撤销两份文件，�
   } finally { resume(); }
 });
 
+test('取消导出清理结束后下一例恢复真实文件删除，不泄漏暂停替身', async t => {
+  assert.equal(vi.isMockFunction(fs.rm), false);
+  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-rm-restored-'));
+  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
+  await fs.rm(directory, { recursive: true, force: true });
+  assert.equal(existsSync(directory), false);
+});
+
 test('成功产物已发布但终态保存失败：继续锁定且不可读取，重开清理后标记中断', async t => {
   const { business, directory, close } = await ready(t);
   const history = await finished(business, business.submitExport().id);
@@ -174,7 +189,7 @@ test('成功产物已发布但终态保存失败：继续锁定且不可读取�
   const historicalPreview = business.getExportFile(history.id, 'preview');
   const historicalBytes = readFileSync(historicalFile);
   const db = new DatabaseSync(business.getSnapshot().storage.database);
-  t.after(() => db.close());
+  t.onTestFinished(() => db.close());
   db.exec(`CREATE TRIGGER reject_export_success BEFORE UPDATE ON export_tasks
     WHEN json_extract(NEW.value, '$.state') = 'succeeded'
     BEGIN SELECT RAISE(ABORT, '模拟成功状态保存失败'); END`);
@@ -285,7 +300,7 @@ test('渲染器失败定位片段并清理半成品，已有成片保留且项�
     assert.equal(result.issues.at(-1)?.segmentId, first.id);
     assert.deepEqual(readdirSync(join(directory, 'exports')), ['previous.mp4']);
     const token = business.acquire('user'); business.release(token);
-  } finally { process.env.PATH = previous; }
+  } finally { if (previous === undefined) delete process.env.PATH; else process.env.PATH = previous; }
 });
 
 test('损坏视频、真实时长变化导致起点失效、待更新或损坏配音一次汇总且不产生成片', async t => {
@@ -339,9 +354,10 @@ test('再次导出使用新内容和设置，生成唯一文件且保留原成�
 
 test('配音刚受理及生成时拒绝导出且不创建任务，结束后恢复前置校验', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-speech-lock-'));
+  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
   let finish!: (response: Response) => void;
   const business = openBusiness(directory, { configPath: '.env', key: () => 'key', fetch: (async () => new Promise<Response>(resolve => { finish = resolve; })) as typeof fetch });
-  t.after(async () => { await business.close(); rmSync(directory, { recursive: true, force: true }); });
+  t.onTestFinished(() => business.close());
   const segment = business.addSegment('配音尚未完成').segments[0]!;
   business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
   assert.equal(business.getSpeechStatus().tasks[0]!.state, 'accepted');

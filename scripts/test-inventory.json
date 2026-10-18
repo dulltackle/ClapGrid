@@ -172,7 +172,7 @@
     },
     {
       "file": "tests/export-tasks.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -471,7 +471,7 @@
     },
     {
       "file": "tests/project-import.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -657,7 +657,7 @@
     },
     {
       "file": "tests/speech-retention.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -770,14 +770,14 @@
     },
     {
       "file": "tests/video-service.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/video.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
