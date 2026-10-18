@@ -41,9 +41,10 @@
     },
     {
       "file": "tests/business.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -147,9 +148,10 @@
     },
     {
       "file": "tests/export-service.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "service"
       ]
     },
     {
@@ -162,9 +164,10 @@
     },
     {
       "file": "tests/export-settings.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -222,9 +225,10 @@
     },
     {
       "file": "tests/mcp.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "service"
       ]
     },
     {
@@ -237,9 +241,10 @@
     },
     {
       "file": "tests/modification.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "service"
       ]
     },
     {
@@ -268,9 +273,10 @@
     },
     {
       "file": "tests/organization.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -299,9 +305,10 @@
     },
     {
       "file": "tests/panel-update.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -448,9 +455,10 @@
     },
     {
       "file": "tests/project-access.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "service"
       ]
     },
     {
@@ -608,9 +616,10 @@
     },
     {
       "file": "tests/speech-batch.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -625,9 +634,10 @@
     },
     {
       "file": "tests/speech-config.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -654,16 +664,18 @@
     },
     {
       "file": "tests/speech-service.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "service"
       ]
     },
     {
       "file": "tests/speech.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -781,9 +793,10 @@
     },
     {
       "file": "tests/visual-note.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "logic"
       ]
     },
     {
@@ -814,9 +827,10 @@
     },
     {
       "file": "tests/workspace-heartbeat.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
-        "all"
+        "all",
+        "service"
       ]
     },
     {

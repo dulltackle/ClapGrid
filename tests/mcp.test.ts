@@ -1,5 +1,5 @@
 import { beginEdit, connectTable } from '../src/shared/client.js';
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -11,17 +11,17 @@ import { createBusinessMcp } from '../src/mcp/server.js';
 
 test('MCP 修改和查询与面板 HTTP 读取同一服务，服务离线时明确失败', async (t) => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-mcp-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   const panelDirectory = join(root, 'panel');
   mkdirSync(panelDirectory);
   writeFileSync(join(panelDirectory, 'index.html'), 'ClapGrid');
   const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
   let closed = false;
-  t.after(async () => { if (!closed) await service.close(); });
+  t.onTestFinished(async () => { if (!closed) await service.close(); });
   const mcp = createBusinessMcp(service.url);
   const client = new Client({ name: 'clapgrid-test', version: '0.1.0' });
-  t.after(() => client.close());
-  t.after(() => mcp.close());
+  t.onTestFinished(() => client.close());
+  t.onTestFinished(() => mcp.close());
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await mcp.connect(serverTransport);
   await client.connect(clientTransport);
@@ -99,7 +99,7 @@ test('MCP 修改和查询与面板 HTTP 读取同一服务，服务离线时明�
 test('宿主诊断在未声明 roots 时明确未知，不把 MCP 工作目录当作工作空间', async t => {
   const mcp = createBusinessMcp('http://127.0.0.1:1');
   const client = new Client({ name: 'host-without-roots', version: '1.0.0', description: '不得回显', websiteUrl: 'https://example.com/?secret=不得回显' });
-  t.after(() => client.close()); t.after(() => mcp.close());
+  t.onTestFinished(() => client.close()); t.onTestFinished(() => mcp.close());
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await mcp.connect(serverTransport); await client.connect(clientTransport);
   const result = await client.callTool({ name: 'clapgrid_host_context', arguments: {}, _meta: { secret: '不得回显' } });
@@ -118,7 +118,7 @@ test('宿主诊断查询 roots 并观测变更，但不把根列表推断为当�
   const { ListRootsRequestSchema } = await import('@modelcontextprotocol/sdk/types.js');
   const mcp = createBusinessMcp('http://127.0.0.1:1');
   const client = new Client({ name: 'host-with-roots', version: '1.0.0' }, { capabilities: { roots: { listChanged: true } } });
-  t.after(() => client.close()); t.after(() => mcp.close());
+  t.onTestFinished(() => client.close()); t.onTestFinished(() => mcp.close());
   let roots = [{ uri: 'file:///workspace/first', name: '第一个工作空间', _meta: { secret: '不得回显' } }];
   client.setRequestHandler(ListRootsRequestSchema, async () => ({ roots }));
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
