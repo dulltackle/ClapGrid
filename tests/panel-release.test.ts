@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, cpSync, writeFileSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -6,15 +6,26 @@ import { join, resolve } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { connectTable, beginEdit } from '../src/shared/client.js';
+import { dependencyView } from './helpers/temporary-repository.js';
+import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
+
+// 原 Node 文件默认未限时；保留显式专项 timeout 的优先级。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 const exec = promisify(execFile);
 const repo = resolve('.');
 
 test('纯面板发布保留服务实例、项目、绑定和旧资源，忙碌及未知面板阻止切换，失败可回滚', { timeout: 60000 }, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-panel-release-'));
+  let stopOwnedServices: (() => Promise<void>) | undefined;
+  t.onTestFinished(async () => {
+    await stopOwnedServices?.();
+    rmSync(root, { recursive: true, force: true });
+  });
   const source = join(root, 'source'), workspace = join(root, 'workspace');
   mkdirSync(source); mkdirSync(workspace);
   for (const name of ['src', 'plugins', 'package.json', 'package-lock.json']) cpSync(join(repo, name), join(source, name), { recursive: true });
-  symlinkSync(join(repo, 'node_modules'), join(source, 'node_modules'));
+  dependencyView(source, join(repo, 'node_modules'));
   mkdirSync(join(source, 'dist/panel/assets'), { recursive: true });
   const build = async (label: string) => {
     writeFileSync(join(source, 'dist/panel/index.html'), `<html><script src="/assets/main.js"></script>${label}</html>`);
@@ -30,8 +41,13 @@ test('纯面板发布保留服务实例、项目、绑定和旧资源，忙碌�
   const thread = '00000000-0000-4000-8000-000000000079';
   writeFileSync(host, `#!/usr/bin/env node\nrequire('node:readline').createInterface({input:process.stdin}).on('line',l=>{const r=JSON.parse(l);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:{id:${JSON.stringify(thread)},cwd:${JSON.stringify(workspace)}}}}));});`, { mode: 0o700 });
   const env = { ...process.env, CLAPGRID_CODEX_BIN: host, XDG_DATA_HOME: join(root, 'data') };
-  const runtime = async (action: string) => JSON.parse((await exec(process.execPath, [join(old.directory, 'dist/runtime.js'), action, '--workspace', workspace, '--thread', thread], { env })).stdout);
-  t.after(async () => { try { await runtime('workspace-stop'); } catch {} await new Promise(r => setTimeout(r, 200)); rmSync(root, { recursive: true, force: true }); });
+  const ownedServices = new Map<string, ReturnType<typeof serviceProcess>>();
+  const runtime = async (action: string) => { const result = JSON.parse((await exec(process.execPath, [join(old.directory, 'dist/runtime.js'), action, '--workspace', workspace, '--thread', thread], { env })).stdout); if (result.pid && result.pid !== process.pid && !ownedServices.has(result.instanceId)) ownedServices.set(result.instanceId, serviceProcess(result.pid)); return result; };
+  stopOwnedServices = async () => {
+    if (!ownedServices.size) return;
+    await runtime('workspace-status'); await runtime('workspace-stop');
+    await Promise.all([...ownedServices.values()].map(identity => waitForServiceExit(identity)));
+  };
   const before = await runtime('open');
   const status = () => fetch(`${before.url}/api/status`).then(response => response.json());
   const post = async (path: string, input: unknown) => {
@@ -40,7 +56,7 @@ test('纯面板发布保留服务实例、项目、绑定和旧资源，忙碌�
   };
   const update = (extra: object = {}) => post('/api/panel-release', { packageDirectory: next.directory, instanceId: before.instanceId, expectedPanelFingerprint: old.identity.panelFingerprint, ...extra });
   const table = await connectTable(before.url);
-  t.after(() => table.close());
+  t.onTestFinished(() => table.close());
   assert.equal((await update()).body.outcome, 'pending', '未知客户端状态不能默认为空闲');
   await post('/api/panel-activity', { tableId: table.tableId, busy: true });
   assert.equal((await update()).body.outcome, 'pending', '播放或本地草稿阻止切换');

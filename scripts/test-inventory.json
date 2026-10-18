@@ -3,7 +3,7 @@
   "files": [
     {
       "file": "tests/agent-tools.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -34,7 +34,7 @@
     },
     {
       "file": "tests/build-identity.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -91,7 +91,7 @@
     },
     {
       "file": "tests/diagnose-identity.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -208,7 +208,7 @@
     },
     {
       "file": "tests/linux-components.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -281,7 +281,7 @@
     },
     {
       "file": "tests/panel-release.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -329,21 +329,21 @@
     },
     {
       "file": "tests/plugin-source-update.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/plugin-update.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/process-trace-command.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -501,7 +501,7 @@
     },
     {
       "file": "tests/review-contract.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
