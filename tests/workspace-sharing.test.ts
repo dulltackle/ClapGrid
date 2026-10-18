@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -15,6 +15,9 @@ import { beginEdit, queryStatus, querySpeech, submitSpeech, connectTable } from 
 import type { ServiceStatus, SpeechTask, SpeechStatus } from '../src/shared/contracts.js';
 import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 
+// 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 // 只替代宿主协议和外部配音供应商；真实入口、服务、绑定、HTTP、MCP 与持久化均参与。
 test('同工作空间并发打开复用项目与服务，不同工作空间独立', { timeout: 60000 }, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-sharing-open-'));
@@ -28,7 +31,7 @@ test('同工作空间并发打开复用项目与服务，不同工作空间独�
   await build({ entryPoints: ['src/runtime.ts', 'src/service/main.ts', 'src/business/media-worker.ts'], outbase: 'src', outdir: dist, bundle: true, platform: 'node', format: 'esm', target: 'node22', external: ['vite'], banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" } });
   const cli = async (action: string, workspace: string, thread: string) => JSON.parse((await promisify(execFile)(process.execPath, [join(dist, 'runtime.js'), action, '--workspace', workspace, '--thread', thread], { env: { ...process.env, CLAPGRID_CODEX_BIN: host } })).stdout);
   const opened: { workspace: string; thread: string; result: ServiceStatus & { url: string }; process: ReturnType<typeof serviceProcess> }[] = [];
-  t.after(async () => {
+  t.onTestFinished(async () => {
     const services = [...new Map(opened.map(item => [item.result.instanceId, item])).values()];
     for (const entry of services) await cli('workspace-stop', entry.workspace, entry.thread);
     await Promise.all(services.map(entry => waitForServiceExit(entry.process)));
@@ -53,12 +56,12 @@ test('绑定入口两端共享修改权、任务和去重，另一个工作空�
   const threads = [randomUUID(), randomUUID(), randomUUID()]; const host = join(root, 'host.cjs');
   writeFileSync(host, `#!/usr/bin/env node\nconst roots=${JSON.stringify({ [threads[0]!]: first, [threads[1]!]: first, [threads[2]!]: second })};require('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:{id:r.params.threadId,cwd:roots[r.params.threadId]}}}));});`, { mode: 0o700 });
   const previous = process.env.CLAPGRID_CODEX_BIN; process.env.CLAPGRID_CODEX_BIN = host;
+  t.onTestFinished(() => { if (previous === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = previous; });
   const services: Awaited<ReturnType<typeof startService>>[] = [];
   const clients: Client[] = []; const servers: ReturnType<typeof createBusinessMcp>[] = [];
-  t.after(async () => {
+  t.onTestFinished(async () => {
     await Promise.all(clients.map(client => client.close())); await Promise.all(servers.map(server => server.close()));
     await Promise.all(services.map(service => service.close()));
-    if (previous === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = previous;
     rmSync(root, { recursive: true, force: true });
   });
   const gates = [0, 1].map(() => {

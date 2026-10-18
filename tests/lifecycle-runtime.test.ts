@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -9,6 +9,9 @@ import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { build } from 'esbuild';
 import { queryStatus } from '../src/shared/client.js';
+
+// 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 test('打包后台入口重复启动复用同一项目，拒绝其他项目，停止后恢复原项目身份', { timeout: 30000 }, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-runtime-'));
@@ -25,7 +28,7 @@ test('打包后台入口重复启动复用同一项目，拒绝其他项目，�
   const cli = async (action: string, directory = project) => JSON.parse((await promisify(execFile)(process.execPath,
     [join(dist, 'runtime.js'), action, '--project', directory, '--port', String(port)])).stdout);
   let pid: number | undefined;
-  t.after(async () => {
+  t.onTestFinished(async () => {
     try { await cli('stop'); } catch { /* 已停止。 */ }
     if (pid) for (let attempt = 0; attempt < 200; attempt++) {
       try {

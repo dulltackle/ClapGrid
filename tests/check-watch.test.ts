@@ -53,10 +53,10 @@ test('公共夹具隔离同名缓存，共享完整安装的软链接反例会�
   const shared = mkdtempSync(join(tmpdir(), 'clapgrid-shared-packages-'));
   t.after(() => rmSync(shared, { recursive: true, force: true }));
   symlinkSync(join(project, 'node_modules/tsx'), join(shared, 'tsx'));
-  for (const cache of ['.cache', '.vite', '.vite-temp']) mkdirSync(join(shared, cache));
+  for (const cache of ['.cache', '.vite', '.vite-temp', '.vitest-cache']) mkdirSync(join(shared, cache));
   const first = temporaryRepository(cleanup => t.after(cleanup), { project, dependencies: shared });
   const second = temporaryRepository(cleanup => t.after(cleanup), { project, dependencies: shared });
-  for (const cache of ['.cache', '.vite', '.vite-temp']) {
+  for (const cache of ['.cache', '.vite', '.vite-temp', '.vitest-cache']) {
     for (const [fixture, value] of [[first, 'first'], [second, 'second']] as const) fixture.put(`node_modules/${cache}/same/probe`, value);
     assert.equal(readFileSync(join(first.root, `node_modules/${cache}/same/probe`), 'utf8'), 'first');
     assert.equal(readFileSync(join(second.root, `node_modules/${cache}/same/probe`), 'utf8'), 'second');

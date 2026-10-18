@@ -3,7 +3,10 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
+
+// 原 Node 文件默认未限时；保留显式专项 timeout 的优先级。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const checker = resolve('scripts/check-review-links.mjs');
 test('审查规范的本地上下文指针能到达目标，失效链接使检查失败', () => {

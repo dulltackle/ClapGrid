@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -9,7 +9,11 @@ import { promisify } from 'node:util';
 import { build } from 'esbuild';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 import { connectTable, querySegments } from '../src/shared/client.js';
+
+// 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 test('打开入口建立的对话绑定只读取和改变自己的面板勾选', { timeout: 60000 }, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-selection-'));
@@ -27,19 +31,20 @@ test('打开入口建立的对话绑定只读取和改变自己的面板勾选',
   const a = await open(aid); const b = await open(bid);
   const client = new Client({ name: 'selection-regression', version: '1.0.0' });
   await client.connect(new StdioClientTransport({ command: process.execPath, args: [join(dist, 'mcp/main.js')], env: Object.fromEntries(Object.entries({ ...process.env, CLAPGRID_CODEX_BIN: host }).filter((e): e is [string, string] => typeof e[1] === 'string')) }));
-  t.after(() => client.close());
   const tool = (threadId: string, name: string, args: Record<string, unknown>) => client.callTool({ name, arguments: args, _meta: { threadId } });
   const post = async (url: string, path: string, body: unknown) => fetch(url + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  t.after(async () => { await post(a.url, '/api/service/stop', { instanceId: a.instanceId }); await new Promise(r => setTimeout(r, 300)); rmSync(root, { recursive: true, force: true }); });
+  const serviceIdentity = serviceProcess(a.pid);
+  t.onTestFinished(async () => { await post(a.url, '/api/service/stop', { instanceId: a.instanceId }); await waitForServiceExit(serviceIdentity); rmSync(root, { recursive: true, force: true }); });
+  t.onTestFinished(() => client.close());
   await post(a.url, '/api/codex/modify', { changes: [{ kind: 'add', text: '甲' }, { kind: 'add', text: '乙' }] });
   const all = await querySegments(a.url, { kind: 'all' });
   const first = all.segments[0]!; const second = all.segments[1]!;
-  const ta = await connectTable(a.url); t.after(() => ta.close());
+  const ta = await connectTable(a.url); t.onTestFinished(() => ta.close());
   await ta.select([first.id]);
   const unavailable = await querySegments(b.url, { kind: 'selected' });
   assert.equal(unavailable.availability, 'unavailable', '不能猜测其他对话唯一面板');
   assert.match(unavailable.message ?? '', /明确指定片段/);
-  const tb = await connectTable(b.url); t.after(() => tb.close());
+  const tb = await connectTable(b.url); t.onTestFinished(() => tb.close());
   await tb.select([second.id]);
   assert.deepEqual((await querySegments(a.url, { kind: 'selected' })).segments.map(s => s.id), [first.id]);
   assert.deepEqual((await querySegments(b.url, { kind: 'selected' })).segments.map(s => s.id), [second.id]);
