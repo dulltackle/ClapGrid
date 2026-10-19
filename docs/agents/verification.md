@@ -1,69 +1,27 @@
-# 检查与正式验收
+# 检查与验收
 
-先选择当前工作所需入口，再按条件读协议。开发检查允许未提交内容；正式验收只证明指定提交，须在独立检出安装锁定依赖并执行完整链。局部检查、历史结果、取消或未知状态不能替代正式通过。完整技术协议与既有边界保存在 [验证协议](verification-protocols.md)。
+当前采纳设计是 [ADR0011：直接使用 Vitest 和 Playwright](../adr/0011-native-test-frameworks.md)，实施规格为 [#192](https://github.com/dulltackle/ClapGrid/issues/192)。2026-10-18 本轮仅更新规格与文档；仓库仍有待迁移代码。执行前检查当前原生配置与脚本，不将设计采纳声称为迁移完成。
 
-- 开发阶段：定向文件测试和类型检查；稳定候选只做一次完整正式验收，修复后重验受影响项及新候选要求的完整检查。
-- 长检查启动一次并保存身份、日志和摘要。终端退出/超时先查询原任务；活动资源通过原入口收尾。有效原证据继续复用，保留原身份/时间。
-- 正式验收必须核对目标提交、源码、环境、范围、原始报告和真实执行。缺失/损坏来源、零收集、集合缺口、skip/todo 不符合范围政策时不能通过。
+## 开发检查
 
-## 代码检查输入
+直接使用 Vitest 运行逻辑与服务测试、过滤或 watch；使用 Playwright 运行和调试浏览器测试。按变更执行定向测试及必要类型检查、构建；非导入资源、外部程序或配置变化需显式扩大范围，不能假定原生相关选测覆盖所有依赖。样式和 UI 变更同时实际核对面板。
 
-变更源码身份、选测或 watch 输入前，读 [代码检查输入](verification-protocols.md#代码检查输入) 和 [ADR0010](../adr/0010-code-check-input-boundary.md)。schema 2 的 code-check-v1 仅排除指定历史材料目录，保留代码、配置、模板、全部 fixture 及未知路径；旧通过证据不转换范围。
+本地检查允许未提交内容，结论限于实际运行范围。完整检查可以简单组合原生命令；取消强制本地独立检出验收、统一跨框架 watch、持久后台任务及历史失败待办。普通前台命令中断后允许重跑，取消和未执行不能算通过。
 
-## 运行与取消
+## 测试迁移与删除
 
-启动、停止、跨命名空间、异常锁恢复或后台任务前，读 [生命周期](verification-protocols.md#运行与取消)。普通入口共享工作树锁；正式任务观察者退出不取消 worker。本地 PID 不可见不能证明终止。
+原生框架负责收集、调度、隔离、浏览器生命周期、等待、清理和报告。旧执行器、AST 选测、清单、身份与累计、报告认证、后台任务、资格调度和专用缓存协议连同专属测试退出；旧命令、格式和日志目录不保留兼容层。产品 fixture/helper 接入原生生命周期，不另建通用执行或认证系统。
 
-## UI 迭代
+按独立故障保留、合并或删除测试，记录仍有意义的产品保障如何承接。口播片段编辑、配音、素材、成片、数据完整性、产品兼容及必要资源清理继续受测；旧测试协议夹具与旧产品归档夹具分开判断。必要边界实际运行 HTTP/SQLite、浏览器和媒体进程；配置保持零重试、禁止 `.only`、零收集失败，必要 UI 不用跳过代替通过。资源清理只作用于本次拥有的产品资源。
 
-纯样式先 `check:ui` 并实际核对面板；升级范围、映射、并发和严格 UI 政策见 [UI 协议](verification-protocols.md#ui-迭代)。
+## CI 完整验收
 
-## 预检与失败复验
+CI 直接在自身检出的提交上安装锁定依赖，执行类型检查、精简后保留的全套测试和生产构建；不再嵌套运行独立 `verify`。以 CI 提交、步骤状态、原生报告及失败附件为依据；失败须传播，必需报告的保存失败须可见，不增加自研报告认证。
 
-完整链强制 typecheck→test:environment→test:tooling→test:rows。环境差异相关 watch/生命周期/正式检出测试提前，后续同次累计去重；watch 可写缓存统一隔离。预检或源码失效即停止，原失败待办先集中复验。改动相关机制前读 [预检协议](verification-protocols.md#预检与失败复验)。
+每个 PR 和 main push 均全量执行，保留手动入口；PR 合并结果、main 提交及手动 ref 分别以实际检出为准，不跨运行复用成功结论。保留现有自动事件去重策略，手动和重跑独立；不将必要专项后移至定期或合并后。真实 CI 未运行时明确待验，本地通过不能替代。插件安装包及实际宿主状态仍按 [插件交付](plugin-delivery.md) 分别验证。
 
-## 固定提交验收
+## 性能与历史参考
 
-`npm run verify -- start --revision <提交>` 保存 runId；用 status/wait 查询原任务。开始最终验收、复用历史或清理现场前读 [固定提交协议](verification-protocols.md#固定提交验收)。本机跨工具持久执行沿宿主批准入口，不能用同进程子任务测试代替。
+本地代表场景与完整 PR 链前后各至少三轮可比测量，两类均须超出波动地改善。计入准备、安装、执行、报告保存和清理，报告范围变化、中位数、波动、runner 总占用、峰值内存及嵌套进程成本；同一 runner、总占用不增加，不增加机器或分片，不设固定秒数或百分比。详细完成条件见 ADR0011。
 
-## 执行清单与统一测试证据（#149）
-
-新增/删除测试或改执行者、报告、失败复验时读 [清单与证据](verification-protocols.md#执行清单与统一测试证据149)，保持唯一归属及原始来源完整性。
-
-## 原生试点对照
-
-改原生基线或做性能比较时读 [原生对照](verification-protocols.md#原生试点对照)，并保留尚未达标的性能事项。
-
-## Vitest 逻辑与 HTTP/SQLite 试点（#150）
-
-改逻辑/服务执行者、收集或取消时读 [Vitest 协议](verification-protocols.md#vitest-逻辑与-httpsqlite-试点150)。
-
-## Playwright UI 固定核心（#151）
-
-改 UI 执行、浏览器 worker/context 或严格政策时读 [Playwright 协议](verification-protocols.md#playwright-ui-固定核心151)。
-
-## 浏览器编译产物缓存（#154）
-
-改构建复用时读 [缓存协议](verification-protocols.md#浏览器编译产物缓存154)，命中不跳过实际浏览器执行。
-
-## 同次累计覆盖（#152）
-
-改预检顺序、文件集合或累计账本时读 [同次累计](verification-protocols.md#同次累计覆盖152)，只能累计同运行、同身份的真实原来源。
-
-## 日常相关检查（#153）
-
-改选择器或 implicit 输入时读 [相关检查](verification-protocols.md#日常相关检查153)，局部 passed 不升级成完整通过。
-
-## 显式日常 watch（#155）
-
-改 watch/资源/失败清单/变化检测时读 [watch 协议](verification-protocols.md#显式日常-watch155)，无输入不自动重试。
-
-## 启动准备与测量条件（#156）
-
-改线程、字节码、CSS/浏览器准备或测量时读 [准备协议](verification-protocols.md#启动准备与测量条件156)，性能预算和原覆盖保持原要求。
-
-## CI 并发与时限（#158）
-
-自动事件仅限 PR 与 main push，两个工作流（完整检查与进程追踪）采用相同策略；功能分支 push 不启动检查，没有 PR 的功能分支没有自动检查结果。PR 验证默认合并结果，main push 验证 main 提交，手动触发保留所选 ref。CI 观察同时记录事件目标 `target` 与真实检出的 `checkout`，正式验收另核对独立检出的提交；不跨事件自动复用成功证据。自动初次运行按 workflow/event/ref 分组替换；手动和重跑以 runId/attempt 独立，旧提交重跑不取消新检查。分组不保证提交年龄顺序。[GitHub 并发语义](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency) 与 [运行身份](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#github-context) 是配置依据。
-
-CI artifact 保存 ci-timing.json，记录首步骤到汇总时的实际耗时和作业时限余量；runner 准备和后续上传不在窗口。完整作业时长以实际 GitHub job started_at/completed_at 核对。取消不算通过，不缩短单用例时限和覆盖；check 保持60分钟、process-trace保持15分钟。
+[旧验证协议](verification-protocols.md) 仅供定位尚未删除的实现、收尾已经启动的旧任务及理解历史证据，不是 #192 的兼容或验收要求。历史研究及通过记录保持原义，不能作为新候选的执行结果。

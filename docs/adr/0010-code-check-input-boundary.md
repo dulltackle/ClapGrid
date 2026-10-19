@@ -1,5 +1,7 @@
 # 代码检查输入与制作历史分开管理
 
+> 2026-10-18 更新：测试源码身份、选测与 watch 共用 code-check-v1 协议的要求已由 ADR0011 替代；历史制作材料的归档、恢复及产品输入边界继续适用。当前采纳设计见 [ADR0011](0011-native-test-frameworks.md)，代码迁移由 [#192](https://github.com/dulltackle/ClapGrid/issues/192) 承接。
+
 2026-10-17，用户确认收窄 PR #157 的源码身份范围。此前全部 Git 文件约 506 MB，其中约 502 MB 是独立制作工程、媒体与历史验收原件；这些内容没有当前代码检查消费者，却在每次小组测试及 watch 周期中完整读取。
 
 统一采用版本化的 `code-check-v1` 输入范围，供逻辑、HTTP、UI、完整检查、选测和 watch 使用：Git 跟踪文件及未忽略新文件继续纳入，仅明确排除 `docs/productions/`、`docs/validation/` 和 `docs/design/`。源码、检查工具、配置、真实构建资源、`docs/templates/`、全部 `tests/fixtures/` 以及未知路径继续读取完整当前内容。将来代码需要历史材料时，先将所需最小输入迁入明确的代码资源或测试夹具；不直接把被排除目录作为隐藏执行输入。

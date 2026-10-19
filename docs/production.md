@@ -59,7 +59,7 @@ node scripts/production.mjs check --project '/路径/中文 项目' --manifest p
 
 指定的报告路径不能覆盖已有项目输入；发生写入失败时尝试将失败结果另存至项目日志目录，原输入保持不变。若备用报告也无法保存，终端明确报告失败并退出非零。
 
-真实小型媒体回归位于 `tests/production.test.ts`，通过现有 `npm test` 运行；制作命令类型检查接入现有 `npm run typecheck`。`npm run check` 的既有 typecheck/test/build 阶段包含这两项，CI 仍安装媒体工具并通过 `npm run verify -- --revision <提交>` 执行完整正式验收，沿用原始日志和固定提交身份，不建立第二套全套执行器。开发定向回归不能替代指定提交的独立检出、`npm ci` 和完整检查。参见 [检查与正式验收](agents/verification.md)。
+真实小型媒体回归位于 `tests/production.test.ts`。按 [检查与验收](agents/verification.md) 的已采纳原生方案，产品测试由 Vitest 执行，类型检查继续覆盖制作命令；CI 在自身检出的提交安装锁定依赖和媒体工具，执行全套保留测试及构建，直接保存原生结果。#192 尚待代码迁移，不再要求保留旧 `check`/`verify` 协议或本地独立验收；开发定向回归不代替完整 CI。
 
 ## 制作与交付导航
 

@@ -178,37 +178,14 @@ npm run plugin:build
 
 ## 自动检查与本地复现
 
-使用 `.node-version` 中固定的 Node 版本，执行 `npm ci` 后运行 `npm run check`。
-「自动检查」和「Linux 导出拒绝进程追踪」仅在 PR、main push 或手动触发时运行；功能分支 push 不另起检查，没有 PR 时不自动验证。PR 检查默认合并结果，main push 检查 main 提交，手动检查所选 ref，观察记录保留事件目标和实际检出提交。
-本地完整入口依次执行现有的
-`npm run typecheck`、`npm test`、`npm run build`；任一项失败最终退出码非零，
-其余检查仍会执行，避免一个错误掩盖其他检查结果。测试文件串行执行，避免多个浏览器与媒体任务争抢资源。安装失败时 CI 直接失败，后续检查未执行。
+已采纳 [#192](https://github.com/dulltackle/ClapGrid/issues/192) 的原生测试方案，最终决定见 [ADR0011](docs/adr/0011-native-test-frameworks.md)，日常边界见 [检查与验收](docs/agents/verification.md)。本轮仅更新设计；`package.json`、原生配置与 CI 中的旧编排仍待迁移，不能据此宣称已完成提速。
 
-CI 使用 Ubuntu 24.04、Node 22.23.3、Chrome for Testing 131.0.6778.204，
-通过 `npm ci` 按 `package-lock.json` 安装依赖。媒体依赖使用 Ubuntu 24.04 的
-APT 仓库安装 `ffmpeg`、`fontconfig`、`fonts-noto-cjk`（包含 libass 依赖）；
-APT 安全补丁版本可能更新，每次运行记录实际包版本。浏览器路径由 `CHROME_BIN` 指定。
-本地同样需要 FFmpeg/ffprobe、Fontconfig、Noto Sans CJK SC 字体及 Chrome/Chromium；
-未安装浏览器的本地测试会明确跳过浏览器用例，不能视作这些用例通过。
+目标是直接使用 Vitest 运行逻辑和服务测试、过滤与 watch，使用 Playwright 的原生 fixtures、页面操作、断言、等待和调试。旧测试命令、报告格式、日志目录与后台验收协议直接废弃，不保留兼容层；完整检查可以简单组合类型检查、两套原生测试与生产构建。
 
-每次运行保存 `logs/check/<时间>-<进程号>/` 下的原始命令日志与 `summary.json`。
-测试原始日志保留测试计数、失败堆栈、跳过项和原因，摘要同时记录退出码与尚未执行的步骤。
-触发去重减少的是功能分支 push 的额外运行；PR 与 main 仍各自执行全量，手动运行独立计入成本。单次检查速度与 runner 分钟的实测另行比较，不能将少触发一次当作单次加速。
-CI 另外保留安装与环境日志，成功或失败均上传 14 天有效的日志 artifact，
-名称包含 workflow run ID 和重跑次数，可与 Actions 运行页面和提交 SHA 对照。
-取消作业或准备环境失败时，应结合 Actions 的 skipped/cancelled 状态判断未执行项，不能只看已有成功日志。
+CI 作为合并前完整验收的主要依据，使用自身检出的提交安装锁定依赖并运行全套保留测试，不再嵌套创建独立检出运行 `verify`。PR、main push 及手动检查分别记录实际检出的提交；功能分支 push 不额外触发。以 CI 状态和原生报告、失败附件定位问题，取消、跳过和未执行不能冒充通过。原生配置保持零重试、禁止 `.only`、零收集失败，必要 UI 实际运行浏览器。
 
-检查使用测试夹具和本地服务，不传入真实供应商凭据，也不发起收费供应商调用。
-CI 证明可自动复现的代码行为；实际 Codex 宿主的安装、加载、重载与界面交互仍须另行保存真实宿主证据。
-首期不配置提交钩子，也不修改远端分支保护。
+使用仓库声明的 Node 版本与锁定依赖，并准备实际测试需要的浏览器、FFmpeg/ffprobe、Fontconfig 和中文字体；环境版本与安装失败记录随 CI 保存。检查使用夹具和本地服务，不传入真实供应商凭据或发起收费调用。产品资源通过原生生命周期和必要产品夹具清理，避免影响其他工作树。
 
-验证失败传播时，在临时副本或隔离分支分别进行下列操作，每次仅保留一种故障并运行同一入口：
+产品行为、数据与归档兼容测试继续按独立故障保障保留或合并；仅服务旧测试协议的代码和测试退出。CI 证明实际运行的代码行为，插件安装、加载、重载和面板交互仍按 [本机插件交付](docs/agents/plugin-delivery.md) 提供实际宿主证据。
 
-- 类型错误：新增 `src/ci-negative.ts`，内容为 `const failure: string = 1; export {};`。
-- 测试失败：新增 `tests/ci-negative.test.ts`，用 `node:test` 和 `node:assert/strict` 断言 `1` 等于 `2`。
-- 无效构建：在根目录 `index.html` 添加指向不存在的 `/src/ci-missing.ts` 的 module script。
-
-分别核对对应步骤非零、入口非零和完整日志，保留真实 CI run 链接后撤销故障。
-本地负向检查不能替代真实 CI 结果；验证分支不合并到交付分支。
-
-PR全量检查的当前执行清单为38个Playwright、18个Vitest与54个Node文件。普通完整分派的浏览器worker默认2，显式`--concurrency 1`保留；UI快检/相关入口仍遵循范围安全上限，Node生命周期与Vitest服务仍串行。零重试、严格UI、同次累计及固定提交来源要求不变。代表调度测量与其局限见[全量原生调度记录](docs/research/native-scheduling-171/README.md)，最终全量/CI收益须由实际固定候选原件验证。
+本地反馈与完整 PR 检查均须通过前后各至少三轮可比测量取得超出波动的改善，计入准备和清理，同一 runner 且总占用不增加。历史调度结果保持原义，不代替新候选的性能或 CI 结论。
