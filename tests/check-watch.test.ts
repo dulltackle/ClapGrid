@@ -573,8 +573,13 @@ test('普通完整check后续失败也重验已通过proof，未知来源要求�
   r.put('tests/value.test.ts', 'import{test}from"node:test";import{value}from"../src/value.js";import{appendFileSync}from"node:fs";test("positive",()=>{appendFileSync("logs/attempts",String(value)+"\\n");if(value<0)throw Error("negative")});');
   r.put('task.mjs', 'import*as fs from"node:fs";if(process.env.npm_lifecycle_event==="typecheck"&&fs.existsSync("logs/fault")){const paths=fs.globSync("logs/check/**/test-failed-tests.json").sort();const report=JSON.parse(fs.readFileSync(paths.at(-1),"utf8"));fs.appendFileSync(report.sources.native.path," ");throw Error("late failure after raw changed");}');
   r.commit(); r.put('src/value.ts', 'export const value=-1;\n');
-  const command = (...args: string[]) => spawnSync(process.execPath, ['scripts/check.mjs', ...args], { cwd: r.root, encoding: 'utf8', env: { ...process.env, NODE_TEST_CONTEXT: undefined }, timeout: 30000 });
-  assert.equal(command().status, 1);
+  // 这个仅含 Node 小用例的历史夹具保持原串行路径，不继承项目并发资格。
+  const command = (...args: string[]) => spawnSync(process.execPath, ['scripts/check.mjs', '--execution', 'serial', ...args], { cwd: r.root, encoding: 'utf8', env: { ...process.env, NODE_TEST_CONTEXT: undefined }, timeout: 30000 });
+  const first = command(); assert.equal(first.status, 1, first.stdout + first.stderr);
+  assert.deepEqual(existsSync(join(r.root, 'logs/attempts')) ? readFileSync(join(r.root, 'logs/attempts'), 'utf8').trim().split('\n') : [], ['-1'], '首次失败必须来自实际执行负值用例，而不是夹具配置失效');
+  const firstDirectory = readdirSync(join(r.root, 'logs/check')).sort().at(-1)!;
+  const firstSummary = JSON.parse(readFileSync(join(r.root, 'logs/check', firstDirectory, 'summary.json'), 'utf8'));
+  assert.ok(firstSummary.failures.some((failure: any) => failure.file === 'tests/value.test.ts' && failure.name === 'positive' && failure.message === 'negative'), JSON.stringify(firstSummary.failures));
   r.put('logs/fault', 'yes'); r.put('src/value.ts', 'export const value=8;\n'); assert.equal(command().status, 1);
   const pending = JSON.parse(readFileSync(join(r.root, 'logs/check-state/failures.json'), 'utf8'));
   rmSync(join(r.root, 'logs/fault')); const final = command('--failed'); assert.equal(final.status, 0, final.stderr);
