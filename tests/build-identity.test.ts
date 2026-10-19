@@ -1,20 +1,23 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, cpSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { once } from 'node:events';
+import { dependencyView } from './helpers/temporary-repository.js';
 import { execFileSync } from 'node:child_process';
 
+// 原 Node 文件默认未限时；保留显式专项 timeout 的优先级。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 const repository = resolve('.');
-function fixture(t: { after(fn: () => void): void }) {
+function fixture(t: { onTestFinished(fn: () => void): void }) {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-build-identity-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   for (const name of ['src', 'plugins', 'package.json', 'package-lock.json']) {
     // 依赖只共享读取；源文件和构建输出使用隔离目录。
     cpSync(join(repository, name), join(root, name), { recursive: true });
   }
-  symlinkSync(join(repository, 'node_modules'), join(root, 'node_modules'));
+  dependencyView(root, join(repository, 'node_modules'));
   mkdirSync(join(root, 'dist/panel'), { recursive: true });
   writeFileSync(join(root, 'dist/panel/index.html'), '<!doctype html><html>原始面板</html>');
   return root;
@@ -71,7 +74,7 @@ test('真实 MCP 和 HTTP 报告加载身份，覆盖磁盘更新、缺失身份
     const transport = new StdioClientTransport({ command: process.execPath, args: [join(plugin, 'dist/mcp/main.js')], cwd: root, stderr: 'pipe' });
     const client = new Client({ name: '身份测试', version: '1' });
     await client.connect(transport);
-    t.after(() => client.close());
+    t.onTestFinished(() => client.close());
     return client;
   }
   const client = await mcp();
@@ -82,7 +85,11 @@ test('真实 MCP 和 HTTP 报告加载身份，覆盖磁盘更新、缺失身份
   assert.equal(existsSync(join(root, 'clapgrid')), false);
   const service = spawn(process.execPath, [join(plugin, 'dist/service/main.js'), '--workspace', root, '--port', '0'], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] });
   service.stderr.resume();
-  t.after(async () => { if (service.exitCode === null) { service.kill('SIGTERM'); await once(service, 'exit'); } });
+  const serviceClosed = new Promise<void>(resolveClose => service.once('close', () => resolveClose()));
+  t.onTestFinished(async () => {
+    if (service.exitCode === null && service.signalCode === null) service.kill('SIGTERM');
+    await serviceClosed;
+  });
   const url = await new Promise<string>((resolveUrl, reject) => {
     let output = '';
     const timer = setTimeout(() => reject(new Error('服务启动超时')), 15000);

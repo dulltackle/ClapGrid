@@ -10,7 +10,7 @@ export default defineConfig({
   test: {
     environment: 'node', includeTaskLocation: true,
     include: inventory.files.filter(item => item.executor === 'vitest').map(item => item.file),
-    pool: 'threads', maxWorkers: 1, fileParallelism: false, isolate: true,
+    pool: 'forks', maxWorkers: 1, fileParallelism: false, isolate: true,
     retry: 0, allowOnly: false, passWithNoTests: false,
   },
 });

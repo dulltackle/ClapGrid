@@ -27,7 +27,7 @@ async function executeVitest(root, plan, report, identity, { signal: abortSignal
   const bin = fileURLToPath(new URL('./vitest.mjs', new URL(require.resolve('vitest/package.json'), 'file:')));
   const env = nodeCompileCacheEnvironment(root, { ...process.env, CLAPGRID_TEST_EXECUTION_ID: identity.executionId, CLAPGRID_VITEST_NATIVE_REPORT: nativePath }); delete env.NODE_TEST_CONTEXT;
   const args = fresh ? [resolve(root, 'scripts/vitest-bootstrap.mjs'), ...plan.files]
-    : [bin, 'run', '--includeTaskLocation', '--pool=threads', '--allowOnly=false', '--retry=0', '--maxWorkers=1', '--no-file-parallelism', '--config', 'vitest.config.ts', '--reporter=default', `--reporter=${resolve(root, 'scripts/vitest-reporter.mjs')}`, ...plan.files];
+    : [bin, 'run', '--includeTaskLocation', '--pool=forks', '--isolate', '--allowOnly=false', '--retry=0', '--maxWorkers=1', '--no-file-parallelism', '--config', 'vitest.config.ts', '--reporter=default', `--reporter=${resolve(root, 'scripts/vitest-reporter.mjs')}`, ...plan.files];
   const child = spawn(process.execPath, args, { cwd: root, env, stdio: fresh ? ['ignore', 'pipe', 'pipe', 'pipe'] : ['ignore', 'pipe', 'pipe'], detached: false });
   const ignore = () => {}; process.on('SIGINT', ignore); process.on('SIGTERM', ignore);
   const capture = (target, chunk) => { target.write(chunk); log.write(chunk); };

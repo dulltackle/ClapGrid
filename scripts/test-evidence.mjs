@@ -136,7 +136,8 @@ function identityWithSource(root, executionId, source) {
     ...(cumulative || existsSync(join(root, 'scripts/vitest-runner.mjs')) ? ['scripts/vitest-runner.mjs', 'scripts/vitest-reporter.mjs', 'scripts/vitest-evidence.mjs', 'vitest.config.ts'] : []),
     ...(cumulative || existsSync(join(root, 'scripts/playwright-runner.mjs')) ? ['scripts/playwright-runner.mjs', 'scripts/playwright-evidence.mjs', 'scripts/playwright-resources.mjs', 'playwright.config.ts'] : []),
     ...(existsSync(join(root, 'scripts/source-identity.json')) ? ['scripts/check-source.mjs', 'scripts/source-identity.json', ...(existsSync(join(root, 'scripts/vitest-bootstrap.mjs')) ? ['scripts/vitest-bootstrap.mjs'] : [])] : []),
-    ...(existsSync(join(root, nodeCompileCacheModule)) ? [nodeCompileCacheModule] : [])];
+    ...(existsSync(join(root, nodeCompileCacheModule)) ? [nodeCompileCacheModule] : []),
+    ...(existsSync(join(root, 'scripts/test-overlap.json')) ? ['scripts/test-overlap.json'] : [])];
   const compileCache = nodeCompileCachePolicy(root);
   return { executionId, source, config: inputs.map(file => [file, existsSync(join(root, file)) ? digest(join(root, file)) : null]), environment: { node: process.version, platform: process.platform, arch: process.arch, chrome: process.env.CHROME_BIN ?? null, nodeOptions: process.env.NODE_OPTIONS ?? null, ...(compileCache ? { nodeCompileCache: compileCache } : {}) } };
 }
@@ -282,14 +283,22 @@ export function validateCheckEvidence(root, check, source) {
   return true;
 }
 
-export function aggregateEvidence(root, plan, paths, identity) {
+export function childExecutionId(parentId, index) {
+  const hex = createHash('sha256').update(`clapgrid-lane-v1:${parentId}:${index}`).digest('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
+const earliest = executions => executions.map(item => item.startedAt).sort()[0];
+const latest = executions => executions.map(item => item.completedAt).sort().at(-1);
+
+export function aggregateEvidence(root, plan, paths, identity, { independentChildren = false } = {}) {
   const executions = paths.map(path => read(path));
   const merge = key => executions.flatMap(report => report[key] ?? []);
   const cases = executions.flatMap(report => report.actual.cases), files = executions.flatMap(report => report.actual.files);
   const counts = { tests: 0, suites: 0, passed: 0, failed: 0, skipped: 0, todo: 0, cancelled: 0 };
   for (const report of executions) for (const key of Object.keys(counts)) counts[key] += report.summary?.counts?.[key] ?? 0;
-  const report = { schemaVersion: 2, kind: 'test-aggregate', executor: { name: 'mixed', version: '1' }, plan, identity, identityAfter: executions.at(-1)?.identityAfter,
-    startedAt: executions[0]?.startedAt, completedAt: executions.at(-1)?.completedAt, complete: executions.every(report => report.complete), executions,
+  const report = { schemaVersion: 2, kind: 'test-aggregate', executor: { name: 'mixed', version: '1' }, plan, identity, identityAfter: independentChildren ? { ...executions.at(-1)?.identityAfter, executionId: identity.executionId } : executions.at(-1)?.identityAfter,
+    ...(independentChildren ? { childIdentityPolicy: 'parent-derived-v1' } : {}),
+    startedAt: earliest(executions), completedAt: latest(executions), complete: executions.every(report => report.complete), executions,
     expected: { files: plan.files, cases: executions.flatMap(report => report.expected.cases), caseDiscovery: '各执行者原生收集事件并集' }, actual: { files, cases },
     failures: merge('failures'), errors: merge('errors'), summary: { success: executions.every(report => report.status === 'passed'), counts },
     sources: { executions: paths.map(path => ({ path, sha256: digest(path) })) } };
@@ -308,7 +317,9 @@ function validateAggregate(root, report, plan, identity, options) {
     const source = report.sources.executions[index];
     if (digest(source.path) !== source.sha256 || JSON.stringify(read(source.path)) !== JSON.stringify(execution)) throw Error('聚合子报告来源不符');
     const childPlan = executionPlan(root, { suite: plan.suite, files: execution.plan.files, executor: execution.executor.name });
-    validateExecution(root, execution, childPlan, identity, options);
+    if (report.childIdentityPolicy !== undefined && report.childIdentityPolicy !== 'parent-derived-v1') throw Error('聚合子身份协议无效');
+    const childIdentity = report.childIdentityPolicy ? { ...identity, executionId: childExecutionId(identity.executionId, index) } : identity;
+    validateExecution(root, execution, childPlan, childIdentity, options);
     if (execution.status !== 'passed') throw Error('聚合包含失败子执行');
     seen.push(...execution.actual.files.map(item => item.file));
   });
@@ -316,7 +327,7 @@ function validateAggregate(root, report, plan, identity, options) {
     || JSON.stringify(report.actual.files) !== JSON.stringify(report.executions.flatMap(item => item.actual.files))
     || JSON.stringify(report.actual.cases) !== JSON.stringify(report.executions.flatMap(item => item.actual.cases))
     || JSON.stringify(report.expected.cases) !== JSON.stringify(report.executions.flatMap(item => item.expected.cases))) throw Error('聚合测试范围遗漏、重复或逐项不符');
-  if (report.startedAt !== report.executions[0].startedAt || report.completedAt !== report.executions.at(-1).completedAt || report.executor?.name !== 'mixed' || report.executor.version !== '1') throw Error('聚合执行者或起止时间不符');
+  if (report.startedAt !== earliest(report.executions) || report.completedAt !== latest(report.executions) || report.executor?.name !== 'mixed' || report.executor.version !== '1') throw Error('聚合执行者或起止时间不符');
   const counts = Object.fromEntries(['tests', 'suites', 'passed', 'failed', 'skipped', 'todo', 'cancelled'].map(key => [key, report.executions.reduce((sum, item) => sum + item.summary.counts[key], 0)]));
   if (JSON.stringify(counts) !== JSON.stringify(report.summary.counts)) throw Error('聚合计数不符');
   return true;

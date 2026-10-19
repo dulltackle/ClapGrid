@@ -1,22 +1,33 @@
 import { startService } from '../src/service/server.js';
 import { randomUUID } from 'node:crypto';
 import { beginEdit } from '../src/shared/client.js';
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, cpSync, writeFileSync, readFileSync, rmSync, symlinkSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, cpSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { dependencyView } from './helpers/temporary-repository.js';
+import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
+
+// 原 Node 文件默认未限时；保留显式专项 timeout 的优先级。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 const exec = promisify(execFile);
 const repo = resolve('.');
 
 test('旧包和旧服务升级后保留项目，安装失败恢复旧包，缺宿主验证不冒充完成', { timeout: 60000 }, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-update-'));
+  let stopOwnedServices: (() => Promise<void>) | undefined;
+  t.onTestFinished(async () => {
+    await stopOwnedServices?.();
+    rmSync(root, { recursive: true, force: true });
+  });
   const source = join(root, 'source'), market = join(root, 'market'), cache = join(root, 'cache'), workspace = join(root, 'workspace');
   for (const dir of [source, workspace, join(market, '.agents/plugins'), join(market, 'plugins'), cache]) mkdirSync(dir, { recursive: true });
   for (const name of ['src', 'plugins', 'package.json', 'package-lock.json']) cpSync(join(repo, name), join(source, name), { recursive: true });
-  symlinkSync(join(repo, 'node_modules'), join(source, 'node_modules'));
+  dependencyView(source, join(repo, 'node_modules'));
   mkdirSync(join(source, 'dist/panel'), { recursive: true });
   const build = async (label: string) => {
     writeFileSync(join(source, 'dist/panel/index.html'), `<html>${label}</html>`);
@@ -40,8 +51,13 @@ test('旧包和旧服务升级后保留项目，安装失败恢复旧包，缺�
   const installer = join(root, 'installer.cjs');
   writeFileSync(installer, `#!/usr/bin/env node\nconst fs=require('node:fs'),p=require('node:path');const src=${JSON.stringify(marketSource)};const version=JSON.parse(fs.readFileSync(p.join(src,'.codex-plugin/plugin.json'))).version;const dst=p.join(${JSON.stringify(cache)},'personal/clapgrid',version);fs.mkdirSync(dst,{recursive:true});fs.cpSync(src,dst,{recursive:true});if(fs.existsSync(${JSON.stringify(join(root, 'fail'))})){fs.unlinkSync(${JSON.stringify(join(root, 'fail'))});process.exit(1);}console.log('{}');`, { mode: 0o700 });
   const env = { ...process.env, CLAPGRID_CODEX_BIN: host, XDG_DATA_HOME: join(root, 'data') };
-  const runtime = async (pkg: string, action: string, idleOnly = false) => JSON.parse((await exec(process.execPath, [join(pkg, 'dist/runtime.js'), action, '--workspace', workspace, '--thread', '00000000-0000-4000-8000-000000000071', ...(idleOnly ? ['--idle-only'] : [])], { env })).stdout);
-  t.after(async () => { try { await runtime(marketSource, 'workspace-stop'); } catch {} await new Promise(r => setTimeout(r, 300)); rmSync(root, { recursive: true, force: true }); });
+  const ownedServices = new Map<string, ReturnType<typeof serviceProcess>>();
+  const runtime = async (pkg: string, action: string, idleOnly = false) => { const result = JSON.parse((await exec(process.execPath, [join(pkg, 'dist/runtime.js'), action, '--workspace', workspace, '--thread', '00000000-0000-4000-8000-000000000071', ...(idleOnly ? ['--idle-only'] : [])], { env })).stdout); if (result.pid && result.pid !== process.pid && !ownedServices.has(result.instanceId)) ownedServices.set(result.instanceId, serviceProcess(result.pid)); return result; };
+  stopOwnedServices = async () => {
+    if (!ownedServices.size) return;
+    await runtime(marketSource, 'workspace-status'); await runtime(marketSource, 'workspace-stop');
+    await Promise.all([...ownedServices.values()].map(identity => waitForServiceExit(identity)));
+  };
   const before = await runtime(installed(old), 'open');
   await assert.rejects(runtime(next, 'open'), /服务版本.*更新/);
   await fetch(`${before.url}/api/codex/modify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ changes: [{ kind: 'add', text: '升级后保留的文案' }] }) });
@@ -76,9 +92,10 @@ test('旧包和旧服务升级后保留项目，安装失败恢复旧包，缺�
   for (let i = 0; i < 100; i++) { try { await fetch(new URL('/api/identity', recovered.url)); } catch { break; } await new Promise(r => setTimeout(r, 20)); }
   const previousHost = process.env.CLAPGRID_CODEX_BIN; process.env.CLAPGRID_CODEX_BIN = host;
   let finish!: (response: Response) => void;
-  const taskService = await startService({ workspaceDirectory: workspace, projectDirectory: join(workspace, 'clapgrid'), panelDirectory: join(next, 'dist/panel'), port: 0,
-    speechRuntime: { key: () => 'test-only', configPath: join(root, 'test.env'), fetch: async () => new Promise<Response>(resolve => { finish = resolve; }) } });
+  let taskService: Awaited<ReturnType<typeof startService>> | undefined;
   try {
+    taskService = await startService({ workspaceDirectory: workspace, projectDirectory: join(workspace, 'clapgrid'), panelDirectory: join(next, 'dist/panel'), port: 0,
+    speechRuntime: { key: () => 'test-only', configPath: join(root, 'test.env'), fetch: async () => new Promise<Response>(resolve => { finish = resolve; }) } });
     const bound = await runtime(next, 'workspace-status');
     const accepted = await fetch(`${bound.url}/api/speech/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId: randomUUID(), segmentId: recovered.snapshot.segments[0].id }) });
     assert.equal(accepted.ok, true);
@@ -87,7 +104,10 @@ test('旧包和旧服务升级后保留项目，安装失败恢复旧包，缺�
     assert.equal((await runtime(next, 'workspace-status')).instanceId, bound.instanceId);
     finish(new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n'));
     for (let i = 0; i < 100 && (await runtime(next, 'workspace-status')).taskLocked; i++) await new Promise(r => setTimeout(r, 20));
-  } finally { await taskService.close(); if (previousHost === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = previousHost; }
+  } finally {
+    try { await taskService?.close(); }
+    finally { if (previousHost === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = previousHost; }
+  }
   const offlineUpdate = JSON.parse((await exec(process.execPath, args.map(arg => arg === next ? third : arg), { env })).stdout);
   assert.equal(offlineUpdate.service, 'verified', '旧服务正常离线后仍能更新');
   assert.equal((await runtime(installed(third), 'workspace-status')).snapshot.project.id, before.snapshot.project.id);

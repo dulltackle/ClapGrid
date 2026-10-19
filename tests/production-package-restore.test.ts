@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, cpSync, readFileSync, writeFileSync, rmSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -8,6 +8,9 @@ import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { archiveBaseline as catalog, archiveBaselinePath } from './helpers/archive-baseline.js';
 import { restorePackage, packageEnd } from './helpers/production-package.js';
+
+// 原 Node 文件未设置默认测试及清理时限；显式 timeout 选项继续优先。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const cli = resolve('scripts/production.mjs');
 const hash = (bytes: Buffer | string) => createHash('sha256').update(bytes).digest('hex');
@@ -22,7 +25,7 @@ for (const kind of ['valid.tar.gz', 'valid-python-3.12.tar.gz', 'pax-overrides.t
   test(`独立空目录恢复 ${kind}，全成员/清单/索引按冻结旧字节与摘要核对后真实入口再验`, async t => {
     const project = mkdtempSync(join(tmpdir(), 'clapgrid-restore-source-'));
     const restored = mkdtempSync(join(tmpdir(), 'clapgrid-restore-independent-'));
-    t.after(() => { rmSync(project, { recursive: true, force: true }); rmSync(restored, { recursive: true, force: true }); });
+    t.onTestFinished(() => { rmSync(project, { recursive: true, force: true }); rmSync(restored, { recursive: true, force: true }); });
     cpSync(archiveBaselinePath('project'), project, { recursive: true });
     let archive = archiveBaselinePath(kind);
     if (kind === 'new-node') {
@@ -54,7 +57,7 @@ for (const kind of ['valid.tar.gz', 'valid-python-3.12.tar.gz', 'pax-overrides.t
 test('独立恢复审阅历史与证明原件，待审/否决/受控测试/人工声明保持原字节和相同证据门槛', async t => {
   const project = mkdtempSync(join(tmpdir(), 'clapgrid-history-source-'));
   const restored = mkdtempSync(join(tmpdir(), 'clapgrid-history-restored-'));
-  t.after(() => { rmSync(project, { recursive: true, force: true }); rmSync(restored, { recursive: true, force: true }); });
+  t.onTestFinished(() => { rmSync(project, { recursive: true, force: true }); rmSync(restored, { recursive: true, force: true }); });
   cpSync(archiveBaselinePath('project'), project, { recursive: true });
   const proof = '证明原件.json', artifact = '审阅产物.txt';
   const contents: Record<string, string> = {

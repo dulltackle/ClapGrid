@@ -2,16 +2,20 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openBusiness } from '../src/business/index.js';
 
+// 原 Node 文件未设置测试及清理时限；仅本迁移文件保留相同语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 test('相对锚点原子插入空白片段，保留其他内容且兼容末尾追加', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-insert-')); const business = openBusiness(root);
-  t.after(async () => { await business.close(); rmSync(root, {recursive:true,force:true}); });
+  const root = mkdtempSync(join(tmpdir(), 'clapgrid-insert-'));
+  t.onTestFinished(() => rmSync(root, {recursive:true,force:true}));
+  const business = openBusiness(root); t.onTestFinished(() => business.close());
   business.addSegment('甲'); business.addSegment('乙');
   const token = business.acquire('user');
   for (const [anchorIndex, placement, expectedIndex] of [[0,'before',0],[1,'after',2],[3,'after',4]] as const) {
@@ -28,8 +32,9 @@ test('相对锚点原子插入空白片段，保留其他内容且兼容末尾�
 });
 
 test('相对插入拒绝旧顺序、变化或删除的锚点及失效修改权且无残留片段', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-insert-stale-')); const business = openBusiness(root);
-  t.after(async () => { await business.close(); rmSync(root, {recursive:true,force:true}); });
+  const root = mkdtempSync(join(tmpdir(), 'clapgrid-insert-stale-'));
+  t.onTestFinished(() => rmSync(root, {recursive:true,force:true}));
+  const business = openBusiness(root); t.onTestFinished(() => business.close());
   business.addSegment('甲'); business.addSegment('乙');
   const original = business.getSnapshot().segments;
   const request = {changes:[{kind:'add' as const,text:'',relative:{anchor:original[0]!,placement:'before' as const,expectedIds:original.map(s=>s.id)}}]};
@@ -56,11 +61,13 @@ test('相对插入拒绝旧顺序、变化或删除的锚点及失效修改权�
 
 
 test('插入持久化失败回滚同事务位置更新，不留下空白片段', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-insert-rollback-')); const business = openBusiness(root);
+  const root = mkdtempSync(join(tmpdir(), 'clapgrid-insert-rollback-'));
+  t.onTestFinished(() => rmSync(root, {recursive:true,force:true}));
+  const business = openBusiness(root); t.onTestFinished(() => business.close());
   business.addSegment('甲'); business.addSegment('乙');
   const before = business.getSnapshot();
   const db = new DatabaseSync(before.storage.database);
-  t.after(async () => { db.close(); await business.close(); rmSync(root, {recursive:true,force:true}); });
+  t.onTestFinished(() => db.close());
   // 在存储边界注入写入失败；结果只通过业务公共快照观察。
   db.exec("CREATE TRIGGER reject_insert BEFORE INSERT ON segments BEGIN SELECT RAISE(ABORT, '模拟插入保存失败'); END");
   const token = business.acquire('user');
@@ -72,8 +79,9 @@ test('插入持久化失败回滚同事务位置更新，不留下空白片段',
 
 for (const task of ['speech','export'] as const) test(`相对插入在 ${task} 任务占用期间拒绝修改且不改变项目`, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-insert-lock-'));
+  t.onTestFinished(() => rmSync(root,{recursive:true,force:true}));
   const business = openBusiness(root,{key:()=> '测试',configPath:'测试',fetch: async () => new Response('data: {"code":20000000}\n\n')});
-  t.after(async()=>{await business.close();rmSync(root,{recursive:true,force:true})});
+  t.onTestFinished(() => business.close());
   business.addSegment('甲'); const before = business.getSnapshot();
   if(task==='speech') business.submitSpeech({requestId:randomUUID(),segmentId:before.segments[0]!.id});
   else business.submitExport();
@@ -85,12 +93,13 @@ for (const task of ['speech','export'] as const) test(`相对插入在 ${task} �
 
 test('相对插入和重排保留非空素材与有效配音关联，新片段无关联', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-insert-media-'));
+  t.onTestFinished(() => rmSync(root,{recursive:true,force:true}));
   const source = join(root, 'source.mp4'); const audio = join(root, 'speech.mp3');
   execFileSync('ffmpeg', ['-v','error','-f','lavfi','-i','color=c=red:s=64x48:d=1','-c:v','libx264',source]);
   execFileSync('ffmpeg', ['-v','error','-f','lavfi','-i','sine=frequency=440:duration=0.2','-ar','24000',audio]);
   const payload = readFileSync(audio).toString('base64');
   const business = openBusiness(join(root,'project'), {key:()=> '测试',configPath:'测试',fetch:async()=>new Response(`data: {"code":0,"data":"${payload}"}\n\ndata: {"code":20000000}\n\n`)});
-  t.after(async()=>{await business.close();rmSync(root,{recursive:true,force:true})});
+  t.onTestFinished(() => business.close());
   const setup = business.acquire('user');
   const asset = await business.importVideo(setup,{sourcePath:source});
   business.addSegment('带关联甲',setup); business.addSegment('带关联乙',setup);

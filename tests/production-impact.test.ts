@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
-import { test, type TestContext } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
+
+// 原 Node 文件未设置测试及清理时限；仅本迁移文件保留相同语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const entry = fileURLToPath(new URL('../scripts/production.mjs', import.meta.url));
 const sha = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
@@ -23,7 +26,7 @@ function frame(path: string, index: number) {
 type Node = { id: string; path: string; kind: string; segmentId?: string; sha256: string; dependsOn: string[] };
 function fixture(t: TestContext) {
   const project = mkdtempSync(join(tmpdir(), '真实依赖 中文 项目 '));
-  t.after(() => rmSync(project, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
   writeFileSync(join(project, 'video.md'), '本项目只用于受控技术回归，不是用户视觉确认。\n');
   ffmpeg(['-f', 'lavfi', '-i', 'color=c=white:s=8x8', '-frames:v', '1', '-update', '1', join(project, '共享素材.png')]);
   const segments = ['A', 'B', 'C'].map(id => ({ id, source: `${id}-source.mjs`, card: `${id}-card.json`, audio: `${id}-audio.wav`, frames: 6, assembly: `${id}-assembly.mkv`, review: `${id}-review.mkv`, assets: id !== 'C' ? ['共享素材.png'] : [], lastFrame: id === 'A' ? 'A-last-frame.png' : undefined, transitions: id === 'B' ? ['B-transition.mkv'] : [] }));

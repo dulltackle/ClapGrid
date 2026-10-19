@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { test, type TestContext } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join, basename } from 'node:path';
@@ -7,31 +7,24 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createHash } from 'node:crypto';
+import { dependencyView, temporaryRepository, withEnvironment } from './helpers/temporary-repository.js';
+
+// 保留原 Node 未显式设置的测试和收尾时限。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const project = fileURLToPath(new URL('../', import.meta.url));
 function repository(t: TestContext, dependencies = join(project, 'node_modules')) {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-watch-'));
-  const workers: Array<{ child: ReturnType<typeof spawn>, closed: Promise<number | null> }> = [];
-  t.after(async () => {
-    for (const { child, closed } of workers) if (child.exitCode === null && child.signalCode === null) {
-      child.kill('SIGTERM'); await closed;
-    }
-    if (existsSync(join(root, 'logs/check-state/active'))) {
-      const stop = spawnSync(process.execPath, ['scripts/check-lifecycle.mjs'], { cwd: root, encoding: 'utf8', timeout: 15000 });
-      assert.equal(stop.status, 0, `保留未确认清理的fixture：${root}\n${stop.stderr}`);
-    }
-    if (process.env.CLAPGRID_WATCH_TEST_EVIDENCE) {
-      const archive = join(process.env.CLAPGRID_WATCH_TEST_EVIDENCE, basename(root)); mkdirSync(archive, { recursive: true });
-      for (const name of ['logs', 'scripts', 'tests', 'package.json', 'task.mjs', 'playwright.config.ts', 'probe.mjs', 'parent.mjs']) if (existsSync(join(root, name))) cpSync(join(root, name), join(archive, name), { recursive: true });
-      writeFileSync(join(archive, 'origin.json'), JSON.stringify({ originalRoot: root, sourceBase: process.env.CLAPGRID_WATCH_TEST_SCRIPT_BASE ?? project, savedAt: new Date().toISOString(), activeCheckOwner: false, observedBy: '真实CLI测试在原进程/生命周期清理后保存；保持原报告引用路径，不改写成归档来源。' }, null, 2));
-    }
-    rmSync(root, { recursive: true, force: true });
+  const fixture = temporaryRepository(cleanup => t.onTestFinished(cleanup), {
+    project, dependencies, prefix: 'clapgrid-watch-', scriptBase: process.env.CLAPGRID_WATCH_TEST_SCRIPT_BASE,
+    beforeRemove(root) {
+      if (process.env.CLAPGRID_WATCH_TEST_EVIDENCE) {
+        const archive = join(process.env.CLAPGRID_WATCH_TEST_EVIDENCE, basename(root)); mkdirSync(archive, { recursive: true });
+        for (const name of ['logs', 'scripts', 'tests', 'package.json', 'task.mjs', 'playwright.config.ts', 'probe.mjs', 'parent.mjs']) if (existsSync(join(root, name))) cpSync(join(root, name), join(archive, name), { recursive: true });
+        writeFileSync(join(archive, 'origin.json'), JSON.stringify({ originalRoot: root, sourceBase: process.env.CLAPGRID_WATCH_TEST_SCRIPT_BASE ?? project, savedAt: new Date().toISOString(), activeCheckOwner: false, observedBy: '真实CLI测试在原进程/生命周期清理后保存；保持原报告引用路径，不改写成归档来源。' }, null, 2));
+      }
+    },
   });
-  const put = (file: string, text: string) => { mkdirSync(join(root, file, '..'), { recursive: true }); writeFileSync(join(root, file), text); };
-  const git = (...args: string[]) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-  git('init', '-q'); cpSync(join(process.env.CLAPGRID_WATCH_TEST_SCRIPT_BASE ?? project, 'scripts'), join(root, 'scripts'), { recursive: true });
-  mkdirSync(join(root, 'node_modules'));
-  for (const name of readdirSync(dependencies)) if (!['.cache', '.vite', '.vite-temp'].includes(name)) symlinkSync(join(dependencies, name), join(root, 'node_modules', name));
+  const { root, put, git, own, environment } = fixture;
   put('.gitignore', 'logs/\nnode_modules\ndist/\n');
   put('package.json', JSON.stringify({ type: 'module', scripts: { 'check:related': 'node scripts/check-related.mjs', check: 'node scripts/check.mjs', 'test:failed': 'node scripts/test-runner.mjs --suite failed', typecheck: 'node task.mjs', build: 'node task.mjs' }, devDependencies: { tsx: '4.23.15' } }));
   put('task.mjs', 'console.log("fixture stage");');
@@ -41,13 +34,12 @@ function repository(t: TestContext, dependencies = join(project, 'node_modules')
   put('scripts/test-inventory.json', JSON.stringify(inventory));
   const commit = () => { git('add', '.'); git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'fixture'); return git('rev-parse', 'HEAD'); };
   const base = commit();
-  const own = (child: ReturnType<typeof spawn>) => { const closed = new Promise<number | null>(resolve => child.once('close', resolve)); workers.push({ child, closed }); return closed; };
-  const cli = (...args: string[]) => spawnSync(process.execPath, ['scripts/check-related.mjs', ...args], { cwd: root, encoding: 'utf8', env: { ...process.env, NODE_TEST_CONTEXT: undefined }, timeout: 15000 });
+  const cli = (...args: string[]) => spawnSync(process.execPath, ['scripts/check-related.mjs', ...args], { cwd: root, encoding: 'utf8', env: environment(), timeout: 15000 });
   const summary = () => {
     try { const dirs = readdirSync(join(root, 'logs/check-watch')).sort(); return JSON.parse(readFileSync(join(root, 'logs/check-watch', dirs.at(-1)!, 'summary.json'), 'utf8')); } catch { return undefined; }
   };
   const start = (...args: string[]) => {
-    const child = spawn(process.execPath, ['scripts/check-related.mjs', '--watch', ...args], { cwd: root, env: { ...process.env, NODE_TEST_CONTEXT: undefined }, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, ['scripts/check-related.mjs', '--watch', ...args], { cwd: root, env: environment(), stdio: ['ignore', 'pipe', 'pipe'] });
     let output = ''; child.stdout.on('data', chunk => { output += chunk; }); child.stderr.on('data', chunk => { output += chunk; });
     const closed = own(child);
     const wait = async (predicate: () => boolean) => {
@@ -60,21 +52,36 @@ function repository(t: TestContext, dependencies = join(project, 'node_modules')
   return { root, put, git, commit, base, inventory, cli, summary, start, own };
 }
 
-test('watch夹具独立可写缓存且包仍只读共享', t => {
-  const dependencies = mkdtempSync(join(tmpdir(), 'clapgrid-watch-packages-'));
-  t.after(() => rmSync(dependencies, { recursive: true, force: true }));
-  symlinkSync(join(project, 'node_modules/tsx'), join(dependencies, 'tsx'));
-  for (const cache of ['.cache', '.vite', '.vite-temp']) mkdirSync(join(dependencies, cache));
-  const r = repository(t, dependencies);
-  for (const cache of ['.cache', '.vite', '.vite-temp']) {
-    r.put(`node_modules/${cache}/fixture-isolation/probe`, 'local');
-    assert.equal(existsSync(join(dependencies, cache, 'fixture-isolation/probe')), false, `${cache} 只能写夹具本地`);
+test('公共夹具隔离同名缓存，共享完整安装的软链接反例会外泄', t => {
+  const shared = mkdtempSync(join(tmpdir(), 'clapgrid-shared-packages-'));
+  t.onTestFinished(() => rmSync(shared, { recursive: true, force: true }));
+  symlinkSync(join(project, 'node_modules/tsx'), join(shared, 'tsx'));
+  for (const cache of ['.cache', '.vite', '.vite-temp', '.vitest-cache']) mkdirSync(join(shared, cache));
+  const first = temporaryRepository(cleanup => t.onTestFinished(cleanup), { project, dependencies: shared });
+  const second = temporaryRepository(cleanup => t.onTestFinished(cleanup), { project, dependencies: shared });
+  for (const cache of ['.cache', '.vite', '.vite-temp', '.vitest-cache']) {
+    for (const [fixture, value] of [[first, 'first'], [second, 'second']] as const) fixture.put(`node_modules/${cache}/same/probe`, value);
+    assert.equal(readFileSync(join(first.root, `node_modules/${cache}/same/probe`), 'utf8'), 'first');
+    assert.equal(readFileSync(join(second.root, `node_modules/${cache}/same/probe`), 'utf8'), 'second');
+    assert.equal(existsSync(join(shared, cache, 'same/probe')), false);
   }
-  assert.notEqual(realpathSync(join(r.root, 'node_modules')), realpathSync(join(project, 'node_modules')));
-  r.put('node_modules/.cache/fixture-isolation/probe', 'local');
-  assert.equal(readFileSync(join(r.root, 'node_modules/.cache/fixture-isolation/probe'), 'utf8'), 'local');
-  assert.equal(existsSync(join(project, 'node_modules/.cache/fixture-isolation/probe')), false);
-  assert.equal(realpathSync(join(r.root, 'node_modules/tsx')), realpathSync(join(project, 'node_modules/tsx')));
+  assert.equal(realpathSync(join(first.root, 'node_modules/tsx')), realpathSync(join(project, 'node_modules/tsx')));
+  const unsafe = join(shared, 'unsafe'); mkdirSync(unsafe);
+  symlinkSync(shared, join(unsafe, 'node_modules'), 'dir');
+  writeFileSync(join(unsafe, 'node_modules/.cache/leaked'), 'shared write');
+  assert.equal(readFileSync(join(shared, '.cache/leaked'), 'utf8'), 'shared write');
+});
+
+test('公共夹具恢复环境，收尾失败保留现场且不删除另一夹具', async t => {
+  const first = temporaryRepository(cleanup => t.onTestFinished(cleanup), { project }), second = temporaryRepository(cleanup => t.onTestFinished(cleanup), { project });
+  const original = process.env.CLAPGRID_FIXTURE_PROBE;
+  assert.throws(() => withEnvironment({ CLAPGRID_FIXTURE_PROBE: 'changed' }, () => { throw Error('故障'); }), /故障/);
+  assert.equal(process.env.CLAPGRID_FIXTURE_PROBE, original);
+  first.put('logs/check-state/active/owner.json', '{}');
+  await assert.rejects(first.cleanup(), /保留未确认清理/);
+  assert.ok(existsSync(first.root)); assert.ok(existsSync(second.root));
+  rmSync(join(first.root, 'logs/check-state/active'), { recursive: true });
+  await first.cleanup(); assert.equal(existsSync(first.root), false); assert.ok(existsSync(second.root));
 });
 
 test('默认日常命令单次退出，显式watch空闲仍持锁且停止后释放', async t => {
@@ -110,9 +117,8 @@ test('watch默认不创建字节码cache，首冷执行后idle且真实外部依
   const directory=join(r.root,'node_modules/.cache/clapgrid-node-compile-v1');assert.equal(existsSync(directory),false);
   r.put('tests/value.test.ts',`import{test}from'node:test';import{getCompileCacheDir}from'node:module';test('watch cache off',()=>{if(getCompileCacheDir()||process.env.NODE_COMPILE_CACHE!==undefined)throw Error('watch自动cache仍启用');});`);r.commit();
   r.put('src/value.ts','export const value=8;\n');
-  const keys=['NODE_COMPILE_CACHE','NODE_DISABLE_COMPILE_CACHE','CLAPGRID_NODE_COMPILE_CACHE_DEFAULT'] as const,saved=keys.map(key=>[key,process.env[key]] as const);
-  for(const key of keys)delete process.env[key];let w:ReturnType<typeof r.start>;
-  try{w=r.start();}finally{for(const[key,value]of saved)if(value===undefined)delete process.env[key];else process.env[key]=value;}
+  const keys=['NODE_COMPILE_CACHE','NODE_DISABLE_COMPILE_CACHE','CLAPGRID_NODE_COMPILE_CACHE_DEFAULT'] as const;
+  const w = withEnvironment(Object.fromEntries(keys.map(key => [key, undefined])), () => r.start());
   await w.wait(()=>r.summary()?.state==='idle');assert.equal(r.summary().rounds[0].status,'passed');
   assert.equal(existsSync(directory),false,'watch派生测试不自动创建默认cache');
   await delay(2200);assert.equal(r.summary().state,'idle');assert.equal(r.summary().rounds.length,1,'执行器输出不得自触发新轮');
@@ -152,7 +158,7 @@ for(const suffix of ['unknown.cache','nested/node_modules/foreign/index.js'])tes
 test('watch跨进程嵌套工作树共享安装也保持自动cache关闭，不触发自身新轮',async t=>{
   const r=repository(t);
   const nestedSource=`import{test}from'node:test';import{getCompileCacheDir}from'node:module';test('nested cache off',()=>{if(process.env.NODE_COMPILE_CACHE!==undefined||getCompileCacheDir())throw Error('nested default重新开启');});`;
-  const nested=join(r.root,'logs/nested');mkdirSync(nested,{recursive:true});cpSync(join(r.root,'scripts'),join(nested,'scripts'),{recursive:true});mkdirSync(join(nested,'tests'));symlinkSync(join(r.root,'node_modules'),join(nested,'node_modules'),'dir');
+  const nested=join(r.root,'logs/nested');mkdirSync(nested,{recursive:true});cpSync(join(r.root,'scripts'),join(nested,'scripts'),{recursive:true});mkdirSync(join(nested,'tests'));dependencyView(nested,join(r.root,'node_modules'));
   writeFileSync(join(nested,'.gitignore'),'logs/\nnode_modules\n');writeFileSync(join(nested,'package.json'),'{"type":"module"}');writeFileSync(join(nested,'tests/nested.test.mjs'),nestedSource);
   writeFileSync(join(nested,'scripts/test-inventory.json'),JSON.stringify({schemaVersion:1,files:[{file:'tests/nested.test.mjs',executor:'node',scopes:['all']}]}));
   execFileSync('git',['init','-q',nested]);execFileSync('git',['-C',nested,'add','.']);execFileSync('git',['-C',nested,'-c','user.name=Fixture','-c','user.email=fixture@example.invalid','-c','commit.gpgsign=false','commit','-qm','nested']);
@@ -191,7 +197,7 @@ test('执行中显式停止watch先回收真实worker、Chrome和目录再释放
   const r = repository(t); browserFixture(r, 'await new Promise(()=>{});');
   const w = r.start(); await w.wait(() => browserRecords(r).some((x: any) => x.event === 'case'));
   const worker = browserRecords(r).find((x: any) => x.event === 'worker-start');
-  t.diagnostic(JSON.stringify({ event: 'active-stop-worker', worker }));
+  await t.annotate(JSON.stringify({ event: 'active-stop-worker', worker }));
   const stop = spawnSync(process.execPath, ['scripts/check-lifecycle.mjs'], { cwd: r.root, encoding: 'utf8', timeout: 15000 });
   assert.equal(stop.status, 0, stop.stderr); assert.equal(await w.closed, 130);
   assert.equal(alive(worker.workerPid), false); assert.equal(alive(worker.chromePid), false);
@@ -211,7 +217,7 @@ test('watch拥有者被强杀保留锁，显式恢复回收Chrome；旧token不�
   assert.equal(stop.status, 0, stop.stderr); assert.equal(existsSync(active), false);
   assert.equal(alive(worker.chromePid), false); assert.equal(alive(worker.workerPid), false); assert.equal(existsSync(resource.directory), false);
   assert.equal(JSON.parse(readFileSync(resource.cleanupEvidence, 'utf8')).status, 'removed');
-  t.diagnostic(JSON.stringify({ event: 'owner-kill-recovery', worker, cleanup: resource.cleanupEvidence, stop: JSON.parse(stop.stdout) }));
+  await t.annotate(JSON.stringify({ event: 'owner-kill-recovery', worker, cleanup: resource.cleanupEvidence, stop: JSON.parse(stop.stdout) }));
   r.put('tests/value.test.ts', 'import{test}from"node:test";test("recovered",()=>{});');
   r.inventory.files[0]!.executor = 'node'; r.inventory.files[0]!.scopes = ['all']; r.put('scripts/test-inventory.json', JSON.stringify(r.inventory));
   const next = r.start(); await next.wait(() => r.summary()?.state === 'idle' && r.summary()?.owner.token !== owner.token);
@@ -222,7 +228,7 @@ test('watch拥有者被强杀保留锁，显式恢复回收Chrome；旧token不�
 });
 
 test('上游真实检查取消覆盖watch及孙进程，不遗留两层工作树锁', { skip: process.platform !== 'linux' }, async t => {
-  const parent = repository(t), r = repository(t);
+  const r = repository(t), parent = repository(t);
   r.put('tests/value.test.ts', 'import{test}from"node:test";import{spawn}from"node:child_process";test("watch descendant",async()=>{spawn(process.execPath,["-e","setInterval(()=>require(\'node:fs\').appendFileSync(\'logs/heartbeat\',\'x\'),20)"],{stdio:"ignore"});await new Promise(()=>{setInterval(()=>{},1000)});});');
   r.commit(); r.put('src/value.ts', 'export const value=8;\n');
   parent.put('parent.mjs', `import{withCheckRun}from'./scripts/check-lifecycle.mjs';import{runLogged}from'./scripts/check-runner.mjs';await withCheckRun(process.cwd(),'watch-parent',async context=>{const result=await runLogged(process.execPath,[${JSON.stringify(join(r.root, 'scripts/check-related.mjs'))},'--watch'],${JSON.stringify(r.root)},'logs/watch-parent.log',context);process.exitCode=context.signal.aborted?130:result.exitCode;});`);
@@ -252,11 +258,11 @@ test('取消round先收尾同拥有者登记的跨组孙进程，再写cancelled
   assert.equal(alive(group.pid), false); assert.equal(existsSync(active), false);
   assert.equal(r.summary().state, 'cancelled'); assert.equal(r.summary().rounds.length, 1); assert.equal(r.summary().rounds[0].status, 'cancelled');
   assert.ok(r.summary().lifecycleCompletedAt);
-  t.diagnostic(JSON.stringify({ event: 'registered-descendant-drained', group, processGroup, owner, termAt: readFileSync(join(r.root, 'logs/detached-term'), 'utf8'), endedAt: readFileSync(join(r.root, 'logs/detached-ended'), 'utf8'), state: r.summary().state, roundStatus: r.summary().rounds[0].status, lifecycleCompletedAt: r.summary().lifecycleCompletedAt }));
+  await t.annotate(JSON.stringify({ event: 'registered-descendant-drained', group, processGroup, owner, termAt: readFileSync(join(r.root, 'logs/detached-term'), 'utf8'), endedAt: readFileSync(join(r.root, 'logs/detached-ended'), 'utf8'), state: r.summary().state, roundStatus: r.summary().rounds[0].status, lifecycleCompletedAt: r.summary().lifecycleCompletedAt }));
 });
 
 test('父检查取消嵌套watch的真实Chrome，完整ancestor登记与profile均清理后释放锁', { skip: process.platform !== 'linux' }, async t => {
-  const parent = repository(t), r = repository(t); browserFixture(r, 'await new Promise(()=>{});');
+  const r = repository(t), parent = repository(t); browserFixture(r, 'await new Promise(()=>{});');
   parent.put('parent.mjs', `import{withCheckRun}from'./scripts/check-lifecycle.mjs';import{runLogged}from'./scripts/check-runner.mjs';await withCheckRun(process.cwd(),'watch-chrome-parent',async context=>{const result=await runLogged(process.execPath,[${JSON.stringify(join(r.root, 'scripts/check-related.mjs'))},'--watch'],${JSON.stringify(r.root)},'logs/watch-parent.log',context);process.exitCode=context.signal.aborted?130:result.exitCode;});`);
   const child = spawn(process.execPath, ['parent.mjs'], { cwd: parent.root, env: { ...process.env, NODE_TEST_CONTEXT: undefined }, stdio: 'ignore' }), closed = parent.own(child);
   await until(() => browserRecords(r).some((x: any) => x.event === 'case'), '嵌套watch实际Chrome场景应启动');
@@ -276,7 +282,7 @@ test('父检查取消嵌套watch的真实Chrome，完整ancestor登记与profile
   assert.ok(expectedRegistrations.every(registration => !existsSync(registration.path)));
   for (const ancestor of parentOwner.ancestors) assert.equal(JSON.parse(readFileSync(join(ancestor.root, 'logs/check-state/active/owner.json'), 'utf8')).token, ancestor.token);
   assert.equal(r.summary().state, 'cancelled'); assert.ok(r.summary().lifecycleCompletedAt);
-  t.diagnostic(JSON.stringify({ event: 'ancestor-browser-cancelled', worker, registrations: resource.registrations, cleanup }));
+  await t.annotate(JSON.stringify({ event: 'ancestor-browser-cancelled', worker, registrations: resource.registrations, cleanup }));
 });
 
 test('watch空闲拒绝完整和UI检查，另一真实Git工作树仍能实际检查', async t => {
@@ -286,11 +292,10 @@ test('watch空闲拒绝完整和UI检查，另一真实Git工作树仍能实际�
     const conflict = spawnSync(process.execPath, args, { cwd: r.root, encoding: 'utf8', timeout: 10000 });
     assert.equal(conflict.status, 1); assert.match(conflict.stderr, /已有检查/);
   }
-  const other = mkdtempSync(join(tmpdir(), 'clapgrid-watch-worktree-')); t.after(() => rmSync(other, { recursive: true, force: true }));
+  const other = mkdtempSync(join(tmpdir(), 'clapgrid-watch-worktree-')); t.onTestFinished(() => rmSync(other, { recursive: true, force: true }));
   r.git('worktree', 'add', '--quiet', '--detach', other, r.base);
   // 包只读共享；另一独立任务的默认字节码输出不能写回watch正在观察的安装。
-  mkdirSync(join(other, 'node_modules'));
-  for (const name of readdirSync(join(project, 'node_modules'))) if (!['.cache', '.vite', '.vite-temp'].includes(name)) symlinkSync(join(project, 'node_modules', name), join(other, 'node_modules', name));
+  dependencyView(other, join(project, 'node_modules'));
   const independentCache = join(other, 'node_modules/.cache/clapgrid-node-compile-v1');
   assert.equal(existsSync(independentCache), false);
   writeFileSync(join(other, 'src/value.ts'), 'export const value=8;\n');
@@ -314,7 +319,7 @@ test('真实Playwright worker骤死后watch先回收Chrome及profile，再idle�
   const pending = JSON.parse(readFileSync(join(r.root, 'logs/check-state/failures.json'), 'utf8'));
   assert.ok(pending.failures.some((x: any) => x.file === 'tests/value.test.ts'));
   await delay(2300); assert.equal(r.summary().rounds.length, 1);
-  t.diagnostic(JSON.stringify({ event: 'worker-kill-idle', worker, roundId: round.roundId, status: round.status }));
+  await t.annotate(JSON.stringify({ event: 'worker-kill-idle', worker, roundId: round.roundId, status: round.status }));
   w.child.kill('SIGTERM'); assert.equal(await w.closed, 130);
 });
 
@@ -568,8 +573,13 @@ test('普通完整check后续失败也重验已通过proof，未知来源要求�
   r.put('tests/value.test.ts', 'import{test}from"node:test";import{value}from"../src/value.js";import{appendFileSync}from"node:fs";test("positive",()=>{appendFileSync("logs/attempts",String(value)+"\\n");if(value<0)throw Error("negative")});');
   r.put('task.mjs', 'import*as fs from"node:fs";if(process.env.npm_lifecycle_event==="typecheck"&&fs.existsSync("logs/fault")){const paths=fs.globSync("logs/check/**/test-failed-tests.json").sort();const report=JSON.parse(fs.readFileSync(paths.at(-1),"utf8"));fs.appendFileSync(report.sources.native.path," ");throw Error("late failure after raw changed");}');
   r.commit(); r.put('src/value.ts', 'export const value=-1;\n');
-  const command = (...args: string[]) => spawnSync(process.execPath, ['scripts/check.mjs', ...args], { cwd: r.root, encoding: 'utf8', env: { ...process.env, NODE_TEST_CONTEXT: undefined }, timeout: 30000 });
-  assert.equal(command().status, 1);
+  // 这个仅含 Node 小用例的历史夹具保持原串行路径，不继承项目并发资格。
+  const command = (...args: string[]) => spawnSync(process.execPath, ['scripts/check.mjs', '--execution', 'serial', ...args], { cwd: r.root, encoding: 'utf8', env: { ...process.env, NODE_TEST_CONTEXT: undefined }, timeout: 30000 });
+  const first = command(); assert.equal(first.status, 1, first.stdout + first.stderr);
+  assert.deepEqual(existsSync(join(r.root, 'logs/attempts')) ? readFileSync(join(r.root, 'logs/attempts'), 'utf8').trim().split('\n') : [], ['-1'], '首次失败必须来自实际执行负值用例，而不是夹具配置失效');
+  const firstDirectory = readdirSync(join(r.root, 'logs/check')).sort().at(-1)!;
+  const firstSummary = JSON.parse(readFileSync(join(r.root, 'logs/check', firstDirectory, 'summary.json'), 'utf8'));
+  assert.ok(firstSummary.failures.some((failure: any) => failure.file === 'tests/value.test.ts' && failure.name === 'positive' && failure.message === 'negative'), JSON.stringify(firstSummary.failures));
   r.put('logs/fault', 'yes'); r.put('src/value.ts', 'export const value=8;\n'); assert.equal(command().status, 1);
   const pending = JSON.parse(readFileSync(join(r.root, 'logs/check-state/failures.json'), 'utf8'));
   rmSync(join(r.root, 'logs/fault')); const final = command('--failed'); assert.equal(final.status, 0, final.stderr);
@@ -625,9 +635,9 @@ test('真实scandir删除race只忽略范围外历史、无tracked输入的已�
     r.put('fault-watch.mjs', `import fs from'node:fs';import{resolve}from'node:path';if(process.argv.includes('--watch')){const target=resolve(${JSON.stringify(target)}),original=fs.readdirSync;let injected=false;fs.readdirSync=function(path,...args){if(String(path)===target&&fs.existsSync('logs/arm-race')&&!injected){injected=true;fs.rmSync(target,{recursive:true,force:true});try{return original.call(this,path,...args)}catch(error){fs.appendFileSync('logs/race-error',JSON.stringify({code:error.code,syscall:error.syscall,path:error.path})+'\\n');throw error}}return original.call(this,path,...args)}}`);
     r.put('task.mjs', `import fs from'node:fs';if(!fs.existsSync('logs/race-error')){fs.writeFileSync('logs/arm-race','yes');fs.mkdirSync(${JSON.stringify(target)},{recursive:true});fs.writeFileSync(${JSON.stringify(target + '/churn')},'output');}`);
     r.commit(); r.put('src/value.ts', 'export const value=8;\n');
-    const previous = process.env.NODE_OPTIONS; process.env.NODE_OPTIONS = `${previous ?? ''} --import ${pathToFileURL(join(r.root, 'fault-watch.mjs')).href}`.trim();
+    const nodeOptions = `${process.env.NODE_OPTIONS ?? ''} --import ${pathToFileURL(join(r.root, 'fault-watch.mjs')).href}`.trim();
     let w: ReturnType<typeof r.start>;
-    try { w = r.start(); } finally { if (previous === undefined) delete process.env.NODE_OPTIONS; else process.env.NODE_OPTIONS = previous; }
+    w = withEnvironment({ NODE_OPTIONS: nodeOptions }, () => r.start());
     if (positive) {
       await w.wait(() => r.summary()?.state === 'idle' && existsSync(join(r.root, 'logs/race-error')));
       assert.equal(r.summary().rounds[0].status, 'passed', kind); assert.ok(r.summary().inputObservation.ignoredDirectoryRaceCount >= 1, kind);
@@ -712,7 +722,7 @@ test('watch两轮真实Chrome均实际执行，浏览器和目录逐轮隔离且
   assert.equal(r.summary().rounds[1].status, 'passed'); assert.notEqual(firstWorker.chromePid, secondWorker.chromePid); assert.notEqual(firstWorker.directory, secondWorker.directory);
   assert.equal(alive(firstWorker.chromePid), false); assert.equal(alive(secondWorker.chromePid), false);
   assert.equal(existsSync(firstWorker.directory), false); assert.equal(existsSync(secondWorker.directory), false);
-  t.diagnostic(JSON.stringify({ event: 'fresh-browser-rounds', firstWorker, secondWorker }));
+  await t.annotate(JSON.stringify({ event: 'fresh-browser-rounds', firstWorker, secondWorker }));
   w.child.kill('SIGTERM'); assert.equal(await w.closed, 130);
 });
 

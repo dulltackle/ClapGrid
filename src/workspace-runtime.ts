@@ -37,10 +37,19 @@ export async function workspaceRuntime(action: 'open' | 'workspace-status' | 'wo
     closeSync(log);
     let failure: Error | undefined;
     child.on('error', error => { failure = error; }); child.unref();
+    let candidate: { instanceId: string; pid: number } | undefined;
     for (let attempt = 0; attempt < 60; attempt++) {
       await setTimeout(100);
       if (failure) throw failure;
-      try { await discoverWorkspace(workspace); found = true; break; } catch { /* 同项目并发打开时等待持有所有权的服务发布身份。 */ }
+      let service: Awaited<ReturnType<typeof discoverWorkspace>>;
+      try { service = await discoverWorkspace(workspace); }
+      catch { continue; /* 同项目并发打开时等待持有所有权的服务发布身份。 */ }
+      if (candidate?.instanceId !== service.instanceId) {
+        const status = await queryStatus(await bindWorkspace(workspace, values.thread));
+        candidate = { instanceId: status.instanceId, pid: status.pid };
+      }
+      // 另一服务发布身份时，本次候选仍可能在等待所有权；它退出前返回会让停止后的项目被重新打开。
+      if (candidate.pid === child.pid || child.exitCode !== null || child.signalCode !== null) { found = true; break; }
     }
     if (!found) throw new Error('服务启动未确认，请检查 clapgrid/service.log；不会自动重复启动。');
   }

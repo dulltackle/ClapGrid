@@ -1,15 +1,18 @@
 import assert from 'node:assert/strict';
-import { test, type TestContext } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+// 保留原 Node 外层文件未显式设置的测试及清理无限时语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 const sourceModule = pathToFileURL(fileURLToPath(new URL('../scripts/check-source.mjs', import.meta.url))).href;
 function repository(t: TestContext, configured = true) {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-source-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   const put = (file: string, contents: string | Buffer) => { mkdirSync(join(root, file, '..'), { recursive: true }); writeFileSync(join(root, file), contents); };
   const git = (...args: string[]) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   put('.gitignore', 'logs/\n'); put('a.txt', 'hello\n');

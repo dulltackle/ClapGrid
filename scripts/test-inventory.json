@@ -3,7 +3,7 @@
   "files": [
     {
       "file": "tests/agent-tools.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -18,7 +18,7 @@
     },
     {
       "file": "tests/browser-build-cache.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -26,7 +26,7 @@
     },
     {
       "file": "tests/browser-startup.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -34,7 +34,7 @@
     },
     {
       "file": "tests/build-identity.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -49,7 +49,7 @@
     },
     {
       "file": "tests/check-related.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -57,7 +57,7 @@
     },
     {
       "file": "tests/check-runner.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling",
@@ -66,7 +66,7 @@
     },
     {
       "file": "tests/check-source.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -74,7 +74,7 @@
     },
     {
       "file": "tests/check-watch.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling",
@@ -91,7 +91,7 @@
     },
     {
       "file": "tests/diagnose-identity.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -172,7 +172,7 @@
     },
     {
       "file": "tests/export-tasks.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -187,28 +187,28 @@
     },
     {
       "file": "tests/lifecycle-export.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/lifecycle-runtime.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/lifecycle.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/linux-components.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -257,7 +257,7 @@
     },
     {
       "file": "tests/node-compile-cache.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -281,7 +281,7 @@
     },
     {
       "file": "tests/panel-release.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -321,7 +321,7 @@
     },
     {
       "file": "tests/playwright-runner.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -329,126 +329,126 @@
     },
     {
       "file": "tests/plugin-source-update.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/plugin-update.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/process-trace-command.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-archive-baseline.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-archive-node.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-archive-publication.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-document.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-evidence-recheck.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-evidence.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-impact.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-manifest-encoding.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-package-restore.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-package.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-reference-encoding.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-references.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-report-identity.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production-sample.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/production.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -471,7 +471,7 @@
     },
     {
       "file": "tests/project-import.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -494,14 +494,14 @@
     },
     {
       "file": "tests/relative-insert.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/review-contract.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -592,7 +592,7 @@
     },
     {
       "file": "tests/service-exit-wait.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -642,7 +642,7 @@
     },
     {
       "file": "tests/speech-export-lock.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -657,7 +657,7 @@
     },
     {
       "file": "tests/speech-retention.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -698,7 +698,7 @@
     },
     {
       "file": "tests/test-evidence.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -706,7 +706,7 @@
     },
     {
       "file": "tests/test-reporting.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -722,14 +722,14 @@
     },
     {
       "file": "tests/thread-selection.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/ui-check-plan.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -737,7 +737,7 @@
     },
     {
       "file": "tests/ui-check-runner.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -745,7 +745,7 @@
     },
     {
       "file": "tests/verification-jobs.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling",
@@ -770,14 +770,14 @@
     },
     {
       "file": "tests/video-service.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/video.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
@@ -801,7 +801,7 @@
     },
     {
       "file": "tests/vitest-runner.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all",
         "tooling"
@@ -835,28 +835,28 @@
     },
     {
       "file": "tests/workspace-inflight-edit.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/workspace-runtime.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/workspace-sharing.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]
     },
     {
       "file": "tests/workspace-task-continuity.test.ts",
-      "executor": "node",
+      "executor": "vitest",
       "scopes": [
         "all"
       ]

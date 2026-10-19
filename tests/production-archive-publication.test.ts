@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, cpSync, rmSync, readFileSync, writeFileSync, readdirSync, existsSync, symlinkSync, linkSync, mkdirSync, openSync, writeSync, closeSync, statSync, watch } from 'node:fs';
 import { resolve, join } from 'node:path';
@@ -10,6 +10,9 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createHash, randomBytes } from 'node:crypto';
 import { archiveBaseline, archiveBaselinePath } from './helpers/archive-baseline.js';
+
+// 原 Node 文件未设置默认测试及清理时限；显式 timeout 选项继续优先。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const cli = resolve('scripts/production.mjs');
 const tar = createRequire(import.meta.url)('tar-stream');
@@ -39,7 +42,7 @@ async function inspect(path: string) {
 }
 
 test('真实 pack 无 Python 发布新 v1 包，全部成员与独立旧清单和索引原字节完全一致', async t => {
-  const project = fixture(); t.after(() => rmSync(project, { recursive: true, force: true }));
+  const project = fixture(); t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
   const result = run(project, 'pack');
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.equal(result.report.details.publication, 'published');
@@ -54,7 +57,7 @@ test('真实 pack 无 Python 发布新 v1 包，全部成员与独立旧清单�
 });
 
 test('显式历史待审、否决和人工确认原件保持原字节，归档成功不改变记录含义', async t => {
-  const project = fixture(); t.after(() => rmSync(project, { recursive: true, force: true }));
+  const project = fixture(); t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
   const contents = new Map([
     ['历史待审.json', '{"status":"pending","reviewVersion":"old"}\n'],
     ['历史否决.json', '{"status":"rejected","reason":"未通过审阅"}\n'],
@@ -79,7 +82,7 @@ test('显式历史待审、否决和人工确认原件保持原字节，归档�
 
 for (const kind of ['input', 'manifest', 'symlink-input', 'hardlink-input', 'parent-alias', 'index', 'dangling-index', 'parent-index', 'hardlink-index']) {
   test(`真实 pack 拒绝输出 ${kind} 别名，原件不变且不虚报候选`, t => {
-    const project = fixture(); t.after(() => rmSync(project, { recursive: true, force: true }));
+    const project = fixture(); t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
     const originals = new Map(archiveBaseline.success.members.filter(member => member.path !== '.clapgrid-package.json').map(member => [member.path, readFileSync(join(project, member.path))]));
     let output = join(project, 'src.ts');
     if (kind === 'manifest') output = join(project, 'production.json');
@@ -145,7 +148,7 @@ async function observedPack(project: string, action?: (candidate: string) => voi
 
 for (const kind of ['changed-input', 'missing-input', 'bad-candidate', 'report-directory', 'report-hardlink']) {
   test(`真实候选事件之后 ${kind} 保留正式包、候选及报告的正确实际状态`, { timeout: 40_000 }, async t => {
-    const project = fixture(); t.after(() => rmSync(project, { recursive: true, force: true }));
+    const project = fixture(); t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
     assert.equal(run(project, 'pack').status, 0);
     const archive = join(project, 'delivery.tar.gz'), original = readFileSync(archive);
     largeFixture(project);
@@ -179,7 +182,7 @@ for (const kind of ['changed-input', 'missing-input', 'bad-candidate', 'report-d
 }
 
 test('真实子进程文件大小限制导致候选 EFBIG 写失败，原有效包和部分候选原样保留', { timeout: 40_000, skip: process.platform !== 'linux' }, async t => {
-  const project = fixture(); t.after(() => rmSync(project, { recursive: true, force: true }));
+  const project = fixture(); t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
   assert.equal(run(project, 'pack').status, 0);
   const archive = join(project, 'delivery.tar.gz'), original = readFileSync(archive);
   largeFixture(project);

@@ -1,0 +1,1340 @@
+{
+  "measuredCommit": "f049da10cd1743288751fa190283a8dce80b3e90",
+  "measuredSourceFingerprint": "sha256-merkle-v1:e57def84d9e75837959138becb313782968404144aeaf7b0c791d51e8e7f82f1",
+  "measuredDefaultMode": "serial",
+  "selectedDefaultModeForSubsequentCandidate": "overlap-1+2",
+  "finalDefaultCandidateBoundary": "后续默认变更提交并非九轮测量提交；最终commit/源码身份由外置189-closeout/final-source-identity.json固定，#190另作默认完整验收",
+  "machineAndEnvironment": {
+    "node": "v22.23.3",
+    "executable": "/usr/bin/node",
+    "platform": "linux",
+    "osRelease": "7.0.0-38-generic",
+    "arch": "x64",
+    "environmentFingerprint": "sha256:65d37ce004872c4a8b8938185e07e7241c1502edf1ef70eb3bce03d43c2f4437",
+    "tools": {
+      "npm": {
+        "path": "/usr/lib/node_modules/npm/bin/npm-cli.js",
+        "version": "10.9.9"
+      },
+      "chrome": {
+        "path": "/opt/google/chrome/google-chrome",
+        "version": "Google Chrome 155.0.8059.84"
+      },
+      "ffmpeg": {
+        "path": "/usr/bin/ffmpeg",
+        "version": "ffmpeg version 8.0.1-3ubuntu2 Copyright (c) 2000-2025 the FFmpeg developers"
+      },
+      "ffprobe": {
+        "path": "/usr/bin/ffprobe",
+        "version": "ffprobe version 8.0.1-3ubuntu2 Copyright (c) 2007-2025 the FFmpeg developers"
+      }
+    },
+    "fontsFingerprint": "sha256:c3375aa736f3c2460d7da60ac9b3c67c1e298039bd2ab8546365117ac8e52b51",
+    "fontConfiguration": null,
+    "sanitizedVariables": [
+      "NODE_TEST_CONTEXT"
+    ],
+    "nodeCompileCache": {
+      "directory": null,
+      "disable": null
+    },
+    "reusable": true
+  },
+  "actualNpmEnvironmentFingerprint": "sha256:77512d2aaab44e39a9586e3f80eba868afb0baa5f726759011c8a7166c3e7fd8",
+  "callContext": {
+    "cwd": "/home/forclaw/tmp/clapgrid-174-measure-189-v2",
+    "login": true,
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8",
+    "sanitizedVariables": [
+      "NODE_TEST_CONTEXT"
+    ]
+  },
+  "cachePolicy": {
+    "privateDirectoriesRenamedAndRecreatedEmptyBeforeEachRound": [
+      "node_modules/.cache",
+      "node_modules/.vite",
+      "node_modules/.vite-temp",
+      "node_modules/.vitest-cache",
+      ".cache/browser-build"
+    ],
+    "dependenciesReinstalledBetweenRounds": false,
+    "installedFileCount": 8309,
+    "installContentSha256": "0a6f2ba2bb59407a2dad246fbc9e64657e147138da0b4c61dcb05dd15d4c1898",
+    "osPageCacheCleared": false,
+    "classification": "五种项目私有缓存每轮为空；相同安装；OS页cache随前序运行演变，非全机冷启动"
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "mode": "serial",
+      "command": [
+        "npm",
+        "run",
+        "check",
+        "--",
+        "--execution",
+        "serial"
+      ],
+      "startedAt": "2026-10-18T19:12:40.662144+00:00",
+      "completedAt": "2026-10-18T19:41:46.862682+00:00",
+      "entryExit": {
+        "at": "2026-10-18T19:41:46.862622+00:00",
+        "monotonicNs": 65472401205590,
+        "exitCode": 0
+      },
+      "workerQuotas": [
+        {
+          "executor": "vitest",
+          "requestedWorkers": 1,
+          "actualWorkers": 1,
+          "fileParallelism": false,
+          "pool": "forks",
+          "isolate": true,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/drag-scroll-panel.test.ts",
+            "tests/editing-panel.test.ts",
+            "tests/long-text-panel.test.ts",
+            "tests/panel-targets.test.ts",
+            "tests/row-menu-panel.test.ts",
+            "tests/segment-note-layout-panel.test.ts",
+            "tests/speech-cell-layout-panel.test.ts",
+            "tests/wide-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/audio-panel.test.ts",
+            "tests/delete-confirm-focus.test.ts",
+            "tests/dialog-panel.test.ts",
+            "tests/drag-feedback-panel.test.ts",
+            "tests/drag-panel.test.ts",
+            "tests/export-panel.test.ts",
+            "tests/export-settings-panel.test.ts",
+            "tests/layout-panel.test.ts",
+            "tests/media-panel.test.ts",
+            "tests/more-tasks-panel.test.ts",
+            "tests/ordinary-add-focus-panel.test.ts",
+            "tests/panel-update-panel.test.ts",
+            "tests/paste-panel.test.ts",
+            "tests/relative-insert-lifecycle-panel.test.ts",
+            "tests/relative-insert-panel.test.ts",
+            "tests/row-hover-panel.test.ts",
+            "tests/row-selection-panel.test.ts",
+            "tests/search-panel.test.ts",
+            "tests/segment-details-focus-panel.test.ts",
+            "tests/segment-draft-panel.test.ts",
+            "tests/segment-focus-panel.test.ts",
+            "tests/selection-menu-panel.test.ts",
+            "tests/selection-panel.test.ts",
+            "tests/shell-panel.test.ts",
+            "tests/style-collisions.test.ts",
+            "tests/table-controls-panel.test.ts",
+            "tests/video-panel.test.ts",
+            "tests/video-preview-panel.test.ts",
+            "tests/visual-note-panel.test.ts",
+            "tests/voice-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        }
+      ],
+      "wallSeconds": 1746.200523178,
+      "runnerOccupiedSeconds": 1746.200523178,
+      "coverage": {
+        "files": 110,
+        "cases": 1155,
+        "passed": 1154,
+        "ordinarySkipped": 1,
+        "playwrightPassedZeroRetry": 196
+      },
+      "cleanup": {
+        "requiredPersistentReceipts": 2,
+        "observedIdentitiesExited": 8710,
+        "groupsDrained": 1166,
+        "temporaryRegisteredDirectoriesAbsent": 127,
+        "uniqueFixtureRootsAbsent": 86
+      },
+      "sourceIdentity": {
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "tree": "51e8e6be32036fdd429810c7b45661cc6a7ff3d9",
+        "fingerprint": "sha256-merkle-v1:e57def84d9e75837959138becb313782968404144aeaf7b0c791d51e8e7f82f1",
+        "dirty": false,
+        "scope": "code-check-v1"
+      }
+    },
+    {
+      "round": 2,
+      "mode": "overlap-1+1",
+      "command": [
+        "npm",
+        "run",
+        "check",
+        "--",
+        "--execution",
+        "overlap-1+1"
+      ],
+      "startedAt": "2026-10-18T19:47:03.056301+00:00",
+      "completedAt": "2026-10-18T20:22:19.814614+00:00",
+      "entryExit": {
+        "at": "2026-10-18T20:22:19.814539+00:00",
+        "monotonicNs": 67905353126326,
+        "exitCode": 0
+      },
+      "workerQuotas": [
+        {
+          "executor": "vitest",
+          "requestedWorkers": 1,
+          "actualWorkers": 1,
+          "fileParallelism": false,
+          "pool": "forks",
+          "isolate": true,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/drag-scroll-panel.test.ts",
+            "tests/editing-panel.test.ts",
+            "tests/long-text-panel.test.ts",
+            "tests/panel-targets.test.ts",
+            "tests/row-menu-panel.test.ts",
+            "tests/segment-note-layout-panel.test.ts",
+            "tests/speech-cell-layout-panel.test.ts",
+            "tests/wide-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/delete-confirm-focus.test.ts",
+            "tests/dialog-panel.test.ts",
+            "tests/drag-feedback-panel.test.ts",
+            "tests/drag-panel.test.ts",
+            "tests/export-panel.test.ts",
+            "tests/export-settings-panel.test.ts",
+            "tests/layout-panel.test.ts",
+            "tests/media-panel.test.ts",
+            "tests/more-tasks-panel.test.ts",
+            "tests/ordinary-add-focus-panel.test.ts",
+            "tests/panel-update-panel.test.ts",
+            "tests/paste-panel.test.ts",
+            "tests/relative-insert-lifecycle-panel.test.ts",
+            "tests/relative-insert-panel.test.ts",
+            "tests/row-hover-panel.test.ts",
+            "tests/row-selection-panel.test.ts",
+            "tests/search-panel.test.ts",
+            "tests/segment-details-focus-panel.test.ts",
+            "tests/segment-draft-panel.test.ts",
+            "tests/segment-focus-panel.test.ts",
+            "tests/selection-menu-panel.test.ts",
+            "tests/selection-panel.test.ts",
+            "tests/shell-panel.test.ts",
+            "tests/style-collisions.test.ts",
+            "tests/table-controls-panel.test.ts",
+            "tests/video-preview-panel.test.ts",
+            "tests/visual-note-panel.test.ts",
+            "tests/voice-panel.test.ts"
+          ],
+          "requestedWorkers": 1,
+          "actualWorkers": 1,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/audio-panel.test.ts",
+            "tests/video-panel.test.ts"
+          ],
+          "requestedWorkers": 1,
+          "actualWorkers": 1,
+          "retries": 0
+        }
+      ],
+      "wallSeconds": 2116.758296496,
+      "runnerOccupiedSeconds": 2116.758296496,
+      "coverage": {
+        "files": 110,
+        "cases": 1155,
+        "passed": 1154,
+        "ordinarySkipped": 1,
+        "playwrightPassedZeroRetry": 196
+      },
+      "cleanup": {
+        "requiredPersistentReceipts": 3,
+        "observedIdentitiesExited": 8794,
+        "groupsDrained": 1169,
+        "temporaryRegisteredDirectoriesAbsent": 126,
+        "uniqueFixtureRootsAbsent": 85
+      },
+      "sourceIdentity": {
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "tree": "51e8e6be32036fdd429810c7b45661cc6a7ff3d9",
+        "fingerprint": "sha256-merkle-v1:e57def84d9e75837959138becb313782968404144aeaf7b0c791d51e8e7f82f1",
+        "dirty": false,
+        "scope": "code-check-v1"
+      }
+    },
+    {
+      "round": 3,
+      "mode": "overlap-1+2",
+      "command": [
+        "npm",
+        "run",
+        "check",
+        "--",
+        "--execution",
+        "overlap-1+2"
+      ],
+      "startedAt": "2026-10-18T20:28:04.561991+00:00",
+      "completedAt": "2026-10-18T20:56:59.051133+00:00",
+      "entryExit": {
+        "at": "2026-10-18T20:56:59.051072+00:00",
+        "monotonicNs": 69984589655208,
+        "exitCode": 0
+      },
+      "workerQuotas": [
+        {
+          "executor": "vitest",
+          "requestedWorkers": 1,
+          "actualWorkers": 1,
+          "fileParallelism": false,
+          "pool": "forks",
+          "isolate": true,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/drag-scroll-panel.test.ts",
+            "tests/editing-panel.test.ts",
+            "tests/long-text-panel.test.ts",
+            "tests/panel-targets.test.ts",
+            "tests/row-menu-panel.test.ts",
+            "tests/segment-note-layout-panel.test.ts",
+            "tests/speech-cell-layout-panel.test.ts",
+            "tests/wide-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/delete-confirm-focus.test.ts",
+            "tests/dialog-panel.test.ts",
+            "tests/drag-feedback-panel.test.ts",
+            "tests/drag-panel.test.ts",
+            "tests/export-panel.test.ts",
+            "tests/export-settings-panel.test.ts",
+            "tests/layout-panel.test.ts",
+            "tests/media-panel.test.ts",
+            "tests/more-tasks-panel.test.ts",
+            "tests/ordinary-add-focus-panel.test.ts",
+            "tests/panel-update-panel.test.ts",
+            "tests/paste-panel.test.ts",
+            "tests/relative-insert-lifecycle-panel.test.ts",
+            "tests/relative-insert-panel.test.ts",
+            "tests/row-hover-panel.test.ts",
+            "tests/row-selection-panel.test.ts",
+            "tests/search-panel.test.ts",
+            "tests/segment-details-focus-panel.test.ts",
+            "tests/segment-draft-panel.test.ts",
+            "tests/segment-focus-panel.test.ts",
+            "tests/selection-menu-panel.test.ts",
+            "tests/selection-panel.test.ts",
+            "tests/shell-panel.test.ts",
+            "tests/style-collisions.test.ts",
+            "tests/table-controls-panel.test.ts",
+            "tests/video-preview-panel.test.ts",
+            "tests/visual-note-panel.test.ts",
+            "tests/voice-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/audio-panel.test.ts",
+            "tests/video-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        }
+      ],
+      "wallSeconds": 1734.48912771,
+      "runnerOccupiedSeconds": 1734.48912771,
+      "coverage": {
+        "files": 110,
+        "cases": 1155,
+        "passed": 1154,
+        "ordinarySkipped": 1,
+        "playwrightPassedZeroRetry": 196
+      },
+      "cleanup": {
+        "requiredPersistentReceipts": 3,
+        "observedIdentitiesExited": 8909,
+        "groupsDrained": 1169,
+        "temporaryRegisteredDirectoriesAbsent": 126,
+        "uniqueFixtureRootsAbsent": 85
+      },
+      "sourceIdentity": {
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "tree": "51e8e6be32036fdd429810c7b45661cc6a7ff3d9",
+        "fingerprint": "sha256-merkle-v1:e57def84d9e75837959138becb313782968404144aeaf7b0c791d51e8e7f82f1",
+        "dirty": false,
+        "scope": "code-check-v1"
+      }
+    },
+    {
+      "round": 4,
+      "mode": "overlap-1+1",
+      "command": [
+        "npm",
+        "run",
+        "check",
+        "--",
+        "--execution",
+        "overlap-1+1"
+      ],
+      "startedAt": "2026-10-18T21:01:48.928237+00:00",
+      "completedAt": "2026-10-18T21:37:06.737386+00:00",
+      "entryExit": {
+        "at": "2026-10-18T21:37:06.737316+00:00",
+        "monotonicNs": 72392275901054,
+        "exitCode": 0
+      },
+      "workerQuotas": [
+        {
+          "executor": "vitest",
+          "requestedWorkers": 1,
+          "actualWorkers": 1,
+          "fileParallelism": false,
+          "pool": "forks",
+          "isolate": true,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/drag-scroll-panel.test.ts",
+            "tests/editing-panel.test.ts",
+            "tests/long-text-panel.test.ts",
+            "tests/panel-targets.test.ts",
+            "tests/row-menu-panel.test.ts",
+            "tests/segment-note-layout-panel.test.ts",
+            "tests/speech-cell-layout-panel.test.ts",
+            "tests/wide-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/delete-confirm-focus.test.ts",
+            "tests/dialog-panel.test.ts",
+            "tests/drag-feedback-panel.test.ts",
+            "tests/drag-panel.test.ts",
+            "tests/export-panel.test.ts",
+            "tests/export-settings-panel.test.ts",
+            "tests/layout-panel.test.ts",
+            "tests/media-panel.test.ts",
+            "tests/more-tasks-panel.test.ts",
+            "tests/ordinary-add-focus-panel.test.ts",
+            "tests/panel-update-panel.test.ts",
+            "tests/paste-panel.test.ts",
+            "tests/relative-insert-lifecycle-panel.test.ts",
+            "tests/relative-insert-panel.test.ts",
+            "tests/row-hover-panel.test.ts",
+            "tests/row-selection-panel.test.ts",
+            "tests/search-panel.test.ts",
+            "tests/segment-details-focus-panel.test.ts",
+            "tests/segment-draft-panel.test.ts",
+            "tests/segment-focus-panel.test.ts",
+            "tests/selection-menu-panel.test.ts",
+            "tests/selection-panel.test.ts",
+            "tests/shell-panel.test.ts",
+            "tests/style-collisions.test.ts",
+            "tests/table-controls-panel.test.ts",
+            "tests/video-preview-panel.test.ts",
+            "tests/visual-note-panel.test.ts",
+            "tests/voice-panel.test.ts"
+          ],
+          "requestedWorkers": 1,
+          "actualWorkers": 1,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/audio-panel.test.ts",
+            "tests/video-panel.test.ts"
+          ],
+          "requestedWorkers": 1,
+          "actualWorkers": 1,
+          "retries": 0
+        }
+      ],
+      "wallSeconds": 2117.809133156,
+      "runnerOccupiedSeconds": 2117.809133156,
+      "coverage": {
+        "files": 110,
+        "cases": 1155,
+        "passed": 1154,
+        "ordinarySkipped": 1,
+        "playwrightPassedZeroRetry": 196
+      },
+      "cleanup": {
+        "requiredPersistentReceipts": 3,
+        "observedIdentitiesExited": 8787,
+        "groupsDrained": 1170,
+        "temporaryRegisteredDirectoriesAbsent": 126,
+        "uniqueFixtureRootsAbsent": 85
+      },
+      "sourceIdentity": {
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "tree": "51e8e6be32036fdd429810c7b45661cc6a7ff3d9",
+        "fingerprint": "sha256-merkle-v1:e57def84d9e75837959138becb313782968404144aeaf7b0c791d51e8e7f82f1",
+        "dirty": false,
+        "scope": "code-check-v1"
+      }
+    },
+    {
+      "round": 5,
+      "mode": "overlap-1+2",
+      "command": [
+        "npm",
+        "run",
+        "check",
+        "--",
+        "--execution",
+        "overlap-1+2"
+      ],
+      "startedAt": "2026-10-18T21:40:52.977453+00:00",
+      "completedAt": "2026-10-18T22:09:44.830122+00:00",
+      "entryExit": {
+        "at": "2026-10-18T22:09:44.830065+00:00",
+        "monotonicNs": 74350368648960,
+        "exitCode": 0
+      },
+      "workerQuotas": [
+        {
+          "executor": "vitest",
+          "requestedWorkers": 1,
+          "actualWorkers": 1,
+          "fileParallelism": false,
+          "pool": "forks",
+          "isolate": true,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/drag-scroll-panel.test.ts",
+            "tests/editing-panel.test.ts",
+            "tests/long-text-panel.test.ts",
+            "tests/panel-targets.test.ts",
+            "tests/row-menu-panel.test.ts",
+            "tests/segment-note-layout-panel.test.ts",
+            "tests/speech-cell-layout-panel.test.ts",
+            "tests/wide-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/delete-confirm-focus.test.ts",
+            "tests/dialog-panel.test.ts",
+            "tests/drag-feedback-panel.test.ts",
+            "tests/drag-panel.test.ts",
+            "tests/export-panel.test.ts",
+            "tests/export-settings-panel.test.ts",
+            "tests/layout-panel.test.ts",
+            "tests/media-panel.test.ts",
+            "tests/more-tasks-panel.test.ts",
+            "tests/ordinary-add-focus-panel.test.ts",
+            "tests/panel-update-panel.test.ts",
+            "tests/paste-panel.test.ts",
+            "tests/relative-insert-lifecycle-panel.test.ts",
+            "tests/relative-insert-panel.test.ts",
+            "tests/row-hover-panel.test.ts",
+            "tests/row-selection-panel.test.ts",
+            "tests/search-panel.test.ts",
+            "tests/segment-details-focus-panel.test.ts",
+            "tests/segment-draft-panel.test.ts",
+            "tests/segment-focus-panel.test.ts",
+            "tests/selection-menu-panel.test.ts",
+            "tests/selection-panel.test.ts",
+            "tests/shell-panel.test.ts",
+            "tests/style-collisions.test.ts",
+            "tests/table-controls-panel.test.ts",
+            "tests/video-preview-panel.test.ts",
+            "tests/visual-note-panel.test.ts",
+            "tests/voice-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/audio-panel.test.ts",
+            "tests/video-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        }
+      ],
+      "wallSeconds": 1731.852652263,
+      "runnerOccupiedSeconds": 1731.852652263,
+      "coverage": {
+        "files": 110,
+        "cases": 1155,
+        "passed": 1154,
+        "ordinarySkipped": 1,
+        "playwrightPassedZeroRetry": 196
+      },
+      "cleanup": {
+        "requiredPersistentReceipts": 3,
+        "observedIdentitiesExited": 8845,
+        "groupsDrained": 1169,
+        "temporaryRegisteredDirectoriesAbsent": 127,
+        "uniqueFixtureRootsAbsent": 86
+      },
+      "sourceIdentity": {
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "tree": "51e8e6be32036fdd429810c7b45661cc6a7ff3d9",
+        "fingerprint": "sha256-merkle-v1:e57def84d9e75837959138becb313782968404144aeaf7b0c791d51e8e7f82f1",
+        "dirty": false,
+        "scope": "code-check-v1"
+      }
+    },
+    {
+      "round": 6,
+      "mode": "serial",
+      "command": [
+        "npm",
+        "run",
+        "check",
+        "--",
+        "--execution",
+        "serial"
+      ],
+      "startedAt": "2026-10-18T22:12:46.297633+00:00",
+      "completedAt": "2026-10-18T22:41:54.169792+00:00",
+      "entryExit": {
+        "at": "2026-10-18T22:41:54.169735+00:00",
+        "monotonicNs": 76279708319317,
+        "exitCode": 0
+      },
+      "workerQuotas": [
+        {
+          "executor": "vitest",
+          "requestedWorkers": 1,
+          "actualWorkers": 1,
+          "fileParallelism": false,
+          "pool": "forks",
+          "isolate": true,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/drag-scroll-panel.test.ts",
+            "tests/editing-panel.test.ts",
+            "tests/long-text-panel.test.ts",
+            "tests/panel-targets.test.ts",
+            "tests/row-menu-panel.test.ts",
+            "tests/segment-note-layout-panel.test.ts",
+            "tests/speech-cell-layout-panel.test.ts",
+            "tests/wide-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/audio-panel.test.ts",
+            "tests/delete-confirm-focus.test.ts",
+            "tests/dialog-panel.test.ts",
+            "tests/drag-feedback-panel.test.ts",
+            "tests/drag-panel.test.ts",
+            "tests/export-panel.test.ts",
+            "tests/export-settings-panel.test.ts",
+            "tests/layout-panel.test.ts",
+            "tests/media-panel.test.ts",
+            "tests/more-tasks-panel.test.ts",
+            "tests/ordinary-add-focus-panel.test.ts",
+            "tests/panel-update-panel.test.ts",
+            "tests/paste-panel.test.ts",
+            "tests/relative-insert-lifecycle-panel.test.ts",
+            "tests/relative-insert-panel.test.ts",
+            "tests/row-hover-panel.test.ts",
+            "tests/row-selection-panel.test.ts",
+            "tests/search-panel.test.ts",
+            "tests/segment-details-focus-panel.test.ts",
+            "tests/segment-draft-panel.test.ts",
+            "tests/segment-focus-panel.test.ts",
+            "tests/selection-menu-panel.test.ts",
+            "tests/selection-panel.test.ts",
+            "tests/shell-panel.test.ts",
+            "tests/style-collisions.test.ts",
+            "tests/table-controls-panel.test.ts",
+            "tests/video-panel.test.ts",
+            "tests/video-preview-panel.test.ts",
+            "tests/visual-note-panel.test.ts",
+            "tests/voice-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        }
+      ],
+      "wallSeconds": 1747.872144555,
+      "runnerOccupiedSeconds": 1747.872144555,
+      "coverage": {
+        "files": 110,
+        "cases": 1155,
+        "passed": 1154,
+        "ordinarySkipped": 1,
+        "playwrightPassedZeroRetry": 196
+      },
+      "cleanup": {
+        "requiredPersistentReceipts": 2,
+        "observedIdentitiesExited": 8832,
+        "groupsDrained": 1165,
+        "temporaryRegisteredDirectoriesAbsent": 127,
+        "uniqueFixtureRootsAbsent": 86
+      },
+      "sourceIdentity": {
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "tree": "51e8e6be32036fdd429810c7b45661cc6a7ff3d9",
+        "fingerprint": "sha256-merkle-v1:e57def84d9e75837959138becb313782968404144aeaf7b0c791d51e8e7f82f1",
+        "dirty": false,
+        "scope": "code-check-v1"
+      }
+    },
+    {
+      "round": 7,
+      "mode": "overlap-1+2",
+      "command": [
+        "npm",
+        "run",
+        "check",
+        "--",
+        "--execution",
+        "overlap-1+2"
+      ],
+      "startedAt": "2026-10-18T22:44:44.486084+00:00",
+      "completedAt": "2026-10-18T23:13:37.166782+00:00",
+      "entryExit": {
+        "at": "2026-10-18T23:13:37.166720+00:00",
+        "monotonicNs": 78182705303796,
+        "exitCode": 0
+      },
+      "workerQuotas": [
+        {
+          "executor": "vitest",
+          "requestedWorkers": 1,
+          "actualWorkers": 1,
+          "fileParallelism": false,
+          "pool": "forks",
+          "isolate": true,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/drag-scroll-panel.test.ts",
+            "tests/editing-panel.test.ts",
+            "tests/long-text-panel.test.ts",
+            "tests/panel-targets.test.ts",
+            "tests/row-menu-panel.test.ts",
+            "tests/segment-note-layout-panel.test.ts",
+            "tests/speech-cell-layout-panel.test.ts",
+            "tests/wide-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/delete-confirm-focus.test.ts",
+            "tests/dialog-panel.test.ts",
+            "tests/drag-feedback-panel.test.ts",
+            "tests/drag-panel.test.ts",
+            "tests/export-panel.test.ts",
+            "tests/export-settings-panel.test.ts",
+            "tests/layout-panel.test.ts",
+            "tests/media-panel.test.ts",
+            "tests/more-tasks-panel.test.ts",
+            "tests/ordinary-add-focus-panel.test.ts",
+            "tests/panel-update-panel.test.ts",
+            "tests/paste-panel.test.ts",
+            "tests/relative-insert-lifecycle-panel.test.ts",
+            "tests/relative-insert-panel.test.ts",
+            "tests/row-hover-panel.test.ts",
+            "tests/row-selection-panel.test.ts",
+            "tests/search-panel.test.ts",
+            "tests/segment-details-focus-panel.test.ts",
+            "tests/segment-draft-panel.test.ts",
+            "tests/segment-focus-panel.test.ts",
+            "tests/selection-menu-panel.test.ts",
+            "tests/selection-panel.test.ts",
+            "tests/shell-panel.test.ts",
+            "tests/style-collisions.test.ts",
+            "tests/table-controls-panel.test.ts",
+            "tests/video-preview-panel.test.ts",
+            "tests/visual-note-panel.test.ts",
+            "tests/voice-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/audio-panel.test.ts",
+            "tests/video-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        }
+      ],
+      "wallSeconds": 1732.68068146,
+      "runnerOccupiedSeconds": 1732.68068146,
+      "coverage": {
+        "files": 110,
+        "cases": 1155,
+        "passed": 1154,
+        "ordinarySkipped": 1,
+        "playwrightPassedZeroRetry": 196
+      },
+      "cleanup": {
+        "requiredPersistentReceipts": 3,
+        "observedIdentitiesExited": 8825,
+        "groupsDrained": 1170,
+        "temporaryRegisteredDirectoriesAbsent": 126,
+        "uniqueFixtureRootsAbsent": 85
+      },
+      "sourceIdentity": {
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "tree": "51e8e6be32036fdd429810c7b45661cc6a7ff3d9",
+        "fingerprint": "sha256-merkle-v1:e57def84d9e75837959138becb313782968404144aeaf7b0c791d51e8e7f82f1",
+        "dirty": false,
+        "scope": "code-check-v1"
+      }
+    },
+    {
+      "round": 8,
+      "mode": "serial",
+      "command": [
+        "npm",
+        "run",
+        "check",
+        "--",
+        "--execution",
+        "serial"
+      ],
+      "startedAt": "2026-10-18T23:16:21.810080+00:00",
+      "completedAt": "2026-10-18T23:45:29.390833+00:00",
+      "entryExit": {
+        "at": "2026-10-18T23:45:29.390773+00:00",
+        "monotonicNs": 80094929356640,
+        "exitCode": 0
+      },
+      "workerQuotas": [
+        {
+          "executor": "vitest",
+          "requestedWorkers": 1,
+          "actualWorkers": 1,
+          "fileParallelism": false,
+          "pool": "forks",
+          "isolate": true,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/drag-scroll-panel.test.ts",
+            "tests/editing-panel.test.ts",
+            "tests/long-text-panel.test.ts",
+            "tests/panel-targets.test.ts",
+            "tests/row-menu-panel.test.ts",
+            "tests/segment-note-layout-panel.test.ts",
+            "tests/speech-cell-layout-panel.test.ts",
+            "tests/wide-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/audio-panel.test.ts",
+            "tests/delete-confirm-focus.test.ts",
+            "tests/dialog-panel.test.ts",
+            "tests/drag-feedback-panel.test.ts",
+            "tests/drag-panel.test.ts",
+            "tests/export-panel.test.ts",
+            "tests/export-settings-panel.test.ts",
+            "tests/layout-panel.test.ts",
+            "tests/media-panel.test.ts",
+            "tests/more-tasks-panel.test.ts",
+            "tests/ordinary-add-focus-panel.test.ts",
+            "tests/panel-update-panel.test.ts",
+            "tests/paste-panel.test.ts",
+            "tests/relative-insert-lifecycle-panel.test.ts",
+            "tests/relative-insert-panel.test.ts",
+            "tests/row-hover-panel.test.ts",
+            "tests/row-selection-panel.test.ts",
+            "tests/search-panel.test.ts",
+            "tests/segment-details-focus-panel.test.ts",
+            "tests/segment-draft-panel.test.ts",
+            "tests/segment-focus-panel.test.ts",
+            "tests/selection-menu-panel.test.ts",
+            "tests/selection-panel.test.ts",
+            "tests/shell-panel.test.ts",
+            "tests/style-collisions.test.ts",
+            "tests/table-controls-panel.test.ts",
+            "tests/video-panel.test.ts",
+            "tests/video-preview-panel.test.ts",
+            "tests/visual-note-panel.test.ts",
+            "tests/voice-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        }
+      ],
+      "wallSeconds": 1747.580739308,
+      "runnerOccupiedSeconds": 1747.580739308,
+      "coverage": {
+        "files": 110,
+        "cases": 1155,
+        "passed": 1154,
+        "ordinarySkipped": 1,
+        "playwrightPassedZeroRetry": 196
+      },
+      "cleanup": {
+        "requiredPersistentReceipts": 2,
+        "observedIdentitiesExited": 8746,
+        "groupsDrained": 1169,
+        "temporaryRegisteredDirectoriesAbsent": 126,
+        "uniqueFixtureRootsAbsent": 85
+      },
+      "sourceIdentity": {
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "tree": "51e8e6be32036fdd429810c7b45661cc6a7ff3d9",
+        "fingerprint": "sha256-merkle-v1:e57def84d9e75837959138becb313782968404144aeaf7b0c791d51e8e7f82f1",
+        "dirty": false,
+        "scope": "code-check-v1"
+      }
+    },
+    {
+      "round": 9,
+      "mode": "overlap-1+1",
+      "command": [
+        "npm",
+        "run",
+        "check",
+        "--",
+        "--execution",
+        "overlap-1+1"
+      ],
+      "startedAt": "2026-10-18T23:48:21.506464+00:00",
+      "completedAt": "2026-10-19T00:23:39.235327+00:00",
+      "entryExit": {
+        "at": "2026-10-19T00:23:39.235256+00:00",
+        "monotonicNs": 82384773841768,
+        "exitCode": 0
+      },
+      "workerQuotas": [
+        {
+          "executor": "vitest",
+          "requestedWorkers": 1,
+          "actualWorkers": 1,
+          "fileParallelism": false,
+          "pool": "forks",
+          "isolate": true,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/drag-scroll-panel.test.ts",
+            "tests/editing-panel.test.ts",
+            "tests/long-text-panel.test.ts",
+            "tests/panel-targets.test.ts",
+            "tests/row-menu-panel.test.ts",
+            "tests/segment-note-layout-panel.test.ts",
+            "tests/speech-cell-layout-panel.test.ts",
+            "tests/wide-panel.test.ts"
+          ],
+          "requestedWorkers": 2,
+          "actualWorkers": 2,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/delete-confirm-focus.test.ts",
+            "tests/dialog-panel.test.ts",
+            "tests/drag-feedback-panel.test.ts",
+            "tests/drag-panel.test.ts",
+            "tests/export-panel.test.ts",
+            "tests/export-settings-panel.test.ts",
+            "tests/layout-panel.test.ts",
+            "tests/media-panel.test.ts",
+            "tests/more-tasks-panel.test.ts",
+            "tests/ordinary-add-focus-panel.test.ts",
+            "tests/panel-update-panel.test.ts",
+            "tests/paste-panel.test.ts",
+            "tests/relative-insert-lifecycle-panel.test.ts",
+            "tests/relative-insert-panel.test.ts",
+            "tests/row-hover-panel.test.ts",
+            "tests/row-selection-panel.test.ts",
+            "tests/search-panel.test.ts",
+            "tests/segment-details-focus-panel.test.ts",
+            "tests/segment-draft-panel.test.ts",
+            "tests/segment-focus-panel.test.ts",
+            "tests/selection-menu-panel.test.ts",
+            "tests/selection-panel.test.ts",
+            "tests/shell-panel.test.ts",
+            "tests/style-collisions.test.ts",
+            "tests/table-controls-panel.test.ts",
+            "tests/video-preview-panel.test.ts",
+            "tests/visual-note-panel.test.ts",
+            "tests/voice-panel.test.ts"
+          ],
+          "requestedWorkers": 1,
+          "actualWorkers": 1,
+          "retries": 0
+        },
+        {
+          "executor": "playwright",
+          "files": [
+            "tests/audio-panel.test.ts",
+            "tests/video-panel.test.ts"
+          ],
+          "requestedWorkers": 1,
+          "actualWorkers": 1,
+          "retries": 0
+        }
+      ],
+      "wallSeconds": 2117.728846826,
+      "runnerOccupiedSeconds": 2117.728846826,
+      "coverage": {
+        "files": 110,
+        "cases": 1155,
+        "passed": 1154,
+        "ordinarySkipped": 1,
+        "playwrightPassedZeroRetry": 196
+      },
+      "cleanup": {
+        "requiredPersistentReceipts": 3,
+        "observedIdentitiesExited": 8753,
+        "groupsDrained": 1169,
+        "temporaryRegisteredDirectoriesAbsent": 126,
+        "uniqueFixtureRootsAbsent": 85
+      },
+      "sourceIdentity": {
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "tree": "51e8e6be32036fdd429810c7b45661cc6a7ff3d9",
+        "fingerprint": "sha256-merkle-v1:e57def84d9e75837959138becb313782968404144aeaf7b0c791d51e8e7f82f1",
+        "dirty": false,
+        "scope": "code-check-v1"
+      }
+    }
+  ],
+  "comparison": {
+    "status": "nine-independently-accepted-await-root-adoption",
+    "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+    "modes": {
+      "serial": {
+        "rounds": [
+          1,
+          6,
+          8
+        ],
+        "wallSeconds": [
+          1746.200523178,
+          1747.872144555,
+          1747.580739308
+        ],
+        "medianWallSeconds": 1747.580739308,
+        "totalRunnerOccupiedSeconds": 5241.653407041,
+        "kernelMemoryPeakBytes": [
+          2903187456,
+          2751938560,
+          2709221376
+        ],
+        "rssObservedPeakBytes": [
+          5449740288,
+          5451689984,
+          5457534976
+        ],
+        "collectorCpuSeconds": [
+          43.2221848,
+          43.401160519,
+          42.680448075
+        ],
+        "samplingCpuSeconds": [
+          42.00038578900012,
+          42.18601532300027,
+          41.471618848999796
+        ],
+        "childReapedCpuSeconds": [
+          1948.242776,
+          1951.2049149999998,
+          1946.5085640000002
+        ],
+        "cgroupCpuStat": [
+          "usage_usec 2794226717\nuser_usec 2074028314\nsystem_usec 720198402\nnice_usec 0\ncore_sched.force_idle_usec 0\n",
+          "usage_usec 2797491180\nuser_usec 2078701879\nsystem_usec 718789301\nnice_usec 0\ncore_sched.force_idle_usec 0\n",
+          "usage_usec 2795214809\nuser_usec 2079920568\nsystem_usec 715294241\nnice_usec 0\ncore_sched.force_idle_usec 0\n"
+        ],
+        "observerOverhead": [
+          {
+            "at": "2026-10-18T19:41:47.695440+00:00",
+            "wallSeconds": 1737.5428633560005,
+            "pythonCpuSeconds": 0.006179878,
+            "reapedChildCpuSeconds": 2.58453,
+            "boundary": "scope外一次性身份/env观察；kernel/RSS不含observer；完整入口wall自然包含其并发宿主竞争"
+          },
+          {
+            "at": "2026-10-18T22:41:55.026059+00:00",
+            "wallSeconds": 1740.1180486219964,
+            "pythonCpuSeconds": 0.007998953000000003,
+            "reapedChildCpuSeconds": 2.590769,
+            "boundary": "scope外一次性身份/env观察；kernel/RSS不含observer；完整入口wall自然包含其并发宿主竞争"
+          },
+          {
+            "at": "2026-10-18T23:45:30.189691+00:00",
+            "wallSeconds": 1739.299579765997,
+            "pythonCpuSeconds": 0.008248714000000004,
+            "reapedChildCpuSeconds": 2.581979,
+            "boundary": "scope外一次性身份/env观察；kernel/RSS不含observer；完整入口wall自然包含其并发宿主竞争"
+          }
+        ]
+      },
+      "overlap-1+1": {
+        "rounds": [
+          2,
+          4,
+          9
+        ],
+        "wallSeconds": [
+          2116.758296496,
+          2117.809133156,
+          2117.728846826
+        ],
+        "medianWallSeconds": 2117.728846826,
+        "totalRunnerOccupiedSeconds": 6352.296276478,
+        "kernelMemoryPeakBytes": [
+          2483093504,
+          2529009664,
+          2505973760
+        ],
+        "rssObservedPeakBytes": [
+          5444304896,
+          5418356736,
+          5511720960
+        ],
+        "collectorCpuSeconds": [
+          51.535981164,
+          51.212785655000005,
+          51.425257925
+        ],
+        "samplingCpuSeconds": [
+          50.03989885000022,
+          49.72536556099972,
+          49.93911365799987
+        ],
+        "childReapedCpuSeconds": [
+          1943.1597590000001,
+          1943.83522,
+          1946.36487
+        ],
+        "cgroupCpuStat": [
+          "usage_usec 2780872802\nuser_usec 2055814462\nsystem_usec 725058339\nnice_usec 0\ncore_sched.force_idle_usec 0\n",
+          "usage_usec 2777611141\nuser_usec 2054544031\nsystem_usec 723067110\nnice_usec 0\ncore_sched.force_idle_usec 0\n",
+          "usage_usec 2779775135\nuser_usec 2058068780\nsystem_usec 721706354\nnice_usec 0\ncore_sched.force_idle_usec 0\n"
+        ],
+        "observerOverhead": [
+          {
+            "at": "2026-10-18T20:22:20.665530+00:00",
+            "wallSeconds": 2105.8225958010007,
+            "pythonCpuSeconds": 0.0060274729999999985,
+            "reapedChildCpuSeconds": 2.955813,
+            "boundary": "scope外一次性身份/env观察；kernel/RSS不含observer；完整入口wall自然包含其并发宿主竞争"
+          },
+          {
+            "at": "2026-10-18T21:37:07.666676+00:00",
+            "wallSeconds": 2107.4161422920006,
+            "pythonCpuSeconds": 0.006346926000000003,
+            "reapedChildCpuSeconds": 3.062335,
+            "boundary": "scope外一次性身份/env观察；kernel/RSS不含observer；完整入口wall自然包含其并发宿主竞争"
+          },
+          {
+            "at": "2026-10-19T00:23:40.099701+00:00",
+            "wallSeconds": 2108.3097568219964,
+            "pythonCpuSeconds": 0.008123215999999996,
+            "reapedChildCpuSeconds": 2.994459,
+            "boundary": "scope外一次性身份/env观察；kernel/RSS不含observer；完整入口wall自然包含其并发宿主竞争"
+          }
+        ],
+        "eligibleForRootAdoption": false
+      },
+      "overlap-1+2": {
+        "rounds": [
+          3,
+          5,
+          7
+        ],
+        "wallSeconds": [
+          1734.48912771,
+          1731.852652263,
+          1732.68068146
+        ],
+        "medianWallSeconds": 1732.68068146,
+        "totalRunnerOccupiedSeconds": 5199.022461433,
+        "kernelMemoryPeakBytes": [
+          3395936256,
+          3356393472,
+          3018395648
+        ],
+        "rssObservedPeakBytes": [
+          5965873152,
+          5939728384,
+          5902987264
+        ],
+        "collectorCpuSeconds": [
+          44.949967189,
+          43.504293743000005,
+          44.69538382
+        ],
+        "samplingCpuSeconds": [
+          43.723111221999815,
+          42.288187914000204,
+          43.464206835000084
+        ],
+        "childReapedCpuSeconds": [
+          1975.479278,
+          1974.438027,
+          1975.8013469999999
+        ],
+        "cgroupCpuStat": [
+          "usage_usec 2832309880\nuser_usec 2103663081\nsystem_usec 728646799\nnice_usec 0\ncore_sched.force_idle_usec 0\n",
+          "usage_usec 2825946071\nuser_usec 2098926678\nsystem_usec 727019392\nnice_usec 0\ncore_sched.force_idle_usec 0\n",
+          "usage_usec 2826968661\nuser_usec 2102880332\nsystem_usec 724088329\nnice_usec 0\ncore_sched.force_idle_usec 0\n"
+        ],
+        "observerOverhead": [
+          {
+            "at": "2026-10-18T20:56:59.930628+00:00",
+            "wallSeconds": 1723.3746604940097,
+            "pythonCpuSeconds": 0.006358620000000002,
+            "reapedChildCpuSeconds": 2.535406,
+            "boundary": "scope外一次性身份/env观察；kernel/RSS不含observer；完整入口wall自然包含其并发宿主竞争"
+          },
+          {
+            "at": "2026-10-18T22:09:45.625996+00:00",
+            "wallSeconds": 1721.3437534889963,
+            "pythonCpuSeconds": 0.006649085000000006,
+            "reapedChildCpuSeconds": 2.5481759999999998,
+            "boundary": "scope外一次性身份/env观察；kernel/RSS不含observer；完整入口wall自然包含其并发宿主竞争"
+          },
+          {
+            "at": "2026-10-18T23:13:38.018330+00:00",
+            "wallSeconds": 1724.778538657003,
+            "pythonCpuSeconds": 0.008083878000000003,
+            "reapedChildCpuSeconds": 2.559418,
+            "boundary": "scope外一次性身份/env观察；kernel/RSS不含observer；完整入口wall自然包含其并发宿主竞争"
+          }
+        ],
+        "eligibleForRootAdoption": true
+      }
+    },
+    "boundary": "建议资格；root最终采纳/default/docs与190另验；本文件不修改默认"
+  },
+  "memoryAndCpuAggregates": {
+    "serial": {
+      "cgroupCpuUsageSeconds": [
+        2794.226717,
+        2797.49118,
+        2795.214809
+      ],
+      "cgroupCpuMedianSeconds": 2795.214809,
+      "cgroupCpuTotalSeconds": 8386.932706,
+      "kernelPeakMedianBytes": 2751938560,
+      "kernelPeakMaxBytes": 2903187456,
+      "rssPeakMedianBytes": 5451689984
+    },
+    "overlap-1+1": {
+      "cgroupCpuUsageSeconds": [
+        2780.872802,
+        2777.611141,
+        2779.775135
+      ],
+      "cgroupCpuMedianSeconds": 2779.775135,
+      "cgroupCpuTotalSeconds": 8338.259078,
+      "kernelPeakMedianBytes": 2505973760,
+      "kernelPeakMaxBytes": 2529009664,
+      "rssPeakMedianBytes": 5444304896
+    },
+    "overlap-1+2": {
+      "cgroupCpuUsageSeconds": [
+        2832.30988,
+        2825.946071,
+        2826.968661
+      ],
+      "cgroupCpuMedianSeconds": 2826.968661,
+      "cgroupCpuTotalSeconds": 8485.224612,
+      "kernelPeakMedianBytes": 3356393472,
+      "kernelPeakMaxBytes": 3395936256,
+      "rssPeakMedianBytes": 5939728384
+    }
+  },
+  "invalidHistoricalRuns": [
+    {
+      "reason": "旧首测CLI通过但cleanup失败，永久invalid，0有效性能样本",
+      "candidate": "163b3dd204f403d73502ee60f2c9421630992201",
+      "independentInvalidReport": "/home/forclaw/tmp/clapgrid-174-run/189-review/round-1-independent-invalid.json"
+    },
+    {
+      "directory": "/home/forclaw/tmp/clapgrid-174-run/189-v2/round-1",
+      "reason": "CLI与cleanup forensic通过但direct前后环境严格gate失败，永久invalid，不追认、不计本九轮"
+    }
+  ],
+  "boundary": "仅本机完整链同候选比较，不承诺托管CI固定分钟；内核peak主/RSS100ms辅，包含嵌套Chrome/FFmpeg/子测试及owned drain；CPU和观测器开销分列不相减；后测主机容量不重建测时精确余量；最终默认full/适用PR CI由#190另验"
+}

@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { build } from 'esbuild';
-import { test } from 'node:test';
+import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -10,11 +10,14 @@ import { randomUUID } from 'node:crypto';
 import { startService } from '../src/service/server.js';
 import { beginEdit, queryStatus, submitSpeech, modifyBatch, querySpeech, submitSpeechBatch } from '../src/shared/client.js';
 
+// 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 test('普通编辑不是后台任务，默认退出仍能释放修改权并停止', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-edit-stop-'));
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
   const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
-  t.after(async () => { await service.close(); rmSync(root, { recursive: true, force: true }); });
+  t.onTestFinished(async () => { await service.close(); rmSync(root, { recursive: true, force: true }); });
   const edit = await beginEdit(service.url);
   const status = await queryStatus(service.url);
   assert.deepEqual(status.modification, { owner: 'user' });
@@ -37,7 +40,7 @@ test('退出服务默认保持配音与锁，明确中断后重开保留同一�
     }) as typeof fetch,
   } };
   const service = await startService(options);
-  t.after(async () => { await service.close(); rmSync(root, { recursive: true, force: true }); });
+  t.onTestFinished(async () => { await service.close(); rmSync(root, { recursive: true, force: true }); });
   await modifyBatch(service.url, { changes: [{ kind: 'add', text: '服务退出保护' }] });
   const before = await queryStatus(service.url);
   const request = { requestId: randomUUID(), segmentId: before.snapshot.segments[0]!.id };
@@ -73,6 +76,7 @@ test('批量部分完成后中断保留成功音频，运行项提示结果未�
   const thread = randomUUID(); const host = join(root, 'host.cjs');
   writeFileSync(host, `#!/usr/bin/env node\nrequire('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:{id:r.params.threadId,cwd:${JSON.stringify(workspace)}}}}));});`, { mode: 0o700 });
   const previousHost = process.env.CLAPGRID_CODEX_BIN; process.env.CLAPGRID_CODEX_BIN = host;
+  t.onTestFinished(() => { if (previousHost === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = previousHost; });
   const entry = join(root, 'runtime.mjs');
   await build({ entryPoints: ['src/runtime.ts'], outfile: entry, bundle: true, platform: 'node', format: 'esm', external: ['vite'], banner: { js: "import { createRequire } from 'node:module'; const require=createRequire(import.meta.url);" } });
   const open = async () => JSON.parse((await promisify(execFile)(process.execPath, [entry, 'open', '--workspace', workspace, '--thread', thread], { env: process.env })).stdout);
@@ -85,7 +89,7 @@ test('批量部分完成后中断保留成功音频，运行项提示结果未�
     }) as typeof fetch,
   } };
   const service = await startService(options);
-  t.after(async () => { await service.close(); if (previousHost === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = previousHost; rmSync(root, { recursive: true, force: true }); });
+  t.onTestFinished(async () => { await service.close(); rmSync(root, { recursive: true, force: true }); });
   const opened = await open(); const url = opened.url;
   await modifyBatch(url, { changes: ['已完成', '结果未知', '未发送'].map(text => ({ kind: 'add' as const, text })) });
   const status = await queryStatus(url);

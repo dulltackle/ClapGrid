@@ -1,0 +1,277 @@
+{
+  "baselineCommit": "5db2f24afe5376f4c7259bdd1d3a1f829f429f8f",
+  "sourceSha256": "3d517bd665115806993de91c58c3da9049c984bf21c9fa301f023be5cee46bf1",
+  "purpose": "原24实际注册场景的迁移映射，历史来源不是本轮执行证据",
+  "originalCases": 24,
+  "originalCounts": {
+    "passed": 23,
+    "skipped": 1
+  },
+  "addedCases": 0,
+  "mapping": [
+    {
+      "oldFile": "tests/agent-tools.test.ts",
+      "oldName": "CLI 核对候选解释器并解析已知技能软链接",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/agent-tools.test.ts",
+      "newName": "CLI 核对候选解释器并解析已知技能软链接",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/agent-tools.test.ts",
+      "oldName": "GitHub CLI 汇总全部分页、投影字段并保留可追溯副本",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/agent-tools.test.ts",
+      "newName": "GitHub CLI 汇总全部分页、投影字段并保留可追溯副本",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/agent-tools.test.ts",
+      "oldName": "长结果先脱敏留存，摘要不暴露密钥且按需读取末项",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/agent-tools.test.ts",
+      "newName": "长结果先脱敏留存，摘要不暴露密钥且按需读取末项",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/agent-tools.test.ts",
+      "oldName": "失败与不支持的分页响应不能产生完整证据",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/agent-tools.test.ts",
+      "newName": "失败与不支持的分页响应不能产生完整证据",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/agent-tools.test.ts",
+      "oldName": "已知纯文本凭据、完整认证值及环境秘密在留存和读取两个出口均脱敏",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/agent-tools.test.ts",
+      "newName": "已知纯文本凭据、完整认证值及环境秘密在留存和读取两个出口均脱敏",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/agent-tools.test.ts",
+      "oldName": "超长单行及多行 Unicode 文本按字节预算输出并可无损续读到末尾",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/agent-tools.test.ts",
+      "newName": "超长单行及多行 Unicode 文本按字节预算输出并可无损续读到末尾",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/agent-tools.test.ts",
+      "oldName": "HTTP 敏感头整体值脱敏且保留换行及安全日志行",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/agent-tools.test.ts",
+      "newName": "HTTP 敏感头整体值脱敏且保留换行及安全日志行",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/build-identity.test.ts",
+      "oldName": "插件构建携带源码状态，清单版本与身份一致，内容改变产生新版本和指纹",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/build-identity.test.ts",
+      "newName": "插件构建携带源码状态，清单版本与身份一致，内容改变产生新版本和指纹",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/build-identity.test.ts",
+      "oldName": "真实 MCP 和 HTTP 报告加载身份，覆盖磁盘更新、缺失身份与诊断副作用",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/build-identity.test.ts",
+      "newName": "真实 MCP 和 HTTP 报告加载身份，覆盖磁盘更新、缺失身份与诊断副作用",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/diagnose-identity.test.ts",
+      "oldName": "汇总命令缺少身份与宿主证据时保留未知，服务不可达且不创建文件",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/diagnose-identity.test.ts",
+      "newName": "汇总命令缺少身份与宿主证据时保留未知，服务不可达且不创建文件",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/diagnose-identity.test.ts",
+      "oldName": "宿主证据明确记录不可达、过期和来源，不泄露额外字段",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/diagnose-identity.test.ts",
+      "newName": "宿主证据明确记录不可达、过期和来源，不泄露额外字段",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/diagnose-identity.test.ts",
+      "oldName": "交付验收入口缺实际宿主和面板证据时返回非成功退出码",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/diagnose-identity.test.ts",
+      "newName": "交付验收入口缺实际宿主和面板证据时返回非成功退出码",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/linux-components.test.ts",
+      "oldName": "组件缺失时检查返回可重试的明确错误，不尝试启动服务",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/linux-components.test.ts",
+      "newName": "组件缺失时检查返回可重试的明确错误，不尝试启动服务",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/linux-components.test.ts",
+      "oldName": "安装基础工具缺失时说明原因与重试方式，恢复组件后重试成功",
+      "oldNesting": 0,
+      "oldStatus": "skipped",
+      "newFile": "tests/linux-components.test.ts",
+      "newName": "安装基础工具缺失时说明原因与重试方式，恢复组件后重试成功",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/linux-components.test.ts",
+      "oldName": "已有可用组件时重复安装直接复用，无需管理员权限或网络",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/linux-components.test.ts",
+      "newName": "已有可用组件时重复安装直接复用，无需管理员权限或网络",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/linux-components.test.ts",
+      "oldName": "有媒体编码器但缺少字体工具时不能宣称组件就绪",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/linux-components.test.ts",
+      "newName": "有媒体编码器但缺少字体工具时不能宣称组件就绪",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/panel-release.test.ts",
+      "oldName": "纯面板发布保留服务实例、项目、绑定和旧资源，忙碌及未知面板阻止切换，失败可回滚",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/panel-release.test.ts",
+      "newName": "纯面板发布保留服务实例、项目、绑定和旧资源，忙碌及未知面板阻止切换，失败可回滚",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/plugin-source-update.test.ts",
+      "oldName": "schema 2 安装后仅提交 app.tsx 仍提示源码更新，更新收据后相容运行时继续使用",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/plugin-source-update.test.ts",
+      "newName": "schema 2 安装后仅提交 app.tsx 仍提示源码更新，更新收据后相容运行时继续使用",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/plugin-source-update.test.ts",
+      "oldName": "schema 2 安装后仅提交 style.css 仍提示源码更新，更新收据后相容运行时继续使用",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/plugin-source-update.test.ts",
+      "newName": "schema 2 安装后仅提交 style.css 仍提示源码更新，更新收据后相容运行时继续使用",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/plugin-source-update.test.ts",
+      "oldName": "仅提交文档且插件源码未变时不误报更新",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/plugin-source-update.test.ts",
+      "newName": "仅提交文档且插件源码未变时不误报更新",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/plugin-update.test.ts",
+      "oldName": "旧包和旧服务升级后保留项目，安装失败恢复旧包，缺宿主验证不冒充完成",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/plugin-update.test.ts",
+      "newName": "旧包和旧服务升级后保留项目，安装失败恢复旧包，缺宿主验证不冒充完成",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/process-trace-command.test.ts",
+      "oldName": "进程追踪命令缺少 strace 时失败并保留诊断证据",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/process-trace-command.test.ts",
+      "newName": "进程追踪命令缺少 strace 时失败并保留诊断证据",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/review-contract.test.ts",
+      "oldName": "审查规范的本地上下文指针能到达目标，失效链接使检查失败",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/review-contract.test.ts",
+      "newName": "审查规范的本地上下文指针能到达目标，失效链接使检查失败",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    },
+    {
+      "oldFile": "tests/review-contract.test.ts",
+      "oldName": "仓库当前审查上下文链接通过确定性检查",
+      "oldNesting": 0,
+      "oldStatus": "passed",
+      "newFile": "tests/review-contract.test.ts",
+      "newName": "仓库当前审查上下文链接通过确定性检查",
+      "newNesting": 0,
+      "executor": "vitest",
+      "note": "保留原断言及真实CLI/身份/更新契约；原普通平台skip另列，不冒称实际pass"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { test, type TestContext } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, symlinkSync, existsSync, chmodSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -7,11 +7,14 @@ import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
+// 原 Node 文件未设置测试及清理时限；仅本迁移文件保留相同语义。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
 const cli = resolve('scripts/production.mjs');
 const sha = (bytes: string) => createHash('sha256').update(bytes).digest('hex');
 function fixture(t: TestContext) {
   const project = mkdtempSync(join(tmpdir(), 'clapgrid-references-'));
-  t.after(() => rmSync(project, { recursive: true, force: true }));
+  t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
   const contents = { 'card.json': '{}', 'source.ts': 'source', 'audio.wav': 'audio', 'assembly.mp4': 'assembly', 'review.mp4': 'review', 'tsconfig.json': '{}' };
   for (const [name, bytes] of Object.entries(contents)) writeFileSync(join(project, name), bytes);
   const manifest = { schemaVersion: 1, project: { width: 64, height: 64, fps: 10 }, typecheck: 'tsconfig.json',

@@ -1,11 +1,16 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { test, type TestContext } from 'node:test';
+import { test, vi, type TestContext } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync, existsSync, cpSync, readdirSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync, cpSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+
+import { dependencyView } from './helpers/temporary-repository.js';
+
+// 原 Node 默认未限时；保留实际stage/CLI已有时限。
+vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const { checkUi } = await import(new URL('../scripts/check-ui.mjs', import.meta.url).href);
 const { extendedTests } = await import(new URL('../scripts/ui-check-plan.mjs', import.meta.url).href);
@@ -14,7 +19,7 @@ const themeSource = `import { themeQuartz } from 'ag-grid-community';
 const theme = themeQuartz.withParams({ backgroundColor: 'white', rowHeight: 102 });`;
 
 function repository(t: TestContext, typecheck = 'process.exit(0)', extraThemePanel = false) {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-ui-check-')); t.after(() => rmSync(root, { recursive: true, force: true }));
+  const root = mkdtempSync(join(tmpdir(), 'clapgrid-ui-check-')); t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   const git = (...args: string[]) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   git('init', '-q'); mkdirSync(join(root, 'tests')); mkdirSync(join(root, 'src'));
   mkdirSync(join(root, 'src/panel')); writeFileSync(join(root, 'src/panel/app.tsx'), themeSource);
@@ -23,14 +28,14 @@ function repository(t: TestContext, typecheck = 'process.exit(0)', extraThemePan
   writeFileSync(join(root, 'task.cjs'), typecheck); writeFileSync(join(root, 'src/value.ts'), 'original');
   for (const path of extendedTests) writeFileSync(join(root, path), 'import {test} from "node:test"; test("fixture stage", () => {});');
   if (extraThemePanel) writeFileSync(join(root, 'tests/theme-extra-panel.test.ts'), 'import {test} from "node:test"; test("theme fixture stage", () => {});');
-  symlinkSync(fileURLToPath(new URL('../node_modules', import.meta.url)), join(root, 'node_modules'), 'dir');
+  dependencyView(root, fileURLToPath(new URL('../node_modules', import.meta.url)));
   mkdirSync(join(root, 'scripts'));
   const files = [...extendedTests, ...(extraThemePanel ? ['tests/theme-extra-panel.test.ts'] : [])];
   writeFileSync(join(root, 'scripts/test-inventory.json'), JSON.stringify({ schemaVersion: 1, files: files.map(file => ({ file, executor: 'node', scopes: ['all'] })) }));
   git('add', '.'); git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'fixture');
   // 本组验证调度与证据；真实 Chrome 运行另由 panel 用例覆盖。
   const previous = process.env.CHROME_BIN; process.env.CHROME_BIN = process.execPath;
-  t.after(() => { if (previous === undefined) delete process.env.CHROME_BIN; else process.env.CHROME_BIN = previous; });
+  t.onTestFinished(() => { if (previous === undefined) delete process.env.CHROME_BIN; else process.env.CHROME_BIN = previous; });
   return root;
 }
 
@@ -138,7 +143,7 @@ test('UI失败保留结构化完整失败清单供后续集中复验', async t =
 
 test('UI实际类型、测试与构建阶段采用同一默认浏览器工具环境，并恢复调用者环境', async t => {
   const previous=process.env.BROWSERSLIST_IGNORE_OLD_DATA;
-  t.after(()=>{if(previous===undefined)delete process.env.BROWSERSLIST_IGNORE_OLD_DATA;else process.env.BROWSERSLIST_IGNORE_OLD_DATA=previous;});
+  t.onTestFinished(()=>{if(previous===undefined)delete process.env.BROWSERSLIST_IGNORE_OLD_DATA;else process.env.BROWSERSLIST_IGNORE_OLD_DATA=previous;});
   delete process.env.BROWSERSLIST_IGNORE_OLD_DATA;
   const root=repository(t,`const fs=require('node:fs'),assert=require('node:assert/strict');assert.equal(process.env.BROWSERSLIST_IGNORE_OLD_DATA,'true');fs.appendFileSync('logs/environment-stages.jsonl',JSON.stringify({phase:'typecheck',value:process.env.BROWSERSLIST_IGNORE_OLD_DATA})+'\\n');`);
   const pkg=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
@@ -154,7 +159,7 @@ test('UI实际类型、测试与构建阶段采用同一默认浏览器工具环
 
 
 test('UI原生与候选实际三阶段保留显式及空工具环境，失败后也恢复调用者值', async t => {
-  const original=process.env.BROWSERSLIST_IGNORE_OLD_DATA;t.after(()=>{if(original===undefined)delete process.env.BROWSERSLIST_IGNORE_OLD_DATA;else process.env.BROWSERSLIST_IGNORE_OLD_DATA=original;});
+  const original=process.env.BROWSERSLIST_IGNORE_OLD_DATA;t.onTestFinished(()=>{if(original===undefined)delete process.env.BROWSERSLIST_IGNORE_OLD_DATA;else process.env.BROWSERSLIST_IGNORE_OLD_DATA=original;});
   for(const value of ['review-custom','']){
     process.env.BROWSERSLIST_IGNORE_OLD_DATA=value;
     const assertion=`require('node:assert/strict').equal(process.env.BROWSERSLIST_IGNORE_OLD_DATA,${JSON.stringify(value)})`;
