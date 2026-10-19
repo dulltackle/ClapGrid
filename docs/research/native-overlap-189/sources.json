@@ -1,0 +1,719 @@
+{
+  "description": "仓内保存可审阅数据与SHA索引；完整raw仍在本机外置保留目录，未复制入仓",
+  "retainedRoot": "/home/forclaw/tmp/clapgrid-174-run",
+  "measuredCommit": "f049da10cd1743288751fa190283a8dce80b3e90",
+  "immutableOriginals": [
+    {
+      "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/comparison.json",
+      "sha256": "af73d0f642f9eba71dd2149ecaf63c07db8d0bd86c1ee6572ebac4cf792fe7a0"
+    },
+    {
+      "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/nine-round-hash-index.json",
+      "sha256": "1faedb04eb9e28efdfb9bfae90993bdf375f0497dc7e94746be5e5d181713a1d"
+    },
+    {
+      "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/frozen-manifest.json",
+      "sha256": "7ad58f29a135320867d0c6b51dca54b07993710c68c78cdd9350f01784143dc5"
+    },
+    {
+      "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/nine-round-handoff.json",
+      "sha256": "404b585ab161e8890788b0fe5665a488b795d6a12a240b43bd7c787c96408834"
+    },
+    {
+      "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3-review/nine-final-gate.json",
+      "sha256": "656bd29bc06f1e438dfe1e1183bb814682d16154280c9232751f82c79c37c2b9"
+    },
+    {
+      "path": "/home/forclaw/tmp/clapgrid-174-run/189-root-adoption.json",
+      "sha256": "8f08c728a8cc8333f783048b4d8aa2b83a808ef6e1750b9d73fe204bae7b62d7"
+    },
+    {
+      "path": "/home/forclaw/tmp/clapgrid-174-run/post-nine-user-work-isolation.json",
+      "sha256": "60904a249217128f06ca15af975fba552feb34ca6c4d13f37ae1626c6bff076e"
+    }
+  ],
+  "nineRoundIndex": {
+    "at": "2026-10-19T00:27:05.234479+00:00",
+    "frozenManifestSha256": "7ad58f29a135320867d0c6b51dca54b07993710c68c78cdd9350f01784143dc5",
+    "rounds": [
+      {
+        "round": 1,
+        "mode": "serial",
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "artifacts": {
+          "preparation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-1/preparation.json",
+            "sha256": "9650dda331e7a3456a08e00411a61900318e13ad189f25c7e59cecc71f861200"
+          },
+          "before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-1/before.json",
+            "sha256": "dee309565613892e60c49c947f665dad1abf436d107fd866a0df3ac351e4b74b"
+          },
+          "after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-1/after.json",
+            "sha256": "4066105303806f4dfbb80b84f861199e96a15dcef49d98f146e9ab664fdf9926"
+          },
+          "install-before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-1/install-before.json",
+            "sha256": "206ef14b9d738fa5f6db5ab1e2c2b4852a0932b4c1e52aebf0d3b7242e9bbf5f"
+          },
+          "install-after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-1/install-after.json",
+            "sha256": "737119748d3dec8f84a6fc475a00881a1a1e3605056ccaacbc58cc88699eb13e"
+          },
+          "actual-npm-environment.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-1/actual-npm-environment.json",
+            "sha256": "c2ccdd54868b4d0ee7c51774430f5ca3e1f43fe84072ed63e57932ef5fcd0a6b"
+          },
+          "validation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-1/validation.json",
+            "sha256": "d7440b11168baa3e0b5a6dd9098773aa9dcccde89791c1439ba39594babb7158"
+          },
+          "source-manifest.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-1/source-manifest.json",
+            "sha256": "b198fad13e923de1ad7b8aaa82f2ebc2a1970168937b2e4691d65fa408d235e7"
+          },
+          "review-acceptance.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-1/review-acceptance.json",
+            "sha256": "dbb7e6b7e88f4b07bde1edaac4d09df1e46f3fce74b277bd6602a3106493800c"
+          },
+          "author-result.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-1/author-result.json",
+            "sha256": "3ada06543f42139d615f8166540d5565fb273fb0e350a07631d74bf0b338e50c"
+          },
+          "manager-final.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-1/manager-final.json",
+            "sha256": "b0fe9345822c0c54be6a381de56153efc2e7781788afc136cd071e0d0808fcaf"
+          },
+          "scope-final-event.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-1/scope-final-event.json",
+            "sha256": "c8cc8565bbb595c80fed89ff148c4a709049000726d0e54fca4b56fc3feed445"
+          },
+          "measurement/measurement.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-1/measurement/measurement.json",
+            "sha256": "53fe9bb619764bfc168ee0c6e2d6355c91deb67fc4a485958ed20275fc834c37"
+          },
+          "measurement/samples.jsonl.gz": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-1/measurement/samples.jsonl.gz",
+            "sha256": "568e5061912a0ffceb366154d988ee6f3c7cedbbbb28a081057fb59f5b30781d"
+          },
+          "measurement/owned-processes.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-1/measurement/owned-processes.json",
+            "sha256": "0d5b818a4cc8efbb51f1492bd680a35c12b85bbf9c5ff64d442e3e9b06c7936a"
+          }
+        },
+        "independentAudit": {
+          "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3-review/round-1-independent-audit.json",
+          "sha256": "47820296287d9f4db6e4c1d4bdd6cbab6846b17b94f3d800c404df98a29fdb58"
+        },
+        "wallSeconds": 1746.200523178,
+        "runnerOccupiedSeconds": 1746.200523178,
+        "scope": "clapgrid-174-189-v3-round-1.scope",
+        "originalScopeAbsentAndInactive": true
+      },
+      {
+        "round": 2,
+        "mode": "overlap-1+1",
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "artifacts": {
+          "preparation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-2/preparation.json",
+            "sha256": "23799902891147b318291591d0a534567b464cd1fc3eec6720b882edf92dafa4"
+          },
+          "before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-2/before.json",
+            "sha256": "1c4092c1813a629e82a86516c2e4d8ddf0bea666b22b1b2a5699c4c704783549"
+          },
+          "after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-2/after.json",
+            "sha256": "aa007c95807a28723967c2ff8ede159996ac0615a9de67a76b599f8b0098afa8"
+          },
+          "install-before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-2/install-before.json",
+            "sha256": "206ef14b9d738fa5f6db5ab1e2c2b4852a0932b4c1e52aebf0d3b7242e9bbf5f"
+          },
+          "install-after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-2/install-after.json",
+            "sha256": "737119748d3dec8f84a6fc475a00881a1a1e3605056ccaacbc58cc88699eb13e"
+          },
+          "actual-npm-environment.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-2/actual-npm-environment.json",
+            "sha256": "e17db98bbda674790302ad00e7a767830e9c8141fbb1064cc8976e0ac2896bf7"
+          },
+          "validation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-2/validation.json",
+            "sha256": "84cc5bbee2c199cacee75c980348f4f7cd86a5342ecd3a84af341b625ed456b0"
+          },
+          "source-manifest.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-2/source-manifest.json",
+            "sha256": "bf28f6677804dc42ce4acf72ecece70e376aa0e32f5265b121d2f519fd6462e8"
+          },
+          "review-acceptance.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-2/review-acceptance.json",
+            "sha256": "03098004ff1df06fa985ff773638f3860081fc020aa82c2a45a80eb3351e3eda"
+          },
+          "author-result.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-2/author-result.json",
+            "sha256": "470a39320ec178f893406010af2dbff1606265439856246cd93437602e826c87"
+          },
+          "manager-final.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-2/manager-final.json",
+            "sha256": "3afae6c9542ac7b492bb5eca0b1646559fa3f0fcc36fb369138d8a2c4d321e73"
+          },
+          "scope-final-event.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-2/scope-final-event.json",
+            "sha256": "fa85b60d04373c6dce04da17cb73df951b1d99aed65ace8499cfe26091b42c40"
+          },
+          "measurement/measurement.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-2/measurement/measurement.json",
+            "sha256": "5f0886f622957946aee8f83254dc407ffefb92b3429a5a53907118a77475def2"
+          },
+          "measurement/samples.jsonl.gz": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-2/measurement/samples.jsonl.gz",
+            "sha256": "ae16208b0e626a3a5394db5facb636f0ae822307f695180c3af3463e2a5dde17"
+          },
+          "measurement/owned-processes.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-2/measurement/owned-processes.json",
+            "sha256": "19afa4fb172a752ae02bf3f6d7a11bd83aa1bac231f67132b36676bcdb45fc7d"
+          }
+        },
+        "independentAudit": {
+          "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3-review/round-2-independent-audit.json",
+          "sha256": "d013fe320966706caf19142ec7092ab1eadee3db726bd555aa41cd0765a756f9"
+        },
+        "wallSeconds": 2116.758296496,
+        "runnerOccupiedSeconds": 2116.758296496,
+        "scope": "clapgrid-174-189-v3-round-2.scope",
+        "originalScopeAbsentAndInactive": true
+      },
+      {
+        "round": 3,
+        "mode": "overlap-1+2",
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "artifacts": {
+          "preparation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-3/preparation.json",
+            "sha256": "05829d6f591b4e40065a695c4152e97532f134f48ccabe4299b8f6f2eafabd8f"
+          },
+          "before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-3/before.json",
+            "sha256": "0e843cbfd06aec8751203e102360bc7f69915cbc82f3b8fea9483ff91d8dbabf"
+          },
+          "after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-3/after.json",
+            "sha256": "0b6833e75965d999f20a9e6b4bd06e29b4e9fb270443b25e6f4f2178859f338a"
+          },
+          "install-before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-3/install-before.json",
+            "sha256": "206ef14b9d738fa5f6db5ab1e2c2b4852a0932b4c1e52aebf0d3b7242e9bbf5f"
+          },
+          "install-after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-3/install-after.json",
+            "sha256": "737119748d3dec8f84a6fc475a00881a1a1e3605056ccaacbc58cc88699eb13e"
+          },
+          "actual-npm-environment.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-3/actual-npm-environment.json",
+            "sha256": "fd429ad83a6c221094c93967f98137d021e12e50293d582457d148115bd82c61"
+          },
+          "validation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-3/validation.json",
+            "sha256": "bd573e20e67b48f66567c93bf8c6e8055f5ab66aaf7cbe2f7c796513621b2e12"
+          },
+          "source-manifest.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-3/source-manifest.json",
+            "sha256": "213de04a97868b2c125600e41a3dd10d46d8a4cb66f7dac7b81d9d2e87a04fe5"
+          },
+          "review-acceptance.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-3/review-acceptance.json",
+            "sha256": "06023bbbf8383ec77c91677a24d1749099a120484bc863acaa74b3ac497b56b7"
+          },
+          "author-result.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-3/author-result.json",
+            "sha256": "84bc73d7458f8846e2545f59027b0c641d7eef76b8dfa4557eaeba3c2f9a5c75"
+          },
+          "manager-final.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-3/manager-final.json",
+            "sha256": "1c82f4d885501b50579c35f5f3309d34942346f50b125c230bd43367de820200"
+          },
+          "scope-final-event.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-3/scope-final-event.json",
+            "sha256": "5562cb4252f4b1cbf71a83a246b9fafb6732ed3046977846f1591b5371c43b8a"
+          },
+          "measurement/measurement.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-3/measurement/measurement.json",
+            "sha256": "26e35428382869dcb8b1ab478893493cab0cfda55cfba623a376f706f977614e"
+          },
+          "measurement/samples.jsonl.gz": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-3/measurement/samples.jsonl.gz",
+            "sha256": "6f8d36200b92dafe074d66c1f7d3cd2cb8eee78d7c15c10eb1961d6cec615af9"
+          },
+          "measurement/owned-processes.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-3/measurement/owned-processes.json",
+            "sha256": "0bc819ab0765d74e9e844ca97e9b232c7c52835c47cb9ed2e7fbc313f0179267"
+          }
+        },
+        "independentAudit": {
+          "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3-review/round-3-independent-audit.json",
+          "sha256": "df34b7e67fca58fd9c46cc10caa7e05fe248740c2f39cbec91dc05cd1b5fdd24"
+        },
+        "wallSeconds": 1734.48912771,
+        "runnerOccupiedSeconds": 1734.48912771,
+        "scope": "clapgrid-174-189-v3-round-3.scope",
+        "originalScopeAbsentAndInactive": true
+      },
+      {
+        "round": 4,
+        "mode": "overlap-1+1",
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "artifacts": {
+          "preparation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-4/preparation.json",
+            "sha256": "8a44b33610b4dc2432f0921554e8dcf703af5dcfd515b571981859c4fcdede75"
+          },
+          "before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-4/before.json",
+            "sha256": "7b5e76e60f12e6ad1bb62b823a5bb2a38a19a2064a11da0fd855d66baedef126"
+          },
+          "after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-4/after.json",
+            "sha256": "f71f50240ae9bf22b4ef9c4453ecfba7548061af5e04306e569ec7dc108d4667"
+          },
+          "install-before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-4/install-before.json",
+            "sha256": "206ef14b9d738fa5f6db5ab1e2c2b4852a0932b4c1e52aebf0d3b7242e9bbf5f"
+          },
+          "install-after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-4/install-after.json",
+            "sha256": "737119748d3dec8f84a6fc475a00881a1a1e3605056ccaacbc58cc88699eb13e"
+          },
+          "actual-npm-environment.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-4/actual-npm-environment.json",
+            "sha256": "5b32002a89dc8e08bb78493f860893e165dd4bdc2dbcfecdb4f5b4888c117682"
+          },
+          "validation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-4/validation.json",
+            "sha256": "62563c88a4deadcd943d34b6abcc357b8bd4b718f41684d3b19e06e3ad3c48a2"
+          },
+          "source-manifest.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-4/source-manifest.json",
+            "sha256": "a7ab4a367899bd232dd03654b19731bf0dbb0b75fa421c3225914434d1a12caf"
+          },
+          "review-acceptance.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-4/review-acceptance.json",
+            "sha256": "d56546178732aa4d27624b6f102c110c8e3e147d68060afac52e354b8bdfebff"
+          },
+          "author-result.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-4/author-result.json",
+            "sha256": "d742f50a3c4540ddbf518e7629f355ce59294eb9102f2f81795693e9f65757d8"
+          },
+          "manager-final.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-4/manager-final.json",
+            "sha256": "6ab42ab106830f599eac385a44c045118bb21a2d1ccbdc30fce8ebc0e13a17ad"
+          },
+          "scope-final-event.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-4/scope-final-event.json",
+            "sha256": "044c0171866bacf8ec778dc1a9cee501b12e7f23b54b3023ee241533c43bee27"
+          },
+          "measurement/measurement.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-4/measurement/measurement.json",
+            "sha256": "48ed905362808af2cb8d0c85b11798cf20590b06719cc268152f994ce07853cd"
+          },
+          "measurement/samples.jsonl.gz": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-4/measurement/samples.jsonl.gz",
+            "sha256": "9588de7f713f6ec0ad3ba45d11ac391c19ca2563061e292d9e785fdf4f515d36"
+          },
+          "measurement/owned-processes.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-4/measurement/owned-processes.json",
+            "sha256": "304dca72ae09e2d6d5f4661889e74e430831013e526ae9f7c7ed30180826dad6"
+          }
+        },
+        "independentAudit": {
+          "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3-review/round-4-independent-audit.json",
+          "sha256": "0f99966c4564979ffea540f85d94ed706971c342745c55a3b908630fa247fe52"
+        },
+        "wallSeconds": 2117.809133156,
+        "runnerOccupiedSeconds": 2117.809133156,
+        "scope": "clapgrid-174-189-v3-round-4.scope",
+        "originalScopeAbsentAndInactive": true
+      },
+      {
+        "round": 5,
+        "mode": "overlap-1+2",
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "artifacts": {
+          "preparation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-5/preparation.json",
+            "sha256": "7e9251edb8982cb88833963fac3c6c76fdbe5faf92a42ac5facce38506a8ac27"
+          },
+          "before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-5/before.json",
+            "sha256": "942d69c0e0104991b0ea42b7cd4fd4d7f5a0a34aa4287c672a68ad90170921c4"
+          },
+          "after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-5/after.json",
+            "sha256": "a3b0fb7fe8ec5ce4010bb271a21cfd0ee528d56400c26c7808fe662c620bf22a"
+          },
+          "install-before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-5/install-before.json",
+            "sha256": "206ef14b9d738fa5f6db5ab1e2c2b4852a0932b4c1e52aebf0d3b7242e9bbf5f"
+          },
+          "install-after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-5/install-after.json",
+            "sha256": "737119748d3dec8f84a6fc475a00881a1a1e3605056ccaacbc58cc88699eb13e"
+          },
+          "actual-npm-environment.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-5/actual-npm-environment.json",
+            "sha256": "683f29b4ace1a9fd0a7d4a10a82249a09bbee9000b90d843e99b231aa71fcf82"
+          },
+          "validation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-5/validation.json",
+            "sha256": "aabcf58d0fd294ae2409df22dbf460fb6cd3f5f33d27960ac0623a8990e1673e"
+          },
+          "source-manifest.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-5/source-manifest.json",
+            "sha256": "3930183254461f8076f13c0e2e46cb0ace485b829c37d696fafee2f85919387e"
+          },
+          "review-acceptance.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-5/review-acceptance.json",
+            "sha256": "c67b8bb949f4067c6900e45c639f2438193b361f5b8294920b213d2bdeb9d659"
+          },
+          "author-result.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-5/author-result.json",
+            "sha256": "24fa4283aa77a33fed71dbcadaec9cd38262ea16e2e9c1632a2be16a9b6d7407"
+          },
+          "manager-final.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-5/manager-final.json",
+            "sha256": "8b74710b008d2ed8f4bddc2f7d05a70a537d032814e627be9e246d78e7ccdb63"
+          },
+          "scope-final-event.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-5/scope-final-event.json",
+            "sha256": "7297085034368ae50e713d41e118ad0e26e86432e8c3f12b63add9af3b5f7cd2"
+          },
+          "measurement/measurement.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-5/measurement/measurement.json",
+            "sha256": "fe0e6b66d8fb0b73e5b2b2d12a602ba3869f94e7a9840afefd98333aee14bbd0"
+          },
+          "measurement/samples.jsonl.gz": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-5/measurement/samples.jsonl.gz",
+            "sha256": "5e0c86ef57649ef62f8f85a7ecb005361fe8c22fcabb96b633a60ddcd2ed09e9"
+          },
+          "measurement/owned-processes.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-5/measurement/owned-processes.json",
+            "sha256": "6685bcace17a51394752a9a8c5effadce7f922a3ee6539e101cd760e69b1ddd5"
+          }
+        },
+        "independentAudit": {
+          "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3-review/round-5-independent-audit.json",
+          "sha256": "37d15f3a328734af8afd021b6ff0994313ec1ff1ab485045d266f45b7b3632f2"
+        },
+        "wallSeconds": 1731.852652263,
+        "runnerOccupiedSeconds": 1731.852652263,
+        "scope": "clapgrid-174-189-v3-round-5.scope",
+        "originalScopeAbsentAndInactive": true
+      },
+      {
+        "round": 6,
+        "mode": "serial",
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "artifacts": {
+          "preparation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-6/preparation.json",
+            "sha256": "1f6c0f8c35b81c4c3e659abb3096da94fd024233986509af8462d4ca82a924b3"
+          },
+          "before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-6/before.json",
+            "sha256": "1f65debf22425cf548b44c569de73dce0300f3b12c8942bbdc723d3c1d627f82"
+          },
+          "after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-6/after.json",
+            "sha256": "cbb2ea426b0be6b99cf90fde5de1e5404166384ce20bced077a254845b575481"
+          },
+          "install-before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-6/install-before.json",
+            "sha256": "206ef14b9d738fa5f6db5ab1e2c2b4852a0932b4c1e52aebf0d3b7242e9bbf5f"
+          },
+          "install-after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-6/install-after.json",
+            "sha256": "737119748d3dec8f84a6fc475a00881a1a1e3605056ccaacbc58cc88699eb13e"
+          },
+          "actual-npm-environment.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-6/actual-npm-environment.json",
+            "sha256": "3a7984d3dc4b74eb28ebbea847cbd05dcaf71f7da16d367ec74ae3c7ba617705"
+          },
+          "validation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-6/validation.json",
+            "sha256": "6d93883f42c72a5e938117cdb14424f22686abd633da079c895b2e0c5fc8a229"
+          },
+          "source-manifest.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-6/source-manifest.json",
+            "sha256": "1b4eed5c22af540fb9f860b7334887ff89477b5fb920fdc7b1fd1364a0a2b975"
+          },
+          "review-acceptance.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-6/review-acceptance.json",
+            "sha256": "4168d7f2dfc67c5e523473d1d076caf48173aa20c691e2b3b6960da930ec63ea"
+          },
+          "author-result.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-6/author-result.json",
+            "sha256": "a06e1f4beece27a24baa824f986059acd258dc96aa05184bd5e8f11510219712"
+          },
+          "manager-final.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-6/manager-final.json",
+            "sha256": "7b13e410d1ea28ed8a2b043195a6f9b6e7a9720104d9b82db643a8968207c9f8"
+          },
+          "scope-final-event.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-6/scope-final-event.json",
+            "sha256": "a95fe43a221ade415fbbf5ba71832723bbeec18013c69379a5b588abfb594b21"
+          },
+          "measurement/measurement.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-6/measurement/measurement.json",
+            "sha256": "046c1451479f2bee14dbc2e547afc647a0139574351e1167db20c3ad1d272568"
+          },
+          "measurement/samples.jsonl.gz": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-6/measurement/samples.jsonl.gz",
+            "sha256": "7598ed4b6392ed795e7bebcbbcf2062192e15ccee05f6b9702f587bdabcb7897"
+          },
+          "measurement/owned-processes.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-6/measurement/owned-processes.json",
+            "sha256": "9777d17a31367641fc572453e081a0fb60c0a305affa67d1cfbe0e2deb386663"
+          }
+        },
+        "independentAudit": {
+          "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3-review/round-6-independent-audit.json",
+          "sha256": "8925523873027f0a2b2be38f8261c6676e46f3fbe166950449a5ceb4801e091b"
+        },
+        "wallSeconds": 1747.872144555,
+        "runnerOccupiedSeconds": 1747.872144555,
+        "scope": "clapgrid-174-189-v3-round-6.scope",
+        "originalScopeAbsentAndInactive": true
+      },
+      {
+        "round": 7,
+        "mode": "overlap-1+2",
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "artifacts": {
+          "preparation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-7/preparation.json",
+            "sha256": "6322c9f0ebbea9a8c18a96c9bd72baa4ca9f246ea0ba2cc18c402b015d98bc53"
+          },
+          "before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-7/before.json",
+            "sha256": "8422aa1a172b9bc8040cec3d6e670d091b68c144bfc87a9a352dce0e8d4ae5d9"
+          },
+          "after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-7/after.json",
+            "sha256": "9a63c0949246f7b55ac61270762dc5d71b94105f247950e4f4377e08b41f5176"
+          },
+          "install-before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-7/install-before.json",
+            "sha256": "206ef14b9d738fa5f6db5ab1e2c2b4852a0932b4c1e52aebf0d3b7242e9bbf5f"
+          },
+          "install-after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-7/install-after.json",
+            "sha256": "737119748d3dec8f84a6fc475a00881a1a1e3605056ccaacbc58cc88699eb13e"
+          },
+          "actual-npm-environment.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-7/actual-npm-environment.json",
+            "sha256": "147d5149e94279caec9c6a628eb1a09104f65b22e45cb0e5b5328ce586e2116b"
+          },
+          "validation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-7/validation.json",
+            "sha256": "b5dde392efcd62ec034adffff7cfd9183738fbdaddf9daa054460ac9733e6bba"
+          },
+          "source-manifest.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-7/source-manifest.json",
+            "sha256": "1812feb22df2693f375a47486643d831920c5d7f65763734ca5d777ed51cb7a2"
+          },
+          "review-acceptance.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-7/review-acceptance.json",
+            "sha256": "983652a4851828d7174790f4b6d2362975d606c65c682410c5b9ac9e961c8055"
+          },
+          "author-result.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-7/author-result.json",
+            "sha256": "53a0cf618e632c5c7e4ebe5920fad89c4f4452dab2da3a09abccc66ba5afbfc8"
+          },
+          "manager-final.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-7/manager-final.json",
+            "sha256": "9038e58b0bcbfe34cd04d1529422ff9df3cb4bf654038e3c35fb08c783d82826"
+          },
+          "scope-final-event.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-7/scope-final-event.json",
+            "sha256": "4466320470874eebbc32e6a2ade4d4d50e7fbb935844af7fa89ec5967dc98311"
+          },
+          "measurement/measurement.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-7/measurement/measurement.json",
+            "sha256": "ca7ffa0fcce9127f04b099e8d5bb593635b4249ead37f96dd88fd489a5cdb800"
+          },
+          "measurement/samples.jsonl.gz": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-7/measurement/samples.jsonl.gz",
+            "sha256": "e0f2e23dad5abbfb2893300dc5f9dfc4de134c0e37ba33f7455e6035095cf93a"
+          },
+          "measurement/owned-processes.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-7/measurement/owned-processes.json",
+            "sha256": "81d10216309b3b271250a05bbfe2bfb4c2a96a655acca3aaaed72efd0af32ef8"
+          }
+        },
+        "independentAudit": {
+          "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3-review/round-7-independent-audit.json",
+          "sha256": "b2a73e04cbe3d1168a601dc5581ef0f2dd20cf6595ee09a51505232c44255aff"
+        },
+        "wallSeconds": 1732.68068146,
+        "runnerOccupiedSeconds": 1732.68068146,
+        "scope": "clapgrid-174-189-v3-round-7.scope",
+        "originalScopeAbsentAndInactive": true
+      },
+      {
+        "round": 8,
+        "mode": "serial",
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "artifacts": {
+          "preparation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-8/preparation.json",
+            "sha256": "e648ae700dd47dcd082aab397fd88fa2721cae83699c2c5b04ce2d978912e04f"
+          },
+          "before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-8/before.json",
+            "sha256": "1092e21a12de3175fe8f7c8ee743dd064649cf09926103a54f4cb07a8ecc6a97"
+          },
+          "after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-8/after.json",
+            "sha256": "70deffba757221fb41932ddd2b936429116d1a1bedd6163489c6e4a25c14dde6"
+          },
+          "install-before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-8/install-before.json",
+            "sha256": "206ef14b9d738fa5f6db5ab1e2c2b4852a0932b4c1e52aebf0d3b7242e9bbf5f"
+          },
+          "install-after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-8/install-after.json",
+            "sha256": "737119748d3dec8f84a6fc475a00881a1a1e3605056ccaacbc58cc88699eb13e"
+          },
+          "actual-npm-environment.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-8/actual-npm-environment.json",
+            "sha256": "8a626a270044870e9b3debf2f4b6c3c83f1853b94294a54154bb11e6921440d0"
+          },
+          "validation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-8/validation.json",
+            "sha256": "a35622b1cfa490106a3ff83da02097c665d26cb845442ad73622488755efea4f"
+          },
+          "source-manifest.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-8/source-manifest.json",
+            "sha256": "2a0f75d3f5a97c12df3433948a93037b4284a6a09131d56f13bbeee9c284db48"
+          },
+          "review-acceptance.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-8/review-acceptance.json",
+            "sha256": "27250b7883c7faedb96d123b266630169fbb68b44493a803ff24cfdf6b6eb286"
+          },
+          "author-result.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-8/author-result.json",
+            "sha256": "cb9fa04ef75b108484e34acf345a7182aeed1fd6b12c13827473a78f703f166b"
+          },
+          "manager-final.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-8/manager-final.json",
+            "sha256": "386021b0e0f5a1215593c059baedbd6f8590d05dd8a64fbe9e617e82a331f331"
+          },
+          "scope-final-event.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-8/scope-final-event.json",
+            "sha256": "81f144b49143cd9cdf365816a144003b52c887c09744bd07e7fec56a35e9c668"
+          },
+          "measurement/measurement.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-8/measurement/measurement.json",
+            "sha256": "eb6e669494e29bb23dd5a98603f81d3ddf764bd95884642ef0bf79477974ef97"
+          },
+          "measurement/samples.jsonl.gz": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-8/measurement/samples.jsonl.gz",
+            "sha256": "041605bdd5c5ec06d99e315fa5fdc8fdff3e66202648bfeb8cafa15e0fa2e47a"
+          },
+          "measurement/owned-processes.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-8/measurement/owned-processes.json",
+            "sha256": "b6a09220274b5fef917d01ead84435c8c2af0db75328a0c26d24fbcfb1e4bf0e"
+          }
+        },
+        "independentAudit": {
+          "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3-review/round-8-independent-audit.json",
+          "sha256": "c572688ecbb9958513de58cae69836c488227eb67a08b1a7ba6cab6edc7ff86d"
+        },
+        "wallSeconds": 1747.580739308,
+        "runnerOccupiedSeconds": 1747.580739308,
+        "scope": "clapgrid-174-189-v3-round-8.scope",
+        "originalScopeAbsentAndInactive": true
+      },
+      {
+        "round": 9,
+        "mode": "overlap-1+1",
+        "commit": "f049da10cd1743288751fa190283a8dce80b3e90",
+        "artifacts": {
+          "preparation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-9/preparation.json",
+            "sha256": "aa7c4054caa29b5730312996bc9c7f1c77c0baec0581458369be31a316c7c2a7"
+          },
+          "before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-9/before.json",
+            "sha256": "9aabed58e133f4095254f700f5dd3c45928547861429c877bb7156bdb0e7ee0e"
+          },
+          "after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-9/after.json",
+            "sha256": "ffc9fb625b3fd815b622883ec0c89f68ab5037c9d30419acd88d09bade726637"
+          },
+          "install-before.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-9/install-before.json",
+            "sha256": "206ef14b9d738fa5f6db5ab1e2c2b4852a0932b4c1e52aebf0d3b7242e9bbf5f"
+          },
+          "install-after.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-9/install-after.json",
+            "sha256": "737119748d3dec8f84a6fc475a00881a1a1e3605056ccaacbc58cc88699eb13e"
+          },
+          "actual-npm-environment.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-9/actual-npm-environment.json",
+            "sha256": "6ffbbe4a050a68057dad211d314497a76cef5986c753109fcc52dbede04ab009"
+          },
+          "validation.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-9/validation.json",
+            "sha256": "226ee93e977fb46a7ce0d7c8ce4c966f106c8c924ec476a13f9d1f22e446052f"
+          },
+          "source-manifest.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-9/source-manifest.json",
+            "sha256": "520e699e7cf57d5c456ed8b6f9368089d14b043a7adf76d6a0ffb0b6cf80f5ef"
+          },
+          "review-acceptance.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-9/review-acceptance.json",
+            "sha256": "afc0545549a96108612c981e78dd6428c9ae5573d4420fa3cfc3ff6381376bbe"
+          },
+          "author-result.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-9/author-result.json",
+            "sha256": "b3cca83aa751d0b51b8e4c4435b6b3b9db406d101a5c7d3bbf7ad097afbef9df"
+          },
+          "manager-final.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-9/manager-final.json",
+            "sha256": "0b71065ba211e1f6247b049dc2e365a725917f82e8c09ce8880b630e5f9248af"
+          },
+          "scope-final-event.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-9/scope-final-event.json",
+            "sha256": "3891fd23bec0a9fbb2343e2e558961087cded1d0b90aa1c96ff542216ca329eb"
+          },
+          "measurement/measurement.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-9/measurement/measurement.json",
+            "sha256": "c0aa301bcb7adbbc2ac4557038d40bb1c29ecd79e75307d40b16116e941702a0"
+          },
+          "measurement/samples.jsonl.gz": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-9/measurement/samples.jsonl.gz",
+            "sha256": "87e5cbc17e5bf8a0848c2444a6c616957284c160501b2e0f248a82ff3edc864b"
+          },
+          "measurement/owned-processes.json": {
+            "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3/round-9/measurement/owned-processes.json",
+            "sha256": "4377887f78b483e67a2bbea964045ff1b8e47a4bd0cb1b6c6a59bf59a6f4de98"
+          }
+        },
+        "independentAudit": {
+          "path": "/home/forclaw/tmp/clapgrid-174-run/189-v3-review/round-9-independent-audit.json",
+          "sha256": "1b1de9481c9b3ed10ccabdba59e99845017d5dd7c89a1915aa8ac93665e3310a"
+        },
+        "wallSeconds": 2117.728846826,
+        "runnerOccupiedSeconds": 2117.728846826,
+        "scope": "clapgrid-174-189-v3-round-9.scope",
+        "originalScopeAbsentAndInactive": true
+      }
+    ],
+    "count": 9,
+    "eachModeCount": 3
+  },
+  "finalCandidateIdentityRecord": "/home/forclaw/tmp/clapgrid-174-run/189-closeout/final-source-identity.json"
+}
