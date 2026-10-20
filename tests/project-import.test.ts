@@ -16,7 +16,7 @@ import { build } from 'esbuild';
 import { openBusiness } from '../src/business/index.js';
 import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 
-const { ownerAlive, processIdentity } = await import(new URL('../scripts/verification-jobs.mjs', import.meta.url).href);
+const { ownerAlive, processIdentity } = await import(new URL('./helpers/product-process.mjs', import.meta.url).href);
 
 // 保留原 Node 文件未显式设置的测试与清理无限时语义。
 vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
@@ -132,7 +132,7 @@ test('迁入发布前阻止并发源修改及目标打开，中断后普通打�
   const host = join(root, 'host.cjs');
   writeFileSync(host, `#!/usr/bin/env node
 const fs=require('node:fs');
-const identity=import(${JSON.stringify(new URL('../scripts/verification-jobs.mjs', import.meta.url).href)}).then(({processIdentity})=>{const owner=processIdentity();if(!owner)throw Error('宿主无法读取自己的出生身份');return owner});
+const identity=import(${JSON.stringify(new URL('./helpers/product-process.mjs', import.meta.url).href)}).then(({processIdentity})=>{const owner=processIdentity();if(!owner)throw Error('宿主无法读取自己的出生身份');return owner});
 require('node:readline').createInterface({input:process.stdin}).on('line',async line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read'){const n=fs.existsSync(${JSON.stringify(counter)})?Number(fs.readFileSync(${JSON.stringify(counter)},'utf8'))+1:1;fs.writeFileSync(${JSON.stringify(counter)},String(n));if(n===2){const temporary=${JSON.stringify(marker)}+'.'+process.pid;fs.writeFileSync(temporary,JSON.stringify(await identity));fs.renameSync(temporary,${JSON.stringify(marker)});setInterval(()=>{},1000);}else console.log(JSON.stringify({id:r.id,result:{thread:{id:r.params.threadId,cwd:${JSON.stringify(workspace)}}}}));}});`, { mode: 0o700 });
   const entry = join(root, 'runtime.mjs');
   await build({ entryPoints: ['src/runtime.ts'], outfile: entry, bundle: true, platform: 'node', format: 'esm', external: ['vite'], banner: { js: "import { createRequire } from 'node:module'; const require=createRequire(import.meta.url);" } });
