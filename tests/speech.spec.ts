@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { test, expect } from './helpers/media-project.js';
 import { holdResponse } from './helpers/response-gate.js';
-import { beginEdit, querySpeech, submitSpeech, submitSpeechBatch } from '../src/shared/client.js';
+import { beginEdit, querySpeech, queryExports, submitSpeech, submitSpeechBatch } from '../src/shared/client.js';
 
 for (const viewport of [{ width: 1600, height: 1000 }, { width: 420, height: 360 }]) test(`声音设置原生键盘、失败恢复和提交互斥 ${viewport.width}`, async ({ page, project }) => {
   await page.setViewportSize(viewport); await page.goto(project.url);
@@ -126,8 +126,15 @@ test('批量配音进度与失败请求在查找未匹配片段时仍可访问',
   await page.getByLabel('查找文案', { exact: true }).fill('未匹配');
   await expect(page.locator('footer')).toContainText('配音 0/2');
   await expect(page.getByRole('button', { name: '新增口播片段', exact: true })).toBeDisabled();
+  expect((await querySpeech(project.url)).locked).toBe(true);
+  const rejected = page.waitForResponse(response => response.url().endsWith('/api/exports/submit') && response.request().method() === 'POST');
   await page.getByRole('button', { name: '导出全片', exact: true }).click();
-  await expect(page.locator('footer')).toContainText('配音');
+  const response = await rejected;
+  expect(response.status()).toBe(400);
+  const rejection = (await response.json() as { error: string }).error;
+  expect(rejection).toBe('配音任务尚未结束，不能开始导出；允许查询和试听');
+  await expect(page.getByLabel('操作异常', { exact: true })).toContainText(rejection);
+  expect((await queryExports(project.url)).tasks).toEqual([]);
   await page.getByRole('button', { name: '更多', exact: true }).click(); await page.getByRole('button', { name: '任务记录', exact: true }).click();
   const tasks = page.getByRole('dialog', { name: '任务记录', exact: true });
   await expect(tasks).toContainText(batch.request.requestId);
