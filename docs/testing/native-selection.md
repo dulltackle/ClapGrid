@@ -9,6 +9,7 @@
 | 鼠标单选、Control/Meta 多选、Shift 范围、checkbox/header 全选与半选；实际选择未同步 | selection 的宽窄参数场景，真实 `/api/table-selection` 响应与稳定 ID 请求；顺序和所选范围实际断言 |
 | 详情、配音历史的只读操作偷偷改变选择；方向键影响范围；F2/Enter 接线失效 | selection 的只读详情/历史与表格键盘场景；实际 AG Grid 输入；音频真实播放由 #197 保留，非本票冒充已验 |
 | 查找或勾选压缩表格/隐藏主入口、查找缩小全部范围、Escape误清选择 | selection 的 1600/420 宽几何与层级场景；查找后仍显示所有片段；菜单 Escape先关菜单，再由表格Escape清选；查找自身Escape仅关闭查找 |
+| 实时删除已选身份后选择被全部清空或残留旧ID | selection 真实HTTP删除已选C，保留B，并观察本次table-selection响应确实只同步B |
 | 勾选连接断开或同步失败仍沿用旧范围 | selection 直接释放本例 tableId 的真实长连接，恢复后新选择；实际同步 500 清空，再连服务后可用 |
 | 部分勾选或查找被错误作为全片导出范围 | selection 的真实“导出全片”提交检查，不携带选择或筛选参数；制作结果/真实媒体由现有产品测试及 #197 承接 |
 | 多选误允许相对插入、编辑时系统右键被业务菜单截获、动态锁导致焦点丢失 | selection 多选禁用上下插入；真实外部客户端 beginEdit 动态禁用全部菜单/拖动；真实textarea contextmenu观察保持default未阻止 |

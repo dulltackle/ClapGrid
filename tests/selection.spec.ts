@@ -128,3 +128,17 @@ test('查找和部分勾选仍提交全片导出，不附加局部范围', async
   await expect.poll(() => selected(page)).toEqual([a]);
   expect((await project.status()).snapshot.segments.map(s => s.text)).toEqual(['A', 'B', 'C']);
 });
+
+test('外部删除已选片段后只剪除失效身份并重新同步剩余范围', async ({ page, project }) => {
+  const [a, b, c] = await project.seed(['A', 'B', 'C']); await page.goto(project.url);
+  await page.locator(`[row-id="${b}"] input[type="checkbox"]`).click();
+  const initial = page.waitForResponse(response => response.url().endsWith('/api/table-selection') && response.request().postDataJSON().ids.length === 2);
+  await page.locator(`[row-id="${c}"] input[type="checkbox"]`).click(); expect((await initial).ok()).toBe(true);
+  await expect.poll(() => selected(page)).toEqual([b, c].sort());
+  const synchronized = page.waitForResponse(response => response.url().endsWith('/api/table-selection') && JSON.stringify(response.request().postDataJSON().ids) === JSON.stringify([b]));
+  await project.modify({ changes: [{ kind: 'delete', expected: (await project.status()).snapshot.segments.find(segment => segment.id === c)! }] });
+  await expect(page.locator(`[row-id="${c}"]`)).toHaveCount(0);
+  await expect.poll(() => selected(page)).toEqual([b]); expect((await synchronized).ok()).toBe(true);
+  expect((await synchronized).request().postDataJSON().ids).toEqual([b]);
+  expect((await project.status()).snapshot.segments.map(segment => segment.id)).toEqual([a, b]);
+});

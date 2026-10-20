@@ -187,6 +187,10 @@ for (const outcome of ['成功', '失败'] as const) test(`迟到删除${outcome
 test('删除确认关闭后新空白点击取消尚未执行的来源恢复', async ({ page, project }) => {
   await page.setViewportSize({ width: 420, height: 420 });
   const ids = await project.seed(Array.from({ length: 70 }, (_, i) => `片段 ${i}`)); await page.goto(project.url); await openDelete(page, ids[0]!);
+  const reordered = [...ids.slice(1), ids[0]!];
+  await project.modify({ changes: [{ kind: 'reorder', expectedIds: ids, ids: reordered }] });
+  // 恢复原来源将需要真正虚拟定位至末行；取消不能只靠当前行仍可见而碰巧不滚动。
+  await expect(page.locator(`[row-id="${ids[0]}"] [col-id="text"]`)).toHaveCount(0);
   await page.clock.install(); await page.clock.pauseAt(new Date(Date.now() + 1000));
   await page.keyboard.press('Escape'); await expect(dialog(page)).toHaveCount(0);
   await page.mouse.click(5, 5);
@@ -194,5 +198,5 @@ test('删除确认关闭后新空白点击取消尚未执行的来源恢复', as
   await page.clock.runFor(100);
   await expect(page.locator('[row-id] :focus')).toHaveCount(0);
   expect(await page.locator('.ag-grid-viewport').evaluate(node => node.scrollTop)).toBe(scroll);
-  expect((await project.status()).snapshot.segments.map(s => s.id)).toEqual(ids);
+  expect((await project.status()).snapshot.segments.map(s => s.id)).toEqual(reordered);
 });
