@@ -12,7 +12,7 @@ const trace = join(directory, 'exec.trace');
 const result = { at: new Date().toISOString(), platform: process.platform, node: process.version,
   provider: '受控供应商响应；不是本轮真实供应商或宿主验收', status: 'failed', reason: '运行未完成，尚无可接受的追踪结果',
   baselineFfmpegExecs: 0, windows: [] };
-for (const file of ['exec.trace', 'tests.tap', 'preflight.log']) writeFileSync(join(directory, file), '');
+for (const file of ['exec.trace', 'tests.log', 'vitest.json', 'preflight.log']) writeFileSync(join(directory, file), '');
 writeFileSync(join(directory, 'result.json'), JSON.stringify(result, null, 2) + '\n');
 writeFileSync(join(directory, 'summary.md'), '# Linux 导出拒绝进程追踪\n\n未完成：请检查工作流和追踪日志，不可视为通过。\n');
 try {
@@ -27,30 +27,24 @@ try {
   const permission = spawnSync('strace', ['-f', '-o', trace, process.execPath, '-e', ''], { encoding: 'utf8', timeout: 10000 });
   appendFileSync(join(directory, 'preflight.log'), permission.stderr ?? '');
   assert.ok(!permission.error && permission.status === 0, `strace 追踪权限或能力不可用：${permission.error?.message ?? permission.stderr}`);
-  // 沿唯一归属分派真实测试；本次报告与窗口不依赖执行者的控制台格式。
-  const { randomUUID, createHash } = await import('node:crypto');
-  const { executionPlan, executionIdentityAsync, validateExecutionSourceAsync } = await import('./test-evidence.mjs');
-  const files = ['tests/speech-export-lock.test.ts'];
-  const plan = executionPlan(cwd, { suite: 'all', files });
-  const executionId = randomUUID();
-  const identity = await executionIdentityAsync(cwd, executionId);
-  const reportPath = join(directory, 'test-execution.json');
+  // 直接运行原生 Vitest；业务窗口由测试写入原生 metadata。
+  const reportPath = join(directory, 'vitest.json');
   const run = spawnSync('strace', ['-f', '-ttt', '-s', '4096', '-e', 'trace=execve,execveat', '-o', trace,
-    process.execPath, 'scripts/test-runner.mjs', '--files', JSON.stringify(files)],
-  { cwd, encoding: 'utf8', timeout: 180000, maxBuffer: 8 * 1024 * 1024,
-    env: { ...process.env, CLAPGRID_TEST_EXECUTION_ID: executionId, CLAPGRID_TEST_REPORT: reportPath } });
-  // 保留原 artifact 文件名；内容是实际执行者日志，不伪装成 TAP 诊断。
-  writeFileSync(join(directory, 'tests.tap'), (run.stdout ?? '') + (run.stderr ?? ''));
+    process.execPath, 'node_modules/vitest/vitest.mjs', 'run', 'tests/speech-export-lock.test.ts', '--reporter=json', '--outputFile', reportPath],
+  { cwd, encoding: 'utf8', timeout: 180000, maxBuffer: 8 * 1024 * 1024 });
+  writeFileSync(join(directory, 'tests.log'), (run.stdout ?? '') + (run.stderr ?? ''));
   if (run.error) throw run.error;
-  assert.equal(run.status, 0, `回归或 strace 失败，查看 ${directory}/tests.tap`);
+  assert.equal(run.status, 0, `回归或 strace 失败，查看 ${directory}/tests.log`);
   const report = JSON.parse(readFileSync(reportPath, 'utf8'));
-  await validateExecutionSourceAsync(cwd, report, plan, identity, { strict: true });
-  assert.equal(report.status, 'passed', '本次完整回归必须通过');
-  assert.equal(report.actual.cases.length, 4, '必须实际完成全部四项配音导出锁回归');
-  result.testExecution = { report: reportPath, sha256: createHash('sha256').update(readFileSync(reportPath)).digest('hex'),
-    executionId, sources: report.sources };
-  const windows = report.actual.cases.flatMap(item => item.annotations ?? [])
-    .filter(item => item.message.startsWith('LOCK_WINDOW ')).map(item => JSON.parse(item.message.slice('LOCK_WINDOW '.length)));
+  assert.equal(report.success, true, '本次完整回归必须通过');
+  assert.equal(report.numTotalTests, 4, '必须实际收集全部四项配音导出锁回归');
+  assert.equal(report.numPassedTests, 4, '四项回归必须全部通过，不得跳过');
+  assert.equal(report.testResults.length, 1, '专项只运行指定业务测试文件');
+  const cases = report.testResults[0].assertionResults;
+  assert.equal(cases.length, 4, '必须实际报告四项回归');
+  assert.ok(cases.every(item => item.status === 'passed'), '每项回归都必须实际通过');
+  result.nativeTestReport = reportPath;
+  const windows = cases.flatMap(item => item.meta.exportRejectionWindows ?? []);
   result.windows = windows;
   assert.deepEqual(windows.map(item => `${item.outcome}:${item.phase ?? 'queued'}`).sort(),
     ['成功:accepted', '成功:running', '明确失败:accepted', '明确失败:running', '中断:accepted', '中断:running', '批量等待:queued'].sort(), '每个场景都必须提供拒绝窗口');
@@ -74,9 +68,9 @@ try {
   Object.assign(result, { status: 'passed', reason: '', baselineFfmpegExecs: ffmpeg.length, windows });
 } catch (error) {
   result.reason = error instanceof Error ? error.message : String(error);
-  appendFileSync(join(directory, 'tests.tap'), `\n追踪验收失败：${result.reason}\n`);
+  appendFileSync(join(directory, 'tests.log'), `\n追踪验收失败：${result.reason}\n`);
   process.exitCode = 1;
 }
-writeFileSync(join(directory, 'summary.md'), `# Linux 导出拒绝进程追踪\n\n结果：${result.status === 'passed' ? '通过' : '失败'}\n\n${result.reason}\n\n${result.provider}\n\nFFmpeg 正向对照：${result.baselineFfmpegExecs}；完整拒绝窗口：${result.windows.length}\n\n证据：exec.trace、tests.tap、preflight.log、result.json。\n`);
+writeFileSync(join(directory, 'summary.md'), `# Linux 导出拒绝进程追踪\n\n结果：${result.status === 'passed' ? '通过' : '失败'}\n\n${result.reason}\n\n${result.provider}\n\nFFmpeg 正向对照：${result.baselineFfmpegExecs}；完整拒绝窗口：${result.windows.length}\n\n证据：exec.trace、tests.log、vitest.json、preflight.log、result.json。\n`);
 writeFileSync(join(directory, 'result.json'), JSON.stringify(result, null, 2) + '\n');
 console.log(JSON.stringify(result, null, 2));

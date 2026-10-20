@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import { test } from './helpers/playwright-browser.js';
-import { mkdtempSync, readFileSync, readdirSync } from 'node:fs';
+import { test } from 'vitest';
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildPanelStyles } from './helpers/panel-styles.js';
+import { tmpdir } from 'node:os';
+import { build } from 'vite';
 
 const checker = new URL('../scripts/style-collisions.mjs', import.meta.url).href;
 const { checkStyleCollisions } = await import(checker);
@@ -21,20 +22,17 @@ test('解析生成工具类的转义与嵌套，拒绝同名冲突和无效例�
 });
 
 test('生产同源 CSS 的工具类不得覆盖既有业务类名', async () => {
-  const resourceRoot = process.env.CLAPGRID_PLAYWRIGHT_RESOURCE_ROOT;
-  if (!resourceRoot) throw Error('CSS 门槛必须通过受控 Playwright 入口运行');
-  const output = mkdtempSync(join(resourceRoot, 'style-'));
-  const { removeOwnedSubdirectory } = await import(new URL('../scripts/playwright-resources.mjs', import.meta.url).href);
+  const output = mkdtempSync(join(tmpdir(), 'clapgrid-style-'));
   try {
-  await buildPanelStyles(output);
+  await build({ configFile: join(root, 'vite.config.ts'), logLevel: 'error', build: { outDir: output, emptyOutDir: true } });
   const panel = join(root, 'src/panel');
   const files = readdirSync(panel, { recursive: true, withFileTypes: true })
     .filter(entry => entry.isFile() && entry.name.endsWith('.css'));
   const authored = files.map(entry => readFileSync(join(entry.parentPath, entry.name), 'utf8')).join('\n');
-  const generated = readFileSync(join(output, 'test.css'), 'utf8');
+  const generated = readdirSync(join(output, 'assets')).filter(name => name.endsWith('.css')).map(name => readFileSync(join(output, 'assets', name), 'utf8')).join('\n');
   const exceptions = JSON.parse(readFileSync(join(root, 'scripts/style-collision-exceptions.json'), 'utf8'));
   assert.doesNotThrow(() => checkStyleCollisions(authored, generated, exceptions));
   // 使用真实产物注入历史 .grid 冲突，证明门槛能拦截复发。
   assert.throws(() => checkStyleCollisions(authored + '.grid {width:100%}', generated + '@layer utilities {.grid {display:grid}}', exceptions), /grid/);
-  } finally { removeOwnedSubdirectory(output, resourceRoot, process.env.CLAPGRID_TEST_EXECUTION_ID); }
+  } finally { rmSync(output, { recursive: true, force: true }); }
 });

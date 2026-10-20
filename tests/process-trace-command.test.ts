@@ -20,6 +20,6 @@ test('进程追踪命令缺少 strace 时失败并保留诊断证据', t => {
   assert.equal(result.status, 'failed');
   assert.match(result.reason, /strace/);
   assert.match(readFileSync(join(directory, 'summary.md'), 'utf8'), /失败/);
-  assert.match(readFileSync(join(directory, 'tests.tap'), 'utf8'), /strace/);
+  assert.match(readFileSync(join(directory, 'tests.log'), 'utf8'), /strace/);
   assert.equal(readFileSync(join(directory, 'exec.trace'), 'utf8'), '');
 });
