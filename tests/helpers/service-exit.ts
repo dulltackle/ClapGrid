@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-const { processIdentity, ownerAlive } = await import(new URL('../../scripts/verification-jobs.mjs', import.meta.url).href);
+const { processIdentity, ownerAlive } = await import(new URL('./product-process.mjs', import.meta.url).href);
 
 export function serviceProcess(pid: number) {
   const identity = processIdentity(pid);
