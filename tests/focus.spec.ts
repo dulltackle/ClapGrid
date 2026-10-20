@@ -1,4 +1,5 @@
 import { test, expect } from './helpers/project.js';
+import { holdRequest } from './helpers/response-gate.js';
 
 test('普通片段弹窗从真实虚拟卸载来源返回并继续表格方向键', async ({ page, project }) => {
   const ids = await project.seed(Array.from({ length: 80 }, (_, i) => `文案 ${i}`));
@@ -107,4 +108,51 @@ test('旧子弹窗返回不穿透新详情的模态层，新流程连续关闭�
   await expect(page.locator(`[row-id="${b}"] [data-row-details]`)).toBeFocused();
   await page.keyboard.press('ArrowDown');
   await expect(page.locator(`[row-id="${c}"] [role="gridcell"]:focus`)).toHaveCount(1);
+});
+
+test('成功导航后初始聚焦帧让位于新查找，已提交的新来源仍可正常关闭', async ({ page, project }) => {
+  const [a, b, c] = await project.seed(['A', 'B', 'C']);
+  await page.goto(project.url);
+  const parent = page.getByRole('complementary', { name: '口播片段详情', exact: true });
+  await page.locator(`[row-id="${a}"] [data-row-details]`).press('Enter');
+  await expect(parent).toBeFocused();
+  await page.clock.install(); await page.clock.pauseAt(new Date(Date.now() + 1000));
+  await page.locator(`[row-id="${b}"] [data-row-details]`).press('Enter');
+  // 数据已切到 B，但精确聚焦帧尚未执行；这与未提交的保存/租约导航不同。
+  await expect(parent.getByLabel('详情文案', { exact: true })).toHaveValue('B');
+  await expect(parent).not.toBeFocused();
+  await page.getByRole('button', { name: '查找', exact: true }).press('Enter');
+  const search = page.getByLabel('查找文案', { exact: true });
+  await search.fill('新条件');
+  await page.clock.runFor(100);
+  await expect(search).toBeFocused(); await expect(search).toHaveValue('新条件');
+  await page.clock.resume(); await search.press('Escape');
+  await page.getByRole('button', { name: '关闭详情', exact: true }).click();
+  await expect(page.locator(`[row-id="${b}"] [data-row-details]`)).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator(`[row-id="${c}"] [role="gridcell"]:focus`)).toHaveCount(1);
+});
+
+test('申请修改权忙态拒绝新的详情导航，迟到连接取消后仍保留原来源', async ({ page, project }) => {
+  const [a, b] = await project.seed(['A', 'B']);
+  await page.goto(project.url);
+  const parent = page.getByRole('complementary', { name: '口播片段详情', exact: true });
+  await page.locator(`[row-id="${a}"] [data-row-details]`).press('Enter');
+  await expect(parent).toBeFocused();
+  const input = parent.getByLabel('详情文案', { exact: true });
+  const gate = await holdRequest(page, '/api/edit-session');
+  try {
+    await input.click(); await gate.received;
+    await expect(input).toBeDisabled();
+    await page.locator(`[row-id="${b}"] [data-row-details]`).press('Enter');
+    await expect(input).toHaveValue('A');
+  } finally { gate.release(); }
+  await gate.answered;
+  await expect.poll(async () => (await project.status()).modification).toBeNull();
+  await expect(input).toBeEnabled(); await expect(input).toHaveAttribute('readonly', '');
+  await expect(input).toHaveValue('A');
+  await page.getByRole('button', { name: '关闭详情', exact: true }).click();
+  await expect(page.locator(`[row-id="${a}"] [data-row-details]`)).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator(`[row-id="${b}"] [role="gridcell"]:focus`)).toHaveCount(1);
 });
