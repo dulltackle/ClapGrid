@@ -4,7 +4,7 @@
 
 Ubuntu 24.04、锁定 Chrome 131.0.6778.204、Node 版本文件、PR/main/manual 入口和原 concurrency 表达式保持不变。自动首次相同 workflow/event/ref 可替换，手动和 rerun 使用独立组。全套框架保留现有原生并发（Vitest 1 fork、Playwright 2 workers），不增加机器或 shard。`process-trace.yml` 仍在每个 PR、main push 和手动运行，承担真实 FFmpeg 正向及七个拒绝窗口的 strace 专项；全套逻辑中的同名业务用例与额外进程追踪是不同验证边界，不是统一套件重复运行。
 
-Vitest 使用自身配置 `tests/**/*.test.ts`，Playwright 使用 `**/*.spec.ts`。现有原生配置 `retry/retries: 0`、`allowOnly: false`/`forbidOnly: true` 保持，Vitest `passWithNoTests: false`、Playwright 未启用 pass-with-no-tests；收集为空失败。没有迁移中临时 exclude 清单。#200 删除仍留在该命名空间内的旧工具专属测试后，稳定候选才执行全部收集与承接说明核对和真实 CI；本票阶段不把迁移中全量收集声称为完整产品验收。
+Vitest 使用自身配置 `tests/**/*.test.ts`，Playwright 使用 `**/*.spec.ts`。现有原生配置 `retry/retries: 0`、`allowOnly: false`/`forbidOnly: true` 保持，Vitest `passWithNoTests: false`、Playwright 未启用 pass-with-no-tests；收集为空失败。没有迁移中临时 exclude 清单。#200 已删除该命名空间内的旧工具专属测试；稳定候选仍须执行全套检查与真实 CI，原生收集通过本身不等于完整产品验收。
 
 ## 原始报告与失败状态
 
