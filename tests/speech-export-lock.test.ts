@@ -1,4 +1,4 @@
-import { test, vi } from 'vitest';
+import { test, vi, type TestContext } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -13,6 +13,16 @@ import { connectTable, importVideo, modifyBatch, queryExports, queryExportSettin
 
 // 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
 vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
+
+type RejectionWindow = { outcome: string; phase?: string; start: number; end: number; taskId?: string; taskIds?: string[] };
+declare module 'vitest' {
+  interface TaskMeta { exportRejectionWindows?: RejectionWindow[] }
+}
+// 具体业务窗口直接进入 Vitest 原生 JSON metadata，不建立跨框架报告格式。
+function recordWindow(t: TestContext, window: RejectionWindow) {
+  const windows = (t.task.meta.exportRejectionWindows ??= []);
+  windows.push(window);
+}
 
 // 只暂停生产任务使用的 global 回调边界；不改 Node Promise 时钟或真实 HTTP。
 function pauseImmediate() {
@@ -99,7 +109,7 @@ for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可�
       const progress = await client.callTool({ name: 'clapgrid_speech_status', arguments: {} });
       assert.notEqual(progress.isError, true);
     }
-    await t.annotate(`LOCK_WINDOW ${JSON.stringify({ outcome, phase, start, end: Date.now(), taskId: task.id })}`);
+    recordWindow(t, { outcome, phase, start, end: Date.now(), taskId: task.id });
   }
   if (outcome === '中断') {
     await table.close(); await service.close(); finish(success());
@@ -186,7 +196,7 @@ test('批量配音中尚未发送的 accepted 任务在表格重连后仍保留�
     const playback = await fetch(`${service.url}${before.audio[0]!.url}`);
     assert.equal(playback.status, 200); assert.deepEqual(Buffer.from(await playback.arrayBuffer()), bytes);
   }
-  await t.annotate(`LOCK_WINDOW ${JSON.stringify({ outcome: '批量等待', start, end: Date.now(), taskIds: ids })}`);
+  recordWindow(t, { outcome: '批量等待', start, end: Date.now(), taskIds: ids });
   mode = 'success'; pending.shift()!(success());
   const finished = await until(() => querySpeech(service.url), value => !value.locked);
   assert.deepEqual(ids.map(id => finished.tasks.find(task => task.id === id)!.state), ['succeeded', 'succeeded']);
