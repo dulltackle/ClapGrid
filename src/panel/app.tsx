@@ -138,7 +138,12 @@ export function App() {
   useEffect(() => {
     if (expandedNote && status && !status.snapshot.segments.some(segment => segment.id === expandedNote)) setExpandedNote(null);
   }, [expandedNote, status]);
-  const closeSearch = () => { focusReturns.cancelPending(); setSearchOpen(false); setCurrentMatch(null); requestAnimationFrame(() => tableFallback.current?.focus()); };
+  const closeSearch = () => {
+    focusReturns.cancelPending();
+    const requested = focusReturns.intent();
+    setSearchOpen(false); setCurrentMatch(null);
+    requestAnimationFrame(() => { if (requested.valid()) tableFallback.current?.focus(); });
+  };
   const locate = (needle: string, direction: -1 | 1, restart = false) => {
     const api = grid.current;
     if (!api || api.getEditingCells().length) return;

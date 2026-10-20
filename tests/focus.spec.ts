@@ -126,8 +126,11 @@ test('成功导航后初始聚焦帧让位于新查找，已提交的新来源�
   await search.fill('新条件');
   await page.clock.runFor(100);
   await expect(search).toBeFocused(); await expect(search).toHaveValue('新条件');
-  await page.clock.resume(); await search.press('Escape');
-  await page.getByRole('button', { name: '关闭详情', exact: true }).click();
+  await search.press('Escape');
+  // 保持查找关闭的聚焦帧待执行，再用真实鼠标关闭可见详情，固定两个返回意图的竞态。
+  await expect(page.getByRole('button', { name: '关闭详情', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '关闭详情', exact: true }).click({ force: true });
+  await page.clock.runFor(100); await page.clock.resume();
   await expect(page.locator(`[row-id="${b}"] [data-row-details]`)).toBeFocused();
   await page.keyboard.press('ArrowDown');
   await expect(page.locator(`[row-id="${c}"] [role="gridcell"]:focus`)).toHaveCount(1);
