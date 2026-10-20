@@ -5,17 +5,24 @@ import { holdRequest, holdResponse } from './helpers/response-gate.js';
 
 
 test('受控兼容面板提示保护编辑草稿、保存中、详情、菜单与连接未确认',async ({page,project})=>{
+ const activity: boolean[]=[];
+ // 只验证App活动上报接线；未绑定服务实际拒绝该接口，200是此例HTTP边界响应。
+ await page.route('**/api/panel-activity',async route=>{const body=route.request().postDataJSON();expect(body.tableId).toMatch(/^[a-f0-9-]{36}$/);expect(typeof body.busy).toBe('boolean');await route.fulfill({status:200,json:{accepted:true}});activity.push(body.busy);});
  const [id]=await project.seed(['原文']);
  // 标准构建明确区分服务活动面板与页面已加载代次；此受控构建不代表实际宿主更新。
  await page.goto(project.url);
  const refresh=page.getByRole('button',{name:'刷新面板',exact:true,includeHidden:true});
  await expect(refresh).toBeEnabled();
+ await expect.poll(()=>activity.at(-1)).toBe(false);
+ activity.length=0;
  await page.locator(`[row-id="${id}"] [data-segment-script]`).click();
  const editor=page.getByLabel('文案全文',{exact:true});await editor.fill('保留未提交草稿');
  await expect(refresh).toBeDisabled();await expect(editor).toHaveValue('保留未提交草稿');
+ await expect.poll(()=>activity.includes(true)).toBe(true);
  const gate=await holdResponse(page,'/api/segments/edit');
  try { await editor.press('Enter');await gate.received;await expect(refresh).toBeDisabled(); } finally {gate.release();}
  await gate.delivered;await expect(refresh).toBeEnabled();
+ await expect.poll(()=>activity.at(-1)).toBe(false);
  await page.locator(`[row-id="${id}"] [data-row-details]`).click();await expect(refresh).toBeDisabled();
  await page.getByRole('button',{name:'关闭详情',exact:true}).click();await expect(refresh).toBeEnabled();
  await page.getByRole('button',{name:'更多',exact:true}).click();await expect(refresh).toBeDisabled();

@@ -58,10 +58,20 @@ for (const [width, height] of [[1600, 1000], [780, 579], [541, 579], [420, 800],
     await page.goto(project.url);
     const first = row(page, ids[0]!);
     const toggle = first.locator('[data-note-toggle]');
+    const normalBackground = await first.evaluate(e=>getComputedStyle(e).getPropertyValue('--ag-data-background-color'));
     await first.locator('[data-note-summary]').focus();
     await page.keyboard.press('Enter');
     const region = page.getByRole('region', { name: '片段 1 画面说明', exact: true });
     await expect(region).toContainText(original.trim());
+    expect(await first.evaluate(e=>getComputedStyle(e).getPropertyValue('--ag-data-background-color'))).not.toBe(normalBackground);
+    const viewport=page.locator('.ag-body-horizontal-scroll-viewport');
+    for(const right of [true,false]){
+      await viewport.evaluate((e,right)=>{e.scrollLeft=right?e.scrollWidth:0;},right);
+      await expect.poll(async()=>{const b=(await region.boundingBox())!;return b.x>=0&&b.x+b.width<=width!+1;}).toBe(true);
+    }
+    await page.setViewportSize({width:width!-40,height:height!});
+    await expect.poll(async()=>{const b=(await region.boundingBox())!;return b.x>=0&&b.x+b.width<=width!-39;}).toBe(true);
+    await page.setViewportSize({width:width!,height:height!});
     await expect(page.getByLabel('文案全文', { exact: true })).toHaveCount(0);
     await expect(page.getByLabel('口播片段详情', { exact: true })).toHaveCount(0);
     const r = await region.boundingBox(), next = await row(page, ids[1]!).boundingBox();
@@ -74,6 +84,7 @@ for (const [width, height] of [[1600, 1000], [780, 579], [541, 579], [420, 800],
     await page.keyboard.press('Escape');
     await expect(region).toHaveCount(0); await expect(toggle).toBeFocused();
     expect(await first.evaluate(e => e.getBoundingClientRect().height)).toBe(102);
+    expect(await first.evaluate(e=>getComputedStyle(e).getPropertyValue('--ag-data-background-color'))).toBe(normalBackground);
     await toggle.click();
     snapshot = (await project.status()).snapshot;
     await project.modify({ changes: [{ kind: 'edit', expected: snapshot.segments[0]!, visualNote: '外部更新说明' }] });

@@ -15,7 +15,7 @@
 | dialog：Radix名称/说明、更多层卸载、Tab/ShiftTab约束、遮罩不关闭、窄矮关闭可达、亮色边框和键盘轮廓、动态禁用焦点后备 | `layout.spec.ts` 两视口设置查看和外部真实修改权动态占用；keyboard Escape产生focus-visible再测轮廓，鼠标点击不冒充键盘 |
 | dialog：父子返回、来源失效、虚拟卸载/重排/删除和新意图优先 | #193 `focus.spec.ts`/`focus-module.spec.ts`；audio/video原生controls、素材取消、失败和迟到新模态由 #197 `speech.spec.ts`/`video.spec.ts` 承接 |
 | layout：首次连接、读取失败、空项目区别，失败禁用修改 | `layout.spec.ts` 在真实状态HTTP边界暂停/503/恢复；不模拟React渲染或替换客户端 |
-| panel-update-panel：兼容提示、编辑草稿、保存中、详情/更多/勾选未确认禁止刷新 | `panel-refresh.spec.ts` + `helpers/refresh-project.ts` 标准Vite页面与esbuild服务define；服务活动代次和页面加载代次明确分开，真实token/NDJSON/SQLite，不改写流 |
+| panel-update-panel：兼容提示、编辑草稿、保存中、详情/更多/勾选未确认禁止刷新 | `panel-refresh.spec.ts` + `helpers/refresh-project.ts` 标准Vite页面与esbuild服务define；服务活动代次和页面加载代次明确分开，真实token/NDJSON/SQLite，不改写流；App活动上报idle→busy→idle以实际POST验证，只有该接口在HTTP边界返回受控200，绑定服务权限由panel-release/workspace测试承担 |
 | panel-update-panel：播放/暂停/移除播放器、任务状态禁止刷新 | `panel-refresh.spec.ts` 实际WAV解码播放，媒体元素移除由MutationObserver接线观察；任务状态仅在HTTP响应边界受控注入 |
 | panel-update-panel：同标签sessionStorage稳定勾选、过滤已删除ID、一次消费、断线清除、迟到恢复让位新勾选 | `panel-refresh.spec.ts` 实际页面重载、真实表格连接延迟、SQLite项目与服务查询核对；`panel-update.test.ts` 保留跨绑定/项目/实例/面板及损坏/过期/受限存储边界 |
 | styles：生产同源CSS冲突门槛 | `style-collisions.test.ts` 改用Vitest和标准Vite生产构建，拥有临时目录并finally清理，保留真实产物注入历史grid冲突负例 |
