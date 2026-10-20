@@ -54,6 +54,7 @@ for (const owner of ['user', 'codex'] as const) test(`${owner} 编辑期间 HTTP
   assert.equal((await submitExport(service.url)).state, 'accepted');
 });
 
+// 此例往返 MCP、真实字体检查及服务重启，使用有限的产品集成预算。
 test('表格 HTTP 与 MCP 共享导出设置，自动保存恢复并遵守普通修改权及任务锁', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-export-http-'));
   t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
@@ -100,7 +101,7 @@ test('表格 HTTP 与 MCP 共享导出设置，自动保存恢复并遵守普通
   for (let i = 0; i < 100 && (await queryStatus(service.url)).taskLocked; i++) await new Promise(resolve => setTimeout(resolve, 5));
   await service.close(); service = await startService(options);
   assert.deepEqual((await queryExportSettings(service.url)).settings, changed);
-});
+}, 30000);
 
 test('表格与 MCP 共用全片导出任务，立即受理、重复提交、进度及取消状态一致', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-export-api-'));
