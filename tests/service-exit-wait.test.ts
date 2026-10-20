@@ -6,6 +6,8 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 
+const { ownerAlive } = await import(new URL('./helpers/product-process.mjs', import.meta.url).href);
+
 // 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
 vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
@@ -35,4 +37,18 @@ test('服务未退出时超时失败，不强行结束进程或允许清理', as
   const identity = serviceProcess(child.pid!);
   await assert.rejects(waitForServiceExit(identity, { timeoutMs: 60, intervalMs: 10 }), /尚未确认退出/);
   assert.equal(child.exitCode, null, '等待器只观察，不终止服务');
+});
+
+if (process.platform === 'linux') test('进程出生身份不匹配不能认领当前进程，身份未知不能当作已退出', async t => {
+  const child = spawn(process.execPath, ['-e', 'setInterval(()=>{},1000)'], { stdio: 'ignore' });
+  const exited = new Promise(resolve => child.once('exit', resolve));
+  t.onTestFinished(async () => { child.kill('SIGTERM'); await exited; });
+  const original = serviceProcess(child.pid!);
+  assert.equal(ownerAlive(original), true);
+  assert.equal(ownerAlive({ ...original, start: `${original.start}-other` }), false, '同 PID 的其他出生身份不是原进程');
+  assert.equal(ownerAlive({ ...original, pidNamespace: 'other-namespace' }), null, '其他命名空间不能认领');
+  assert.equal(ownerAlive({ pid: original.pid, pidNamespace: original.pidNamespace }), null, '缺失出生身份必须保留现场');
+  assert.equal(child.exitCode, null, '身份核对只观察，不向其他进程发送信号');
+  child.kill('SIGTERM'); await exited;
+  assert.equal(ownerAlive(original), false);
 });

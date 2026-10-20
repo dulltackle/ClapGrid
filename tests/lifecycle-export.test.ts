@@ -15,7 +15,7 @@ import { queryStatus, queryExports, submitExport, modifyBatch, connectTable, que
 
 // 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
 vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
-const { ownerAlive, processIdentity } = await import(new URL('../scripts/verification-jobs.mjs', import.meta.url).href);
+const { ownerAlive, processIdentity } = await import(new URL('./helpers/product-process.mjs', import.meta.url).href);
 
 async function until<T>(read: () => Promise<T>, accept: (value: T) => boolean, timeout = 60000) {
   const deadline = Date.now() + timeout;
