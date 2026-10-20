@@ -66,19 +66,20 @@ test('已知纯文本凭据、完整认证值及环境秘密在留存和读取�
   const dir = mkdtempSync(join(tmpdir(), 'agent-secrets-'));
   projectCleanup(t).directory(dir);
   const path = join(dir, 'text.json');
-  const env = { ...process.env, AGENT_TEST_SECRET: 'known-environment-value', AGENT_SHORT_SECRET: 'z9x' };
+  // 短秘密包含临时目录随机后缀不会出现的字符，避免把正常证据路径误判为泄露。
+  const env = { ...process.env, AGENT_TEST_SECRET: 'known-environment-value', AGENT_SHORT_SECRET: 'z9!' };
   const input = `credential=fixture-credential
 Authorization: Basic Zml4dHVyZTpwYXNzd29yZA==
 client.credentials="fixture with spaces"
 X-Api-Key: other-fixture-key
 known-environment-value
-z9x
+z9!
 `;
   const capture = (await runCommand(process.execPath, [cli, 'capture', path], { encoding: 'utf8', input, env }));
   assert.equal(capture.status, 0);
   const read = (await runCommand(process.execPath, [cli, 'read', path, '1', '200'], { encoding: 'utf8', env }));
   assert.equal(read.status, 0);
-  const secrets = /fixture-credential|Zml4dHVyZTpwYXNzd29yZA==|fixture with spaces|other-fixture-key|known-environment-value|z9x/;
+  const secrets = /fixture-credential|Zml4dHVyZTpwYXNzd29yZA==|fixture with spaces|other-fixture-key|known-environment-value|z9!/;
   assert.doesNotMatch(readFileSync(path, 'utf8'), secrets);
   assert.doesNotMatch(capture.stdout + read.stdout, secrets);
   const structured = join(dir, 'structured.json');
