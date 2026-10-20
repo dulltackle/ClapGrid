@@ -84,17 +84,24 @@ test('有效配音与最新失败独立显示，待更新和完整历史保持�
   await submitSpeech(project.url, { requestId: randomUUID(), segmentId: id! });
   await expect.poll(async () => (await querySpeech(project.url)).audio.length).toBe(1);
   let segment = (await project.status()).snapshot.segments[0]!;
-  await project.modify({ changes: [{ kind: 'edit', expected: segment, text: '当前长文案\n' + '完整'.repeat(100) }] });
+  const fullText = '当前长文案\n' + '完整'.repeat(100) + '\n完整尾部标记';
+  await project.modify({ changes: [{ kind: 'edit', expected: segment, text: fullText }] });
   await submitSpeech(project.url, { requestId: randomUUID(), segmentId: id! });
   await expect.poll(async () => (await querySpeech(project.url)).audio.length).toBe(2);
   speechControl.mode = 'failure'; await submitSpeech(project.url, { requestId: randomUUID(), segmentId: id! });
   await expect.poll(async () => (await querySpeech(project.url)).tasks.at(-1)!.state).toBe('failed');
+  await page.setViewportSize({ width: 420, height: 360 });
   await page.goto(project.url); const row = page.locator(`[row-id="${id}"]`);
   await expect(row).toContainText('有效配音'); await expect(row).toContainText('生成失败');
   await page.getByRole('button', { name: '片段 1 配音更多操作', exact: true }).press('Enter');
   await page.getByRole('menuitem', { name: '保留音频与任务记录', exact: true }).click();
   const history = page.getByRole('dialog', { name: '配音详情与保留音频', exact: true });
-  await expect(history.locator('li').first()).toContainText('当前长文案');
+  const snapshot = history.locator('li').first().locator('p').nth(1);
+  await expect(snapshot).toHaveText(fullText);
+  // textContent 精确检查换行与尾部，避免原生文本匹配的空白归一化掩盖截断。
+  expect(await snapshot.textContent()).toBe(fullText);
+  const bounds = await history.evaluate(node => ({ content: node.scrollWidth, available: node.clientWidth }));
+  expect(bounds.content).toBeLessThanOrEqual(bounds.available);
   await expect(history.locator('li').last()).toContainText('旧文案');
   await expect(history).toContainText('配音待更新'); await expect(history).toContainText('鉴权失败');
   await page.keyboard.press('Escape');

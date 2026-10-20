@@ -28,7 +28,14 @@ for (const viewport of [{ width: 1600, height: 1000 }, { width: 420, height: 360
   await video.focus(); await page.keyboard.press('Space'); await expect.poll(() => video.evaluate(node => (node as HTMLVideoElement).paused)).toBe(true);
   await page.keyboard.press('Space'); await expect.poll(() => video.evaluate(node => !(node as HTMLVideoElement).paused)).toBe(true);
   await page.keyboard.press('Tab'); expect(await dialog.evaluate(node => node.contains(document.activeElement))).toBe(true);
-  await dialog.getByRole('button', { name: '关闭预览', exact: true }).focus();
+  const close = dialog.getByRole('button', { name: '关闭预览', exact: true });
+  await close.focus(); await expect(close).toBeFocused();
+  // 从关闭入口反向遍历原生视频 controls，再按正向返回；双向焦点始终留在模态。
+  for (const key of ['Shift+Tab', 'Shift+Tab', 'Tab', 'Tab']) {
+    await page.keyboard.press(key);
+    expect(await dialog.evaluate(node => node.contains(document.activeElement))).toBe(true);
+  }
+  await close.focus();
   await page.keyboard.press('Escape'); await expect(video).toHaveCount(0);
   await expect(page.locator(`[row-id="${id}"] :focus`)).toHaveCount(1);
 });
