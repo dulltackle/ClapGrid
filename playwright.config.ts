@@ -10,7 +10,7 @@ export default defineConfig({
   timeout: 40000,
   expect: { timeout: 10000 },
   outputDir: 'logs/playwright-results',
-  reporter: [['list'], ['html', { outputFolder: 'logs/playwright-report', open: 'never' }]],
+  reporter: [['list'], ['html', { outputFolder: 'logs/playwright-report', open: 'never' }], ['json', { outputFile: 'logs/playwright.json' }]],
   use: {
     browserName: 'chromium',
     channel: process.env.CHROME_BIN ? undefined : 'chrome',

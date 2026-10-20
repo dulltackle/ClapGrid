@@ -15,6 +15,9 @@ jobs:
   check:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: 记录作业观察起点
         run: echo "CLAPGRID_CI_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
@@ -40,10 +43,50 @@ jobs:
         run: |
           set -o pipefail
           { node --version; npm --version; "$CHROME_BIN" --version; ffmpeg -version; ffprobe -version; fc-list :lang=zh family; dpkg-query -W ffmpeg fontconfig fonts-noto-cjk libass9; } 2>&1 | tee logs/environment.log
-      - name: 在固定提交检出中安装依赖并执行完整检查
+      - name: 记录实际检出源码
+        run: git rev-parse HEAD | tee logs/source-commit.log
+      - name: 安装锁定依赖
+        run: /usr/bin/time -v -o logs/npm-ci-resources.txt npm ci 2>&1 | tee logs/npm-ci.log
+      - name: 类型检查
+        run: /usr/bin/time -v -o logs/typecheck-resources.txt npm run typecheck 2>&1 | tee logs/typecheck.log
+      - name: 全套 Vitest 逻辑与服务测试
+        id: vitest
+        run: /usr/bin/time -v -o logs/vitest-resources.txt node_modules/.bin/vitest run --reporter=default --reporter=json --outputFile.json=logs/vitest.json 2>&1 | tee logs/vitest.log
+      - name: 全套 Playwright 浏览器测试
+        id: playwright
         env:
           CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
-        run: npm run verify -- --revision HEAD
+        run: /usr/bin/time -v -o logs/playwright-resources.txt node_modules/.bin/playwright test 2>&1 | tee logs/playwright.log
+      - name: 生产构建
+        run: /usr/bin/time -v -o logs/build-resources.txt npm run build 2>&1 | tee logs/build.log
+      # 只对实际启动过的阶段要求报告；失败/取消仍尝试保留原生结果。
+      - name: 核对 Vitest 必需报告已保存
+        if: ${{ always() && steps.vitest.outcome != '' && steps.vitest.outcome != 'skipped' }}
+        run: test -s logs/vitest.json
+      - name: 保留 Vitest 原生 JSON
+        if: ${{ always() && steps.vitest.outcome != '' && steps.vitest.outcome != 'skipped' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: vitest-${{ github.run_id }}-${{ github.run_attempt }}
+          path: logs/vitest.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: 核对 Playwright 必需报告已保存
+        if: ${{ always() && steps.playwright.outcome != '' && steps.playwright.outcome != 'skipped' }}
+        run: |
+          test -s logs/playwright.json
+          test -s logs/playwright-report/index.html
+      - name: 保留 Playwright 原生报告和失败附件
+        if: ${{ always() && steps.playwright.outcome != '' && steps.playwright.outcome != 'skipped' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: playwright-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            logs/playwright.json
+            logs/playwright-report/
+            logs/playwright-results/
+          if-no-files-found: error
+          retention-days: 14
       - name: 记录 CI 状态、耗时及作业余量
         if: always()
         env:
@@ -57,9 +100,6 @@ jobs:
           path: |
             logs/ci-timing.json
             logs/*.log
-            logs/check/**
-            logs/verify/*/*.log
-            logs/verify/*/summary.json
-            logs/verify/*/source/logs/check/**
-          if-no-files-found: warn
+            logs/*-resources.txt
+          if-no-files-found: error
           retention-days: 14
