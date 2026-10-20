@@ -16,7 +16,7 @@ export type Project = {
   seed(texts: string[]): Promise<string[]>;
   modify(batch: Batch): ReturnType<typeof modifyBatch>;
   status(): ReturnType<typeof queryStatus>;
-  restart(): Promise<void>;
+  restart(whileStopped?: () => Promise<void>): Promise<void>;
 };
 export const test = base.extend<{ project: Project; speechRuntime: SpeechRuntime | undefined }, { panelDirectory: string; panelBuildIdentity: BuildIdentity | undefined }>({
   panelBuildIdentity: [undefined, { scope: 'worker', option: true }],
@@ -43,10 +43,12 @@ export const test = base.extend<{ project: Project; speechRuntime: SpeechRuntime
         },
         modify: batch => modifyBatch(service.url, batch),
         status: () => queryStatus(service.url),
-        async restart() {
+        async restart(whileStopped) {
           const port = Number(new URL(service.url).port);
           await service.close();
-          service = await startService({ ...options, port });
+          // 具体断线场景先观察真实离线边界，再恢复同一项目；断言失败也正常重启以便收尾。
+          try { await whileStopped?.(); }
+          finally { service = await startService({ ...options, port }); }
         },
       });
     } finally {

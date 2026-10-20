@@ -65,12 +65,31 @@ test('设置保存中禁止关闭，失败保留旧值，真实断线取消未�
     await expect(fps).toBeDisabled(); await page.keyboard.press('Escape'); await expect(dialog).toBeVisible();
   } finally { gate.release(); }
   await gate.delivered; await expect(fps).toHaveValue('25');
-  const size = page.getByLabel('字幕字号（px）', { exact: true }); await size.fill('77');
-  await project.restart();
-  await expect(dialog.getByRole('status')).toContainText('未提交输入已取消');
-  await expect(size).toBeDisabled(); await expect(size).toHaveValue('');
+  await expect(dialog.getByRole('status')).toHaveText('已保存');
+  expect((await project.status()).snapshot.exportSettings).toMatchObject({ fps: 25, fontSize: null });
+  // 在线关闭的焦点返回与实际断线重挂载是不同旅程，分别核对。
   await page.getByRole('button', { name: '关闭设置', exact: true }).click();
   await expect(page.getByRole('button', { name: '更多', exact: true })).toBeFocused();
+  await expect.poll(async () => (await project.status()).modification).toBeNull();
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('button', { name: '导出设置', exact: true }).click();
+  await page.getByRole('button', { name: '编辑设置', exact: true }).click();
+  const size = page.getByLabel('字幕字号（px）', { exact: true }); await size.fill('77');
+  await expect(size).toHaveValue('77');
+  await project.restart(async () => {
+    await expect(page.locator('[aria-label="操作异常"]')).toContainText('未提交输入已取消');
+    await expect(page.locator('footer')).toContainText('服务连接失败');
+    // status 不可用会卸载设置模态；旧实例的消息不应当作重连后新实例的持久状态。
+    await expect(dialog).toHaveCount(0);
+  });
+  await expect(dialog.getByRole('status')).toHaveText('设置按项目自动保存');
+  await expect(size).toBeDisabled(); await expect(size).toHaveValue('');
+  const restored = await project.status();
+  expect(restored.snapshot.exportSettings).toMatchObject({ fps: 25, fontSize: null });
+  expect(restored.modification).toBeNull();
+  await page.getByRole('button', { name: '关闭设置', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect.poll(async () => (await project.status()).modification).toBeNull();
 });
 
 test('设置加载失败保留说明与禁用字体，窄矮视口控件可滚动到达', async ({ page, project }) => {
