@@ -1,4 +1,5 @@
 import { test, expect } from './helpers/project.js';
+import { holdResponse } from './helpers/response-gate.js';
 
 for (const [width, height] of [[1600, 1000], [420, 720], [420, 360]]) test(`查找高亮、循环与勾选独立 ${width}×${height}`, async ({ page, project }) => {
   const [a, b, c] = await project.seed(['Hello world / HELLO WORLD', 'hello other world', 'hello world']);
@@ -41,7 +42,13 @@ test('虚拟屏外长文案命中完整可见，轮询不抢编辑且失效等�
   })).toBe(true);
   await query.press('Escape');
   const target = page.locator(`[row-id="${ids[79]}"] [data-segment-script]`);
-  await target.click(); const editor = page.getByLabel('文案全文', { exact: true }); await editor.fill('新的输入');
+  // 持有修改权时产品有意不启动新轮询；暂停此前已发出的真实浏览器轮询以覆盖迟到响应。
+  const poll = await holdResponse(page, '/api/status');
+  await poll.received;
+  const editor = page.getByLabel('文案全文', { exact: true });
+  try { await target.click(); await editor.fill('新的输入'); } finally { poll.release(); }
+  await poll.delivered;
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
   await expect.poll(async () => (await project.status()).modification?.owner).toBe('user');
   await expect(editor).toBeFocused(); await expect(editor).toHaveValue('新的输入'); await editor.press('Enter');
   await expect.poll(async () => (await project.status()).snapshot.segments[79]!.text).toBe('新的输入');

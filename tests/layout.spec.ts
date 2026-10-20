@@ -228,3 +228,28 @@ test('服务首次读取、失败与成功空项目各有明确界面',async({pa
  await expect(page.getByRole('button',{name:'新增口播片段',exact:true}).first()).toBeDisabled();
  fail=false;await expect(page.getByText('暂无口播片段',{exact:true})).toBeVisible();
 });
+
+test('只读详情跟随行内文案，脏详情到行内编辑保留原意图', async ({ page, project }) => {
+  const [a, b] = await project.seed(['A 原文', 'B 原文']);
+  await page.setViewportSize({ width: 780, height: 579 }); await page.goto(project.url);
+  await row(page, a!).locator('[data-row-details]').click();
+  const detail = page.getByLabel('详情文案', { exact: true });
+  await expect(detail).toHaveValue('A 原文');
+  await row(page, b!).locator('[data-segment-script]').click({position:{x:12,y:12}});
+  const inline = page.getByLabel('文案全文', { exact: true });
+  await expect(inline).toHaveValue('B 原文'); await expect(inline).toBeFocused();
+  await expect(detail).toHaveValue('B 原文');
+  await inline.press('Escape');
+  await detail.click(); await detail.fill('B 详情草稿');
+  await row(page, a!).locator('[data-segment-script]').click({position:{x:12,y:12}});
+  const confirm = page.getByRole('alertdialog'); await expect(confirm).toBeVisible();
+  await page.getByRole('button', { name: '继续编辑', exact: true }).click();
+  await expect(detail).toHaveValue('B 详情草稿'); await expect(detail).toBeFocused();
+  expect((await project.status()).snapshot.segments.map(s => s.text)).toEqual(['A 原文', 'B 原文']);
+  await row(page, a!).locator('[data-segment-script]').click({position:{x:12,y:12}}); await expect(confirm).toBeVisible();
+  await page.getByRole('button', { name: '放弃修改', exact: true }).click();
+  await expect(inline).toHaveValue('A 原文'); await expect(inline).toBeFocused();
+  await expect(detail).toHaveValue('A 原文');
+  await inline.press('Escape');
+  expect((await project.status()).snapshot.segments.map(s => s.text)).toEqual(['A 原文', 'B 原文']);
+});
