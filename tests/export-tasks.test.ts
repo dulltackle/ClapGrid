@@ -1,6 +1,7 @@
-import { execFileSync } from 'node:child_process';
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { command as runCommand, execBytes, execText } from './helpers/vitest-command.js';
 import { randomUUID } from 'node:crypto';
-import { test, vi, type TestContext } from 'vitest';
+import { test, expect, vi, type TestContext } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -10,24 +11,21 @@ import { DatabaseSync } from 'node:sqlite';
 import { openBusiness } from '../src/business/index.js';
 import type { ExportTask } from '../src/shared/contracts.js';
 
-// 保留原 Node 文件未显式设置的测试与清理无限时语义。
-vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 async function finished(business: ReturnType<typeof openBusiness>, id: string): Promise<ExportTask> {
-  const deadline = Date.now() + 60000;
-  while (Date.now() < deadline) {
-    const task = business.getExportTasks().tasks.find(task => task.id === id)!;
-    if (['failed', 'cancelled', 'succeeded'].includes(task.state)) return task;
-    await new Promise(resolve => setTimeout(resolve, 20));
-  }
-  throw new Error('导出任务未结束');
+  let task: ExportTask | undefined;
+  await expect.poll(() => {
+    task = business.getExportTasks().tasks.find(task => task.id === id);
+    return task?.state;
+  }, { timeout: 60000, message: `导出任务 ${id} 未结束` }).toSatisfy(state => ['failed', 'cancelled', 'succeeded', 'interrupted'].includes(state));
+  return task!;
 }
 
 test('先受理再汇总空项目及设置问题，重复请求共享任务且校验期间锁定', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-task-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
+  projectCleanup(t).directory(directory);
   const business = openBusiness(directory);
-  t.onTestFinished(() => business.close());
+  projectCleanup(t).business(() => business);
   const task = business.submitExport();
   assert.equal(task.state, 'accepted');
   assert.equal(business.submitExport().id, task.id);
@@ -44,9 +42,9 @@ test('先受理再汇总空项目及设置问题，重复请求共享任务且�
 
 test('汇总逐片段缺失视频和配音，不自动配音或跳过片段', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-invalid-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
+  projectCleanup(t).directory(directory);
   const business = openBusiness(directory);
-  t.onTestFinished(() => business.close());
+  projectCleanup(t).business(() => business);
   const first = business.addSegment('甲').segments[0]!;
   const second = business.addSegment('乙').segments[1]!;
   const task = business.submitExport();
@@ -61,9 +59,9 @@ test('汇总逐片段缺失视频和配音，不自动配音或跳过片段', as
 
 for (const owner of ['user', 'codex'] as const) test(`${owner} 持有修改权时拒绝导出，不创建任务且原编辑可以继续`, async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-editing-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
+  projectCleanup(t).directory(directory);
   const business = openBusiness(directory);
-  t.onTestFinished(() => business.close());
+  projectCleanup(t).business(() => business);
   const token = business.acquire(owner);
   const before = business.getSnapshot();
   assert.throws(() => business.submitExport(), owner === 'user' ? /用户正在编辑/ : /Codex 正在修改/);
@@ -80,10 +78,10 @@ for (const owner of ['user', 'codex'] as const) test(`${owner} 持有修改权�
 
 async function ready(t: TestContext, options: { duration?: number; sar?: number } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-render-'));
-  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  projectCleanup(t).directory(root);
   const source = join(root, 'source.mp4'); const audio = join(root, 'speech.mp3');
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=96x96:r=25:d=0.4', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:r=25:d=0.6', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=1', '-filter_complex', `[0:v][1:v]concat=n=2:v=1:a=0,setsar=${options.sar ?? 1}[v]`, '-map', '[v]', '-map', '2:a', '-c:v', 'libx264', '-c:a', 'aac', source]);
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', `sine=frequency=440:duration=${options.duration ?? 0.8}`, '-ar', '24000', audio]);
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=96x96:r=25:d=0.4', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:r=25:d=0.6', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=1', '-filter_complex', `[0:v][1:v]concat=n=2:v=1:a=0,setsar=${options.sar ?? 1}[v]`, '-map', '[v]', '-map', '2:a', '-c:v', 'libx264', '-c:a', 'aac', source]));
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', `sine=frequency=440:duration=${options.duration ?? 0.8}`, '-ar', '24000', audio]));
   let failSpeech = false;
   const payload = readFileSync(audio).toString('base64');
   const directory = join(root, 'project');
@@ -92,7 +90,7 @@ async function ready(t: TestContext, options: { duration?: number; sar?: number 
     : new Response(`data: {"code":0,"data":"${payload}"}\n\ndata: {"code":20000000}\n\n`)) as typeof fetch });
   let closing: Promise<void> | undefined;
   const close = () => closing ??= business.close();
-  t.onTestFinished(close);
+  projectCleanup(t).business(() => ({ close }));
   const token = business.acquire('codex');
   const asset = await business.importVideo(token, { sourcePath: source });
   const first = business.addSegment('第一句字幕，整句随配音显示。', token).segments[0]!;
@@ -105,24 +103,18 @@ async function ready(t: TestContext, options: { duration?: number; sar?: number 
   await business.setExportSettings(token, { expected, settings: { ...expected, fps: 25, fontFamily: 'Noto Sans CJK SC', fontSize: 48 } });
   business.release(token);
   const waitSpeech = async () => {
-    for (let i = 0; i < 500 && business.getSpeechStatus().locked; i++) await new Promise(resolve => setTimeout(resolve, 10));
+    await expect.poll(() => business.getSpeechStatus().locked).toBeFalsy();
     assert.equal(business.getSpeechStatus().locked, false);
   };
   for (const segment of [first, second]) { business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id }); await waitSpeech(); }
   return { root, directory, business, close, asset, first, second, waitSpeech, failNextSpeech: () => { failSpeech = true; } };
 }
 
-function probe(path: string) { return JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', path], { encoding: 'utf8' })); }
-function frame(path: string, seconds: number) { return execFileSync('ffmpeg', ['-v', 'error', '-ss', String(seconds), '-i', path, '-frames:v', '1', '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-'], { maxBuffer: 8 * 1024 * 1024 }); }
+async function probe(path: string) { return JSON.parse((await execText('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', path], { encoding: 'utf8' }))); }
+function frame(path: string, seconds: number) { return execBytes('ffmpeg', ['-v', 'error', '-ss', String(seconds), '-i', path, '-frames:v', '1', '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-'], { maxBuffer: 8 * 1024 * 1024 }); }
 function pixel(data: Buffer, x: number, y: number) { return [...data.subarray((y * 1920 + x) * 3, (y * 1920 + x) * 3 + 3)]; }
 
-async function until(check: () => boolean) {
-  const deadline = Date.now() + 60000;
-  while (!check()) {
-    if (Date.now() >= deadline) assert.fail('导出未在限时内达到预期');
-    await new Promise(resolve => setTimeout(resolve, 10));
-  }
-}
+
 
 test('预览发布后成片目标冲突：撤销本次预览，不覆盖或删除原有文件', async t => {
   const { business, directory } = await ready(t);
@@ -157,7 +149,7 @@ test('成片和预览已发布后在清理期间取消：撤销两份文件，�
   });
   t.onTestFinished(() => { resume(); mock.mockRestore(); });
   try {
-    await until(() => cleaning);
+    await expect.poll(() => cleaning, { timeout: 60000 }).toBeTruthy();
     const preview = join(business.getSnapshot().storage.mediaDirectory, `${task.id}.export.webm`);
     assert.equal(existsSync(preview), true);
     assert.equal(readdirSync(join(directory, 'exports')).filter(name => name.endsWith('.mp4')).length, 1);
@@ -176,7 +168,7 @@ test('成片和预览已发布后在清理期间取消：撤销两份文件，�
 test('取消导出清理结束后下一例恢复真实文件删除，不泄漏暂停替身', async t => {
   assert.equal(vi.isMockFunction(fs.rm), false);
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-rm-restored-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
+  projectCleanup(t).directory(directory);
   await fs.rm(directory, { recursive: true, force: true });
   assert.equal(existsSync(directory), false);
 });
@@ -189,12 +181,12 @@ test('成功产物已发布但终态保存失败：继续锁定且不可读取�
   const historicalPreview = business.getExportFile(history.id, 'preview');
   const historicalBytes = readFileSync(historicalFile);
   const db = new DatabaseSync(business.getSnapshot().storage.database);
-  t.onTestFinished(() => db.close());
+  projectCleanup(t).connection(() => db);
   db.exec(`CREATE TRIGGER reject_export_success BEFORE UPDATE ON export_tasks
     WHEN json_extract(NEW.value, '$.state') = 'succeeded'
     BEGIN SELECT RAISE(ABORT, '模拟成功状态保存失败'); END`);
   const task = business.submitExport();
-  await until(() => business.getExportTasks().tasks.some(item => item.id === task.id && item.message.includes('清理或保存失败')));
+  await expect.poll(() => business.getExportTasks().tasks.some(item => item.id === task.id && item.message.includes('清理或保存失败')), { timeout: 60000 }).toBeTruthy();
   const pending = business.getExportTasks().tasks.find(item => item.id === task.id)!;
   assert.equal(pending.state, 'cleaning');
   const pendingFile = join(directory, 'exports', `${task.createdAt.replace(/[:.]/g, '-')}-${task.id}.mp4`);
@@ -209,7 +201,7 @@ test('成功产物已发布但终态保存失败：继续锁定且不可读取�
   db.exec('DROP TRIGGER reject_export_success');
   const reopened = openBusiness(directory);
   try {
-    await until(() => !reopened.getExportTasks().locked);
+    await expect.poll(() => !reopened.getExportTasks().locked, { timeout: 60000 }).toBeTruthy();
     const recovered = reopened.getExportTasks().tasks.find(item => item.id === task.id)!;
     assert.equal(recovered.state, 'interrupted');
     assert.equal(reopened.getExportTasks().tasks.length, 2, '重开不自动创建新的导出任务');
@@ -234,10 +226,10 @@ test('真实全片按项目顺序导出：起点、冻结、留边、烧录字�
   assert.deepEqual(result.warnings.map(issue => issue.segmentId), [first.id]);
   const path = result.output!.path;
   assert.equal(path.startsWith(join(directory, 'exports')), true);
-  const media = probe(path); const video = media.streams.find((stream: any) => stream.codec_type === 'video');
+  const media = (await probe(path)); const video = media.streams.find((stream: any) => stream.codec_type === 'video');
   assert.deepEqual([video.codec_name, video.width, video.height, video.r_frame_rate], ['h264', 1920, 1080, '25/1']);
   assert.equal(media.streams.filter((stream: any) => stream.codec_type === 'audio').length, 1);
-  const samples = execFileSync('ffmpeg', ['-v', 'error', '-i', path, '-vn', '-ar', '48000', '-ac', '1', '-f', 'f32le', '-']);
+  const samples = (await execBytes('ffmpeg', ['-v', 'error', '-i', path, '-vn', '-ar', '48000', '-ac', '1', '-f', 'f32le', '-']));
   const energy = (hz: number) => {
     let sine = 0; let cosine = 0;
     for (let i = 2400; i < 24000; i++) { const value = samples.readFloatLE(i * 4); sine += value * Math.sin(2 * Math.PI * hz * i / 48000); cosine += value * Math.cos(2 * Math.PI * hz * i / 48000); }
@@ -246,7 +238,7 @@ test('真实全片按项目顺序导出：起点、冻结、留边、烧录字�
   assert.ok(energy(440) > 100 * energy(1000), '只有配音，没有原视频的 1000 Hz 原声');
 
   assert.ok(Number(media.format.duration) >= 1.6 && Number(media.format.duration) < 1.8);
-  const start = frame(path, 0.1); const frozen = frame(path, 0.65); const next = frame(path, 0.9);
+  const start = (await frame(path, 0.1)); const frozen = (await frame(path, 0.65)); const next = (await frame(path, 0.9));
   assert.ok(pixel(start, 960, 100)[2]! > 200, '第一片段从蓝色画面开始');
   assert.ok(pixel(frozen, 960, 100)[2]! > 200, '视频不足时蓝色末帧冻结');
   assert.ok(pixel(next, 960, 100)[0]! > 200, '第二片段紧接红色画面');
@@ -258,13 +250,12 @@ test('真实全片按项目顺序导出：起点、冻结、留边、烧录字�
 });
 
 async function rendering(business: ReturnType<typeof openBusiness>, id: string) {
-  for (let i = 0; i < 2000; i++) {
-    const task = business.getExportTasks().tasks.find(task => task.id === id)!;
-    if (task.state === 'rendering') return;
-    assert.ok(!['failed', 'cancelled', 'succeeded'].includes(task.state), JSON.stringify(task));
-    await new Promise(resolve => setTimeout(resolve, 5));
-  }
-  throw new Error('未进入渲染');
+  let task: ExportTask | undefined;
+  await expect.poll(() => {
+    task = business.getExportTasks().tasks.find(task => task.id === id);
+    return task?.state;
+  }, { timeout: 10000, message: `导出任务 ${id} 未进入渲染` }).toSatisfy(state => ['rendering', 'failed', 'cancelled', 'succeeded', 'interrupted'].includes(state));
+  assert.equal(task!.state, 'rendering', JSON.stringify(task));
 }
 
 test('取消真实渲染显示清理状态，停止并删除本次文件后才解锁，保留历史成片', async t => {
@@ -288,9 +279,9 @@ test('取消真实渲染显示清理状态，停止并删除本次文件后才�
 
 test('渲染器失败定位片段并清理半成品，已有成片保留且项目恢复编辑', async t => {
   const { business, directory, root, first } = await ready(t);
-  const actualFfmpeg = execFileSync('which', ['ffmpeg'], { encoding: 'utf8' }).trim();
+  const actualFfmpeg = (await execText('which', ['ffmpeg'], { encoding: 'utf8' })).trim();
   const shim = join(root, 'bin'); mkdirSync(shim);
-  writeFileSync(join(shim, 'ffmpeg'), `#!${process.execPath}\nconst fs = require('node:fs');\nconst args = process.argv.slice(2);\nif (args.some(value => value.includes('subtitles=subtitle-'))) { fs.writeFileSync(args.at(-1), '半成品'); console.error('模拟编码器运行失败'); process.exit(7); }\nconst result = require('node:child_process').spawnSync(${JSON.stringify(actualFfmpeg)}, args, {stdio:'inherit'}); process.exit(result.status ?? 1);\n`, { mode: 0o755 });
+  writeFileSync(join(shim, 'ffmpeg'), `#!${process.execPath}\nconst fs = require('node:fs');\nconst args = process.argv.slice(2);\nif (args.some(value => value.includes('subtitles=subtitle-'))) { fs.writeFileSync(args.at(-1), '半成品'); console.error('模拟编码器运行失败'); process.exit(7); }\nconst result = require('node:child_process').spawnSync(${JSON.stringify(actualFfmpeg)}, args, {stdio:'inherit', timeout:10000, killSignal:'SIGKILL'}); process.exit(result.status ?? 1);\n`, { mode: 0o755 });
   const previous = process.env.PATH; process.env.PATH = `${shim}:${previous}`;
   try {
     mkdirSync(join(directory, 'exports')); writeFileSync(join(directory, 'exports', 'previous.mp4'), '已有成片');
@@ -307,7 +298,7 @@ test('损坏视频、真实时长变化导致起点失效、待更新或损坏�
   const { business, first, second, asset, directory, root } = await ready(t);
   const source = business.getMedia(asset.id, 'source');
   const shorter = join(root, 'short.mp4');
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=s=96x96:d=0.4', '-c:v', 'libx264', shorter]);
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=s=96x96:d=0.4', '-c:v', 'libx264', shorter]));
   writeFileSync(source, readFileSync(shorter));
   business.editSegment(first.id, '文案已修改，配音待更新');
   writeFileSync(business.getCurrentSpeechAudio(second.id), '损坏配音');
@@ -339,10 +330,10 @@ test('再次导出使用新内容和设置，生成唯一文件且保留原成�
   assert.equal(result.total, 2); assert.notEqual(result.output!.path, original.output!.path);
   assert.deepEqual(readFileSync(original.output!.path), before);
   assert.ok(existsSync(result.output!.path));
-  const media = probe(result.output!.path); const video = media.streams.find((stream: any) => stream.codec_type === 'video');
+  const media = (await probe(result.output!.path)); const video = media.streams.find((stream: any) => stream.codec_type === 'video');
   assert.deepEqual([video.codec_name, video.r_frame_rate], ['mpeg4', '30/1']);
   assert.ok(result.warnings.every(issue => issue.field === 'video'));
-  const image = frame(result.output!.path, 0.1);
+  const image = (await frame(result.output!.path, 0.1));
   const bands: number[] = [];
   for (let y = 300; y < 1030; y++) {
     let whites = 0;
@@ -354,10 +345,10 @@ test('再次导出使用新内容和设置，生成唯一文件且保留原成�
 
 test('配音刚受理及生成时拒绝导出且不创建任务，结束后恢复前置校验', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-speech-lock-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
+  projectCleanup(t).directory(directory);
   let finish!: (response: Response) => void;
   const business = openBusiness(directory, { configPath: '.env', key: () => 'key', fetch: (async () => new Promise<Response>(resolve => { finish = resolve; })) as typeof fetch });
-  t.onTestFinished(() => business.close());
+  projectCleanup(t).business(() => business);
   const segment = business.addSegment('配音尚未完成').segments[0]!;
   business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
   assert.equal(business.getSpeechStatus().tasks[0]!.state, 'accepted');
@@ -372,7 +363,7 @@ test('配音刚受理及生成时拒绝导出且不创建任务，结束后恢�
   assert.equal(business.getSpeechStatus().tasks.length, 1);
   assert.throws(() => business.acquire('user'), /配音/);
   finish(new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n'));
-  for (let i = 0; i < 200 && business.getSpeechStatus().locked; i++) await new Promise(resolve => setTimeout(resolve, 5));
+  await expect.poll(() => business.getSpeechStatus().locked).toBeFalsy();
   const token = business.acquire('user'); business.release(token);
   const result = await finished(business, business.submitExport().id);
   assert.equal(result.state, 'failed');
@@ -386,11 +377,11 @@ test('配音时长不是视频帧整倍数时，拼接处不插入静音间隔',
   const { business } = await ready(t, { duration: 0.83 });
   const task = await finished(business, business.submitExport().id);
   assert.equal(task.state, 'succeeded');
-  const samples = execFileSync('ffmpeg', ['-v', 'error', '-i', task.output!.path, '-vn', '-ar', '48000', '-ac', '1', '-f', 'f32le', '-']);
+  const samples = (await execBytes('ffmpeg', ['-v', 'error', '-i', task.output!.path, '-vn', '-ar', '48000', '-ac', '1', '-f', 'f32le', '-']));
   let square = 0;
   for (let i = 40032; i < 40224; i++) square += samples.readFloatLE(i * 4) ** 2;
   assert.ok(Math.sqrt(square / 192) > 0.05, '0.834–0.838 秒处应已开始第二段配音，不能存在按帧补齐的静音');
-  const packets = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'a:0', '-show_packets', '-show_entries', 'packet=pts,duration', '-of', 'json', task.output!.path], { encoding: 'utf8' })).packets;
+  const packets = JSON.parse((await execText('ffprobe', ['-v', 'error', '-select_streams', 'a:0', '-show_packets', '-show_entries', 'packet=pts,duration', '-of', 'json', task.output!.path], { encoding: 'utf8' }))).packets;
   assert.ok(packets.every((packet: { duration: number }) => packet.duration <= 1024), 'AAC 包不能因片段取整增加播放时间间隔');
   for (let i = 1; i < packets.length; i++) assert.equal(packets[i].pts - packets[i - 1].pts, 1024);
 
@@ -400,7 +391,7 @@ test('非方形像素视频按显示宽高比缩放，不能压成方形', async
   const { business } = await ready(t, { sar: 2 });
   const task = await finished(business, business.submitExport().id);
   assert.equal(task.state, 'succeeded');
-  const image = frame(task.output!.path, 0.1);
+  const image = (await frame(task.output!.path, 0.1));
   assert.ok(pixel(image, 100, 540)[2]! > 200, '2:1 显示比例应铺满宽度');
   assert.ok(pixel(image, 960, 10).every(value => value < 5), '上下留边保持显示比例');
 });
@@ -411,7 +402,7 @@ test('合法起点落在视频末帧持续区间内时，使用末帧冻结而�
   await business.modifyBatch(token, { changes: [{ kind: 'video', expected: business.getSnapshot().segments[0]!, assetId: asset.id, start: 0.99 }] }); business.release(token);
   const task = await finished(business, business.submitExport().id);
   assert.equal(task.state, 'succeeded', JSON.stringify(task));
-  assert.ok(pixel(frame(task.output!.path, 0.1), 960, 100)[2]! > 200);
+  assert.ok(pixel((await frame(task.output!.path, 0.1)), 960, 100)[2]! > 200);
 });
 
 test('成片提供含字幕和声音的浏览器兼容预览，MP4 原文件仍独立保留', async t => {
@@ -420,7 +411,7 @@ test('成片提供含字幕和声音的浏览器兼容预览，MP4 原文件仍�
   assert.equal(task.state, 'succeeded');
   assert.ok(task.output!.previewUrl);
   const preview = business.getExportFile(task.id, 'preview');
-  const media = probe(preview);
+  const media = (await probe(preview));
   assert.equal(media.streams.find((stream: any) => stream.codec_type === 'video').codec_name, 'vp8');
   assert.equal(media.streams.find((stream: any) => stream.codec_type === 'audio').codec_name, 'vorbis');
   assert.equal(business.getExportFile(task.id), task.output!.path);

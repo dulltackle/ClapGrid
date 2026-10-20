@@ -1,4 +1,5 @@
-import { test, describe } from 'vitest';
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { test, expect, describe } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -7,8 +8,8 @@ import { openBusiness } from '../src/business/index.js';
 
 test('首次导出设置提供编码帧率默认值，字体字号留空且阻止导出', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
-  const business = openBusiness(directory); t.onTestFinished(() => business.close());
+  projectCleanup(t).directory(directory);
+  const business = openBusiness(directory); projectCleanup(t).business(() => business);
   const status = await business.getExportStatus();
   assert.deepEqual(status.settings, { codec: 'libx264', fps: 30, fontFamily: null, fontSize: null });
   assert.deepEqual(status.output, { width: 1920, height: 1080, aspectRatio: '16:9', container: 'mp4', fontSizeUnit: 'px' });
@@ -19,8 +20,8 @@ test('首次导出设置提供编码帧率默认值，字体字号留空且阻�
 
 test('导出设置持有普通修改权保存，拒绝过时快照与无效参数，重开恢复', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-save-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
-  let business = openBusiness(directory); t.onTestFinished(() => business.close());
+  projectCleanup(t).directory(directory);
+  let business = openBusiness(directory); projectCleanup(t).business(() => business);
   const original = await business.getExportStatus();
   const settings = { ...original.settings, fps: 25 as const, fontFamily: 'Noto Sans CJK SC', fontSize: 48 };
   assert.ok(original.fonts.includes(settings.fontFamily));
@@ -47,8 +48,8 @@ test('导出设置持有普通修改权保存，拒绝过时快照与无效参�
 
 test('媒体组件缺失时准确反馈并拒绝保存，原设置保留', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-env-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
-  const business = openBusiness(directory); t.onTestFinished(() => business.close());
+  projectCleanup(t).directory(directory);
+  const business = openBusiness(directory); projectCleanup(t).business(() => business);
   const original = (await business.getExportStatus()).settings;
   const token = business.acquire('codex');
   const previousPath = process.env.PATH;
@@ -78,10 +79,10 @@ test('设置修改不改变有效配音或已有成片，配音任务锁与断�
   const { randomUUID } = await import('node:crypto');
   const { mkdirSync, writeFileSync, readFileSync } = await import('node:fs');
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-lock-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
+  projectCleanup(t).directory(directory);
   let finish!: (response: Response) => void; let calls = 0;
   const business = openBusiness(directory, { configPath: '.env', key: () => 'key', fetch: (async () => { calls++; return new Promise<Response>(resolve => { finish = resolve; }); }) as typeof fetch });
-  t.onTestFinished(() => business.close());
+  projectCleanup(t).business(() => business);
   const segment = business.addSegment('原文').segments[0]!;
   const original = (await business.getExportStatus()).settings;
   business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
@@ -89,7 +90,7 @@ test('设置修改不改变有效配音或已有成片，配音任务锁与断�
   await assert.rejects(business.setExportSettings('invalid', { expected: original, settings: original }), /修改权/);
   await new Promise(resolve => setImmediate(resolve));
   finish(new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n'));
-  for (let i = 0; i < 100 && business.getSpeechStatus().locked; i++) await new Promise(resolve => setTimeout(resolve, 5));
+  await expect.poll(() => business.getSpeechStatus().locked).toBeFalsy();
   assert.equal(business.getSpeechStatus().locked, false);
   const before = business.getSpeechStatus();
   mkdirSync(join(directory, 'exports')); const existing = join(directory, 'exports', 'existing.mp4'); writeFileSync(existing, '已有成片');
@@ -108,8 +109,8 @@ test('设置修改不改变有效配音或已有成片，配音任务锁与断�
 test('已保存字体从当前环境消失后阻止导出，不悄悄采用替代字体', async t => {
   const { writeFileSync } = await import('node:fs');
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-font-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
-  const business = openBusiness(directory); t.onTestFinished(() => business.close());
+  projectCleanup(t).directory(directory);
+  const business = openBusiness(directory); projectCleanup(t).business(() => business);
   const original = (await business.getExportStatus()).settings;
   const settings = { ...original, fontFamily: 'Noto Sans CJK SC', fontSize: 48 };
   const token = business.acquire('user');
@@ -131,8 +132,8 @@ test('已保存字体从当前环境消失后阻止导出，不悄悄采用替�
 
 test('字体枚举期间编辑断开返回修改权失效，并保留已保存值', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-disconnect-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
-  const business = openBusiness(directory); t.onTestFinished(() => business.close());
+  projectCleanup(t).directory(directory);
+  const business = openBusiness(directory); projectCleanup(t).business(() => business);
   const original = (await business.getExportStatus()).settings;
   const token = business.acquire('user');
   const saving = business.setExportSettings(token, { expected: original, settings: { ...original, fontFamily: 'Noto Sans CJK SC', fontSize: 48 } });

@@ -1,29 +1,25 @@
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { execCommand } from './helpers/vitest-command.js';
 import { startService } from '../src/service/server.js';
 import { randomUUID } from 'node:crypto';
 import { beginEdit } from '../src/shared/client.js';
-import { test, vi } from 'vitest';
+import { test, expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, cpSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { dependencyView } from './helpers/temporary-repository.js';
 import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 
-// 原 Node 文件默认未限时；保留显式专项 timeout 的优先级。
-vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
-const exec = promisify(execFile);
+const exec = execCommand;
 const repo = resolve('.');
 
 test('旧包和旧服务升级后保留项目，安装失败恢复旧包，缺宿主验证不冒充完成', { timeout: 60000 }, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-update-'));
   let stopOwnedServices: (() => Promise<void>) | undefined;
-  t.onTestFinished(async () => {
-    await stopOwnedServices?.();
-    rmSync(root, { recursive: true, force: true });
-  });
+  projectCleanup(t).directory(root);
+  projectCleanup(t).service(() => ({ close: () => stopOwnedServices?.() }));
   const source = join(root, 'source'), market = join(root, 'market'), cache = join(root, 'cache'), workspace = join(root, 'workspace');
   for (const dir of [source, workspace, join(market, '.agents/plugins'), join(market, 'plugins'), cache]) mkdirSync(dir, { recursive: true });
   for (const name of ['src', 'plugins', 'package.json', 'package-lock.json']) cpSync(join(repo, name), join(source, name), { recursive: true });
@@ -89,12 +85,12 @@ test('旧包和旧服务升级后保留项目，安装失败恢复旧包，缺�
   assert.equal(recovered.snapshot.project.id, before.snapshot.project.id);
   assert.equal(recovered.snapshot.segments[0].text, '升级后保留的文案');
   await runtime(installed(next), 'workspace-stop');
-  for (let i = 0; i < 100; i++) { try { await fetch(new URL('/api/identity', recovered.url)); } catch { break; } await new Promise(r => setTimeout(r, 20)); }
+  await waitForServiceExit(serviceProcess(recovered.pid));
   const previousHost = process.env.CLAPGRID_CODEX_BIN; process.env.CLAPGRID_CODEX_BIN = host;
   let finish!: (response: Response) => void;
   let taskService: Awaited<ReturnType<typeof startService>> | undefined;
   try {
-    taskService = await startService({ workspaceDirectory: workspace, projectDirectory: join(workspace, 'clapgrid'), panelDirectory: join(next, 'dist/panel'), port: 0,
+    taskService = await projectCleanup(t).startService({ workspaceDirectory: workspace, projectDirectory: join(workspace, 'clapgrid'), panelDirectory: join(next, 'dist/panel'), port: 0,
     speechRuntime: { key: () => 'test-only', configPath: join(root, 'test.env'), fetch: async () => new Promise<Response>(resolve => { finish = resolve; }) } });
     const bound = await runtime(next, 'workspace-status');
     const accepted = await fetch(`${bound.url}/api/speech/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId: randomUUID(), segmentId: recovered.snapshot.segments[0].id }) });
@@ -103,7 +99,7 @@ test('旧包和旧服务升级后保留项目，安装失败恢复旧包，缺�
     assert.equal((await runtime(next, 'workspace-stop')).outcome, 'kept');
     assert.equal((await runtime(next, 'workspace-status')).instanceId, bound.instanceId);
     finish(new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n'));
-    for (let i = 0; i < 100 && (await runtime(next, 'workspace-status')).taskLocked; i++) await new Promise(r => setTimeout(r, 20));
+    await expect.poll(async () => (await runtime(next, 'workspace-status')).taskLocked).toBeFalsy();
   } finally {
     try { await taskService?.close(); }
     finally { if (previousHost === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = previousHost; }

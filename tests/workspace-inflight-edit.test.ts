@@ -1,17 +1,15 @@
-import { test, vi } from 'vitest';
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { execCommand, execBytes } from './helpers/vitest-command.js';
+import { test, expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
-import { execFileSync, execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { build } from 'esbuild';
 import { startService } from '../src/service/server.js';
 import { beginEdit, queryStatus } from '../src/shared/client.js';
 
-// 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
-vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 for (const owner of ['codex', 'user'] as const) for (const operation of ['import', 'video', 'settings', 'unobserved'] as const) test(`${owner} 在途 ${operation} 撤销后不提交，媒体清理完才释放修改权`, { timeout: 30000 }, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-inflight-'));
@@ -29,14 +27,14 @@ for (const owner of ['codex', 'user'] as const) for (const operation of ['import
     if (oldPath === undefined) delete process.env.PATH; else process.env.PATH = oldPath;
   });
   const source = join(root, 'source.mp4');
-  execFileSync('/usr/bin/ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:d=1', '-c:v', 'libx264', source]);
+  (await execBytes('/usr/bin/ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:d=1', '-c:v', 'libx264', source]));
   const bin = join(root, 'bin'); mkdirSync(bin); const marker = join(root, 'started'); const gate = join(root, 'continue');
   writeFileSync(join(bin, 'ffmpeg'), `#!/bin/sh\ntrap '' TERM\ntouch '${marker}'\nwhile [ ! -f '${gate}' ]; do sleep 0.05; done\nexec /usr/bin/ffmpeg "$@"\n`, { mode: 0o700 });
   process.env.PATH = bin + ':' + oldPath;
-  const service = await startService({ workspaceDirectory: workspace, projectDirectory: join(workspace, 'clapgrid'), panelDirectory: join(dist, 'panel'), port: 0 });
-  t.onTestFinished(async () => { writeFileSync(gate, 'continue'); await service.close(); rmSync(root, { recursive: true, force: true }); });
+  const service = await projectCleanup(t).startService({ workspaceDirectory: workspace, projectDirectory: join(workspace, 'clapgrid'), panelDirectory: join(dist, 'panel'), port: 0 });
+  t.onTestFinished(() => { writeFileSync(gate, 'continue'); }); projectCleanup(t).directory(root);
   await build({ entryPoints: ['src/runtime.ts'], outdir: dist, bundle: true, platform: 'node', format: 'esm', target: 'node22', external: ['vite'], banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" } });
-  const open = async () => JSON.parse((await promisify(execFile)(process.execPath, [join(dist, 'runtime.js'), 'open', '--workspace', workspace, '--thread', threadId], { env: process.env })).stdout);
+  const open = async () => JSON.parse((await execCommand(process.execPath, [join(dist, 'runtime.js'), 'open', '--workspace', workspace, '--thread', threadId], { env: process.env })).stdout);
   const opened = await open();
   const post = (path: string, body: unknown, token?: string) => fetch(opened.url + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Edit-Token': token } : {}) }, body: JSON.stringify(body) });
   let assetId: string | undefined;
@@ -56,7 +54,7 @@ for (const owner of ['codex', 'user'] as const) for (const operation of ['import
   const body = operation === 'video' ? { changes: [{ kind: 'video', expected: before.snapshot.segments[0], assetId, start: 0 }] }
     : operation === 'settings' ? { expected: before.snapshot.exportSettings, settings: { ...before.snapshot.exportSettings, fps: 60 } } : { sourcePath: source };
   const pending = post(path, body, edit?.token);
-  for (let i = 0; !existsSync(marker) && i < 300; i++) await new Promise(r => setTimeout(r, 10));
+  await expect.poll(() => existsSync(marker)).toBe(true);
   assert.equal(existsSync(marker), true);
   setWorkspace(null);
   if (operation !== 'unobserved') {

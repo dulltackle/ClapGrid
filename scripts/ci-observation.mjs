@@ -13,7 +13,7 @@ const result = {
   schemaVersion: 1, startedAt: new Date(started).toISOString(), observedAt: new Date().toISOString(), durationSeconds,
   timeoutSeconds, timeoutMarginSeconds: timeoutSeconds - durationSeconds, status: values.status, passed: values.status === 'success',
   event: process.env.GITHUB_EVENT_NAME, ref: process.env.GITHUB_REF, target: process.env.GITHUB_SHA,
-  checkout: execFileSync('git', ['rev-parse', '--verify', 'HEAD'], { encoding: 'utf8' }).trim(),
+  checkout: execFileSync('git', ['rev-parse', '--verify', 'HEAD'], { timeout: 5000, killSignal: 'SIGKILL', encoding: 'utf8' }).trim(),
   runId: process.env.GITHUB_RUN_ID, attempt: process.env.GITHUB_RUN_ATTEMPT,
   note: '首步骤至本观察的实际时长；不含 runner 准备及之后的日志上传。最终结论以 GitHub job 为准；取消不算通过。',
 };

@@ -1,19 +1,18 @@
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { command as runCommand } from './helpers/vitest-command.js';
 import assert from 'node:assert/strict';
 import { test, vi, type TestContext } from 'vitest';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 
-// 原 Node 文件未设置测试及清理时限；仅本迁移文件保留相同语义。
-vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const entry = fileURLToPath(new URL('../scripts/production.mjs', import.meta.url));
 function fixture(t: TestContext) {
   const project = mkdtempSync(join(tmpdir(), '制作证据 中文 '));
-  t.onTestFinished(() => rmSync(project, { recursive: true, force: true }));
+  projectCleanup(t).directory(project);
   writeFileSync(join(project, '产物.txt'), '已审阅内容');
   const sha256 = createHash('sha256').update('已审阅内容').digest('hex');
   const evidence = {
@@ -30,18 +29,18 @@ function fixture(t: TestContext) {
     segments: [{ id: 'A', card: 'card.json', source: 'source.ts', audio: 'audio.wav', frames: 1, assembly: 'assembly.mp4', review: 'review.mp4' }], evidence: '审阅记录.json' }));
   const save = () => writeFileSync(join(project, '审阅记录.json'), JSON.stringify(evidence));
   save();
-  const run = (output = join(project, '结果.json')) => {
-    const result = spawnSync(process.execPath, [entry, 'evidence', '--project', project, '--report', output], { encoding: 'utf8' });
+  const run = async (output = join(project, '结果.json')) => {
+    const result = (await runCommand(process.execPath, [entry, 'evidence', '--project', project, '--report', output], { encoding: 'utf8' }));
     const actualReport = result.stdout.match(/完整报告：(.+)\n/)?.[1] ?? output;
     return { ...result, reportPath: actualReport, report: JSON.parse(readFileSync(actualReport, 'utf8')) };
   };
   return { project, evidence, save, run };
 }
 
-test('技术证据通过但混合条款仍缺人工确认时保持待审且不允许回写', t => {
+test('技术证据通过但混合条款仍缺人工确认时保持待审且不允许回写', async t => {
   const f = fixture(t);
   const before = readFileSync(join(f.project, '审阅记录.json'));
-  const result = f.run();
+  const result = (await f.run());
   assert.equal(result.status, 1);
   assert.equal(result.report.status, 'pending', result.stdout);
   assert.equal(result.report.details.requirements[0].status, 'pending');
@@ -50,13 +49,13 @@ test('技术证据通过但混合条款仍缺人工确认时保持待审且不�
   assert.deepEqual(readFileSync(join(f.project, '审阅记录.json')), before);
 });
 
-test('全部对应证据完整时机械检查通过，受控测试记录仍不允许实际回写', t => {
+test('全部对应证据完整时机械检查通过，受控测试记录仍不允许实际回写', async t => {
   const f = fixture(t);
   f.evidence.requirements[0]!.required.push({ id: 'reading', kind: 'reviewed', artifact: '产物.txt', scope: ['A'] });
   const base = f.evidence.records[0]!;
   f.evidence.records.push({ ...base, id: 'E2', criterion: 'visual', kind: 'user' }, { ...base, id: 'E3', criterion: 'reading', kind: 'reviewed' });
   f.save();
-  const result = f.run();
+  const result = (await f.run());
   assert.equal(result.status, 0, result.stdout);
   const requirement = result.report.details.requirements[0];
   assert.equal(requirement.status, 'passed');
@@ -66,11 +65,11 @@ test('全部对应证据完整时机械检查通过，受控测试记录仍不�
   assert.deepEqual(requirement.evidenceIds, ['E1', 'E2', 'E3']);
 });
 
-test('当前版本记录声明复用时必须能追溯到有效原证据，缺失关联不能通过', t => {
+test('当前版本记录声明复用时必须能追溯到有效原证据，缺失关联不能通过', async t => {
   const f = fixture(t);
   f.evidence.records.push({ ...f.evidence.records[0]!, id: 'E2', criterion: 'visual', kind: 'user', reuseOf: 'missing-origin' });
   f.save();
-  const result = f.run();
+  const result = (await f.run());
   assert.equal(result.status, 1, result.stdout);
   assert.equal(result.report.status, 'failed');
   assert.match(result.report.checks.find((c: { id: string }) => c.id === 'R1:visual').message, /复用.*不存在/);
@@ -88,12 +87,12 @@ const incomplete: { name: string; change: (record: ReturnType<typeof fixture>['e
   { name: '错误产物路径', change: record => { record.artifact = { ...record.artifact, path: '其他产物.txt' }; }, expected: 'failed' },
   { name: '错误内容身份', change: record => { record.artifact = { ...record.artifact, sha256: '0'.repeat(64) }; }, expected: 'failed' },
 ];
-for (const scenario of incomplete) test(`真实入口将${scenario.name}定位到子项，整条不得回写`, t => {
+for (const scenario of incomplete) test(`真实入口将${scenario.name}定位到子项，整条不得回写`, async t => {
   const f = fixture(t);
   writeFileSync(join(f.project, '其他产物.txt'), '已审阅内容');
   const record = { ...f.evidence.records[0]!, id: 'E2', criterion: 'visual', kind: 'user' };
   scenario.change(record); f.evidence.records.push(record); f.save();
-  const result = f.run();
+  const result = (await f.run());
   assert.equal(result.status, 1, result.stdout);
   assert.equal(result.report.status, scenario.expected);
   const failed = result.report.checks.find((c: { id: string }) => c.id === 'R1:visual');
@@ -103,12 +102,12 @@ for (const scenario of incomplete) test(`真实入口将${scenario.name}定位�
   assert.equal(result.report.details.requirements[0].writeBackAllowed, false);
 });
 
-test('内容与范围不变可显式复用旧版本，记录文字变化不会使媒体确认失效', t => {
+test('内容与范围不变可显式复用旧版本，记录文字变化不会使媒体确认失效', async t => {
   const f = fixture(t);
   const original = { ...f.evidence.records[0]!, id: 'original-user', criterion: 'visual', kind: 'user', reviewVersion: 'review-1' };
   f.evidence.records.push(original, { ...original, id: 'reuse-user', reviewVersion: 'review-2', reuseOf: original.id });
   f.save();
-  const first = f.run();
+  const first = (await f.run());
   assert.equal(first.status, 0, first.stdout);
   const proof = first.report.checks.find((c: { id: string }) => c.id === 'R1:visual');
   assert.deepEqual(proof.reusedFrom, ['original-user']);
@@ -116,16 +115,16 @@ test('内容与范围不变可显式复用旧版本，记录文字变化不会�
   assert.equal(proof.source, original.source);
   f.evidence.requirements[0]!.text += '（补充记录说明）';
   f.save();
-  const second = f.run();
+  const second = (await f.run());
   assert.equal(second.status, 0, second.stdout);
   writeFileSync(join(f.project, '产物.txt'), '修改后的内容');
-  const changed = f.run();
+  const changed = (await f.run());
   assert.equal(changed.status, 1);
   assert.equal(changed.report.status, 'failed');
   assert.match(changed.report.checks.find((c: { id: string }) => c.id === 'R1:visual').message, /内容摘要已变化/);
 });
 
-test('复用原记录的否决、变更范围与循环关联均不能被新版本覆盖', t => {
+test('复用原记录的否决、变更范围与循环关联均不能被新版本覆盖', async t => {
   const f = fixture(t);
   const original = { ...f.evidence.records[0]!, id: 'old-user', criterion: 'visual', kind: 'user', reviewVersion: 'review-1' };
   f.evidence.records.push(original, { ...original, id: 'new-user', reviewVersion: 'review-2', reuseOf: original.id });
@@ -136,25 +135,25 @@ test('复用原记录的否决、变更范围与循环关联均不能被新版�
     original.requirement = invalidation === 'identity' ? 'other-requirement' : 'R1';
     original.provenance = { ...original.provenance, observedAt: invalidation === 'provenance' ? '2026-10-12T00:00:00Z' : '2026-10-13T00:00:00Z' };
     f.save();
-    const result = f.run();
+    const result = (await f.run());
     assert.equal(result.status, 1, result.stdout);
     assert.equal(result.report.checks.find((c: { id: string }) => c.id === 'R1:visual').status, 'failed');
   }
 });
 
-test('原始项目证据与历史档案保持原字节，工具只输出回写判定', t => {
+test('原始项目证据与历史档案保持原字节，工具只输出回写判定', async t => {
   const f = fixture(t);
   f.evidence.records.push({ ...f.evidence.records[0]!, id: 'E2', criterion: 'visual', kind: 'user' });
   f.save();
   writeFileSync(join(f.project, '历史记录.json'), '{"尚未审阅":true,"来源":"#104历史示例，受控测试"}\n');
   const files = ['production.json', '审阅记录.json', '历史记录.json', '产物.txt'];
   const before = files.map(file => readFileSync(join(f.project, file)));
-  const result = f.run();
+  const result = (await f.run());
   assert.equal(result.status, 0, result.stdout);
   files.forEach((file, index) => assert.deepEqual(readFileSync(join(f.project, file)), before[index]));
 });
 
-test('显式复用也不能绕过同一内容与范围的新否决或待审结论', t => {
+test('显式复用也不能绕过同一内容与范围的新否决或待审结论', async t => {
   const f = fixture(t);
   const original = { ...f.evidence.records[0]!, id: 'old-pass', criterion: 'visual', kind: 'user', reviewVersion: 'review-1' };
   const newer = { ...original, id: 'newer-decision', reviewVersion: 'review-1-followup', status: 'denied',
@@ -162,13 +161,13 @@ test('显式复用也不能绕过同一内容与范围的新否决或待审结�
   f.evidence.records.push(original, newer, { ...original, id: 'reused-pass', reviewVersion: 'review-2', reuseOf: original.id });
   for (const status of ['denied', 'pending', 'failed', 'skipped']) {
     newer.status = status; f.save();
-    const result = f.run();
+    const result = (await f.run());
     assert.equal(result.status, 1, result.stdout);
     assert.match(result.report.checks.find((c: { id: string }) => c.id === 'R1:visual').message, /最新.*结论/);
   }
 });
 
-test('受控历史通过与类型不合格的历史来源都不能覆盖真实来源否决', t => {
+test('受控历史通过与类型不合格的历史来源都不能覆盖真实来源否决', async t => {
   const f = fixture(t);
   f.evidence.requirements[0]!.required.shift();
   const original = { ...f.evidence.records[0]!, id: 'real-old-pass', criterion: 'visual', kind: 'user', reviewVersion: 'review-1', source: 'user-confirmation',
@@ -180,7 +179,7 @@ test('受控历史通过与类型不合格的历史来源都不能覆盖真实�
   f.evidence.records = [original, denial, { ...original, id: 'current-reuse', reviewVersion: 'review-2', reuseOf: original.id }, contamination];
   for (const source of ['controlled-test', 'execution']) {
     contamination.source = source; f.save();
-    const result = f.run();
+    const result = (await f.run());
     assert.equal(result.status, 1, result.stdout);
     assert.equal(result.report.status, 'failed');
     assert.equal(result.report.details.requirements[0].writeBackAllowed, false);
@@ -188,7 +187,7 @@ test('受控历史通过与类型不合格的历史来源都不能覆盖真实�
   }
 });
 
-for (const collision of ['产物直接路径', '产物别名到真实文件', '报告别名到产物', '原证明文件', '原证明别名到真实文件']) test(`报告拒绝覆盖证据的${collision}并另存失败结果`, t => {
+for (const collision of ['产物直接路径', '产物别名到真实文件', '报告别名到产物', '原证明文件', '原证明别名到真实文件']) test(`报告拒绝覆盖证据的${collision}并另存失败结果`, async t => {
   const f = fixture(t);
   f.evidence.records.push({ ...f.evidence.records[0]!, id: 'E2', criterion: 'visual', kind: 'user' });
   const realFile = '原技术报告.json';
@@ -207,7 +206,7 @@ for (const collision of ['产物直接路径', '产物别名到真实文件', '�
   }
   f.save();
   const before = readFileSync(join(f.project, '审阅记录.json'));
-  const result = f.run(reportPath);
+  const result = (await f.run(reportPath));
   assert.equal(result.status, 1, result.stdout);
   assert.equal(result.report.status, 'failed');
   assert.notEqual(result.reportPath, reportPath);
@@ -239,21 +238,21 @@ test('公开业务结果按要求和子项身份分别定位，报告转换保�
   assert.equal(result.requirements[1]?.criteria[0]?.evidence?.id, 'E2');
   const report = api.evidenceReport(result);
   assert.deepEqual(report.checks.map((check: { id: string }) => check.id), ['R:part:visual', 'R:part:visual']);
-  const cli = f.run();
+  const cli = (await f.run());
   assert.equal(cli.status, 1);
   assert.deepEqual(cli.report.checks, report.checks);
   assert.deepEqual(cli.report.details, report.details);
 });
 
 
-test('真实来源的新否决不污染受控历史分组的机械判断', t => {
+test('真实来源的新否决不污染受控历史分组的机械判断', async t => {
   const f = fixture(t);
   f.evidence.requirements[0]!.required.shift();
   const current = { ...f.evidence.records[0]!, id: 'controlled-current', criterion: 'visual', kind: 'user' };
   const realDenial = { ...current, id: 'real-denial', source: 'user-confirmation', status: 'denied', reviewVersion: 'other-review',
     provenance: { actor: '隔离机制测试模拟真实声明者', record: '模拟否决，非实际审阅', observedAt: '2026-10-13T01:00:00Z' } };
   f.evidence.records = [current, realDenial]; f.save();
-  const result = f.run();
+  const result = (await f.run());
   assert.equal(result.status, 0, result.stdout);
   assert.equal(result.report.details.requirements[0].controlledTest, true);
   assert.equal(result.report.details.requirements[0].writeBackAllowed, false);

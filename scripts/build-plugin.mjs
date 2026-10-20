@@ -7,8 +7,8 @@ import { identityEntries, identityBanner, panelIdentityBanner, pluginFingerprint
 
 let source = { commit: null, state: 'unknown' };
 try {
-  source = { commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(),
-    state: execFileSync('git', ['status', '--porcelain', '--untracked-files=normal'], { encoding: 'utf8' }).trim() ? 'dirty' : 'clean' };
+  source = { commit: execFileSync('git', ['rev-parse', 'HEAD'], { timeout: 5000, killSignal: 'SIGKILL', encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(),
+    state: execFileSync('git', ['status', '--porcelain', '--untracked-files=normal'], { timeout: 5000, killSignal: 'SIGKILL', encoding: 'utf8' }).trim() ? 'dirty' : 'clean' };
 } catch { /* 无 Git 来源的构建保留未知，不以版本替代。 */ }
 const { version } = JSON.parse(await readFile('package.json', 'utf8'));
 const destination = resolve('dist/plugin/clapgrid');

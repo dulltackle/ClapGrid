@@ -1,35 +1,31 @@
-import { test, vi } from 'vitest';
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { execBytes } from './helpers/vitest-command.js';
+import { test, expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { openBusiness } from '../src/business/index.js';
 
-// 保留原 Node 文件未显式设置的测试与清理无限时语义。
-vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const success = () => new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n');
-async function settle(business: ReturnType<typeof openBusiness>) {
-  for (let i = 0; i < 200 && business.getSpeechStatus().locked; i++) await new Promise(resolve => setTimeout(resolve, 5));
-  assert.equal(business.getSpeechStatus().locked, false, '配音任务应结束并解锁');
-}
+
 
 test('成功后只保留最近三个音频，清理不丢失请求去重记录，失败不清理', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-retention-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
+  projectCleanup(t).directory(directory);
   let failed = false; let calls = 0;
   const runtime = { key: () => 'key', configPath: '/tmp/.env', fetch: (async () => { calls++; return failed ? new Response('', { status: 402 }) : success(); }) as typeof fetch };
   let business = openBusiness(directory, runtime); let closed = false;
-  t.onTestFinished(() => closed ? undefined : business.close());
+  projectCleanup(t).business(() => closed ? undefined : business);
   const segment = business.addSegment('第一条').segments[0]!;
   const requests = []; const paths = [];
   for (const text of ['第一条', '第二条', '第三条', '第四条']) {
     business.editSegment(segment.id, text);
     const request = { requestId: randomUUID(), segmentId: segment.id }; requests.push(request);
-    const task = business.submitSpeech(request); await settle(business);
+    const task = business.submitSpeech(request); await expect.poll(() => business.getSpeechStatus().locked).toBe(false);
     paths.push(business.getSpeechAudio(task.id));
   }
   assert.deepEqual(business.getSpeechStatus().audio.map(audio => audio.input.text), ['第二条', '第三条', '第四条']);
@@ -38,7 +34,7 @@ test('成功后只保留最近三个音频，清理不丢失请求去重记录�
   assert.equal(readdirSync(business.getSnapshot().storage.mediaDirectory).filter(name => name.endsWith('.mp3')).length, 3);
   const before = business.getSpeechStatus().audio;
   failed = true;
-  business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id }); await settle(business);
+  business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id }); await expect.poll(() => business.getSpeechStatus().locked).toBe(false);
   assert.deepEqual(business.getSpeechStatus().audio, before);
   assert.equal(business.getSpeechStatus().tasks.at(-1)?.state, 'failed');
   await business.close(); closed = true;
@@ -52,15 +48,15 @@ test('成功后只保留最近三个音频，清理不丢失请求去重记录�
 
 test('有效配音供导出读取，改回恢复旧音频，重新生成成功替换当前配音', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-current-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
+  projectCleanup(t).directory(directory);
   let calls = 0;
   const business = openBusiness(directory, { key: () => 'key', configPath: '/tmp/.env', fetch: (async () => { calls++; return success(); }) as typeof fetch });
-  t.onTestFinished(() => business.close());
+  projectCleanup(t).business(() => business);
   const segment = business.addSegment('原文').segments[0]!;
   assert.throws(() => business.getCurrentSpeechAudio(segment.id), /配音缺失/);
   const first = business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
   assert.throws(() => business.getCurrentSpeechAudio(segment.id), /配音进行中/);
-  await settle(business);
+  await expect.poll(() => business.getSpeechStatus().locked).toBe(false);
   const original = business.getSpeechAudio(first.id);
   assert.equal(business.getCurrentSpeechAudio(segment.id), original);
   business.editSegment(segment.id, '新文');
@@ -69,20 +65,20 @@ test('有效配音供导出读取，改回恢复旧音频，重新生成成功�
   business.editSegment(segment.id, '原文');
   assert.equal(business.getCurrentSpeechAudio(segment.id), original);
   assert.equal(calls, 1);
-  const second = business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id }); await settle(business);
+  const second = business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id }); await expect.poll(() => business.getSpeechStatus().locked).toBe(false);
   assert.equal(business.getCurrentSpeechAudio(segment.id), business.getSpeechAudio(second.id));
 });
 
 test('视频关联与项目重排不影响有效性，清理音频不删除导入视频', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-video-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
+  projectCleanup(t).directory(directory);
   const source = join(directory, 'video.mp4');
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:d=1', '-c:v', 'libx264', source]);
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:d=1', '-c:v', 'libx264', source]));
   const business = openBusiness(join(directory, 'project'), { key: () => 'key', configPath: '/tmp/.env', fetch: (async () => success()) as typeof fetch });
-  t.onTestFinished(() => business.close());
+  projectCleanup(t).business(() => business);
   const first = business.addSegment('文案').segments[0]!;
   const second = business.addSegment('另一片段').segments[1]!;
-  business.submitSpeech({ requestId: randomUUID(), segmentId: first.id }); await settle(business);
+  business.submitSpeech({ requestId: randomUUID(), segmentId: first.id }); await expect.poll(() => business.getSpeechStatus().locked).toBe(false);
   const token = business.acquire('user');
   const video = await business.importVideo(token, { sourcePath: source });
   const result = await business.modifyBatch(token, { changes: [
@@ -92,18 +88,18 @@ test('视频关联与项目重排不影响有效性，清理音频不删除导�
   business.release(token);
   assert.equal(result.summary.applied, 2);
   assert.equal(business.getSpeechStatus().audio[0]?.valid, true);
-  for (let i = 0; i < 3; i++) { business.submitSpeech({ requestId: randomUUID(), segmentId: first.id }); await settle(business); }
+  for (let i = 0; i < 3; i++) { business.submitSpeech({ requestId: randomUUID(), segmentId: first.id }); await expect.poll(() => business.getSpeechStatus().locked).toBe(false); }
   assert.equal(business.getSpeechStatus().audio.length, 3);
   for (const kind of ['source', 'preview', 'thumbnail'] as const) assert.ok(existsSync(business.getMedia(video.id, kind)));
 });
 
 test('旧服务迟到结果不能恢复重开后已删除的片段或写入音频', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-late-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
+  projectCleanup(t).directory(directory);
   let finish!: (response: Response) => void;
   const runtime = { key: () => 'key', configPath: '/tmp/.env', fetch: (async () => new Promise<Response>(resolve => { finish = resolve; })) as typeof fetch };
   let business = openBusiness(directory, runtime); let closed = false;
-  t.onTestFinished(() => closed ? undefined : business.close());
+  projectCleanup(t).business(() => closed ? undefined : business);
   const segment = business.addSegment('待删除').segments[0]!;
   const request = { requestId: randomUUID(), segmentId: segment.id };
   business.submitSpeech(request);
@@ -121,12 +117,12 @@ test('旧服务迟到结果不能恢复重开后已删除的片段或写入音�
 
 test('旧项目按成功时间清理，优先保留当前有效配音而非仅保留最新三个', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-legacy-'));
-  t.onTestFinished(() => rmSync(directory, { recursive: true, force: true }));
+  projectCleanup(t).directory(directory);
   const runtime = { key: () => 'key', configPath: '/tmp/.env', fetch: (async () => success()) as typeof fetch };
   let business = openBusiness(directory, runtime); let closed = false;
-  t.onTestFinished(() => closed ? undefined : business.close());
+  projectCleanup(t).business(() => closed ? undefined : business);
   const segment = business.addSegment('有效旧文案').segments[0]!;
-  const task = business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id }); await settle(business);
+  const task = business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id }); await expect.poll(() => business.getSpeechStatus().locked).toBe(false);
   const originalPath = business.getSpeechAudio(task.id);
   const { database, mediaDirectory } = business.getSnapshot().storage;
   const template = business.getSpeechStatus().tasks[0]!;

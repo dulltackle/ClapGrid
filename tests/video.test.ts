@@ -1,23 +1,22 @@
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { execBytes } from './helpers/vitest-command.js';
 import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { openBusiness } from '../src/business/index.js';
 
-// 保留原 Node 文件未显式设置的测试与清理无限时语义。
-vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 test('指定的项目外视频复制到项目，源文件变化后仍可复用并重开', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-video-'));
-  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  projectCleanup(t).directory(root);
   const source = join(root, 'source.mp4');
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:d=1', '-c:v', 'libx264', source]);
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:d=1', '-c:v', 'libx264', source]));
   const directory = join(root, 'project');
   let business = openBusiness(directory);
   let closed = false;
-  t.onTestFinished(() => closed ? undefined : business.close());
+  projectCleanup(t).business(() => closed ? undefined : business);
   const token = business.acquire('codex');
   const asset = await business.importVideo(token, { sourcePath: source });
   assert.equal(asset.duration, 1);
@@ -40,11 +39,11 @@ test('指定的项目外视频复制到项目，源文件变化后仍可复用�
 
 test('拒绝不可解码媒体与无效起点，替换、解除和删除片段保留素材', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-video-boundary-'));
-  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  projectCleanup(t).directory(root);
   const source = join(root, 'source.mp4');
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=64x48:d=1', '-c:v', 'libx264', source]);
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=64x48:d=1', '-c:v', 'libx264', source]));
   const business = openBusiness(join(root, 'project'));
-  t.onTestFinished(() => business.close());
+  projectCleanup(t).business(() => business);
   const token = business.acquire('codex');
   const asset = await business.importVideo(token, { sourcePath: source });
   const replacement = await business.importVideo(token, { sourcePath: source });
@@ -84,8 +83,8 @@ test('拒绝不可解码媒体与无效起点，替换、解除和删除片段�
 
 test('目标已删除时跳过关联，不因损坏素材把已删除目标报告为失败', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-video-deleted-'));
-  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-  const business = openBusiness(root); t.onTestFinished(() => business.close());
+  projectCleanup(t).directory(root);
+  const business = openBusiness(root); projectCleanup(t).business(() => business);
   const token = business.acquire('codex');
   const expected = business.addSegment('待删除', token).segments[0]!;
   await business.modifyBatch(token, { changes: [{ kind: 'delete', expected }] });
@@ -95,10 +94,10 @@ test('目标已删除时跳过关联，不因损坏素材把已删除目标报�
 
 test('视频时长由画面决定，较长音轨不能放宽播放起点', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-video-duration-'));
-  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  projectCleanup(t).directory(root);
   const sourcePath = join(root, 'long-audio.mkv');
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:d=1', '-f', 'lavfi', '-i', 'sine=duration=3', '-c:v', 'libx264', '-c:a', 'pcm_s16le', sourcePath]);
-  const business = openBusiness(join(root, 'project')); t.onTestFinished(() => business.close());
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:d=1', '-f', 'lavfi', '-i', 'sine=duration=3', '-c:v', 'libx264', '-c:a', 'pcm_s16le', sourcePath]));
+  const business = openBusiness(join(root, 'project')); projectCleanup(t).business(() => business);
   const token = business.acquire('codex');
   const asset = await business.importVideo(token, { sourcePath });
   assert.equal(asset.duration, 1);
@@ -110,10 +109,10 @@ test('视频时长由画面决定，较长音轨不能放宽播放起点', async
 
 test('导入不跟随来源链接或播放列表，断开修改权会取消尚未提交的导入', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-video-scope-'));
-  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  projectCleanup(t).directory(root);
   const source = join(root, 'source.mp4');
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:d=1', '-c:v', 'libx264', source]);
-  const business = openBusiness(join(root, 'project')); t.onTestFinished(() => business.close());
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:d=1', '-c:v', 'libx264', source]));
+  const business = openBusiness(join(root, 'project')); projectCleanup(t).business(() => business);
   const token = business.acquire('codex');
   symlinkSync(source, join(root, 'alias.mp4'));
   await assert.rejects(business.importVideo(token, { sourcePath: join(root, 'alias.mp4') }), /不安全/);
@@ -133,14 +132,14 @@ test('导入不跟随来源链接或播放列表，断开修改权会取消尚�
 
 test('多视频轨道素材的缩略图与预览使用同一画面', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-video-tracks-'));
-  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  projectCleanup(t).directory(root);
   const sourcePath = join(root, 'tracks.mp4');
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:d=1', '-f', 'lavfi', '-i', 'color=c=blue:s=64x48:d=1', '-map', '0:v', '-map', '1:v', '-c:v', 'libx264', '-disposition:v:0', '0', '-disposition:v:1', 'default', sourcePath]);
-  const business = openBusiness(join(root, 'project')); t.onTestFinished(() => business.close());
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:d=1', '-f', 'lavfi', '-i', 'color=c=blue:s=64x48:d=1', '-map', '0:v', '-map', '1:v', '-c:v', 'libx264', '-disposition:v:0', '0', '-disposition:v:1', 'default', sourcePath]));
+  const business = openBusiness(join(root, 'project')); projectCleanup(t).business(() => business);
   const token = business.acquire('codex');
   const asset = await business.importVideo(token, { sourcePath });
   for (const kind of ['preview', 'thumbnail'] as const) {
-    const pixel = execFileSync('ffmpeg', ['-v', 'error', '-i', business.getMedia(asset.id, kind), '-frames:v', '1', '-vf', 'scale=1:1', '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-']);
+    const pixel = (await execBytes('ffmpeg', ['-v', 'error', '-i', business.getMedia(asset.id, kind), '-frames:v', '1', '-vf', 'scale=1:1', '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-']));
     assert.ok(pixel[0]! > 200 && pixel[2]! < 30, `${kind} 应显示首视频轨道的红色画面`);
   }
 });

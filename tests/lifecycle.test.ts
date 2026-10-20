@@ -1,7 +1,7 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { execCommand } from './helpers/vitest-command.js';
 import { build } from 'esbuild';
-import { test, vi } from 'vitest';
+import { test, expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -10,14 +10,11 @@ import { randomUUID } from 'node:crypto';
 import { startService } from '../src/service/server.js';
 import { beginEdit, queryStatus, submitSpeech, modifyBatch, querySpeech, submitSpeechBatch } from '../src/shared/client.js';
 
-// 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
-vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 test('普通编辑不是后台任务，默认退出仍能释放修改权并停止', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-edit-stop-'));
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
-  const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
-  t.onTestFinished(async () => { await service.close(); rmSync(root, { recursive: true, force: true }); });
+  const service = await projectCleanup(t).startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 }); projectCleanup(t).directory(root);
   const edit = await beginEdit(service.url);
   const status = await queryStatus(service.url);
   assert.deepEqual(status.modification, { owner: 'user' });
@@ -39,8 +36,7 @@ test('退出服务默认保持配音与锁，明确中断后重开保留同一�
       return await new Promise<Response>((_resolve, reject) => init.signal!.addEventListener('abort', () => reject(new Error('已断开')), { once: true }));
     }) as typeof fetch,
   } };
-  const service = await startService(options);
-  t.onTestFinished(async () => { await service.close(); rmSync(root, { recursive: true, force: true }); });
+  const service = await projectCleanup(t).startService(options); projectCleanup(t).directory(root);
   await modifyBatch(service.url, { changes: [{ kind: 'add', text: '服务退出保护' }] });
   const before = await queryStatus(service.url);
   const request = { requestId: randomUUID(), segmentId: before.snapshot.segments[0]!.id };
@@ -56,7 +52,7 @@ test('退出服务默认保持配音与锁，明确中断后重开保留同一�
   assert.equal((await submitSpeech(service.url, request)).id, task.id);
   assert.equal((await stop(true)).status, 200);
   await service.close();
-  const reopened = await startService(options);
+  const reopened = await projectCleanup(t).startService(options);
   try {
     const status = await queryStatus(reopened.url);
     assert.equal(status.snapshot.project.id, before.snapshot.project.id);
@@ -79,7 +75,7 @@ test('批量部分完成后中断保留成功音频，运行项提示结果未�
   t.onTestFinished(() => { if (previousHost === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = previousHost; });
   const entry = join(root, 'runtime.mjs');
   await build({ entryPoints: ['src/runtime.ts'], outfile: entry, bundle: true, platform: 'node', format: 'esm', external: ['vite'], banner: { js: "import { createRequire } from 'node:module'; const require=createRequire(import.meta.url);" } });
-  const open = async () => JSON.parse((await promisify(execFile)(process.execPath, [entry, 'open', '--workspace', workspace, '--thread', thread], { env: process.env })).stdout);
+  const open = async () => JSON.parse((await execCommand(process.execPath, [entry, 'open', '--workspace', workspace, '--thread', thread], { env: process.env })).stdout);
   let calls = 0;
   const options = { projectDirectory: join(workspace, 'clapgrid'), workspaceDirectory: workspace, panelDirectory, port: 0, speechRuntime: {
     key: () => 'test', configPath: 'test', fetch: (async (_url: unknown, init: RequestInit) => {
@@ -88,20 +84,19 @@ test('批量部分完成后中断保留成功音频，运行项提示结果未�
       return await new Promise<Response>((_resolve, reject) => init.signal!.addEventListener('abort', () => reject(new Error('连接中断')), { once: true }));
     }) as typeof fetch,
   } };
-  const service = await startService(options);
-  t.onTestFinished(async () => { await service.close(); rmSync(root, { recursive: true, force: true }); });
+  const service = await projectCleanup(t).startService(options); projectCleanup(t).directory(root);
   const opened = await open(); const url = opened.url;
   await modifyBatch(url, { changes: ['已完成', '结果未知', '未发送'].map(text => ({ kind: 'add' as const, text })) });
   const status = await queryStatus(url);
   const request = { requestId: randomUUID(), mode: 'generate' as const, scope: { kind: 'ids' as const, ids: status.snapshot.segments.map(segment => segment.id) } };
   const batch = await submitSpeechBatch(url, request);
-  for (let attempt = 0; attempt < 100 && calls < 2; attempt++) await new Promise(resolve => setTimeout(resolve, 10));
+  await expect.poll(() => calls < 2).toBeFalsy();
   assert.equal(calls, 2);
   const before = await querySpeech(url);
   const bytes = Buffer.from(await (await fetch(new URL(before.audio[0]!.url, url))).arrayBuffer());
   await fetch(`${url}/api/service/stop`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instanceId: status.instanceId, interrupt: true }) });
   await service.close();
-  const reopened = await startService(options);
+  const reopened = await projectCleanup(t).startService(options);
   try {
     const reopenedEntry = await open(); const reopenedUrl = reopenedEntry.url;
     assert.equal(reopenedEntry.snapshot.project.id, opened.snapshot.project.id);

@@ -6,8 +6,6 @@ import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { archiveBaseline as catalog, archiveBaselinePath } from './helpers/archive-baseline.js';
 
-// 原 Node 文件未设置测试及清理时限；保留本文件的无限默认。
-vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const root = resolve('tests/fixtures/production-archive-v1');
 const hash = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');

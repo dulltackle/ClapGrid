@@ -1,4 +1,5 @@
-import { test } from 'vitest';
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { test, expect } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -16,15 +17,14 @@ import { queryExports, submitExport } from '../src/shared/client.js';
 
 for (const owner of ['user', 'codex'] as const) test(`${owner} 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权`, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-edit-export-'));
-  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  projectCleanup(t).directory(root);
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
   const projectDirectory = join(root, 'project');
-  const service = await startService({ projectDirectory, panelDirectory, port: 0 });
-  t.onTestFinished(() => service.close());
-  const mcp = createBusinessMcp(service.url); t.onTestFinished(() => mcp.close());
-  const client = new Client({ name: '编辑期间拒绝导出', version: '1' }); t.onTestFinished(() => client.close());
+  const service = await projectCleanup(t).startService({ projectDirectory, panelDirectory, port: 0 });
+  const mcp = createBusinessMcp(service.url); projectCleanup(t).connection(() => mcp);
+  const client = new Client({ name: '编辑期间拒绝导出', version: '1' }); projectCleanup(t).connection(() => client);
   let release: (() => Promise<void>) | undefined;
-  t.onTestFinished(async () => { await release?.(); });
+  projectCleanup(t).connection(() => ({ close: () => release?.() }));
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
   if (owner === 'user') {
     const edit = await beginEdit(service.url);
@@ -35,7 +35,7 @@ for (const owner of ['user', 'codex'] as const) test(`${owner} 编辑期间 HTTP
     pending.on('error', () => {}); pending.write('{"changes":');
     release = async () => { pending.destroy(); };
   }
-  for (let i = 0; i < 100 && !(await queryStatus(service.url)).modification; i++) await new Promise(resolve => setTimeout(resolve, 10));
+  await expect.poll(async () => !(await queryStatus(service.url)).modification).toBeFalsy();
   const before = await queryStatus(service.url);
   assert.deepEqual(before.modification, { owner });
   assert.equal(before.taskLocked, false);
@@ -50,22 +50,22 @@ for (const owner of ['user', 'codex'] as const) test(`${owner} 编辑期间 HTTP
   assert.deepEqual(after.modification, { owner });
   assert.equal(after.taskLocked, false);
   await release(); release = undefined;
-  for (let i = 0; i < 100 && (await queryStatus(service.url)).modification; i++) await new Promise(resolve => setTimeout(resolve, 10));
+  await expect.poll(async () => (await queryStatus(service.url)).modification).toBeFalsy();
   assert.equal((await submitExport(service.url)).state, 'accepted');
 });
 
 // 此例往返 MCP、真实字体检查及服务重启，使用有限的产品集成预算。
 test('表格 HTTP 与 MCP 共享导出设置，自动保存恢复并遵守普通修改权及任务锁', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-export-http-'));
-  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  projectCleanup(t).directory(root);
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
   let finish!: (response: Response) => void;
   const options = { projectDirectory: join(root, 'project'), panelDirectory, port: 0, speechRuntime: {
     configPath: '.env', key: () => 'key', fetch: (async () => new Promise<Response>(resolve => { finish = resolve; })) as typeof fetch,
   } };
-  let service = await startService(options); t.onTestFinished(() => service.close());
+  let service = await projectCleanup(t).startService(options); projectCleanup(t).service(() => service);
   const mcp = createBusinessMcp(service.url); const client = new Client({ name: '导出设置验证', version: '1' });
-  t.onTestFinished(() => client.close()); t.onTestFinished(() => mcp.close());
+  projectCleanup(t).connection(() => client); projectCleanup(t).connection(() => mcp);
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
   const original = await queryExportSettings(service.url);
   const settings = { ...original.settings, fontFamily: 'Noto Sans CJK SC', fontSize: 48 };
@@ -98,18 +98,17 @@ test('表格 HTTP 与 MCP 共享导出设置，自动保存恢复并遵守普通
   assert.equal(locked.isError, true); assert.match(JSON.stringify(locked.content), /配音/);
   assert.deepEqual((await queryExportSettings(service.url)).settings, changed);
   finish(new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n'));
-  for (let i = 0; i < 100 && (await queryStatus(service.url)).taskLocked; i++) await new Promise(resolve => setTimeout(resolve, 5));
-  await service.close(); service = await startService(options);
+  await expect.poll(async () => (await queryStatus(service.url)).taskLocked).toBeFalsy();
+  await service.close(); service = await projectCleanup(t).startService(options);
   assert.deepEqual((await queryExportSettings(service.url)).settings, changed);
 }, 30000);
 
 test('表格与 MCP 共用全片导出任务，立即受理、重复提交、进度及取消状态一致', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-export-api-'));
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
-  const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
-  t.onTestFinished(async () => { await service.close(); rmSync(root, { recursive: true, force: true }); });
+  const service = await projectCleanup(t).startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 }); projectCleanup(t).directory(root);
   const mcp = createBusinessMcp(service.url); const client = new Client({ name: '导出验收', version: '1' });
-  t.onTestFinished(async () => { await client.close(); await mcp.close(); });
+  projectCleanup(t).connection(() => client); projectCleanup(t).connection(() => mcp);
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
   const response = await fetch(`${service.url}/api/exports/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
   assert.equal(response.status, 200);
@@ -120,12 +119,11 @@ test('表格与 MCP 共用全片导出任务，立即受理、重复提交、进
   const cancel = await client.callTool({ name: 'clapgrid_cancel_export', arguments: { taskId: task.id } });
   assert.equal((cancel.structuredContent as import('../src/shared/contracts.js').ExportTask).state, 'cleaning');
   let status: any;
-  for (let i = 0; i < 200; i++) {
+  await expect.poll(async () => {
     const result = await client.callTool({ name: 'clapgrid_export_status', arguments: {} });
     status = result.structuredContent;
-    if (!status.locked) break;
-    await new Promise(resolve => setTimeout(resolve, 10));
-  }
+    return status.locked;
+  }).toBe(false);
   assert.equal(status.tasks[0].id, task.id); assert.equal(status.tasks[0].state, 'cancelled');
   assert.equal((await queryStatus(service.url)).taskLocked, false);
   const invalid = await fetch(`${service.url}/api/exports/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"scope":"selected"}' });

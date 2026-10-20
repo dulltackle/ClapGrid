@@ -1,11 +1,11 @@
-import { test, vi } from 'vitest';
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { execCommand } from './helpers/vitest-command.js';
+import { test, expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { build } from 'esbuild';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
@@ -14,11 +14,10 @@ import { startService } from '../src/service/server.js';
 import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 import { connectTable, querySegments, querySpeech, queryStatus, submitSpeech } from '../src/shared/client.js';
 
-// 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
-vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 test('工作空间往返与宿主不可查询使旧绑定失效，原后台任务持续且不重复提交', { timeout: 60000 }, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-binding-task-'));
+  projectCleanup(t).directory(root);
   const first = join(root, 'first'); const second = join(root, 'second'); const dist = join(root, 'dist');
   mkdirSync(first); mkdirSync(second); mkdirSync(join(dist, 'panel'), { recursive: true });
   writeFileSync(join(root, 'package.json'), '{"type":"module"}');
@@ -33,26 +32,23 @@ test('工作空间往返与宿主不可查询使旧绑定失效，原后台任�
     bundle: true, platform: 'node', format: 'esm', target: 'node22', external: ['vite'],
     banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" } });
   let finish!: (response: Response) => void; let calls = 0;
-  const service = await startService({ workspaceDirectory: first, projectDirectory: join(first, 'clapgrid'), panelDirectory: join(dist, 'panel'), port: 0,
+  const service = await projectCleanup(t).startService({ workspaceDirectory: first, projectDirectory: join(first, 'clapgrid'), panelDirectory: join(dist, 'panel'), port: 0,
     speechRuntime: { configPath: join(root, 'test.env'), key: () => '测试替身密钥', fetch: (async () => { calls++; return new Promise<Response>(resolve => { finish = resolve; }); }) as typeof fetch } });
-  const cli = async (workspace: string) => JSON.parse((await promisify(execFile)(process.execPath, [join(dist, 'runtime.js'), 'open', '--workspace', workspace, '--thread', threadId], { env: process.env })).stdout);
+  const cli = async (workspace: string) => JSON.parse((await execCommand(process.execPath, [join(dist, 'runtime.js'), 'open', '--workspace', workspace, '--thread', threadId], { env: process.env })).stdout);
   let other: { url: string; instanceId: string; pid: number } | undefined;
   let otherProcess: ReturnType<typeof serviceProcess> | undefined;
-  t.onTestFinished(async () => {
-    if (other) { setWorkspace(second); await fetch(`${other.url}/api/service/stop`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instanceId: other.instanceId, interrupt: true }) }); await waitForServiceExit(otherProcess!); }
-    await service.close(); rmSync(root, { recursive: true, force: true });
-  });
+
   const opened = await cli(first);
   const server = createBusinessMcp(); const client = new Client({ name: '任务工作空间往返', version: '1' });
   const [a, b] = InMemoryTransport.createLinkedPair(); await server.connect(b); await client.connect(a);
-  t.onTestFinished(async () => { await client.close(); await server.close(); });
+  projectCleanup(t).connection(() => client); projectCleanup(t).connection(() => server);
   const tool = (name: string, args = {}) => client.callTool({ name, arguments: args, _meta: { threadId } });
   await tool('clapgrid_modify', { changes: [{ kind: 'add', text: '继续完成旧工作空间任务' }] });
   const before = await queryStatus(opened.url);
   const table = await connectTable(opened.url); await table.select([before.snapshot.segments[0]!.id]);
   const input = { requestId: randomUUID(), segmentId: before.snapshot.segments[0]!.id };
   const task = await submitSpeech(opened.url, input);
-  for (let i = 0; !finish && i < 100; i++) await new Promise(r => setTimeout(r, 10));
+  await expect.poll(() => Boolean(finish)).toBe(true);
   assert.equal(calls, 1); assert.equal((await queryStatus(opened.url)).taskLocked, true);
   setWorkspace(second);
   await assert.rejects(queryStatus(opened.url), /关闭重开/);
@@ -60,7 +56,7 @@ test('工作空间往返与宿主不可查询使旧绑定失效，原后台任�
   const rebound = await cli(first);
   assert.equal((await querySegments(rebound.url, { kind: 'selected' })).availability, 'unavailable', '撤销代次立即清除旧面板勾选，新代次不能在心跳清理前采用它');
   setWorkspace(second);
-  await Promise.race([table.closed, new Promise((_, reject) => setTimeout(() => reject(new Error('旧面板勾选未释放')), 3500))]);
+  await table.closed;
   for (const path of ['/api/segments/query', '/api/codex/modify', '/api/speech/submit', '/api/exports/submit']) {
     const rejected = await fetch(opened.url + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(path.endsWith('/query') ? { scope: { kind: 'selected' } } : input) });
     assert.equal(rejected.status, 409);
@@ -89,7 +85,7 @@ test('工作空间往返与宿主不可查询使旧绑定失效，原后台任�
   assert.equal((await queryStatus(verified.url)).taskLocked, true);
   finish(new Response('data: {"code":0,"data":"SUQzYWJj"}\n\ndata: {"code":20000000}\n\n'));
   let speech = await querySpeech(verified.url);
-  for (let i = 0; speech.locked && i < 100; i++) { await new Promise(r => setTimeout(r, 10)); speech = await querySpeech(verified.url); }
+  await expect.poll(async () => { speech = await querySpeech(verified.url); return speech.locked; }).toBe(false);
   assert.equal(speech.tasks[0]!.id, task.id); assert.equal(speech.tasks[0]!.state, 'succeeded');
   assert.equal(speech.tasks.length, 1); assert.equal(calls, 1); assert.equal((await queryStatus(verified.url)).taskLocked, false);
   assert.equal((await fetch(new URL(speech.audio[0]!.url, verified.url))).status, 200);
