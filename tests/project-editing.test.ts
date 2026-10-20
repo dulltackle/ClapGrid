@@ -19,7 +19,7 @@ function lease(token: string) {
 const unexpected = (error: Error) => { throw error; };
 
 test('单次保存先关闭连接再返回成功仍确认保存，释放后旧连接不影响新编辑', async () => {
-  const first = lease('first'); const second = lease('second');
+  const first = (await lease('first')); const second = (await lease('second'));
   const queue = [first, second];
   const editing = projectEditing(async () => queue.shift()!.session);
   let lost = 0; let saved = false;
@@ -36,13 +36,13 @@ test('单次保存先关闭连接再返回成功仍确认保存，释放后旧�
 });
 
 test('设置连续保存持有同一修改权，保存时断线等待请求结果但不恢复旧会话', async () => {
-  const current = lease('settings');
+  const current = (await lease('settings'));
   const editing = projectEditing(async () => current.session);
   const tokens: string[] = []; let disconnected = 0; let accepted = 0;
   await editing.begin('settings', () => {}, () => { disconnected++; }, unexpected);
   await editing.save('settings', { retain: true }, async token => { tokens.push(token); }, unexpected);
   assert.equal(current.closes, 0); assert.equal(editing.getState().editing, true);
-  const response = deferred<void>();
+  const response = (await deferred<void>());
   const save = editing.save('settings', { retain: true }, async (token, action) => {
     tokens.push(token); await response.promise; action.apply(() => { accepted++; });
   }, unexpected);
@@ -55,8 +55,8 @@ test('设置连续保存持有同一修改权，保存时断线等待请求结�
 });
 
 test('旧查询成功或失败均不能覆盖设置编辑；同轮查询按最新请求接受', async () => {
-  const current = lease('settings'); const editing = projectEditing(async () => current.session);
-  const old = deferred<string>(); const failed = deferred<string>(); const updates: string[] = [];
+  const current = (await lease('settings')); const editing = projectEditing(async () => current.session);
+  const old = (await deferred<string>()); const failed = (await deferred<string>()); const updates: string[] = [];
   const a = editing.refresh(() => old.promise, value => updates.push(value), () => updates.push('旧错误'));
   const b = editing.refresh(() => failed.promise, value => updates.push(value), () => updates.push('旧错误'));
   await editing.begin('settings', () => updates.push('编辑快照'), () => {}, unexpected);
@@ -64,7 +64,7 @@ test('旧查询成功或失败均不能覆盖设置编辑；同轮查询按最�
   await editing.cancel('settings');
   old.resolve('旧快照'); failed.reject(new Error('旧错误')); await Promise.all([a, b]);
   assert.deepEqual(updates, ['编辑快照', '保存快照']);
-  const slow = deferred<string>();
+  const slow = (await deferred<string>());
   const c = editing.refresh(() => slow.promise, value => updates.push(value), unexpected);
   await editing.refresh(async () => '新查询', value => updates.push(value), unexpected);
   slow.resolve('迟到查询'); await c;
@@ -72,7 +72,7 @@ test('旧查询成功或失败均不能覆盖设置编辑；同轮查询按最�
 });
 
 test('离页后迟到的修改权立即释放，重新激活后旧响应不打开编辑器', async () => {
-  const first = lease('first'); const second = lease('second'); const pending = deferred<EditSession>();
+  const first = (await lease('first')); const second = (await lease('second')); const pending = deferred<EditSession>();
   let calls = 0; const editing = projectEditing(() => ++calls === 1 ? pending.promise : Promise.resolve(second.session));
   let opened = 0;
   const begin = editing.begin('segments', () => { opened++; }, () => {}, unexpected);
@@ -84,9 +84,9 @@ test('离页后迟到的修改权立即释放，重新激活后旧响应不打�
 });
 
 test('取消保存后旧回调、错误和释放都不能影响后续编辑，未知结果不重试', async () => {
-  const first = lease('first'); const second = lease('second'); const queue = [first, second];
+  const first = (await lease('first')); const second = (await lease('second')); const queue = [first, second];
   const editing = projectEditing(async () => queue.shift()!.session);
-  const response = deferred<void>(); let submitted = 0; let changed = 0; let failures = 0;
+  const response = (await deferred<void>()); let submitted = 0; let changed = 0; let failures = 0;
   await editing.begin('segments', () => {}, () => {}, unexpected);
   const saving = editing.save('segments', {}, async (_, action) => {
     submitted++; await response.promise; action.apply(() => { changed++; }); throw new Error('旧请求失败');
@@ -100,8 +100,8 @@ test('取消保存后旧回调、错误和释放都不能影响后续编辑，�
 });
 
 test('查询慢于轮询间隔时仍接收已完成结果，新查询完成后忽略旧失败', async () => {
-  const editing = projectEditing(async () => lease('unused').session);
-  const first = deferred<string>(); const second = deferred<string>(); const late = deferred<string>();
+  const editing = projectEditing(async () => (await lease('unused')).session);
+  const first = (await deferred<string>()); const second = (await deferred<string>()); const late = (await deferred<string>());
   const values: string[] = [];
   const a = editing.refresh(() => first.promise, value => values.push(value), unexpected);
   const b = editing.refresh(() => second.promise, value => values.push(value), unexpected);
@@ -115,7 +115,7 @@ test('查询慢于轮询间隔时仍接收已完成结果，新查询完成后�
 });
 
 test('单次保存结果未知时释放修改权、只报告一次失败且不重试', async () => {
-  const current = lease('first'); const editing = projectEditing(async () => current.session);
+  const current = (await lease('first')); const editing = projectEditing(async () => current.session);
   let submissions = 0; const messages: string[] = [];
   await editing.save('segments', { acquire: true }, async () => {
     submissions++; throw new Error('保存结果未知');

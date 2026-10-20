@@ -1,7 +1,9 @@
-import { test, vi, type TestContext } from 'vitest';
+import { speechState } from './helpers/speech-state.js';
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { execBytes } from './helpers/vitest-command.js';
+import { test, vi, type TestContext, expect } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -11,8 +13,6 @@ import { createBusinessMcp } from '../src/mcp/server.js';
 import { startService } from '../src/service/server.js';
 import { connectTable, importVideo, modifyBatch, queryExports, queryExportSettings, querySpeech, queryStatus, saveExportSettings, submitExport, submitSpeech, submitSpeechBatch } from '../src/shared/client.js';
 
-// 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
-vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 type RejectionWindow = { outcome: string; phase?: string; start: number; end: number; taskId?: string; taskIds?: string[] };
 declare module 'vitest' {
@@ -40,34 +40,28 @@ function pauseImmediate() {
   };
 }
 
-async function until<T>(read: () => Promise<T>, accepts: (value: T) => boolean) {
-  const deadline = Date.now() + 30000;
-  while (Date.now() < deadline) {
-    const value = await read(); if (accepts(value)) return value;
-    await new Promise(resolve => setTimeout(resolve, 10));
-  }
-  throw new Error('等待任务状态超时');
-}
+
 
 for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，${outcome}后恢复校验`, { timeout: 60000 }, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-speech-export-'));
   const projectDirectory = join(root, 'project'); const panelDirectory = join(root, 'panel');
   mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), '验收');
   const video = join(root, 'video.mp4'); const audio = join(root, 'audio.mp3');
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:d=1', '-c:v', 'libx264', video]);
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=0.4', '-ar', '24000', audio]);
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:d=1', '-c:v', 'libx264', video]));
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=0.4', '-ar', '24000', audio]));
   const bytes = readFileSync(audio);
   const success = () => new Response(`data: {"code":0,"data":"${bytes.toString('base64')}"}\n\ndata: {"code":20000000}\n\n`);
   let hold = false; let finish!: (response: Response) => void;
   const options = { projectDirectory, panelDirectory, port: 0, speechRuntime: {
     configPath: '测试配置', key: () => '测试密钥', fetch: (async () => hold ? new Promise<Response>(resolve => { finish = resolve; }) : success()) as typeof fetch,
   } };
-  let service = await startService(options);
+  let service = await projectCleanup(t).startService(options);
   const mcp = createBusinessMcp(service.url); const client = new Client({ name: '配音导出锁回归', version: '1' });
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
   let table = await connectTable(service.url);
   let resumeImmediate: (() => void) | undefined;
-  t.onTestFinished(async () => { resumeImmediate?.(); finish?.(success()); await table.close(); await client.close(); await mcp.close(); await service.close(); rmSync(root, { recursive: true, force: true }); });
+  t.onTestFinished(() => { resumeImmediate?.(); finish?.(success()); });
+  projectCleanup(t).directory(root); projectCleanup(t).connection(() => table); projectCleanup(t).connection(() => client); projectCleanup(t).connection(() => mcp);
   await modifyBatch(service.url, { changes: [{ kind: 'add', text: '配音任务锁验证' }] });
   const segment = (await queryStatus(service.url)).snapshot.segments[0]!;
   const { asset } = await importVideo(service.url, video);
@@ -75,9 +69,9 @@ for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可�
   const { settings } = await queryExportSettings(service.url);
   await saveExportSettings(service.url, { expected: settings, settings: { ...settings, fontFamily: 'Noto Sans CJK SC', fontSize: 48 } });
   await submitSpeech(service.url, { requestId: randomUUID(), segmentId: segment.id });
-  await until(() => querySpeech(service.url), value => !value.locked);
+  await vi.waitFor(async () => { const value = await (() => querySpeech(service.url))(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   const baseline = await submitExport(service.url);
-  const complete = await until(() => queryExports(service.url), value => !value.locked);
+  const complete = await vi.waitFor(async () => { const value = await (() => queryExports(service.url))(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   assert.equal(complete.tasks.find(task => task.id === baseline.id)!.state, 'succeeded', JSON.stringify(complete));
   const files = readdirSync(join(projectDirectory, 'exports'));
   const original = await queryStatus(service.url);
@@ -89,7 +83,7 @@ for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可�
   for (const phase of ['accepted', 'running'] as const) {
     if (phase === 'running') {
       resumeImmediate!(); resumeImmediate = undefined;
-      await until(() => querySpeech(service.url), value => value.tasks.some(item => item.id === task.id && item.state === 'running'));
+      await speechState(() => querySpeech(service.url), task.id, 'running');
     }
     const start = Date.now();
     for (const reopen of [false, true]) {
@@ -113,9 +107,9 @@ for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可�
   }
   if (outcome === '中断') {
     await table.close(); await service.close(); finish(success());
-    service = await startService(options);
+    service = await projectCleanup(t).startService(options);
   } else finish(outcome === '成功' ? success() : new Response('供应商明确拒绝', { status: 401 }));
-  const speech = await until(() => querySpeech(service.url), value => !value.locked);
+  const speech = await vi.waitFor(async () => { const value = await (() => querySpeech(service.url))(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   assert.equal(speech.tasks.at(-1)!.state, outcome === '成功' ? 'succeeded' : outcome === '明确失败' ? 'failed' : 'unknown');
   assert.equal((await queryStatus(service.url)).taskLocked, false);
   assert.equal(speech.tasks.length, 2);
@@ -123,7 +117,7 @@ for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可�
   const current = (await queryStatus(service.url)).snapshot.segments[0]!;
   await modifyBatch(service.url, { changes: [{ kind: 'edit', expected: current, text: '修改文案后必须重新校验配音' }] });
   const next = await submitExport(service.url);
-  const result = await until(() => queryExports(service.url), value => !value.locked);
+  const result = await vi.waitFor(async () => { const value = await (() => queryExports(service.url))(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   const rejected = result.tasks.find(item => item.id === next.id)!;
   assert.equal(rejected.state, 'failed');
   assert.ok(rejected.issues.some(issue => /配音待更新/.test(issue.message)));
@@ -136,23 +130,21 @@ test('批量配音中尚未发送的 accepted 任务在表格重连后仍保留�
   const projectDirectory = join(root, 'project'); const panelDirectory = join(root, 'panel');
   mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), '验收');
   const video = join(root, 'video.mp4'); const audio = join(root, 'audio.mp3');
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:d=1', '-c:v', 'libx264', video]);
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=0.4', '-ar', '24000', audio]);
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:d=1', '-c:v', 'libx264', video]));
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=0.4', '-ar', '24000', audio]));
   const bytes = readFileSync(audio);
   const success = () => new Response(`data: {"code":0,"data":"${bytes.toString('base64')}"}\n\ndata: {"code":20000000}\n\n`);
   let mode: 'success' | 'fail' | 'hold' = 'success';
   const pending: ((response: Response) => void)[] = [];
-  const service = await startService({ projectDirectory, panelDirectory, port: 0, speechRuntime: {
+  const service = await projectCleanup(t).startService({ projectDirectory, panelDirectory, port: 0, speechRuntime: {
     configPath: '测试配置', key: () => '测试密钥', fetch: (async () => mode === 'hold'
       ? new Promise<Response>(resolve => pending.push(resolve)) : mode === 'fail' ? new Response('', { status: 401 }) : success()) as typeof fetch,
   } });
   const mcp = createBusinessMcp(service.url); const client = new Client({ name: '批量配音导出锁回归', version: '1' });
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
   let table = await connectTable(service.url);
-  t.onTestFinished(async () => {
-    await table.close(); await client.close(); await mcp.close(); await service.close();
-    pending.forEach(resolve => resolve(success())); rmSync(root, { recursive: true, force: true });
-  });
+  t.onTestFinished(() => { pending.forEach(resolve => resolve(success())); });
+  projectCleanup(t).directory(root); projectCleanup(t).connection(() => table); projectCleanup(t).connection(() => client); projectCleanup(t).connection(() => mcp);
   await modifyBatch(service.url, { changes: [{ kind: 'add', text: '先执行的口播片段' }, { kind: 'add', text: '等待执行的口播片段' }] });
   const segments = (await queryStatus(service.url)).snapshot.segments;
   const { asset } = await importVideo(service.url, video);
@@ -160,16 +152,16 @@ test('批量配音中尚未发送的 accepted 任务在表格重连后仍保留�
   const { settings } = await queryExportSettings(service.url);
   await saveExportSettings(service.url, { expected: settings, settings: { ...settings, fontFamily: 'Noto Sans CJK SC', fontSize: 48 } });
   await submitSpeechBatch(service.url, { requestId: randomUUID(), mode: 'generate', scope: { kind: 'all' } });
-  await until(() => querySpeech(service.url), value => !value.locked);
+  await vi.waitFor(async () => { const value = await (() => querySpeech(service.url))(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   // 保留有效旧配音，制造可显式重试的最新失败任务，不以缺少配音作为拒绝原因。
   mode = 'fail';
   for (const segment of segments) {
     await submitSpeech(service.url, { requestId: randomUUID(), segmentId: segment.id });
-    const status = await until(() => querySpeech(service.url), value => !value.locked);
+    const status = await vi.waitFor(async () => { const value = await (() => querySpeech(service.url))(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
     assert.equal(status.tasks.at(-1)!.state, 'failed');
   }
   const baseline = await submitExport(service.url);
-  const exports = await until(() => queryExports(service.url), value => !value.locked);
+  const exports = await vi.waitFor(async () => { const value = await (() => queryExports(service.url))(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   assert.equal(exports.tasks.find(task => task.id === baseline.id)!.state, 'succeeded');
   const files = readdirSync(join(projectDirectory, 'exports'));
   const original = await queryStatus(service.url);
@@ -177,7 +169,7 @@ test('批量配音中尚未发送的 accepted 任务在表格重连后仍保留�
   const batch = await submitSpeechBatch(service.url, { requestId: randomUUID(), mode: 'retry', scope: { kind: 'failed_project' } });
   const ids = batch.results.map(item => item.taskId!);
   assert.equal(ids.length, 2);
-  await until(() => querySpeech(service.url), value => value.tasks.find(task => task.id === ids[0])?.state === 'running');
+  await speechState(() => querySpeech(service.url), ids[0]!, 'running');
   const start = Date.now();
   for (const reopen of [false, true]) {
     if (reopen) { await table.close(); table = await connectTable(service.url); }
@@ -198,7 +190,7 @@ test('批量配音中尚未发送的 accepted 任务在表格重连后仍保留�
   }
   recordWindow(t, { outcome: '批量等待', start, end: Date.now(), taskIds: ids });
   mode = 'success'; pending.shift()!(success());
-  const finished = await until(() => querySpeech(service.url), value => !value.locked);
+  const finished = await vi.waitFor(async () => { const value = await (() => querySpeech(service.url))(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   assert.deepEqual(ids.map(id => finished.tasks.find(task => task.id === id)!.state), ['succeeded', 'succeeded']);
   assert.equal(finished.tasks.length, 6);
   assert.deepEqual(await queryExports(service.url), exports, '整批结束不自动导出');

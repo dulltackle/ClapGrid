@@ -1,4 +1,5 @@
-import { test } from 'vitest';
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { test, expect } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -6,19 +7,20 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openBusiness } from '../src/business/index.js';
 
-test('缺凭据时提交前拒绝且不发送付费请求', async () => {
+test('缺凭据时提交前拒绝且不发送付费请求', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-'));
   let calls = 0;
-  const business = openBusiness(directory, { key: () => '', configPath: '/tmp/runtime/.env', fetch: async () => { calls++; throw new Error(); } });
-  try {
+  const business = openBusiness(directory, { key: () => '', configPath: '/tmp/runtime/.env', fetch: async t => { calls++; throw new Error(); } });
+  projectCleanup(t).directory(directory); projectCleanup(t).business(() => business);
+  {
     const segment = business.addSegment('你好').segments[0]!;
     assert.throws(() => business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id }), /\/tmp\/runtime\/\.env.*TOKENDANCE_KEY/);
     assert.equal(calls, 0);
     assert.equal(business.getSpeechStatus().tasks.length, 0);
-  } finally { await business.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
 });
 
-test('受理后持续锁定、重发去重，完整成功音频及输入快照重开仍保留', async () => {
+test('受理后持续锁定、重发去重，完整成功音频及输入快照重开仍保留', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-'));
   let finish!: (response: Response) => void;
   let calls = 0;
@@ -30,7 +32,8 @@ test('受理后持续锁定、重发去重，完整成功音频及输入快照�
     return await new Promise<Response>(resolve => { finish = resolve; });
   }) as typeof fetch };
   let business = openBusiness(directory, runtime);
-  try {
+  projectCleanup(t).directory(directory); projectCleanup(t).business(() => business);
+  {
     const segment = business.addSegment('你好').segments[0]!;
     const input = { requestId: randomUUID(), segmentId: segment.id };
     const task = business.submitSpeech(input);
@@ -43,7 +46,7 @@ test('受理后持续锁定、重发去重，完整成功音频及输入快照�
     assert.equal(business.getSpeechStatus().locked, true);
     await new Promise(resolve => setImmediate(resolve));
     finish(new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n'));
-    for (let i = 0; i < 100 && business.getSpeechStatus().locked; i++) await new Promise(resolve => setTimeout(resolve, 5));
+    await expect.poll(() => business.getSpeechStatus().locked).toBeFalsy();
     assert.equal(business.getSpeechStatus().tasks[0]?.state, 'succeeded');
     assert.equal(calls, 1);
     assert.equal(business.getSpeechStatus().audio[0]?.valid, true);
@@ -53,17 +56,18 @@ test('受理后持续锁定、重发去重，完整成功音频及输入快照�
     assert.equal(business.submitSpeech(input).id, task.id);
     assert.equal(business.getSpeechStatus().audio[0]?.valid, true);
     assert.equal(calls, 1);
-  } finally { await business.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
 });
 
-test('统一声音保存并校验范围，改变输入只改变配音有效性', async () => {
+test('统一声音保存并校验范围，改变输入只改变配音有效性', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-'));
   const runtime = { key: () => 'secret', configPath: '/tmp/runtime/.env', fetch: (async () => new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n')) as typeof fetch };
   let business = openBusiness(directory, runtime);
-  try {
+  projectCleanup(t).directory(directory); projectCleanup(t).business(() => business);
+  {
     const segment = business.addSegment('原文').segments[0]!;
     business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
-    while (business.getSpeechStatus().locked) await new Promise(resolve => setTimeout(resolve, 5));
+    await expect.poll(() => business.getSpeechStatus().locked).toBe(false);
     assert.throws(() => business.setVoice({ speaker: 'zh_female_vv_uranus_bigtts', speechRate: 101 }));
     assert.throws(() => business.setVoice({ speaker: 'zh_female_vv_uranus_bigtts', speechRate: 0, loudness: 50 }));
     business.setVoice({ speaker: 'zh_male_ruyayichen_saturn_bigtts', speechRate: -50 });
@@ -76,10 +80,10 @@ test('统一声音保存并校验范围，改变输入只改变配音有效性',
     assert.equal(business.getSpeechStatus().audio[0]?.valid, false);
     business.editSegment(segment.id, '原文');
     assert.equal(business.getSpeechStatus().audio[0]?.valid, true);
-  } finally { await business.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
 });
 
-test('服务异常不重试，失败保留旧配音；中断任务重开标记未知且不重新请求', async () => {
+test('服务异常不重试，失败保留旧配音；中断任务重开标记未知且不重新请求', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-'));
   let calls = 0;
   const runtime = { key: () => 'key', configPath: '/tmp/runtime/.env', fetch: (async () => {
@@ -89,12 +93,13 @@ test('服务异常不重试，失败保留旧配音；中断任务重开标记�
     return new Promise<Response>(() => {});
   }) as typeof fetch };
   let business = openBusiness(directory, runtime);
-  try {
+  projectCleanup(t).directory(directory); projectCleanup(t).business(() => business);
+  {
     const segment = business.addSegment('保留旧配音').segments[0]!;
     business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
-    while (business.getSpeechStatus().locked) await new Promise(resolve => setTimeout(resolve, 5));
+    await expect.poll(() => business.getSpeechStatus().locked).toBe(false);
     business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
-    while (business.getSpeechStatus().locked) await new Promise(resolve => setTimeout(resolve, 5));
+    await expect.poll(() => business.getSpeechStatus().locked).toBe(false);
     assert.equal(calls, 2);
     assert.equal(business.getSpeechStatus().audio.length, 1);
     assert.equal(business.getSpeechStatus().audio[0]?.valid, true);
@@ -107,5 +112,22 @@ test('服务异常不重试，失败保留旧配音；中断任务重开标记�
     await business.close(); business = openBusiness(directory, runtime);
     assert.equal(business.submitSpeech(interrupted).state, 'unknown');
     assert.equal(calls, 3); assert.equal(business.getSpeechStatus().locked, false);
-  } finally { await business.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+test('等待配音运行阶段时，已失败的任务立即报告原始原因', async t => {
+  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-phase-'));
+  projectCleanup(t).directory(directory);
+  const business = openBusiness(directory, { key: () => 'controlled', configPath: 'controlled', fetch: async () => new Response('', { status: 401 }) });
+  projectCleanup(t).business(() => business);
+  const segment = business.addSegment('明确失败').segments[0]!;
+  const task = business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
+  await expect.poll(() => business.getSpeechStatus().locked).toBe(false);
+  const failed = business.getSpeechStatus().tasks.find(item => item.id === task.id)!;
+  expect(failed.state).toBe('failed');
+  const { speechState } = await import('./helpers/speech-state.js');
+  const started = performance.now();
+  const error = await speechState(() => business.getSpeechStatus(), task.id, 'running').then(() => undefined, error => error as Error);
+  expect(error?.message).toContain(failed.message);
+  expect(performance.now() - started).toBeLessThan(4000);
 });

@@ -1,22 +1,20 @@
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { execCommand } from './helpers/vitest-command.js';
 import assert from 'node:assert/strict';
 import { test, vi, type TestContext } from 'vitest';
-import { execFile } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { promisify } from 'node:util';
 import { build } from 'esbuild';
 import type { BuildIdentity } from '../src/build-identity.js';
 
-// 原 Node 文件默认未限时；保留显式专项 timeout 的优先级。
-vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
-const exec = promisify(execFile);
+const exec = execCommand;
 const hash = (character: string) => `sha256:${character.repeat(64)}`;
 
 async function fixture(t: TestContext) {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-plugin-source-'));
-  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  projectCleanup(t).directory(root);
   const source = join(root, 'source');
   const data = join(root, 'data');
   mkdirSync(join(source, 'src/panel'), { recursive: true });

@@ -1,9 +1,10 @@
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { execBytes } from './helpers/vitest-command.js';
 import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { startService } from '../src/service/server.js';
@@ -11,29 +12,26 @@ import { createBusinessMcp } from '../src/mcp/server.js';
 import { beginEdit, queryStatus } from '../src/shared/client.js';
 import type { ServiceStatus, VideoAsset } from '../src/shared/contracts.js';
 
-// 保留原 Node 文件未显式设置的测试与清理无限时语义。
-vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 test('MCP 与表格共用视频导入和关联规则，预览支持范围播放且不开放任意文件', async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-video-http-'));
-  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  projectCleanup(t).directory(root);
   const sourcePath = join(root, 'source.mp4');
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:d=1', '-c:v', 'libx264', sourcePath]);
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:d=1', '-c:v', 'libx264', sourcePath]));
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory);
   writeFileSync(join(panelDirectory, 'index.html'), 'ClapGrid');
-  const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
-  t.onTestFinished(() => service.close());
+  const service = await projectCleanup(t).startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
   const mcp = createBusinessMcp(service.url);
-  t.onTestFinished(() => mcp.close());
+  projectCleanup(t).connection(() => mcp);
   const client = new Client({ name: '视频验证', version: '1' });
-  t.onTestFinished(() => client.close());
+  projectCleanup(t).connection(() => client);
   const [a, b] = InMemoryTransport.createLinkedPair();
   await mcp.connect(b); await client.connect(a);
   const imported = await client.callTool({ name: 'clapgrid_import_video', arguments: { sourcePath } });
   assert.notEqual(imported.isError, true);
   const asset = (imported.structuredContent as { asset: VideoAsset }).asset;
   const session = await beginEdit(service.url);
-  t.onTestFinished(() => session.close());
+  projectCleanup(t).connection(() => session);
   const conflict = await client.callTool({ name: 'clapgrid_import_video', arguments: { sourcePath } });
   assert.equal(conflict.isError, true);
   assert.match(JSON.stringify(conflict.content), /用户正在编辑/);

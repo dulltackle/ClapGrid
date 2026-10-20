@@ -1,4 +1,5 @@
-import { test } from 'vitest';
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { test, expect } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -9,8 +10,7 @@ async function fixture(t: import('vitest').TestContext) {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-modification-'));
   const panelDirectory = join(root, 'panel');
   mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'ClapGrid');
-  const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
-  t.onTestFinished(async () => { await service.close(); rmSync(root, { recursive: true, force: true }); });
+  const service = await projectCleanup(t).startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 }); projectCleanup(t).directory(root);
   const post = (path: string, body: unknown, token?: string) => fetch(`${service.url}${path}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Edit-Token': token } : {}) }, body: JSON.stringify(body),
   });
@@ -44,12 +44,12 @@ test('Codex 收到写请求即占用修改权，查询不受阻；中断及格�
   pending.on('error', () => {});
   pending.write('{"changes":');
   t.onTestFinished(() => { pending.destroy(); });
-  for (let i = 0; i < 50 && !(await status()).modification; i++) await new Promise(resolve => setTimeout(resolve, 10));
+  await expect.poll(async () => !(await status()).modification).toBeFalsy();
   assert.deepEqual((await status()).modification, { owner: 'codex' });
   assert.equal((await fetch(`${service.url}/api/edit-session`, { method: 'POST' })).status, 409);
   assert.equal((await post('/api/codex/modify', { changes: [{ kind: 'add', text: '不排队' }] })).status, 409);
   pending.destroy();
-  for (let i = 0; i < 50 && (await status()).modification; i++) await new Promise(resolve => setTimeout(resolve, 10));
+  await expect.poll(async () => (await status()).modification).toBeFalsy();
   assert.equal((await status()).modification, null);
   assert.equal((await post('/api/codex/modify', { changes: [{ kind: 'edit', text: '缺少快照' }] })).status, 400);
   assert.equal((await status()).modification, null);
@@ -84,7 +84,7 @@ test('用户连接断开释放修改权，旧取消凭据不能解除下一次�
   const first = await fetch(`${service.url}/api/edit-session`, { method: 'POST', signal: controller.signal });
   const { token: oldToken } = JSON.parse(new TextDecoder().decode((await first.body!.getReader().read()).value).trim());
   controller.abort();
-  for (let i = 0; i < 50 && (await status()).modification; i++) await new Promise(resolve => setTimeout(resolve, 10));
+  await expect.poll(async () => (await status()).modification).toBeFalsy();
   assert.equal((await status()).modification, null);
   const next = await beginEdit(service.url);
   await post('/api/edit-session/release', {}, oldToken);
@@ -122,13 +122,14 @@ test('同一项目不能由不同端口的两个服务同时修改，关闭所�
   const initial = await status();
   const options = { projectDirectory: initial.snapshot.project.directory, panelDirectory: join(initial.snapshot.project.directory, '..', 'panel'), port: 0 };
   let unexpected: Awaited<ReturnType<typeof startService>> | undefined;
+  projectCleanup(t).service(() => unexpected);
   try {
     await assert.rejects(async () => { unexpected = await startService(options); }, /项目已由另一服务打开/);
   } finally { await unexpected?.close(); }
   assert.equal((await status()).modification, null);
   // fixture 的 close 应可重复调用；正常释放项目独占后允许重新打开。
   await service.close();
-  const reopened = await startService(options);
+  const reopened = await projectCleanup(t).startService(options);
   assert.equal((await (await fetch(`${reopened.url}/api/status`)).json()).snapshot.project.id, initial.snapshot.project.id);
   await reopened.close();
 });
@@ -158,7 +159,7 @@ test('表格选择连接独立于修改权，断开后不能使用旧选择，�
   await userBatch([{ kind: 'reorder', expectedIds: [a.id, b.id, c.id], ids: [c.id, a.id, b.id] }]);
   assert.deepEqual((await query({ kind: 'selected' })).segments.map((s: { id: string; order: number }) => [s.id, s.order]), [[b.id, 3]]);
   controller.abort();
-  for (let i = 0; i < 50 && (await query({ kind: 'selected' })).availability !== 'unavailable'; i++) await new Promise(resolve => setTimeout(resolve, 10));
+  await expect.poll(async () => (await query({ kind: 'selected' })).availability !== 'unavailable').toBeFalsy();
   assert.equal((await query({ kind: 'selected' })).availability, 'unavailable');
   assert.equal((await post('/api/codex/process', { scope: { kind: 'selected' }, expected: [b], action: { kind: 'delete' } })).status, 409);
   const explicit = await query({ kind: 'ids', ids: [b.id] });

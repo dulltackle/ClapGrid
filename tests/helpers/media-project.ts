@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execCommand } from './command.js';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -17,13 +17,18 @@ export type SpeechControl = {
 export const test = base.extend<{ mediaFiles: MediaFiles; speechControl: SpeechControl }>({
   mediaFiles: async ({}, use) => {
     const directory = await mkdtemp(join(tmpdir(), 'clapgrid-media-input-'));
+    let commandsExited = false;
     try {
       const video = join(directory, '实际素材.mp4');
       const audio = join(directory, 'speech.mp3');
-      execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=160x90:r=10', '-t', '4', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', video]);
-      execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=2', '-c:a', 'libmp3lame', audio]);
+      await execCommand('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=160x90:r=10', '-t', '4', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', video]);
+      await execCommand('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=2', '-c:a', 'libmp3lame', audio]);
+      commandsExited = true;
       await use({ video, audio: await readFile(audio) });
-    } finally { await rm(directory, { recursive: true, force: true }); }
+    } finally {
+      if (commandsExited) await rm(directory, { recursive: true, force: true });
+      else console.error(`媒体命令未确认完成，保留输入目录 ${directory}`);
+    }
   },
   speechControl: async ({ mediaFiles }, use) => {
     const pending = new Set<() => void>();

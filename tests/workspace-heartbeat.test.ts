@@ -1,3 +1,4 @@
+import { projectCleanup } from './helpers/project-cleanup.js';
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
@@ -9,7 +10,7 @@ import { beginEdit, connectTable } from '../src/shared/client.js';
 
 test('心跳共享宿主工作空间核对：多条长连接不再每秒启动宿主进程，工作空间改变后仍会释放', { timeout: 30000 }, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-heartbeat-'));
-  t.onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  projectCleanup(t).directory(root);
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
   const first = join(root, 'first'); const second = join(root, 'second'); mkdirSync(first); mkdirSync(second);
   const threadId = randomUUID(); const state = join(root, 'host.json'); const spawns = join(root, 'spawns'); const host = join(root, 'host.cjs');
@@ -20,8 +21,7 @@ test('心跳共享宿主工作空间核对：多条长连接不再每秒启动�
   const previousHost = process.env.CLAPGRID_CODEX_BIN;
   t.onTestFinished(() => { if (previousHost === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = previousHost; });
   process.env.CLAPGRID_CODEX_BIN = host;
-  const service = await startService({ projectDirectory: join(first, 'clapgrid'), workspaceDirectory: first, panelDirectory, port: 0 });
-  t.onTestFinished(() => service.close());
+  const service = await projectCleanup(t).startService({ projectDirectory: join(first, 'clapgrid'), workspaceDirectory: first, panelDirectory, port: 0 });
   const origin = service.url;
   const identity = await (await fetch(`${origin}/api/identity`)).json();
   const bind = async () => (await (await fetch(`${origin}/api/binding`, { method: 'POST', body: JSON.stringify({ threadId, workspace: identity.workspace, projectId: identity.projectId, instanceId: identity.instanceId }) })).json()).binding;

@@ -1,15 +1,14 @@
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { command as runCommand } from './helpers/vitest-command.js';
 import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
 
-// 原 Node 文件未设置测试及清理时限；仅本迁移文件保留相同语义。
-vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
 const root = resolve('tests/fixtures/production-manifest-encoding');
 const catalog = JSON.parse(readFileSync(join(root, 'catalog.json'), 'utf8')) as {
@@ -28,14 +27,14 @@ function member(archive: Buffer, name: string) {
   throw new Error('缺少成员：' + name);
 }
 for (const entry of catalog.cases) {
-  test(`真实 Node 清单码点身份与两旧入口一致：${entry.name}`, t => {
+  test(`真实 Node 清单码点身份与两旧入口一致：${entry.name}`, async t => {
     const project = mkdtempSync(join(tmpdir(), 'clapgrid-manifest-'));
-    t.onTestFinished(() => rmSync(project,{recursive:true,force:true}));
+    projectCleanup(t).directory(project);
     cpSync(join(root,entry.name,'project'),project,{recursive:true});
     const manifest = readFileSync(join(project,'production.json'));
     assert.equal(sha(manifest),entry.manifestSha256);
     for (const version of entry.versions) for (const result of version.results) assert.equal(result.exit,entry.success ? 0 : 1);
-    const call = (command: string, archive: string) => spawnSync(process.execPath,[resolve('scripts/production.mjs'),command,'--project',project,'--report',join(project,'report.json'),command==='pack'?'--output':'--archive',archive],{encoding:'utf8',env:{...process.env,PATH:project}});
+    const call = (command: string, archive: string) => runCommand(process.execPath,[resolve('scripts/production.mjs'),command,'--project',project,'--report',join(project,'report.json'),command==='pack'?'--output':'--archive',archive],{encoding:'utf8',env:{...process.env,PATH:project}});
     for (const version of entry.versions) if (entry.success) {
       const archive = join(root,entry.name,version.archive!);
       const oldBytes = readFileSync(archive), expectedIndex = readFileSync(join(root,entry.name,'expected-index.json'));
@@ -43,16 +42,16 @@ for (const entry of catalog.cases) {
       assert.equal(sha(expectedIndex),version.indexSha256);
       assert.deepEqual(member(oldBytes,'.clapgrid-package.json'),expectedIndex);
       assert.deepEqual(member(oldBytes,'production.json'),manifest);
-      const verified = call('verify-package',archive);
+      const verified = await call('verify-package',archive);
       assert.equal(verified.status,0,verified.stdout+verified.stderr);
     }
-    const archive = join(project,'new.tar.gz'), packed = call('pack',archive);
+    const archive = join(project,'new.tar.gz'), packed = (await call('pack',archive));
     assert.equal(packed.status,entry.success ? 0 : 1,packed.stdout+packed.stderr);
     if (entry.success) {
       const bytes = readFileSync(archive);
       assert.deepEqual(member(bytes,'production.json'),manifest);
       assert.deepEqual(member(bytes,'.clapgrid-package.json'),readFileSync(join(root,entry.name,'expected-index.json')));
-      const verified = call('verify-package',archive);
+      const verified = await call('verify-package',archive);
       assert.equal(verified.status,0,verified.stdout+verified.stderr);
     } else assert.match(packed.stdout,/surrogate|编码/);
     assert.deepEqual(readFileSync(join(project,'production.json')),manifest);
@@ -76,14 +75,14 @@ test('v1 字符串按 Python 码点保持键身份、重复覆盖位置，并允
 });
 
 // 独立旧入口范围探针确认这些编码/类型在 Node 前置 schema 已失败，不能因 Python 解码器放宽。
-for (const variant of ['utf8-bom','utf16','schema-true']) test(`制作清单保留旧 Native 前置范围：${variant}`, t => {
+for (const variant of ['utf8-bom','utf16','schema-true']) test(`制作清单保留旧 Native 前置范围：${variant}`, async t => {
   const project = mkdtempSync(join(tmpdir(),'clapgrid-manifest-range-'));
-  t.onTestFinished(() => rmSync(project,{recursive:true,force:true}));
+  projectCleanup(t).directory(project);
   cpSync(join(root,'escaped-pair','project'),project,{recursive:true});
   const path = join(project,'production.json'), raw = readFileSync(path);
   writeFileSync(path,variant === 'utf8-bom' ? Buffer.concat([Buffer.from('efbbbf','hex'),raw]) : variant === 'utf16' ? Buffer.from(raw.toString(),'utf16le') : Buffer.from(raw.toString().replace('"schemaVersion":1','"schemaVersion":true')));
   for (const command of ['pack','verify-package']) {
-    const result = spawnSync(process.execPath,[resolve('scripts/production.mjs'),command,'--project',project,'--report',join(project,'report.json'),command==='pack'?'--output':'--archive',command==='pack'?join(project,'new.tar.gz'):join(root,'escaped-pair','legacy-3.12.tar.gz')],{encoding:'utf8',env:{...process.env,PATH:project}});
+    const result = (await runCommand(process.execPath,[resolve('scripts/production.mjs'),command,'--project',project,'--report',join(project,'report.json'),command==='pack'?'--output':'--archive',command==='pack'?join(project,'new.tar.gz'):join(root,'escaped-pair','legacy-3.12.tar.gz')],{encoding:'utf8',env:{...process.env,PATH:project}}));
     assert.equal(result.status,1,result.stdout+result.stderr);
   }
 });

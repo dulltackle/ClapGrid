@@ -8,6 +8,8 @@ export default defineConfig({
     environment: 'node', includeTaskLocation: true,
     include: ['tests/**/*.test.ts'],
     pool: 'forks', maxWorkers: 1, fileParallelism: false, isolate: true,
+    testTimeout: 15000, hookTimeout: 10000,
+    expect: { poll: { timeout: 5000, interval: 20 } },
     retry: 0, allowOnly: false, passWithNoTests: false,
   },
 });

@@ -1,27 +1,23 @@
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { execCommand } from './helpers/vitest-command.js';
 import { test, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, cpSync, writeFileSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { connectTable, beginEdit } from '../src/shared/client.js';
 import { dependencyView } from './helpers/temporary-repository.js';
 import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 
-// 原 Node 文件默认未限时；保留显式专项 timeout 的优先级。
-vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 
-const exec = promisify(execFile);
+const exec = execCommand;
 const repo = resolve('.');
 
 test('纯面板发布保留服务实例、项目、绑定和旧资源，忙碌及未知面板阻止切换，失败可回滚', { timeout: 60000 }, async t => {
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-panel-release-'));
   let stopOwnedServices: (() => Promise<void>) | undefined;
-  t.onTestFinished(async () => {
-    await stopOwnedServices?.();
-    rmSync(root, { recursive: true, force: true });
-  });
+  projectCleanup(t).directory(root);
+  projectCleanup(t).service(() => ({ close: () => stopOwnedServices?.() }));
   const source = join(root, 'source'), workspace = join(root, 'workspace');
   mkdirSync(source); mkdirSync(workspace);
   for (const name of ['src', 'plugins', 'package.json', 'package-lock.json']) cpSync(join(repo, name), join(source, name), { recursive: true });
@@ -56,7 +52,7 @@ test('纯面板发布保留服务实例、项目、绑定和旧资源，忙碌�
   };
   const update = (extra: object = {}) => post('/api/panel-release', { packageDirectory: next.directory, instanceId: before.instanceId, expectedPanelFingerprint: old.identity.panelFingerprint, ...extra });
   const table = await connectTable(before.url);
-  t.onTestFinished(() => table.close());
+  projectCleanup(t).connection(() => table);
   assert.equal((await update()).body.outcome, 'pending', '未知客户端状态不能默认为空闲');
   await post('/api/panel-activity', { tableId: table.tableId, busy: true });
   assert.equal((await update()).body.outcome, 'pending', '播放或本地草稿阻止切换');
@@ -119,7 +115,7 @@ test('纯面板发布保留服务实例、项目、绑定和旧资源，忙碌�
   const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
   const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js');
   const transport = new StdioClientTransport({ command: process.execPath, args: [join(old.directory, 'dist/mcp/main.js')], env, stderr: 'pipe' });
-  const client = new Client({ name: '面板更新测试', version: '1' }); await client.connect(transport);
+  const client = new Client({ name: '面板更新测试', version: '1' }); await projectCleanup(t).connectMcp(client, transport);
   try { const result = await client.callTool({ name: 'clapgrid_status', arguments: {}, _meta: { threadId: thread } }); assert.equal(result.isError, undefined); assert.equal((result.structuredContent as any).instanceId, before.instanceId); }
   finally { await client.close(); }
   await post('/api/panel-release', { rollbackFingerprint: old.identity.panelFingerprint, instanceId: before.instanceId, expectedPanelFingerprint: next.identity.panelFingerprint });

@@ -1,3 +1,4 @@
+import { execCommand } from '../tests/helpers/command-runtime.mjs';
 import { spawnSync } from 'node:child_process';
 import { realpathSync, statSync, readFileSync, writeFileSync } from 'node:fs';
 const [command, ...args] = process.argv.slice(2);
@@ -23,7 +24,7 @@ try {
   if (command === 'interpreter') {
     const attempts = [];
     for (const candidate of args) {
-      const result = spawnSync(candidate, ['--version'], { encoding: 'utf8', timeout: 5000 });
+      const result = spawnSync(candidate, ['--version'], { encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL' });
       attempts.push({ candidate, available: result.status === 0 });
       if (result.status === 0) { print({ selected: candidate, attempts }); process.exit(0); }
     }
@@ -38,7 +39,13 @@ try {
     if (!/^repos\/[\w.-]+\/[\w.-]+\//.test(endpoint)) throw new Error('需要仓库 REST 路径');
     const fields = projection.split(',');
     if (!fields.length || fields.some((field) => !/^[A-Za-z_]\w*$/.test(field))) throw new Error('需要顶层字段');
-    const result = spawnSync('gh', ['api', endpoint, '--method', 'GET', '--paginate', '--slurp'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 120000 });
+    const cancellation = new AbortController();
+    const interrupt = () => cancellation.abort(Error('用户取消 GitHub 查询'));
+    process.once('SIGINT', interrupt); process.once('SIGTERM', interrupt);
+    let result;
+    try {
+      result = await execCommand('gh', ['api', endpoint, '--method', 'GET', '--paginate', '--slurp'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 120000, signal: cancellation.signal });
+    } finally { process.off('SIGINT', interrupt); process.off('SIGTERM', interrupt); }
     if (result.status !== 0) throw new Error('GitHub 查询失败');
     const pages = JSON.parse(result.stdout);
     if (!Array.isArray(pages) || pages.some((page) => !Array.isArray(page))) throw new Error('仅支持 REST 列表端点');

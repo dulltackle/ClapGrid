@@ -1,4 +1,5 @@
-import { test } from 'vitest';
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { test, expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -9,14 +10,7 @@ import { openBusiness } from '../src/business/index.js';
 import { startService } from '../src/service/server.js';
 import { beginEdit, modifyBatch, queryExports, querySpeech, queryStatus, submitExport, submitSpeech } from '../src/shared/client.js';
 
-async function until(check: () => boolean | Promise<boolean>) {
-  const deadline = Date.now() + 10000;
-  while (Date.now() < deadline) {
-    if (await check()) return;
-    await new Promise(resolve => setTimeout(resolve, 10));
-  }
-  assert.fail('项目状态未在限时内达到预期');
-}
+
 
 for (const kind of ['单片段配音', '批量配音', '导出'] as const) test(`${kind}受理保存失败后释放占用，不留下任务或阻止后续编辑`, async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-admission-failure-'));
@@ -24,7 +18,7 @@ for (const kind of ['单片段配音', '批量配音', '导出'] as const) test(
   const business = openBusiness(directory, { key: () => '测试', configPath: '测试', fetch: (async () => { calls++; throw new Error('不应调用供应商'); }) as typeof fetch });
   const segment = business.addSegment('任务受理失败').segments[0]!;
   const db = new DatabaseSync(business.getSnapshot().storage.database);
-  t.onTestFinished(async () => { db.close(); await business.close(); rmSync(directory, { recursive: true, force: true }); });
+  projectCleanup(t).connection(() => db); projectCleanup(t).business(() => business); projectCleanup(t).directory(directory);
   const table = kind === '单片段配音' ? 'speech_tasks' : kind === '批量配音' ? 'speech_operations' : 'export_tasks';
   // 批量操作最后落盘失败，验证此前写入的配音任务也被回滚。
   db.exec(`CREATE TRIGGER reject_acceptance BEFORE INSERT ON ${table} BEGIN SELECT RAISE(ABORT, '模拟受理保存失败'); END`);
@@ -50,22 +44,22 @@ for (const kind of ['speech', 'export'] as const) test(`${kind}终态保存失�
   const options = { projectDirectory: join(root, 'project'), panelDirectory, port: 0, speechRuntime: {
     key: () => '测试', configPath: '测试', fetch: (async () => { calls++; return new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n'); }) as typeof fetch,
   } };
-  let service = await startService(options);
+  let service = await projectCleanup(t).startService(options);
   await modifyBatch(service.url, { changes: [{ kind: 'add', text: '终态保存失败' }] });
   const before = await queryStatus(service.url);
   const db = new DatabaseSync(before.snapshot.storage.database);
-  t.onTestFinished(async () => { await service.close(); db.close(); rmSync(root, { recursive: true, force: true }); });
+  projectCleanup(t).service(() => service); projectCleanup(t).connection(() => db); projectCleanup(t).directory(root);
   db.exec(`CREATE TRIGGER reject_terminal BEFORE UPDATE ON ${kind}_tasks
     WHEN json_extract(NEW.value, '$.state') IN ('succeeded', 'failed', 'cancelled', 'interrupted')
     BEGIN SELECT RAISE(ABORT, '模拟终态保存失败'); END`);
   const request = { requestId: randomUUID(), segmentId: before.snapshot.segments[0]!.id };
   const task = kind === 'speech' ? await submitSpeech(service.url, request) : await submitExport(service.url);
   if (kind === 'speech') {
-    await until(() => existsSync(join(before.snapshot.storage.mediaDirectory, `${task.id}.mp3`)));
+    await expect.poll(() => existsSync(join(before.snapshot.storage.mediaDirectory, `${task.id}.mp3`)), { timeout: 10000 }).toBeTruthy();
     assert.equal((await querySpeech(service.url)).tasks[0]!.state, 'running');
     assert.equal((await submitSpeech(service.url, request)).id, task.id);
   } else {
-    await until(async () => (await queryExports(service.url)).tasks.some(item => item.message.includes('清理或保存失败')));
+    await expect.poll(async () => (await queryExports(service.url)).tasks.some(item => item.message.includes('清理或保存失败')), { timeout: 10000 }).toBeTruthy();
     assert.equal((await submitExport(service.url)).id, task.id);
   }
   assert.equal((await querySpeech(service.url)).locked, kind === 'speech');
@@ -77,8 +71,8 @@ for (const kind of ['speech', 'export'] as const) test(`${kind}终态保存失�
   });
   assert.equal((await stop.json()).outcome, 'kept');
   db.exec('DROP TRIGGER reject_terminal');
-  await service.close(); service = await startService(options);
-  await until(async () => !(await queryStatus(service.url)).taskLocked);
+  await service.close(); service = await projectCleanup(t).startService(options);
+  await expect.poll(async () => !(await queryStatus(service.url)).taskLocked, { timeout: 10000 }).toBeTruthy();
   if (kind === 'speech') {
     const recovered = (await querySpeech(service.url)).tasks[0]!;
     assert.equal(recovered.id, task.id); assert.equal(recovered.state, 'unknown');
@@ -104,8 +98,8 @@ test('中断导出恢复清理失败时继续占用，修复文件后重开才�
   const previewDirectory = join(mediaDirectory, `${task.id}.export.webm`);
   mkdirSync(previewDirectory);
   business = openBusiness(directory);
-  t.onTestFinished(async () => { await business.close(); rmSync(directory, { recursive: true, force: true }); });
-  await until(() => business.getExportTasks().tasks.some(item => item.message.includes('清理失败')));
+  projectCleanup(t).business(() => business); projectCleanup(t).directory(directory);
+  await expect.poll(() => business.getExportTasks().tasks.some(item => item.message.includes('清理失败')), { timeout: 10000 }).toBeTruthy();
   assert.equal(business.getActivity().taskLocked, true);
   assert.equal(business.getExportTasks().locked, true);
   assert.throws(() => business.acquire('user'), /导出/);
@@ -113,7 +107,7 @@ test('中断导出恢复清理失败时继续占用，修复文件后重开才�
   await business.close(); rmSync(previewDirectory, { recursive: true });
   business = openBusiness(directory);
   assert.equal(business.getActivity().taskLocked, true);
-  await until(() => !business.getActivity().taskLocked);
+  await expect.poll(() => !business.getActivity().taskLocked, { timeout: 10000 }).toBeTruthy();
   assert.equal(business.getExportTasks().tasks[0]!.state, 'interrupted');
   const token = business.acquire('user'); business.release(token);
 });

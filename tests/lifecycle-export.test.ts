@@ -1,7 +1,8 @@
-import { test, vi } from 'vitest';
+import { exportState } from './helpers/export-state.js';
+import { projectCleanup } from './helpers/project-cleanup.js';
+import { execCommand, execBytes } from './helpers/vitest-command.js';
+import { test, vi, expect } from 'vitest';
 import assert from 'node:assert/strict';
-import { execFile, execFileSync } from 'node:child_process';
-import { promisify } from 'node:util';
 import { build } from 'esbuild';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -13,26 +14,18 @@ import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 import { openBusiness } from '../src/business/index.js';
 import { queryStatus, queryExports, submitExport, modifyBatch, connectTable, querySpeech } from '../src/shared/client.js';
 
-// 保留原 Node 未显式设置的时限；各测试的显式 timeout 仍优先。
-vi.setConfig({ testTimeout: 0, hookTimeout: 0 });
 const { ownerAlive, processIdentity } = await import(new URL('./helpers/product-process.mjs', import.meta.url).href);
 
-async function until<T>(read: () => Promise<T>, accept: (value: T) => boolean, timeout = 60000) {
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    try { const value = await read(); if (accept(value)) return value; } catch { /* 启动或关机期间连接不可用。 */ }
-    await new Promise(resolve => setTimeout(resolve, 25));
-  }
-  throw new Error('等待生命周期状态超时');
-}
+
 
 test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体再清理，保留成片并从最新输入重新导出', { timeout: 120000 }, async t => {
   if (process.platform !== 'linux') t.skip('此验证需要 Linux 运行环境');
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-crash-'));
+  projectCleanup(t).directory(root);
   const workspace = join(root, 'workspace'); const otherWorkspace = join(root, 'other'); mkdirSync(otherWorkspace);
   const directory = join(workspace, 'clapgrid'); const video = join(root, 'video.mp4'); const audio = join(root, 'voice.mp3');
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:d=1', '-c:v', 'libx264', video]);
-  execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=5', '-ar', '24000', audio]);
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:d=1', '-c:v', 'libx264', video]));
+  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=5', '-ar', '24000', audio]));
   const payload = readFileSync(audio).toString('base64');
   const business = openBusiness(directory, { key: () => 'test', configPath: 'test', fetch: (async () => new Response(`data: {"code":0,"data":"${payload}"}\n\ndata: {"code":20000000}\n\n`)) as typeof fetch });
   try {
@@ -44,7 +37,7 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
     await business.setExportSettings(token, { expected, settings: { ...expected, fontFamily: 'Noto Sans CJK SC', fontSize: 48 } });
     business.release(token);
     business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
-    await until(async () => business.getSpeechStatus(), value => !value.locked);
+    await vi.waitFor(async () => { const value = await (async () => business.getSpeechStatus())(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   } finally { await business.close(); }
   const dist = join(root, 'dist'); mkdirSync(join(dist, 'panel'), { recursive: true });
   writeFileSync(join(root, 'package.json'), '{"type":"module"}'); writeFileSync(join(dist, 'panel', 'index.html'), 'ClapGrid');
@@ -58,7 +51,7 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
   writeFileSync(host, `#!/usr/bin/env node\nconst fs=require('node:fs');require('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:{id:r.params.threadId,cwd:JSON.parse(fs.readFileSync(${JSON.stringify(hostState)},'utf8'))[r.params.threadId]}}}));});`, { mode: 0o700 });
   const env = { ...process.env, CLAPGRID_CODEX_BIN: host };
   const owners = new Map<number, ReturnType<typeof serviceProcess>>();
-  const remember = (pid: number) => { owners.set(pid, serviceProcess(pid)); };
+  const remember = (pid: number) => { const owner = serviceProcess(pid); owners.set(pid, owner); projectCleanup(t).process(owner); };
   const signalOwned = (pid: number, signal: NodeJS.Signals) => {
     const owner = owners.get(pid);
     if (!owner) throw new Error(`进程 ${pid} 未登记，保留现场`);
@@ -70,13 +63,13 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
   const pids: number[] = []; const residualMedia: number[] = []; const clients: Client[] = [];
   let url = '';
   const start = async (id = thread) => {
-    const status = JSON.parse((await promisify(execFile)(process.execPath, [join(dist, 'runtime.js'), 'open', '--workspace', workspace, '--thread', id], { env })).stdout);
+    const status = JSON.parse((await execCommand(process.execPath, [join(dist, 'runtime.js'), 'open', '--workspace', workspace, '--thread', id], { env })).stdout);
     remember(status.pid); pids.push(status.pid); if (id === thread) url = status.url;
     return { status, url: status.url as string };
   };
   const connectMcp = async () => {
     const client = new Client({ name: 'lifecycle-regression', version: '1' }); clients.push(client);
-    await client.connect(new StdioClientTransport({ command: process.execPath, args: [join(dist, 'mcp/main.js')], env: Object.fromEntries(Object.entries(env).filter((entry): entry is [string, string] => typeof entry[1] === 'string')) }));
+    await projectCleanup(t).connectMcp(client, new StdioClientTransport({ command: process.execPath, args: [join(dist, 'mcp/main.js')], env: Object.fromEntries(Object.entries(env).filter((entry): entry is [string, string] => typeof entry[1] === 'string')) }));
     return client;
   };
   const mcpExports = async (client: Client, id = thread) => {
@@ -88,12 +81,7 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
     signalOwned(pid, 'SIGKILL');
     await waitForServiceExit(owners.get(pid)!, { timeoutMs: 60000, intervalMs: 25 });
   };
-  t.onTestFinished(async () => {
-    await Promise.all(clients.map(client => client.close()));
-    for (const pid of new Set(residualMedia)) await kill(pid);
-    for (const pid of new Set(pids)) await kill(pid);
-    rmSync(root, { recursive: true, force: true });
-  });
+
   const first = await start();
   let client = await connectMcp();
   const panel = await connectTable(url);
@@ -105,7 +93,7 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
   assert.equal((await mcpExports(client, otherThread)).tasks[0]!.id, accepted.id);
   assert.equal((await submitExport(url)).id, accepted.id);
   assert.equal((await queryStatus(url)).taskLocked, true);
-  const complete = await until(() => queryExports(url), value => !value.locked);
+  const complete = await vi.waitFor(async () => { const value = await (() => queryExports(url))(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   const output = complete.tasks.find(task => task.id === accepted.id)!;
   assert.equal(output.state, 'succeeded', JSON.stringify(output));
   const original = readFileSync(output.output!.path);
@@ -116,7 +104,7 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
   const speech = await querySpeech(url);
   const originalAudio = Buffer.from(await (await fetch(new URL(speech.audio[0]!.url, url))).arrayBuffer());
   const next = await submitExport(url);
-  await until(() => queryExports(url), value => value.tasks.some(task => task.id === next.id && task.state === 'rendering'));
+  await exportState(() => queryExports(url), next.id, 'rendering');
   // 从操作系统观察本次真实 FFmpeg，重开解锁时它必须已停止。
   const descendants = (pid: number): number[] => {
     const parent = owners.get(pid);
@@ -130,14 +118,14 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
         const stat = readFileSync(`/proc/${child}/stat`, 'utf8');
         const fields = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
         if (Number(fields[1]) !== pid || ownerAlive(parent) !== true || ownerAlive(identity) !== true) return [];
-        owners.set(child, identity);
+        owners.set(child, identity); projectCleanup(t).process(identity);
         return [child, ...descendants(child)];
       } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []; throw error; }
     });
   };
-  const mediaPids = await until(async () => descendants(first.status.pid).filter(pid => {
+  const mediaPids = await vi.waitFor(async () => { const value = await (async () => descendants(first.status.pid).filter(pid => {
     try { return readFileSync(`/proc/${pid}/comm`, 'utf8').trim() === 'ffmpeg'; } catch { return false; }
-  }), value => value.length > 0);
+  }))(); assert.ok((value => value.length > 0)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   residualMedia.push(...mediaPids);
   for (const pid of mediaPids) signalOwned(pid, 'SIGSTOP');
   const oldUrl = url;
@@ -161,7 +149,7 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
   assert.equal(second.status.snapshot.project.id, first.status.snapshot.project.id);
   assert.notEqual(second.status.instanceId, first.status.instanceId);
   assert.equal((await fetch(new URL(url).origin + new URL(previousBinding).pathname + '/api/status')).status, 409);
-  const recovered = await until(() => queryExports(url), value => !value.locked);
+  const recovered = await vi.waitFor(async () => { const value = await (() => queryExports(url))(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   for (const pid of mediaPids) {
     let alive = false;
     try { alive = !readFileSync(`/proc/${pid}/stat`, 'utf8').split(') ')[1]!.startsWith('Z'); } catch { /* 已回收。 */ }
@@ -180,7 +168,7 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
   const segment = second.status.snapshot.segments[0]!;
   await modifyBatch(url, { changes: [{ kind: 'edit', expected: segment, text: '最新输入需要更新配音' }] });
   const retry = await submitExport(url);
-  const retried = await until(() => queryExports(url), value => !value.locked);
+  const retried = await vi.waitFor(async () => { const value = await (() => queryExports(url))(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   const failed = retried.tasks.find(task => task.id === retry.id)!;
   assert.equal(failed.state, 'failed');
   assert.ok(failed.issues.some(issue => /配音待更新/.test(issue.message)));
@@ -188,10 +176,10 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
   const current = (await queryStatus(url)).snapshot.segments[0]!;
   await modifyBatch(url, { changes: [{ kind: 'edit', expected: current, text: segment.text }] });
   const guarded = await submitExport(url);
-  await until(() => queryExports(url), value => value.tasks.some(task => task.id === guarded.id && task.state === 'rendering'));
-  const active = await until(async () => descendants(second.status.pid).filter(pid => {
+  await exportState(() => queryExports(url), guarded.id, 'rendering');
+  const active = await vi.waitFor(async () => { const value = await (async () => descendants(second.status.pid).filter(pid => {
     try { return readFileSync(`/proc/${pid}/comm`, 'utf8').trim() === 'ffmpeg'; } catch { return false; }
-  }), value => value.length > 0);
+  }))(); assert.ok((value => value.length > 0)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   residualMedia.push(...active);
   for (const pid of active) signalOwned(pid, 'SIGSTOP');
   const guardianPid = Number(readFileSync(join(directory, 'media-active.json'), 'utf8').match(/"guardianPid":(\d+)/)![1]);
