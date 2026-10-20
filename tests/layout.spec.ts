@@ -97,15 +97,19 @@ for (const [width, height] of [[1600, 1000], [780, 579], [541, 579], [420, 800],
   });
 }
 
-test('长文案摘要保留原文，全文编辑可滚动、Tab 保存与字符入口正常', async ({ page, project }) => {
+for (const width of [1600, 420]) test(`长文案摘要保留原文，全文编辑可滚动、Tab 保存与字符入口正常 ${width}`, async ({ page, project }) => {
   const text = '长文案完整内容\n'.repeat(100);
   const [id] = await project.seed([text]);
+  await page.setViewportSize({width,height:800});
   await page.goto(project.url);
   const first = row(page, id!);
   await expect(first.locator('.text-summary')).toHaveText(text);
+  const summary = await first.locator('.text-summary').evaluate(e=>({height:e.getBoundingClientRect().height,line:parseFloat(getComputedStyle(e).lineHeight)}));
+  expect(summary.height).toBeGreaterThanOrEqual(summary.line*2);expect(summary.height).toBeLessThanOrEqual(summary.line*3+1);
   await first.locator('[data-segment-script]').click();
   const editor = page.getByLabel('文案全文', { exact: true });
   await expect(editor).toHaveValue(text); await expect(editor).toBeFocused();
+  await inside(editor,width,800);
   expect(await editor.evaluate(e => ({ max: (e as HTMLTextAreaElement).maxLength, scroll: e.scrollHeight > e.clientHeight }))).toEqual({ max: -1, scroll: true });
   await editor.press('Control+End');
   expect(await editor.evaluate(e => e.scrollTop)).toBeGreaterThan(0);
@@ -113,6 +117,8 @@ test('长文案摘要保留原文，全文编辑可滚动、Tab 保存与字符�
   await expect.poll(async () => (await project.status()).snapshot.segments[0]!.text).toBe(text + '末尾');
   await first.locator('[col-id="text"]').focus(); await page.keyboard.press('Enter');
   await expect(editor).toHaveValue(text + '末尾'); await editor.press('Escape');
+  await first.locator('[col-id="text"]').focus();await page.keyboard.press('x');
+  await expect(editor).toHaveValue(text+'末尾');await expect(editor).toBeFocused();await inside(editor,width,800);await editor.press('Escape');
 });
 
 for (const width of [1600, 420]) test(`页头主题、查找键盘与模态边界 ${width}`, async ({ page, project }) => {

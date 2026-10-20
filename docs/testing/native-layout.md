@@ -7,7 +7,7 @@
 | search：连续匹配、大小写、按片段计数、全部命中、循环、关闭与重开、全部行保留、勾选独立 | `search.spec.ts` 三种宽窄/窄矮旅程；`text-search.test.ts` 保留空格、偏移、重叠和字面匹配逻辑 |
 | search：查找不挤占表格、屏外虚拟长文案命中不裁剪、不被覆盖、编辑更新后失效、恢复匹配等待定位、不同面板词独立 | `search.spec.ts` 实测表格几何、elementFromPoint 和两标签；真实保存和外部 HTTP 修改 |
 | table-controls、shell、layout、wide：表格余高、双层行、表头、固定详情、横向及纵向虚拟滚动、非模态详情不改变几何、键盘返回、页面不溢出 | `layout.spec.ts` 1600×1000、780×579、541×579、420×800、420×360；真实服务footer在窄矮视口换行，表格至少240px，其他视口保持80%以上高度 |
-| 长文案原文、摘要、编辑内滚动、无长度限制、Tab保存、Enter重开 | `layout.spec.ts` 长文案；IME、Shift+Enter、保存租约、迟到返回、失败和断线由 #193 `editing.spec.ts`、`project-editing.test.ts` 承接，不重复字符串时钟 |
+| 长文案原文、摘要、编辑内滚动、无长度限制、Tab保存、Enter重开 | `layout.spec.ts` 1600/420长文案实测2–3行摘要及编辑器视口，真实字符键x进入仍保留完整文案；IME、Shift+Enter、保存租约、迟到返回、失败和断线由 #193 `editing.spec.ts`、`project-editing.test.ts` 承接，不重复字符串时钟 |
 | segment-note-layout：空/长说明、原文可读、动态行高不覆盖邻行、Escape来源、外部刷新、删除关闭、三位序号 | `layout.spec.ts` 五视口说明旅程及600条真实数据；展开只读不申请修改权且不写项目 |
 | visual-note：草稿关闭/失败、继续编辑、断线说明冲突、允许清空且不改文案 | #193 `segment-draft.spec.ts` 参数化文案/画面说明保存失败接续；本批 `layout.spec.ts` 实际重启、外部说明写入、冲突保留和清空 |
 | speech-cell-layout：有效/待更新/运行/未生成/失败五种状态、完整文字、横向布局、主按钮数量和102px行高 | `layout.spec.ts` 780、541和420窄矮；仅这些UI状态在HTTP `/api/speech`边界注入，真实播放与制作交 #197 |
