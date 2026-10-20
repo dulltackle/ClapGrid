@@ -5,6 +5,8 @@ import { join, resolve } from 'node:path';
 import { build } from 'vite';
 import { startService } from '../../src/service/server.js';
 import { modifyBatch, queryStatus } from '../../src/shared/client.js';
+import type { BuildIdentity } from '../../src/build-identity.js';
+import type { SpeechRuntime } from '../../src/business/speech.js';
 import type { Batch } from '../../src/shared/contracts.js';
 
 /** 真实 HTTP/SQLite 项目；浏览器、页面和失败附件完全由 Playwright 管理。 */
@@ -16,17 +18,19 @@ export type Project = {
   status(): ReturnType<typeof queryStatus>;
   restart(): Promise<void>;
 };
-export const test = base.extend<{ project: Project }, { panelDirectory: string }>({
-  panelDirectory: [async ({}, use) => {
+export const test = base.extend<{ project: Project; speechRuntime: SpeechRuntime | undefined }, { panelDirectory: string; panelBuildIdentity: BuildIdentity | undefined }>({
+  panelBuildIdentity: [undefined, { scope: 'worker', option: true }],
+  panelDirectory: [async ({ panelBuildIdentity }, use) => {
     const directory = await mkdtemp(join(tmpdir(), 'clapgrid-panel-'));
     try {
-      await build({ configFile: resolve('vite.config.ts'), logLevel: 'error', build: { outDir: directory, emptyOutDir: true } });
+      await build({ configFile: resolve('vite.config.ts'), logLevel: 'error', define: panelBuildIdentity ? { __CLAPGRID_BUILD_IDENTITY__: JSON.stringify(panelBuildIdentity) } : undefined, build: { outDir: directory, emptyOutDir: true } });
       await use(directory);
     } finally { await rm(directory, { recursive: true, force: true }); }
   }, { scope: 'worker' }],
-  project: async ({ panelDirectory }, use) => {
+  speechRuntime: [undefined, { option: true }],
+  project: async ({ panelDirectory, speechRuntime }, use) => {
     const directory = await mkdtemp(join(tmpdir(), 'clapgrid-browser-'));
-    const options = { projectDirectory: directory, panelDirectory, port: 0 };
+    const options = { projectDirectory: directory, panelDirectory, port: 0, speechRuntime };
     let service = await startService(options);
     try {
       await use({
