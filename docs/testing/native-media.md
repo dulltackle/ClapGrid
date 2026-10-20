@@ -34,7 +34,7 @@
 
 保留 speech、speech-provider、speech-retention、speech-batch、speech-service、speech-config、video、video-service、export-settings、export-tasks、export-service 原生 Vitest 测试，不为已经有效的产品逻辑重建浏览器矩阵。它们继续实际执行必要 SQLite、HTTP、MCP、FFmpeg/ffprobe 与 Node 子进程。删除的 `speech-provider.native.ts` 只是同源 node:test 重复对照，不是产品旧格式兼容样本。
 
-旧 voice/audio/media/video/video-preview/export-settings/export/more-tasks 的 panel 字符串文件由上表承接并删除。#196 删除旧 dialog-panel 时，其中媒体controls、异步导入和嵌套来源的后果由本批实际场景承接。其他票尚有消费者的 shared旧 helper 由后续统一退出，不提前删除。
+旧 voice/audio/media/video/video-preview/export-settings/export/more-tasks 的 panel 字符串文件由上表承接并删除。#196 删除旧 dialog-panel 时，其中媒体controls、异步导入和嵌套来源的后果由本批实际场景承接。共享旧 helper 已在最后消费者退出后由 #200 删除。
 
 ## 配音期间导出入口的真实契约
 

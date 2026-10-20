@@ -15,6 +15,6 @@
 | 心跳重复启动宿主、活动状态未知或切换后旧租约仍有效 | `workspace-heartbeat.test.ts`、`workspace-runtime.test.ts` | 真实长连接与受控宿主程序；关闭后恢复环境 |
 | 往返工作空间导致后台制作任务丢失或重复提交 | `workspace-task-continuity.test.ts` | 实际 runtime/HTTP/MCP 与任务产物，保留原任务身份 |
 
-这些测试直接使用 Vitest 的 `test`、`onTestFinished` 和必要的局部 spy，不依赖旧报告来判断业务结果。产品退出 helper 及其全部消费者在 #198 解耦，避免在本批复制进程出生身份逻辑；其专项包含正常、失败和取消退出。旧执行器和其专属测试在 #200 统一删除。
+这些测试直接使用 Vitest 的 `test`、`onTestFinished` 和必要的局部 spy，不依赖旧报告来判断业务结果。产品退出 helper 及其全部消费者在 #198 解耦，避免在本批复制进程出生身份逻辑；其专项包含正常、失败和取消退出。旧执行器和其专属测试已在 #200 统一删除。
 
 开发时可直接运行 `npx vitest run tests/service.test.ts tests/mcp.test.ts`，或在上述文件中选择受影响场景。过滤和 watch 直接使用 Vitest 参数。迁入兼容原件、生产归档 fixture 和插件更新数据保障仍是产品测试，不属于可删除的旧执行协议。

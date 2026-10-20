@@ -29,7 +29,7 @@
 | 虚拟滚轮后静止指针仍用旧目标 | drag 1600/420宽100行，真实mouse down+wheel，不再move；系统命中行变化、插入线ID/placement随帧更新，松手后真实SQLite顺序对应新目标 |
 | 边缘自动滚动被普通dragTo冒充 | drag 上/下边缘两场景，420×420真实按住鼠标移到32px边缘，轮询真实scrollTop跨200px；回中部停止滚动，读取当前真实行并松手，校验稳定身份位置和片段总数 |
 
-八个旧字符串文件 `selection-panel`、`row-selection-panel`、`row-menu-panel`、`selection-menu-panel`、`delete-confirm-focus`、`drag-panel`、`drag-feedback-panel`、`drag-scroll-panel` 删除。共享 editing-fixture/旧浏览器helper仍有后续批次消费者，暂不删除。原生配置的 `.spec.ts` 收集不依赖旧清单；旧清单、styles:check 等遗留调用由 #200 统一退出，不提供旧命令兼容层。
+八个旧字符串文件 `selection-panel`、`row-selection-panel`、`row-menu-panel`、`selection-menu-panel`、`delete-confirm-focus`、`drag-panel`、`drag-feedback-panel`、`drag-scroll-panel` 删除。共享 editing-fixture/旧浏览器 helper 已在最后消费者退出后由 #200 删除。原生配置的 `.spec.ts` 收集不依赖旧清单；旧清单、styles:check 等遗留调用已由 #200 统一退出，不提供旧命令兼容层。
 
 ## 范围与证据
 

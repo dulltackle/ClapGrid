@@ -19,8 +19,8 @@
 | panel-update-panel：播放/暂停/移除播放器、任务状态禁止刷新 | `panel-refresh.spec.ts` 实际WAV解码播放，媒体元素移除由MutationObserver接线观察；任务状态仅在HTTP响应边界受控注入 |
 | panel-update-panel：同标签sessionStorage稳定勾选、过滤已删除ID、一次消费、断线清除、迟到恢复让位新勾选 | `panel-refresh.spec.ts` 实际页面重载、真实表格连接延迟、SQLite项目与服务查询核对；`panel-update.test.ts` 保留跨绑定/项目/实例/面板及损坏/过期/受限存储边界 |
 | styles：生产同源CSS冲突门槛 | `style-collisions.test.ts` 改用Vitest和标准Vite生产构建，拥有临时目录并finally清理，保留真实产物注入历史grid冲突负例 |
-| panel-targets旧通用等待/覆盖点助手 | 删除其专属测试；原生locator自动等待和真实命中替代旧工具协议。助手仍有其他批旧消费者，待最后消费者退出再删除 |
+| panel-targets旧通用等待/覆盖点助手 | 删除其专属测试；原生locator自动等待和真实命中替代旧工具协议。助手已在最后消费者退出后由 #200 删除 |
 
-删除本批12个旧字符串浏览器文件、panel-targets专属测试及6个重复 `.native.ts` 对照。`panel-update.test.ts`、`text-search.test.ts` 和 `visual-note.test.ts` 仍为产品逻辑/SQLite保障。`panel-styles` 与 `panel-targets` 尚有其他批旧消费者，不在此批抢删。
+删除本批12个旧字符串浏览器文件、panel-targets专属测试及6个重复 `.native.ts` 对照。`panel-update.test.ts`、`text-search.test.ts` 和 `visual-note.test.ts` 仍为产品逻辑/SQLite保障。`panel-styles` 与 `panel-targets` 已在最后消费者退出后由 #200 删除。
 
 受控构建身份只用于可重复验证刷新界面，未安装插件包、未更新实际宿主。原生失败附件通过命令 `--output` 指定本次独立目录；完整CI及最终性能对照由 #201 收口。

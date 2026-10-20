@@ -9,7 +9,7 @@ npx vitest tests/project-editing.test.ts
 npx playwright test tests/insert.spec.ts --grep '第二次修改权' --debug
 ```
 
-Vitest 按 `tests/**/*.test.ts` 收集，Playwright 按 `tests/**/*.spec.ts` 收集。迁移期间其他批次尚存的旧浏览器 `.test.ts` 不属于本批定向检查；到 #200 清除旧文件后再执行全套原生收集。没有第二份执行清单或旧入口转发。两套配置均禁止 only、零重试、空收集失败。浏览器使用 `CHROME_BIN` 明确指定的程序；未设置时使用本机 Chrome。
+Vitest 按 `tests/**/*.test.ts` 收集，Playwright 按 `tests/**/*.spec.ts` 收集。#200 已清除全部旧浏览器和工具专属 `.test.ts`，原生配置直接收集保留的产品测试。没有第二份执行清单或旧入口转发。两套配置均禁止 only、零重试、空收集失败。浏览器使用 `CHROME_BIN` 明确指定的程序；未设置时使用本机 Chrome。
 
 `tests/helpers/project.ts` 通过原生 worker fixture 将标准 Vite 生产面板构建到临时目录，每例启动独立真实 HTTP/SQLite 产品服务。browser/context/page、失败截图和 trace 由 Playwright 管理。项目服务正常关闭后才删除本例项目，worker 结束后删除其面板目录。`holdResponse` 只控制真实 JSON 响应何时到达页面；`holdRequest` 控制长连接申请何时发送，不读取完整长连接响应，不替换客户端或事务。
 
@@ -38,6 +38,6 @@ Vitest 按 `tests/**/*.test.ts` 收集，Playwright 按 `tests/**/*.spec.ts` 收
 | 真实滚轮取消已定位的新增后续编辑 | insert.spec：80 行虚拟表格、第二次修改权 gate、真实 wheel；滚动保持且新 lease 释放 |
 | 精确帧取消、后备可用性、重排/删除、虚拟卸载、父子层来源及最上层保护 | 独立焦点子集由本批 focus.spec 及具体模块 fixture 承接，随最终集成统一记录 |
 
-旧 `editing-panel`、`segment-draft-panel`、`paste-panel`、`relative-insert-panel`、`relative-insert-lifecycle-panel`、`ordinary-add-focus-panel` 字符串测试删除。多个输入事件与全部时点交叉产生的旧矩阵按共同故障后果合并，不要求保持旧数量。普通新增/相对新增都保留创建与二次租约两个不同因果窗口；查找、键盘、真实滚轮、离页及新模态的接线由代表场景和焦点子集共同覆盖。共享旧浏览器/字符串 fixture 尚有其他批次消费者，暂不删除。
+旧 `editing-panel`、`segment-draft-panel`、`paste-panel`、`relative-insert-panel`、`relative-insert-lifecycle-panel`、`ordinary-add-focus-panel` 字符串测试删除。多个输入事件与全部时点交叉产生的旧矩阵按共同故障后果合并，不要求保持旧数量。普通新增/相对新增都保留创建与二次租约两个不同因果窗口；查找、键盘、真实滚轮、离页及新模态的接线由代表场景和焦点子集共同覆盖。共享旧浏览器/字符串 fixture 的最后消费者已退出，并在 #200 删除。
 
 本批没有更改产品交互或安装插件。原生受控测试只能证明源码行为，不能作为安装包或实际宿主加载成功证明。性能报告采用用户确认的前后各 1 轮，报告实际变化；本批开发过程的 npm ci 与定向迭代不是性能样本。
