@@ -16,4 +16,4 @@ Linux 专项直接执行 `node scripts/verify-speech-export-processes.mjs <本�
 
 日志使用 `tests.log`，窗口与原始框架结果在 `vitest.json`；`exec.trace`、`preflight.log`、`result.json` 和 `summary.md` 用于该产品专项诊断。它们不是新的统一测试报告。供应商响应受控，不冒充实际供应商或已安装插件的宿主验收。
 
-CI 的 `process-trace.yml` 继续在每个 PR、main push 和手动执行；未移到定期任务或合并后。主检查与必要进程专项分别执行，前者验证保留的完整产品集合，后者增加 Linux 系统调用观察。
+CI 的 `process-trace.yml` 在每个 PR 和手动执行；依据 ADR0011，取消 main push 的重复自动运行，专项仍在合并前完成。主检查与必要进程专项分别执行，前者验证保留的完整产品集合，后者增加 Linux 系统调用观察。

@@ -1,7 +1,5 @@
 name: 自动检查
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 # 自动初次运行同 workflow/event/ref 替换；手动及 rerun 独占组，不让旧提交重跑取消新提交。
