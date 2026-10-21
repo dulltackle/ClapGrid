@@ -167,13 +167,24 @@ test('离开面板期间断线关闭关联子层，返回不补执行旧恢复',
   await expect(page.getByRole('dialog', { name: '关联视频', exact: true })).toBeFocused();
   await page.clock.install(); await page.clock.pauseAt(new Date(Date.now() + 1000));
   // 这是生命周期事件接线，真实重启负责使产品NDJSON编辑连接断开。
-  await page.evaluate(() => window.dispatchEvent(new Event('blur'))); await project.restart();
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  await project.restart(async () => {
+    await expect(page.getByRole('dialog', { name: '关联视频', exact: true })).toHaveCount(0);
+    // 固定一次离线轮询，避免本例是否清空表格取决于重启速度。
+    await page.clock.runFor(1000);
+    await expect(page.getByRole('alert').filter({ hasText: '服务连接失败' })).toBeVisible();
+  });
   await expect(page.getByRole('dialog', { name: '关联视频', exact: true })).toHaveCount(0);
   const before = await page.evaluateHandle(() => document.activeElement);
   await page.evaluate(() => window.dispatchEvent(new Event('focus'))); await page.clock.runFor(100);
+  expect(await page.evaluate(node => document.activeElement === node, before)).toBe(true);
+  await page.clock.resume();
+  // 离线轮询会清空表格；先等真实重连恢复来源，再验证主动关闭的返回焦点。
+  const trigger = page.locator(`[row-id="${id}"] [data-row-details]`);
+  await expect(trigger).toBeVisible();
   expect(await page.evaluate(node => document.activeElement === node, before)).toBe(true); await before.dispose();
-  await page.clock.resume(); await page.getByRole('button', { name: '关闭详情', exact: true }).click();
-  await expect(page.locator(`[row-id="${id}"] [data-row-details]`)).toBeFocused();
+  await page.getByRole('button', { name: '关闭详情', exact: true }).click();
+  await expect(trigger).toBeFocused();
 });
 
 test('预览期间目标删除后子层仍回父详情，空表关闭采用页面后备', async ({ page, project, mediaFiles }) => {
