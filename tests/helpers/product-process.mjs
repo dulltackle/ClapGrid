@@ -1,12 +1,27 @@
 import { readFileSync, readlinkSync } from 'node:fs';
 
+function processFields(pid) {
+  const stat = readFileSync(`/proc/${pid}/stat`, 'utf8');
+  return stat.slice(stat.lastIndexOf(')') + 2).split(' ');
+}
+const ended = fields => ['Z', 'X'].includes(fields[0]);
+const inaccessible = error => ['EACCES', 'EPERM'].includes(error.code);
+
 /** 只识别本例产品进程的出生身份，供服务及媒体退出测试使用。 */
 export function processIdentity(pid = process.pid) {
   try {
     if (process.platform === 'linux') {
-      const stat = readFileSync(`/proc/${pid}/stat`, 'utf8');
-      const fields = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
-      return { pid, pidNamespace: readlinkSync(`/proc/${pid}/ns/pid`), boot: readFileSync('/proc/sys/kernel/random/boot_id', 'utf8').trim(), start: fields[19], state: fields[0] };
+      const fields = processFields(pid);
+      if (ended(fields)) return null;
+      let pidNamespace;
+      try { pidNamespace = readlinkSync(`/proc/${pid}/ns/pid`); }
+      catch (error) {
+        // 读取 stat 后进程仍可能退出；僵尸的命名空间链接可变为 EACCES。
+        // 只有再次确认终态才视为结束，不能吞掉存活进程的权限错误。
+        if (inaccessible(error) && ended(processFields(pid))) return null;
+        throw error;
+      }
+      return { pid, pidNamespace, boot: readFileSync('/proc/sys/kernel/random/boot_id', 'utf8').trim(), start: fields[19], state: fields[0] };
     }
     return { pid };
   } catch (error) { if (['ENOENT', 'ESRCH'].includes(error.code)) return null; throw error; }
@@ -17,7 +32,9 @@ export function ownerAlive(owner) {
   if (!owner?.pid) return null;
   if (process.platform === 'linux') {
     if (!owner.pidNamespace || owner.pidNamespace !== readlinkSync('/proc/self/ns/pid')) return null;
-    const current = processIdentity(owner.pid);
+    let current;
+    try { current = processIdentity(owner.pid); }
+    catch (error) { if (inaccessible(error)) return null; throw error; }
     if (!current) return false;
     if (['Z', 'X'].includes(current.state)) return false;
     if (!owner.boot || !owner.start) return null;
