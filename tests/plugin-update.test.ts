@@ -85,7 +85,7 @@ test('旧包和旧服务升级后保留项目，安装失败恢复旧包，缺�
   assert.equal(recovered.snapshot.project.id, before.snapshot.project.id);
   assert.equal(recovered.snapshot.segments[0].text, '升级后保留的文案');
   await runtime(installed(next), 'workspace-stop');
-  await waitForServiceExit(serviceProcess(recovered.pid));
+  await waitForServiceExit(ownedServices.get(recovered.instanceId)!);
   const previousHost = process.env.CLAPGRID_CODEX_BIN; process.env.CLAPGRID_CODEX_BIN = host;
   let finish!: (response: Response) => void;
   let taskService: Awaited<ReturnType<typeof startService>> | undefined;
