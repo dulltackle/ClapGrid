@@ -53,7 +53,10 @@ for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可�
   const success = () => new Response(`data: {"code":0,"data":"${bytes.toString('base64')}"}\n\ndata: {"code":20000000}\n\n`);
   let hold = false; let finish!: (response: Response) => void;
   const options = { projectDirectory, panelDirectory, port: 0, speechRuntime: {
-    configPath: '测试配置', key: () => '测试密钥', fetch: (async () => hold ? new Promise<Response>(resolve => { finish = resolve; }) : success()) as typeof fetch,
+    configPath: '测试配置', key: () => '测试密钥', fetch: (async (_url, input) => hold ? new Promise<Response>((resolve, reject) => {
+      finish = resolve;
+      input?.signal?.addEventListener('abort', () => reject(input.signal?.reason), { once: true });
+    }) : success()) as typeof fetch,
   } };
   let service = await projectCleanup(t).startService(options);
   const mcp = createBusinessMcp(service.url); const client = new Client({ name: '配音导出锁回归', version: '1' });

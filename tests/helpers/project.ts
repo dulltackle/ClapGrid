@@ -18,7 +18,59 @@ export type Project = {
   status(): ReturnType<typeof queryStatus>;
   restart(whileStopped?: () => Promise<void>): Promise<void>;
 };
-export const test = base.extend<{ project: Project; speechRuntime: SpeechRuntime | undefined }, { panelDirectory: string; panelBuildIdentity: BuildIdentity | undefined }>({
+/** 两种启动 adapter 共享项目行为和目录归属；未知启动结果必须保留现场。 */
+export async function useProject(options: Omit<Parameters<typeof startService>[0], 'projectDirectory' | 'port'>, start: typeof startService, use: (project: Project) => Promise<void>) {
+  const directory = await mkdtemp(join(tmpdir(), 'clapgrid-browser-'));
+  let service: Awaited<ReturnType<typeof startService>> | undefined;
+  let released = true;
+  let url = '';
+  const startAt = async (port: number) => {
+    released = false;
+    try { service = await start({ ...options, projectDirectory: directory, port }); url = service.url; }
+    catch (error) { released = (error as { resourcesReleased?: boolean })?.resourcesReleased === true; throw error; }
+  };
+  const failures: unknown[] = [];
+  try {
+    await startAt(0);
+    await use({
+      directory,
+      get url() { return url; },
+      async seed(texts) {
+        const before = new Set((await queryStatus(url)).snapshot.segments.map(segment => segment.id));
+        await modifyBatch(url, { changes: texts.map(text => ({ kind: 'add', text })) });
+        return (await queryStatus(url)).snapshot.segments.filter(segment => !before.has(segment.id)).map(segment => segment.id);
+      },
+      modify: batch => modifyBatch(url, batch),
+      status: () => queryStatus(url),
+      async restart(whileStopped) {
+        if (!service) throw new Error('服务未恢复，不能自动重试');
+        const port = Number(new URL(url).port);
+        await service.close();
+        service = undefined;
+        released = true;
+        const errors: unknown[] = [];
+        try { await whileStopped?.(); } catch (error) { errors.push(error); }
+        try { await startAt(port); }
+        catch (error) {
+          if (!errors.length) throw error;
+          throw new AggregateError([...errors, error], `离线回调失败：${String(errors[0])}；恢复启动失败：${String(error)}`);
+        }
+        if (errors.length) throw errors[0];
+      },
+    });
+  } catch (error) { failures.push(error); }
+  // 首次启动、恢复启动和测试体失败都进入这里；启动拒绝本身不是释放证明。
+  if (service) {
+    try { await service.close(); released = true; } catch (error) { released = false; failures.push(error); }
+  }
+  if (released) {
+    try { await rm(directory, { recursive: true, force: true }); } catch (error) { failures.push(error); }
+  } else failures.push(new Error(`项目资源未确认释放；保留目录 ${directory}`));
+  if (failures.length === 1) throw failures[0];
+  if (failures.length) throw new AggregateError(failures, failures.map(String).join('；'));
+}
+export const test = base.extend<{ project: Project; speechRuntime: SpeechRuntime | undefined }, { panelDirectory: string; panelBuildIdentity: BuildIdentity | undefined; projectServer: typeof startService }>({
+  projectServer: [async ({}, use) => { await use(startService); }, { scope: 'worker' }],
   panelBuildIdentity: [undefined, { scope: 'worker', option: true }],
   panelDirectory: [async ({ panelBuildIdentity }, use) => {
     const directory = await mkdtemp(join(tmpdir(), 'clapgrid-panel-'));
@@ -28,33 +80,8 @@ export const test = base.extend<{ project: Project; speechRuntime: SpeechRuntime
     } finally { await rm(directory, { recursive: true, force: true }); }
   }, { scope: 'worker' }],
   speechRuntime: [undefined, { option: true }],
-  project: async ({ panelDirectory, speechRuntime }, use) => {
-    const directory = await mkdtemp(join(tmpdir(), 'clapgrid-browser-'));
-    const options = { projectDirectory: directory, panelDirectory, port: 0, speechRuntime };
-    let service = await startService(options);
-    try {
-      await use({
-        directory,
-        get url() { return service.url; },
-        async seed(texts) {
-          const before = new Set((await queryStatus(service.url)).snapshot.segments.map(segment => segment.id));
-          await modifyBatch(service.url, { changes: texts.map(text => ({ kind: 'add', text })) });
-          return (await queryStatus(service.url)).snapshot.segments.filter(segment => !before.has(segment.id)).map(segment => segment.id);
-        },
-        modify: batch => modifyBatch(service.url, batch),
-        status: () => queryStatus(service.url),
-        async restart(whileStopped) {
-          const port = Number(new URL(service.url).port);
-          await service.close();
-          // 具体断线场景先观察真实离线边界，再恢复同一项目；断言失败也正常重启以便收尾。
-          try { await whileStopped?.(); }
-          finally { service = await startService({ ...options, port }); }
-        },
-      });
-    } finally {
-      await service.close();
-      await rm(directory, { recursive: true, force: true });
-    }
+  project: async ({ panelDirectory, speechRuntime, projectServer }, use) => {
+    await useProject({ panelDirectory, speechRuntime }, projectServer, use);
   },
 });
 export { expect };

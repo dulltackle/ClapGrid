@@ -1,3 +1,4 @@
+import { SERVICE_CLEANUP_MS, beforeServiceDeadline, ServiceCleanupError } from '../service-cleanup.js';
 import { loadPanelRelease, panelDocument, type PanelRelease } from './panel-releases.js';
 import { buildIdentity } from '../build-identity.js';
 import { readHostWorkspace } from '../host-workspace.js';
@@ -27,43 +28,82 @@ export interface ServiceOptions {
 }
 
 export async function startService(options: ServiceOptions) {
-  const releaseProject = claimProjectService(options.projectDirectory);
+  let releaseProject: () => void;
+  try { releaseProject = claimProjectService(options.projectDirectory); }
+  catch (error) { throw new ServiceCleanupError([error], false, options.projectDirectory, '项目保护获取失败'); }
   let guardian: Awaited<ReturnType<typeof startMediaGuardian>>;
   try { guardian = await startMediaGuardian(options.projectDirectory); }
-  catch (error) { releaseProject(); throw error; }
-  const releaseOwnership = async () => { await guardian.close(); releaseProject(); };
-  return mediaScope.run(guardian.run, () => startOwnedService(options, releaseOwnership, guardian.verify));
+  catch (error) {
+    const released = (error as { resourcesReleased?: boolean })?.resourcesReleased === true;
+    if (released) {
+      try { releaseProject(); }
+      catch (cleanup) { throw new ServiceCleanupError([error, cleanup], false, options.projectDirectory, '服务初始化失败'); }
+    }
+    throw new ServiceCleanupError([error], released, options.projectDirectory, '服务初始化失败');
+  }
+  return mediaScope.run(guardian.run, () => startOwnedService(options, guardian, releaseProject));
 }
 
-async function startOwnedService(options: ServiceOptions, releaseOwnership: () => Promise<void>, verifyRuntime: () => void) {
-  let business: ReturnType<typeof openBusiness>;
-  try { business = openBusiness(options.projectDirectory, options.speechRuntime ?? localSpeechRuntime(), verifyRuntime); }
-  catch (error) { await releaseOwnership(); throw error; }
-  const instanceId = randomUUID();
-  const bindingKey = randomBytes(32);
-  // 每个对话只保留当前代次；重复 MCP 绑定复用它，核对失败删除并使旧 URL 永久失效。
-  const bindingGenerations = new Map<string, string>();
-  const signature = (value: string) => createHmac('sha256', bindingKey).update(value).digest('base64url');
-  // 每次宿主核对都要启动一个 codex app-server；心跳只负责发现失联与工作空间变化，
-  // 因此同一对话同一绑定代次的所有长连接共享核对结果，并限制频率。受理操作仍逐次重新核对。
-  const heartbeatChecks = new Map<string, { binding: string; at: number; check: Promise<string> }>();
-  const readHeartbeatWorkspace = (threadId: string, binding: string) => {
-    const cached = heartbeatChecks.get(threadId);
-    if (cached?.binding === binding && Date.now() - cached.at < HEARTBEAT_HOST_CHECK_MS) return cached.check;
-    const check = readHostWorkspace(threadId);
-    heartbeatChecks.set(threadId, { binding, at: Date.now(), check });
-    check.catch(() => { if (heartbeatChecks.get(threadId)?.check === check) heartbeatChecks.delete(threadId); });
-    return check;
-  };
-  let workspace: string | undefined;
-  try {
-    workspace = options.workspaceDirectory ? workspaceProject(options.workspaceDirectory).workspace : undefined;
-    if (workspace && workspaceProject(workspace).project !== business.getSnapshot().project.directory) throw new Error('项目不属于指定工作空间。');
-  } catch (error) { await business.close(); await releaseOwnership(); throw error; }
-  const startedAt = new Date().toISOString();
+async function startOwnedService(options: ServiceOptions, guardian: Awaited<ReturnType<typeof startMediaGuardian>>, releaseProject: () => void) {
+  let ownedBusiness: ReturnType<typeof openBusiness> | undefined;
+  let businessInitializationReleased = true;
   let vite: import('vite').ViteDevServer | undefined;
   let listeningServer: import('node:http').Server | undefined;
+  const requests = new Set<Promise<void>>();
+  let stopping = false;
+  let closeConnections = () => {};
+  let closing: Promise<void> | undefined;
+  const close = () => closing ??= (async () => {
+    const deadline = Date.now() + SERVICE_CLEANUP_MS;
+    const errors: unknown[] = [];
+    const attempt = async (phase: string, run: () => unknown) => {
+      try { await beforeServiceDeadline(deadline, phase, run); return true; }
+      catch (error) { errors.push(error); return false; }
+    };
+    stopping = true;
+    // 先启动业务取消和请求排空；HTTP/Vite 等待不能耗尽任务获得取消的机会。
+    const connectionsStopped = await attempt('连接撤销', closeConnections);
+    const businessClosing = ownedBusiness
+      ? ownedBusiness.close(deadline, Promise.allSettled([...requests])).then(() => true, error => { errors.push(error); return false; })
+      : Promise.resolve(businessInitializationReleased);
+    let httpStopped = true;
+    if (listeningServer) httpStopped = await attempt('HTTP 关闭', async () => {
+      listeningServer!.closeAllConnections();
+      await new Promise<void>((resolve, reject) => listeningServer!.close(error => error && (error as NodeJS.ErrnoException).code !== 'ERR_SERVER_NOT_RUNNING' ? reject(error) : resolve()));
+    });
+    const viteStopped = !vite || await attempt('Vite 关闭', () => vite!.close());
+    const businessStopped = await businessClosing;
+    // 即使业务失败，也关闭 guardian 以取消其媒体；未知业务状态下仍保留数据库和服务保护。
+    let mediaStopped = false;
+    // 即便前面的等待用尽预算，仍发送既有 IPC 关闭请求；不能把它认作退出确认。
+    try { await guardian.close(deadline); mediaStopped = true; } catch (error) { errors.push(error); }
+    let released = connectionsStopped && httpStopped && viteStopped && businessStopped && mediaStopped;
+    if (released) released = await attempt('项目保护释放', () => releaseProject());
+    if (errors.length || !released) throw new ServiceCleanupError(errors, released, options.projectDirectory, '服务关闭失败');
+  })();
   try {
+    try { ownedBusiness = openBusiness(options.projectDirectory, options.speechRuntime ?? localSpeechRuntime(), guardian.verify); }
+    catch (error) { businessInitializationReleased = (error as { resourcesReleased?: boolean })?.resourcesReleased !== false; throw error; }
+    const business = ownedBusiness;
+    const instanceId = randomUUID();
+    const bindingKey = randomBytes(32);
+    // 每个对话只保留当前代次；重复 MCP 绑定复用它，核对失败删除并使旧 URL 永久失效。
+    const bindingGenerations = new Map<string, string>();
+    const signature = (value: string) => createHmac('sha256', bindingKey).update(value).digest('base64url');
+    // 每次宿主核对都要启动一个 codex app-server；心跳只负责发现失联与工作空间变化，
+    // 因此同一对话同一绑定代次的所有长连接共享核对结果，并限制频率。受理操作仍逐次重新核对。
+    const heartbeatChecks = new Map<string, { binding: string; at: number; check: Promise<string> }>();
+    const readHeartbeatWorkspace = (threadId: string, binding: string) => {
+      const cached = heartbeatChecks.get(threadId);
+      if (cached?.binding === binding && Date.now() - cached.at < HEARTBEAT_HOST_CHECK_MS) return cached.check;
+      const check = readHostWorkspace(threadId);
+      heartbeatChecks.set(threadId, { binding, at: Date.now(), check });
+      check.catch(() => { if (heartbeatChecks.get(threadId)?.check === check) heartbeatChecks.delete(threadId); });
+      return check;
+    };
+    const workspace = options.workspaceDirectory ? workspaceProject(options.workspaceDirectory).workspace : undefined;
+    if (workspace && workspaceProject(workspace).project !== business.getSnapshot().project.directory) throw new Error('项目不属于指定工作空间。');
+    const startedAt = new Date().toISOString();
     const files = new Map<string, Buffer>();
     if (options.dev) {
       const { createServer: createViteServer } = await import('vite');
@@ -102,25 +142,23 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       sessions.get(token)?.close();
       sessions.delete(token);
     };
-    let stopping = false;
-    let closing: Promise<void> | undefined;
-    const close = () => closing ??= (async () => {
-      stopping = true;
-      for (const id of tableSessions.keys()) finishTable(id);
-      for (const token of sessions.keys()) finishSession(token);
-      server.closeAllConnections();
-      await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
-      await vite?.close();
-      await business.close();
-      await releaseOwnership();
-    })();
+    closeConnections = () => {
+      const errors: unknown[] = [];
+      const revoke = (run: () => void) => { try { run(); } catch (error) { errors.push(error); } };
+      for (const id of tableSessions.keys()) revoke(() => finishTable(id));
+      for (const token of sessions.keys()) revoke(() => finishSession(token));
+      for (const operation of pendingEdits.values()) revoke(operation.cancel);
+      if (errors.length) throw new AggregateError(errors, '连接撤销失败');
+    };
+    const closeService = close;
     const requestStop = (interrupt = false, idleOnly = false) => {
       if (!interrupt && (business.getActivity().taskLocked || (idleOnly && business.getActivity().modification))) return { outcome: 'kept', message: '有任务正在执行或项目正在编辑，默认保持服务。仅明确选择“中断任务并退出”才停止。' };
       stopping = true;
-      setImmediate(() => { void close().catch(error => console.error('服务清理失败，不能确认已退出：', error)); });
+      setImmediate(() => { void closeService().catch(error => console.error('服务清理失败，不能确认已退出：', error)); });
       return { outcome: 'stopping', message: '正在停止服务，等待任务结束和清理。' };
     };
-    const server = listeningServer = createServer(async (request, response) => {
+    const handleRequest = async (request: import('node:http').IncomingMessage, response: import('node:http').ServerResponse) => {
+      if (stopping) { response.writeHead(503); response.end('服务正在退出'); return; }
       const host = `127.0.0.1:${(server.address() as import('node:net').AddressInfo).port}`;
       response.setHeader('X-Content-Type-Options', 'nosniff');
       response.setHeader('Cache-Control', 'no-store');
@@ -499,6 +537,11 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
         response.writeHead(200, { 'Content-Type': `${types[extname(path === '/' ? 'index.html' : path)] ?? 'application/octet-stream'}; charset=utf-8` });
         response.end(file);
       }
+    };
+    const server = listeningServer = createServer((request, response) => {
+      const pending = handleRequest(request, response);
+      requests.add(pending);
+      void pending.catch(error => { console.error('服务请求失败', error); response.destroy(); }).finally(() => requests.delete(pending));
     });
     await new Promise<void>((resolve, reject) => {
       server.once('error', reject);
@@ -515,16 +558,13 @@ async function startOwnedService(options: ServiceOptions, releaseOwnership: () =
       writeFileSync(temporary, record, { flag: 'wx', mode: 0o600 });
       renameSync(temporary, join(project.directory, 'service.json'));
     }
-    return { url, close, requestStop };
+    return { url, close: closeService, requestStop };
 
   } catch (error) {
-    if (listeningServer?.listening) {
-      listeningServer.closeAllConnections();
-      await new Promise<void>(resolve => listeningServer!.close(() => resolve()));
-    }
-    await vite?.close();
-    await business.close();
-    await releaseOwnership();
-    throw error;
+    try { await close(); }
+    catch (cleanup) { throw new ServiceCleanupError([error, cleanup], false, options.projectDirectory, '服务启动失败'); }
+    // openBusiness 本身若无法确认释放，不因外层清理成功而抹掉该状态。
+    const released = (error as { resourcesReleased?: boolean })?.resourcesReleased !== false;
+    throw new ServiceCleanupError([error], released, options.projectDirectory, '服务启动失败');
   }
 }
