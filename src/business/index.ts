@@ -1,3 +1,4 @@
+import { SERVICE_CLEANUP_MS, beforeServiceDeadline, ServiceCleanupError } from '../service-cleanup.js';
 import { projectAccess } from './project-access.js';
 import { exportTasks } from './export-tasks.js';
 import { listExportFonts, missingExportSettings, verifyExportMedia } from './export-media.js';
@@ -15,44 +16,49 @@ import { addSegmentSchema, editSegmentSchema, snapshotSchema, type Snapshot, bat
 
 /** HTTP 和未来业务操作的唯一业务入口；数据库不向适配层开放。 */
 export function openBusiness(directory: string, speechRuntime: SpeechRuntime = { key: () => '', configPath: '.env' }, verifyRuntime: () => void = () => {}) {
-  const { projectDirectory, database, mediaDirectory, verify: verifyPaths } = projectPaths(directory);
-  const verify = () => { verifyRuntime(); verifyPaths(); };
-  mkdirSync(mediaDirectory, { recursive: true });
-  const db = new DatabaseSync(database);
-  try {
-    db.exec(`
-      PRAGMA journal_mode = WAL;
-      PRAGMA busy_timeout = 1000;
-      PRAGMA synchronous = FULL;
-      CREATE TABLE IF NOT EXISTS export_settings (singleton INTEGER PRIMARY KEY CHECK (singleton = 1), value TEXT NOT NULL);
-      CREATE TABLE IF NOT EXISTS segments (
-        id TEXT PRIMARY KEY,
-        position INTEGER NOT NULL UNIQUE CHECK (position > 0),
-        text TEXT NOT NULL,
-        visual_note TEXT NOT NULL DEFAULT ''
-      );
-      CREATE TABLE IF NOT EXISTS video_assets (
-        id TEXT PRIMARY KEY, name TEXT NOT NULL, duration REAL NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS segment_video (
-        segment_id TEXT PRIMARY KEY, asset_id TEXT NOT NULL, start REAL NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS project_identity (
-        singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
-        id TEXT NOT NULL,
-        created_at TEXT NOT NULL
-      );
-    `);
-    // 旧项目就地补列，原有片段和所有新增入口共享空说明默认值。
-    if (!db.prepare('PRAGMA table_info(segments)').all().some(column => column.name === 'visual_note')) {
-      db.exec("ALTER TABLE segments ADD COLUMN visual_note TEXT NOT NULL DEFAULT ''");
-    }
-    db.prepare('INSERT OR IGNORE INTO project_identity VALUES (1, ?, ?)')
-      .run(randomUUID(), new Date().toISOString());
-  } catch (error) {
-    db.close();
+  const paths = projectPaths(directory);
+  const verify = () => { verifyRuntime(); paths.verify(); };
+  mkdirSync(paths.mediaDirectory, { recursive: true });
+  const db = new DatabaseSync(paths.database);
+  try { return initializeBusiness(db, paths, speechRuntime, verify); }
+  catch (error) {
+    // 包含配音／导出模块的同步初始化；尚未对外受理任务，数据库由此处拥有。
+    try { db.close(); }
+    catch (cleanup) { throw new ServiceCleanupError([error, cleanup], false, directory, '业务初始化失败'); }
     throw error;
   }
+}
+
+function initializeBusiness(db: DatabaseSync, { projectDirectory, database, mediaDirectory }: ReturnType<typeof projectPaths>, speechRuntime: SpeechRuntime, verify: () => void) {
+  db.exec(`
+    PRAGMA journal_mode = WAL;
+    PRAGMA busy_timeout = 1000;
+    PRAGMA synchronous = FULL;
+    CREATE TABLE IF NOT EXISTS export_settings (singleton INTEGER PRIMARY KEY CHECK (singleton = 1), value TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS segments (
+      id TEXT PRIMARY KEY,
+      position INTEGER NOT NULL UNIQUE CHECK (position > 0),
+      text TEXT NOT NULL,
+      visual_note TEXT NOT NULL DEFAULT ''
+    );
+    CREATE TABLE IF NOT EXISTS video_assets (
+      id TEXT PRIMARY KEY, name TEXT NOT NULL, duration REAL NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS segment_video (
+      segment_id TEXT PRIMARY KEY, asset_id TEXT NOT NULL, start REAL NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS project_identity (
+      singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+      id TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+  `);
+  // 旧项目就地补列，原有片段和所有新增入口共享空说明默认值。
+  if (!db.prepare('PRAGMA table_info(segments)').all().some(column => column.name === 'visual_note')) {
+    db.exec("ALTER TABLE segments ADD COLUMN visual_note TEXT NOT NULL DEFAULT ''");
+  }
+  db.prepare('INSERT OR IGNORE INTO project_identity VALUES (1, ?, ?)')
+    .run(randomUUID(), new Date().toISOString());
   function getSnapshot(): Snapshot {
     const row = db.prepare('SELECT id, created_at FROM project_identity WHERE singleton = 1').get()!;
     return snapshotSchema.parse({
@@ -104,6 +110,7 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
     access,
   });
   const tables = new Map<string, { owner?: string; ids: string[] }>();
+  let closing: Promise<void> | undefined;
   const business = {
     connectTable(owner?: string) { const id = randomUUID(); tables.set(id, { owner, ids: [] }); return id; },
     assertTableOwner(tableId: string, owner?: string) {
@@ -338,7 +345,19 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
       for (const result of results) summary[result.outcome]++;
       return { results, summary };
     },
-    async close() { speech.close(); await exports.close(); db.close(); },
+    close(deadline = Date.now() + SERVICE_CLEANUP_MS, requestsStopped: Promise<unknown> = Promise.resolve()) {
+      return closing ??= (async () => {
+        // 两类任务先同时收到取消；确认全部停止写入后才能关闭数据库。
+        const results = await Promise.allSettled([
+          beforeServiceDeadline(deadline, '在途请求停止', () => requestsStopped),
+          beforeServiceDeadline(deadline, '配音任务停止', () => speech.close()),
+          beforeServiceDeadline(deadline, '导出任务停止', () => exports.close()),
+        ]);
+        const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : []);
+        if (errors.length) throw new ServiceCleanupError(errors, false, projectDirectory, '业务关闭失败');
+        await beforeServiceDeadline(deadline, '数据库关闭', () => db.close());
+      })();
+    },
   };
   return business;
 }

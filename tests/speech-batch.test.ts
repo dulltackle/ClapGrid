@@ -104,7 +104,7 @@ test('缺失或待更新范围、空选择及逐项拒绝不会静默扩大或�
 test('重开批量操作保留成功结果，未完成显示已中断，不续跑且重发不产生请求', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-interrupt-'));
   let calls = 0;
-  const runtime = { key: () => 'key', configPath: '/tmp/.env', fetch: (async () => { calls++; return calls === 1 ? success() : new Promise<Response>(() => {}); }) as typeof fetch };
+  const runtime = { key: () => 'key', configPath: '/tmp/.env', fetch: (async (_url, input) => { calls++; return calls === 1 ? success() : new Promise<Response>((_resolve, reject) => { input?.signal?.addEventListener('abort', () => reject(input.signal?.reason), { once: true }); }); }) as typeof fetch };
   let business = openBusiness(directory, runtime);
   projectCleanup(t).directory(directory); projectCleanup(t).business(() => business);
   {

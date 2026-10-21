@@ -93,22 +93,30 @@ test('视频关联与项目重排不影响有效性，清理音频不删除导�
   for (const kind of ['source', 'preview', 'thumbnail'] as const) assert.ok(existsSync(business.getMedia(video.id, kind)));
 });
 
-test('旧服务迟到结果不能恢复重开后已删除的片段或写入音频', async t => {
+test('关闭等待供应商迟到结果且不写音频，重开后仍可删除片段', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-late-'));
   projectCleanup(t).directory(directory);
   let finish!: (response: Response) => void;
-  const runtime = { key: () => 'key', configPath: '/tmp/.env', fetch: (async () => new Promise<Response>(resolve => { finish = resolve; })) as typeof fetch };
+  let cancelled!: () => void;
+  const cancellation = new Promise<void>(resolve => { cancelled = resolve; });
+  const runtime = { key: () => 'key', configPath: '/tmp/.env', fetch: (async (_url, input) => new Promise<Response>(resolve => {
+    finish = resolve;
+    // 供应商忽略取消，直到受控成功响应才结束；关闭必须等待它但不能保存音频。
+    input?.signal?.addEventListener('abort', () => cancelled(), { once: true });
+  })) as typeof fetch };
   let business = openBusiness(directory, runtime); let closed = false;
   projectCleanup(t).business(() => closed ? undefined : business);
   const segment = business.addSegment('待删除').segments[0]!;
   const request = { requestId: randomUUID(), segmentId: segment.id };
   business.submitSpeech(request);
   await new Promise(resolve => setImmediate(resolve));
-  await business.close(); closed = true;
+  const closing = business.close();
+  await cancellation;
+  assert.equal(business.getSpeechStatus().locked, true);
+  finish(success()); await closing; closed = true;
   business = openBusiness(directory, runtime); closed = false;
   const token = business.acquire('user');
   await business.modifyBatch(token, { changes: [{ kind: 'delete', expected: segment }] }); business.release(token);
-  finish(success()); await new Promise(resolve => setTimeout(resolve, 20));
   assert.deepEqual(business.getSnapshot().segments, []);
   assert.deepEqual(business.getSpeechStatus().audio, []);
   assert.equal(business.submitSpeech(request).state, 'unknown');

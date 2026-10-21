@@ -86,11 +86,11 @@ test('统一声音保存并校验范围，改变输入只改变配音有效性',
 test('服务异常不重试，失败保留旧配音；中断任务重开标记未知且不重新请求', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-'));
   let calls = 0;
-  const runtime = { key: () => 'key', configPath: '/tmp/runtime/.env', fetch: (async () => {
+  const runtime = { key: () => 'key', configPath: '/tmp/runtime/.env', fetch: (async (_url, input) => {
     calls++;
     if (calls === 1) return new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n');
     if (calls === 2) return new Response('data: {"code":0,"data":"SUQz"}\n\n');
-    return new Promise<Response>(() => {});
+    return new Promise<Response>((_resolve, reject) => { input?.signal?.addEventListener('abort', () => reject(input.signal?.reason), { once: true }); });
   }) as typeof fetch };
   let business = openBusiness(directory, runtime);
   projectCleanup(t).directory(directory); projectCleanup(t).business(() => business);

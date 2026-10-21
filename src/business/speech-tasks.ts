@@ -22,6 +22,7 @@ export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: S
       : '配音已中断：结果未知，可能已计费。请核对供应商记录；不会自动重试。' });
   }
   let closed = false;
+  let running: Promise<void> | undefined;
   const controller = new AbortController();
   const voice = () => voiceSchema.parse(JSON.parse(String(db.prepare('SELECT value FROM voice_settings WHERE singleton = 1').get()!.value)));
   const audioPath = (id: string) => join(mediaDirectory, `${id}.mp3`);
@@ -61,7 +62,7 @@ export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: S
   };
   // 整批共享一个锁，逐项终态落盘后继续；不依赖发起客户端的连接。
   const run = (pending: SpeechTask[], key: string, release: () => void) => {
-    void (async () => {
+    running = (async () => {
       await new Promise<void>(resolve => setImmediate(resolve));
       for (const task of pending) {
         if (closed) return;
@@ -95,12 +96,14 @@ export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: S
           valid: matches(task), url: `/api/speech/audio/${task.id}` })) };
     },
     setVoice(input: unknown) {
+      if (closed) throw new Error('服务正在退出');
       access.assertAllowed('speech'); verify();
       const settings = voiceSchema.parse(input);
       db.prepare('UPDATE voice_settings SET value = ? WHERE singleton = 1').run(JSON.stringify(settings));
       return settings;
     },
     submitSpeech(input: { requestId: string; segmentId: string }): SpeechTask {
+      if (closed) throw new Error('服务正在退出');
       access.assertAllowed('speech-replay');
       const request = submitSpeechSchema.parse(input);
       const existing = tasks().find(task => task.requestId === request.requestId);
@@ -120,6 +123,7 @@ export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: S
       return { ...task, input: structuredClone(task.input) };
     },
     submitSpeechBatch(input: SpeechBatchRequest, owner?: string): SpeechBatchResult {
+      if (closed) throw new Error('服务正在退出');
       access.assertAllowed('speech-replay');
       const request = speechBatchSchema.parse(input);
       const previous = operations().find(operation => operation.request.requestId === request.requestId);
@@ -193,6 +197,6 @@ export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: S
       if (!current) throw new Error(available.length ? '配音待更新，不可用于导出' : '配音缺失，不可用于导出');
       const path = audioPath(current.id); verifyMedia(path); return path;
     },
-    close() { closed = true; controller.abort(); },
+    async close() { closed = true; controller.abort(); await running; },
   };
 }

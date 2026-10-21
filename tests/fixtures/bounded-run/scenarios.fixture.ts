@@ -41,7 +41,11 @@ test(`独立异常：${mode}`, { timeout: mode.startsWith('startup-') || mode ==
     await cleanup.startService({ projectDirectory: directory, panelDirectory: root, port: (socket.address() as import('node:net').AddressInfo).port });
     throw Error('不应在被占用端口启动成功');
   }
-  const business = openBusiness(directory, { key: () => 'controlled', configPath: 'controlled', fetch: async () => new Promise<Response>(() => {}) });
+  const business = openBusiness(directory, { key: () => 'controlled', configPath: 'controlled', fetch: async (_url, options) => new Promise<Response>((_resolve, reject) => {
+    const signal = options?.signal;
+    if (signal?.aborted) reject(signal.reason);
+    else signal?.addEventListener('abort', () => reject(signal.reason), { once: true });
+  }) });
   cleanup.business(() => business);
   const independent = openBusiness(join(root, 'independent'));
   cleanup.business(() => independent);
