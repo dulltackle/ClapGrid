@@ -21,7 +21,7 @@
 - `scripts/production.mjs`、`scripts/production/**` 的制作材料、evidence、verify-package、引用、审阅证据、归档完整性和可靠发布全部保留。`production-archive-*`、`production-reference-encoding` 等真实旧Python数据夹具不属于本次删除的测试执行器legacy目录。
 - 生产构建身份、插件构建/更新/安装身份、项目数据保留、真实宿主证据协议及其产品测试继续保留；`plugin:verify` 没有改作测试报告认证，也没有在本票执行安装或宿主更新。
 - 配音导出互斥仍由 `speech-export-lock.test.ts`、`verify-speech-export-processes.mjs` 和每个 PR 的专项验证（手动入口保留）；保留真实FFmpeg正向exec及七拒绝窗口。产品正常/失败/取消退出及只清理本次拥有资源的保障不删除。
-- `style-collisions.mjs`、例外理由数据及真实生产CSS冲突测试保留。`review:check` 与产品审阅引用检查、`ci-observation.mjs` 简单实际耗时观察保留。
+- `style-collisions.mjs`、例外理由数据及真实生产CSS冲突测试保留。`review:check` 与产品审阅引用检查保留。`ci-observation.mjs` 及两个工作流的观察起点/耗时步骤已删除：其计时不含 runner 准备与上传，作业状态、耗时与检出以 GitHub job 记录为准。
 
 ## 当前入口与验收边界
 

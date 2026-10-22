@@ -17,8 +17,6 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: 记录作业观察起点
-        run: echo "CLAPGRID_CI_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -88,18 +86,12 @@ jobs:
             logs/playwright-results/
           if-no-files-found: error
           retention-days: 14
-      - name: 记录 CI 状态、耗时及作业余量
-        if: always()
-        env:
-          CLAPGRID_CI_JOB_STATUS: ${{ job.status }}
-        run: node scripts/ci-observation.mjs --output logs/ci-timing.json --timeout-minutes 60 --status "$CLAPGRID_CI_JOB_STATUS"
       - name: 保留完整检查日志（包括失败）
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: checks-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            logs/ci-timing.json
             logs/*.log
             logs/*-resources.txt
           if-no-files-found: error
