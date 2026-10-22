@@ -1,11 +1,10 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { execCommand } from './helpers/vitest-command.js';
+import { test } from './helpers/resource-test.js';
 import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 import { beginEdit, connectTable, queryStatus, querySpeech } from '../src/shared/client.js';
 import { createServer, request } from 'node:http';
-import { test, expect, vi } from 'vitest';
+import { expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, symlinkSync, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, rmSync, symlinkSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -13,10 +12,8 @@ import { build } from 'esbuild';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
-
-test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切换及服务重启使旧连接失效', { timeout: 60000 }, async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-workspace-'));
-  projectCleanup(t).directory(root);
+test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切换及服务重启使旧连接失效', { timeout: 60000 }, async ({ connectMcp, createDirectory, execCommand, openConnection }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-workspace-'));
   const dist = join(root, 'dist'); const first = join(root, 'first'); const second = join(root, 'second');
   mkdirSync(first); mkdirSync(second); mkdirSync(join(dist, 'panel'), { recursive: true });
   writeFileSync(join(root, 'package.json'), '{"type":"module"}');
@@ -29,7 +26,7 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
     occupied.once('error', (error: NodeJS.ErrnoException) => error.code === 'EADDRINUSE' ? resolve(false) : reject(error));
     occupied.listen(48762, '127.0.0.1', () => resolve(true));
   });
-  projectCleanup(t).connection(() => ({ close: () => occupied.listening ? new Promise<void>((resolve, reject) => occupied.close(error => error ? reject(error) : resolve())) : undefined }));
+  openConnection(() => ({ close: () => occupied.listening ? new Promise<void>((resolve, reject) => occupied.close(error => error ? reject(error) : resolve())) : undefined }));
   const host = join(root, 'host.cjs');
   const queryStarted = join(root, 'host-query-started');
   writeFileSync(host, `#!/usr/bin/env node\nconst fs=require('node:fs');const rl=require('node:readline').createInterface({input:process.stdin});rl.on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read'){const thread=JSON.parse(fs.readFileSync(${JSON.stringify(state)},'utf8'));if(thread.delay)fs.writeFileSync(${JSON.stringify(queryStarted)},'started');setTimeout(()=>console.log(JSON.stringify({id:r.id,result:{thread}})),thread.delay);}});\n`, { mode: 0o700 });
@@ -90,9 +87,9 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   await execCommand('git', ['-C', first, 'checkout', '-b', 'workspace-regression']);
   await execCommand('git', ['-C', first, 'worktree', 'add', '-b', 'other-workspace', second]);
   assert.equal((await cli('open', first)).snapshot.project.id, opened.snapshot.project.id);
-  const client = new Client({ name: 'workspace-regression', version: '1.0.0' });
-  await projectCleanup(t).connectMcp(client, new StdioClientTransport({ command: process.execPath, args: [join(dist, 'mcp/main.js')], env: Object.fromEntries(Object.entries(env).filter((e): e is [string,string] => typeof e[1] === 'string')) }));
-  projectCleanup(t).connection(() => client);
+  const client = openConnection(() => new Client({ name: 'workspace-regression', version: '1.0.0' }));
+  await connectMcp(client, new StdioClientTransport({ command: process.execPath, args: [join(dist, 'mcp/main.js')], env: Object.fromEntries(Object.entries(env).filter((e): e is [string,string] => typeof e[1] === 'string')) }));
+
   const tool = (name: string, args = {}) => client.callTool({ name, arguments: args, _meta: { threadId } });
   const ready = await tool('clapgrid_prepare_panel');
   assert.notEqual(ready.isError, true);
@@ -112,7 +109,7 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
       banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" } });
     const alternateClient = new Client({ name: 'version-check', version: '1' });
     try {
-      await projectCleanup(t).connectMcp(alternateClient, new StdioClientTransport({ command: process.execPath, args: [alternate], env: Object.fromEntries(Object.entries(env).filter((e): e is [string,string] => typeof e[1] === 'string')) }));
+      await connectMcp(alternateClient, new StdioClientTransport({ command: process.execPath, args: [alternate], env: Object.fromEntries(Object.entries(env).filter((e): e is [string,string] => typeof e[1] === 'string')) }));
       const rejected = await alternateClient.callTool({ name: 'clapgrid_prepare_panel', arguments: {}, _meta: { threadId } });
       assert.equal(rejected.isError, true, '版本不一致或未知时不得返回快速打开地址');
     } finally { await alternateClient.close(); }
@@ -161,7 +158,7 @@ test('打包入口按宿主工作空间打开，表格与业务 MCP 一致，切
   assert.equal(((await tool('clapgrid_prepare_panel')).structuredContent as any)?.state, 'needs-start');
   const replacement = createServer((_request, response) => { response.statusCode = 404; response.end('其他服务'); });
   await new Promise<void>(resolve => replacement.listen(Number(new URL(origin).port), '127.0.0.1', resolve));
-  projectCleanup(t).connection(() => ({ close: () => replacement.listening ? new Promise<void>((resolve, reject) => replacement.close(error => error ? reject(error) : resolve())) : undefined }));
+  openConnection(() => ({ close: () => replacement.listening ? new Promise<void>((resolve, reject) => replacement.close(error => error ? reject(error) : resolve())) : undefined }));
   assert.equal((await tool('clapgrid_prepare_panel')).isError, true, '地址被其他服务占用时不得回退启动');
   const reopened = await cli('open', first);
   const reopenedOrigin = new URL(reopened.url).origin; running.set(reopenedOrigin, { id: reopened.instanceId, boundUrl: reopened.url, workspace: first, process: serviceProcess(reopened.pid) });

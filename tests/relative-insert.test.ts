@@ -1,20 +1,16 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { execBytes } from './helpers/vitest-command.js';
+import { test } from './helpers/resource-test.js';
 import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
-import { test, expect, vi } from 'vitest';
+import { expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import {  } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openBusiness } from '../src/business/index.js';
 
-
-test('相对锚点原子插入空白片段，保留其他内容且兼容末尾追加', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-insert-'));
-  projectCleanup(t).directory(root);
-  const business = openBusiness(root); projectCleanup(t).business(() => business);
+test('相对锚点原子插入空白片段，保留其他内容且兼容末尾追加', async ({ createDirectory, openBusiness }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-insert-'));
+  const business = openBusiness(root);
   business.addSegment('甲'); business.addSegment('乙');
   const token = business.acquire('user');
   for (const [anchorIndex, placement, expectedIndex] of [[0,'before',0],[1,'after',2],[3,'after',4]] as const) {
@@ -30,10 +26,9 @@ test('相对锚点原子插入空白片段，保留其他内容且兼容末尾�
   assert.equal(business.getSnapshot().segments.at(-1)!.id,result.results[0]!.id);
 });
 
-test('相对插入拒绝旧顺序、变化或删除的锚点及失效修改权且无残留片段', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-insert-stale-'));
-  projectCleanup(t).directory(root);
-  const business = openBusiness(root); projectCleanup(t).business(() => business);
+test('相对插入拒绝旧顺序、变化或删除的锚点及失效修改权且无残留片段', async ({ createDirectory, openBusiness }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-insert-stale-'));
+  const business = openBusiness(root);
   business.addSegment('甲'); business.addSegment('乙');
   const original = business.getSnapshot().segments;
   const request = {changes:[{kind:'add' as const,text:'',relative:{anchor:original[0]!,placement:'before' as const,expectedIds:original.map(s=>s.id)}}]};
@@ -58,15 +53,13 @@ test('相对插入拒绝旧顺序、变化或删除的锚点及失效修改权�
   assert.deepEqual(business.getSnapshot(),before);
 });
 
-
-test('插入持久化失败回滚同事务位置更新，不留下空白片段', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-insert-rollback-'));
-  projectCleanup(t).directory(root);
-  const business = openBusiness(root); projectCleanup(t).business(() => business);
+test('插入持久化失败回滚同事务位置更新，不留下空白片段', async ({ createDirectory, openBusiness, openConnection }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-insert-rollback-'));
+  const business = openBusiness(root);
   business.addSegment('甲'); business.addSegment('乙');
   const before = business.getSnapshot();
-  const db = new DatabaseSync(before.storage.database);
-  projectCleanup(t).connection(() => db);
+  const db = openConnection(() => new DatabaseSync(before.storage.database));
+
   // 在存储边界注入写入失败；结果只通过业务公共快照观察。
   db.exec("CREATE TRIGGER reject_insert BEFORE INSERT ON segments BEGIN SELECT RAISE(ABORT, '模拟插入保存失败'); END");
   const token = business.acquire('user');
@@ -76,11 +69,10 @@ test('插入持久化失败回滚同事务位置更新，不留下空白片段',
   assert.deepEqual(business.getSnapshot(),before);
 });
 
-for (const task of ['speech','export'] as const) test(`相对插入在 ${task} 任务占用期间拒绝修改且不改变项目`, async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-insert-lock-'));
-  projectCleanup(t).directory(root);
+for (const task of ['speech','export'] as const) test(`相对插入在 ${task} 任务占用期间拒绝修改且不改变项目`, async ({ createDirectory, openBusiness }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-insert-lock-'));
   const business = openBusiness(root,{key:()=> '测试',configPath:'测试',fetch: async () => new Response('data: {"code":20000000}\n\n')});
-  projectCleanup(t).business(() => business);
+
   business.addSegment('甲'); const before = business.getSnapshot();
   if(task==='speech') business.submitSpeech({requestId:randomUUID(),segmentId:before.segments[0]!.id});
   else business.submitExport();
@@ -89,16 +81,14 @@ for (const task of ['speech','export'] as const) test(`相对插入在 ${task} �
   assert.deepEqual(business.getSnapshot(),before);
 });
 
-
-test('相对插入和重排保留非空素材与有效配音关联，新片段无关联', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-insert-media-'));
-  projectCleanup(t).directory(root);
+test('相对插入和重排保留非空素材与有效配音关联，新片段无关联', async ({ createDirectory, execBytes, openBusiness }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-insert-media-'));
   const source = join(root, 'source.mp4'); const audio = join(root, 'speech.mp3');
   (await execBytes('ffmpeg', ['-v','error','-f','lavfi','-i','color=c=red:s=64x48:d=1','-c:v','libx264',source]));
   (await execBytes('ffmpeg', ['-v','error','-f','lavfi','-i','sine=frequency=440:duration=0.2','-ar','24000',audio]));
   const payload = readFileSync(audio).toString('base64');
   const business = openBusiness(join(root,'project'), {key:()=> '测试',configPath:'测试',fetch:async()=>new Response(`data: {"code":0,"data":"${payload}"}\n\ndata: {"code":20000000}\n\n`)});
-  projectCleanup(t).business(() => business);
+
   const setup = business.acquire('user');
   const asset = await business.importVideo(setup,{sourcePath:source});
   business.addSegment('带关联甲',setup); business.addSegment('带关联乙',setup);

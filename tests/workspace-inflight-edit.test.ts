@@ -1,18 +1,15 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { execCommand, execBytes } from './helpers/vitest-command.js';
-import { test, expect, vi } from 'vitest';
+import { test } from './helpers/resource-test.js';
+import { expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { build } from 'esbuild';
-import { startService } from '../src/service/server.js';
 import { beginEdit, queryStatus } from '../src/shared/client.js';
 
-
-for (const owner of ['codex', 'user'] as const) for (const operation of ['import', 'video', 'settings', 'unobserved'] as const) test(`${owner} 在途 ${operation} 撤销后不提交，媒体清理完才释放修改权`, { timeout: 30000 }, async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-inflight-'));
+for (const owner of ['codex', 'user'] as const) for (const operation of ['import', 'video', 'settings', 'unobserved'] as const) test(`${owner} 在途 ${operation} 撤销后不提交，媒体清理完才释放修改权`, { timeout: 30000 }, async ({ createDirectory, execBytes, execCommand, openConnection, startService, onTestFinished }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-inflight-'));
   const workspace = join(root, 'workspace'); const dist = join(root, 'dist');
   mkdirSync(workspace); mkdirSync(join(dist, 'panel'), { recursive: true });
   writeFileSync(join(root, 'package.json'), '{"type":"module"}');
@@ -22,7 +19,7 @@ for (const owner of ['codex', 'user'] as const) for (const operation of ['import
   writeFileSync(host, `#!/usr/bin/env node\nconst fs=require('node:fs');require('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:JSON.parse(fs.readFileSync(${JSON.stringify(state)},'utf8'))}}));});`, { mode: 0o700 });
   const oldHost = process.env.CLAPGRID_CODEX_BIN; const oldPath = process.env.PATH;
   process.env.CLAPGRID_CODEX_BIN = host;
-  t.onTestFinished(() => {
+  onTestFinished(() => {
     if (oldHost === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = oldHost;
     if (oldPath === undefined) delete process.env.PATH; else process.env.PATH = oldPath;
   });
@@ -31,8 +28,9 @@ for (const owner of ['codex', 'user'] as const) for (const operation of ['import
   const bin = join(root, 'bin'); mkdirSync(bin); const marker = join(root, 'started'); const gate = join(root, 'continue');
   writeFileSync(join(bin, 'ffmpeg'), `#!/bin/sh\ntrap '' TERM\ntouch '${marker}'\nwhile [ ! -f '${gate}' ]; do sleep 0.05; done\nexec /usr/bin/ffmpeg "$@"\n`, { mode: 0o700 });
   process.env.PATH = bin + ':' + oldPath;
-  const service = await projectCleanup(t).startService({ workspaceDirectory: workspace, projectDirectory: join(workspace, 'clapgrid'), panelDirectory: join(dist, 'panel'), port: 0 });
-  t.onTestFinished(() => { writeFileSync(gate, 'continue'); }); projectCleanup(t).directory(root);
+  const service = await startService({ workspaceDirectory: workspace, projectDirectory: join(workspace, 'clapgrid'), panelDirectory: join(dist, 'panel'), port: 0 });
+  // 释放测试阻塞门属于连接阶段，必须先于服务关闭和目录删除。
+  openConnection(() => ({ close: () => { writeFileSync(gate, 'continue'); } }));
   await build({ entryPoints: ['src/runtime.ts'], outdir: dist, bundle: true, platform: 'node', format: 'esm', target: 'node22', external: ['vite'], banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" } });
   const open = async () => JSON.parse((await execCommand(process.execPath, [join(dist, 'runtime.js'), 'open', '--workspace', workspace, '--thread', threadId], { env: process.env })).stdout);
   const opened = await open();

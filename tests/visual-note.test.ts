@@ -1,17 +1,14 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { test } from 'vitest';
+import { test } from './helpers/resource-test.js';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import {  } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
-import { openBusiness } from '../src/business/index.js';
 import { batchSchema, editSegmentSchema } from '../src/shared/contracts.js';
 
-test('旧项目补齐空画面说明，独立修改、清空、重开及新增均保留正确内容', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-visual-note-'));
-  projectCleanup(t).directory(directory);
+test('旧项目补齐空画面说明，独立修改、清空、重开及新增均保留正确内容', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-visual-note-'));
   const id = randomUUID();
   const legacy = new DatabaseSync(join(directory, 'clapgrid.sqlite'));
   try {
@@ -19,15 +16,12 @@ test('旧项目补齐空画面说明，独立修改、清空、重开及新增�
     legacy.prepare('INSERT INTO segments VALUES (?, 1, ?)').run(id, '旧文案');
   } finally { legacy.close(); }
   const business = openBusiness(directory);
-  let initialClosed = false;
-  projectCleanup(t).business(() => initialClosed ? undefined : business);
   assert.equal(business.getSnapshot().segments[0]!.visualNote, '');
   business.updateSegment(id, { visualNote: '产品特写\n切换全景' });
   business.editSegment(id, '新文案');
   assert.equal(business.getSnapshot().segments[0]!.visualNote, '产品特写\n切换全景');
-  await business.close(); initialClosed = true;
-  const reopened = openBusiness(directory);
-  projectCleanup(t).business(() => reopened);
+  await business.close(); const reopened = openBusiness(directory);
+
   assert.deepEqual(reopened.getSnapshot().segments[0], { id, order: 1, text: '新文案', visualNote: '产品特写\n切换全景', video: null });
   reopened.updateSegment(id, { visualNote: '' });
   assert.equal(reopened.getSnapshot().segments[0]!.text, '新文案');
@@ -38,11 +32,10 @@ test('旧项目补齐空画面说明，独立修改、清空、重开及新增�
   assert.ok(reopened.getSnapshot().segments.every(segment => segment.visualNote === ''));
 });
 
-test('说明变化使旧完整快照失效，范围编辑只更改说明，查找仍只搜索文案', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-note-conflict-'));
-  projectCleanup(t).directory(directory);
+test('说明变化使旧完整快照失效，范围编辑只更改说明，查找仍只搜索文案', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-note-conflict-'));
   const business = openBusiness(directory);
-  projectCleanup(t).business(() => business);
+
   const original = business.addSegment('原文').segments[0]!;
   business.updateSegment(original.id, { visualNote: '仅说明包含的关键词' });
   const token = business.acquire('codex');

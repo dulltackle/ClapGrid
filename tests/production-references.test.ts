@@ -1,19 +1,18 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { command as runCommand } from './helpers/vitest-command.js';
-import { test, vi, type TestContext } from 'vitest';
+import { test, type ResourceFixtures } from './helpers/resource-test.js';
+import { vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, symlinkSync, existsSync, chmodSync, mkdirSync } from 'node:fs';
+import { writeFileSync, readFileSync, symlinkSync, existsSync, chmodSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 
+type Resources = Pick<ResourceFixtures, 'command' | 'createDirectory'>;
 
 const cli = resolve('scripts/production.mjs');
 const sha = (bytes: string) => createHash('sha256').update(bytes).digest('hex');
-function fixture(t: TestContext) {
-  const project = mkdtempSync(join(tmpdir(), 'clapgrid-references-'));
-  projectCleanup(t).directory(project);
+function fixture(t: Pick<Resources, 'command' | 'createDirectory'>) {
+  const project = t.createDirectory(join(tmpdir(), 'clapgrid-references-'));
   const contents = { 'card.json': '{}', 'source.ts': 'source', 'audio.wav': 'audio', 'assembly.mp4': 'assembly', 'review.mp4': 'review', 'tsconfig.json': '{}' };
   for (const [name, bytes] of Object.entries(contents)) writeFileSync(join(project, name), bytes);
   const manifest = { schemaVersion: 1, project: { width: 64, height: 64, fps: 10 }, typecheck: 'tsconfig.json',
@@ -23,7 +22,7 @@ function fixture(t: TestContext) {
   const save = () => writeFileSync(join(project, 'production.json'), JSON.stringify(manifest));
   const include = (name: string, bytes: string) => { writeFileSync(join(project, name), bytes); manifest.files.push({ path: name, category: 'history', sha256: sha(bytes) }); };
   const run = async (command: string, report = join(project, `${command}-report.json`), args: string[] = []) => {
-    const output = (await runCommand(process.execPath, [cli, command, '--project', project, '--report', report, ...args], { encoding: 'utf8' }));
+    const output = (await t.command(process.execPath, [cli, command, '--project', project, '--report', report, ...args], { encoding: 'utf8' }));
     const location = output.stdout.match(/完整报告：(.*)/)?.[1];
     assert.ok(location, output.stdout + output.stderr);
     return { ...output, report: JSON.parse(readFileSync(location, 'utf8')) };
@@ -32,7 +31,8 @@ function fixture(t: TestContext) {
   return { project, manifest, save, include, run };
 }
 
-test('真实入口分别保护可读不合格记录中的历史和未知字段，而不强制这些引用入包', async t => {
+test('真实入口分别保护可读不合格记录中的历史和未知字段，而不强制这些引用入包', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   const original = join(f.project, 'historical-report.json');
   const bytes = JSON.stringify({ schemaVersion: 1, report: original, startedAt: 'controlled-test', checks: [] });
@@ -50,7 +50,8 @@ test('真实入口分别保护可读不合格记录中的历史和未知字段�
 });
 
 for (const mode of ['relative', 'absolute', 'file-url', 'alias', 'symlink', 'historical', 'missing', 'external'] as const) {
-  test(`真实入口证明指针 ${mode} 按两种用途选择范围且保护原字节`, async t => {
+  test(`真实入口证明指针 ${mode} 按两种用途选择范围且保护原字节`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
     const f = fixture(t);
     const original = join(f.project, 'proof.json');
     const bytes = JSON.stringify({ schemaVersion: 1, report: original, startedAt: 'controlled-test', checks: [], original: mode });
@@ -90,7 +91,8 @@ for (const mode of ['relative', 'absolute', 'file-url', 'alias', 'symlink', 'his
   });
 }
 
-test('当前要求的相对别名定位为必需成员，待生成目标保护报告但不强制入包', async t => {
+test('当前要求的相对别名定位为必需成员，待生成目标保护报告但不强制入包', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   writeFileSync(join(f.project, 'artifact.txt'), 'artifact bytes');
   f.include('evidence.json', JSON.stringify({ reviewVersion: 'current', records: [], requirements: [{ required: [{ artifact: './artifact.txt' }, { artifact: 'future.txt' }] }] }));
@@ -107,7 +109,8 @@ test('当前要求的相对别名定位为必需成员，待生成目标保护�
   assert.deepEqual(readFileSync(join(f.project, 'delivery.tar.gz')), before);
 });
 
-test('不可写的已有报告在归档副作用前被拒绝并保留原件', async t => {
+test('不可写的已有报告在归档副作用前被拒绝并保留原件', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   const original = join(f.project, 'readonly.json');
   const bytes = JSON.stringify({ schemaVersion: 1, report: original, startedAt: 'controlled-test', checks: [] });
@@ -119,7 +122,8 @@ test('不可写的已有报告在归档副作用前被拒绝并保留原件', as
   assert.equal(readFileSync(original, 'utf8'), bytes);
 });
 
-for (const field of ['sample', 'dependencies', 'assets']) test(`归档不能把显式不合格 ${field} 当作缺省空记录`, async t => {
+for (const field of ['sample', 'dependencies', 'assets']) test(`归档不能把显式不合格 ${field} 当作缺省空记录`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   if (field === 'assets') Object.assign(f.manifest.segments[0]!, { assets: null });
   else Object.assign(f.manifest, { [field]: null });
@@ -130,7 +134,8 @@ for (const field of ['sample', 'dependencies', 'assets']) test(`归档不能把�
   assert.equal(existsSync(join(f.project, 'delivery.tar.gz')), false);
 });
 
-for (const location of ['current-artifact', 'historical-path', 'extension-path'] as const) test(`本地文件网址在 ${location} 中仍保护旧报告形状的原件`, async t => {
+for (const location of ['current-artifact', 'historical-path', 'extension-path'] as const) test(`本地文件网址在 ${location} 中仍保护旧报告形状的原件`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   const original = join(f.project, 'original.json');
   const bytes = JSON.stringify({ schemaVersion: 1, report: original, startedAt: 'controlled-test', checks: [], original: location });
@@ -150,7 +155,8 @@ for (const location of ['current-artifact', 'historical-path', 'extension-path']
 });
 
 for (const pointerStyle of ['relative-file', 'encoded-slash'] as const) for (const referenceField of ['artifact', 'proof'] as const) {
-  test(`本地 ${pointerStyle} 的 ${referenceField} 指针沿用兼容解析且保护原件`, async t => {
+  test(`本地 ${pointerStyle} 的 ${referenceField} 指针沿用兼容解析且保护原件`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
     const f = fixture(t);
     mkdirSync(join(f.project, 'folder'));
     const original = join(f.project, 'folder/original.json');

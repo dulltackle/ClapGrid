@@ -1,15 +1,14 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { test } from 'vitest';
+import { test } from './helpers/resource-test.js';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import {  } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openBusiness } from '../src/business/index.js';
 
-test('多行粘贴忽略空白行，原子重排保留稳定身份并拒绝过时顺序', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-organization-'));
+test('多行粘贴忽略空白行，原子重排保留稳定身份并拒绝过时顺序', async ({ createDirectory, openBusiness }) => {
+  const t = { createDirectory, openBusiness };
+  const root = createDirectory(join(tmpdir(), 'clapgrid-organization-'));
   const business = openBusiness(root);
-  projectCleanup(t).business(() => business); projectCleanup(t).directory(root);
+
   const token = business.acquire('codex');
   await business.modifyBatch(token, { changes: [{ kind: 'paste', text: '\n甲\r\n \t\n乙\r丙\n' }] });
   const original = business.getSnapshot().segments;
@@ -25,10 +24,10 @@ test('多行粘贴忽略空白行，原子重排保留稳定身份并拒绝过�
   assert.deepEqual(business.getSnapshot().segments.map(s => s.text), ['丙', '甲', '乙']);
 });
 
-test('选中操作固定稳定身份，改选和断开不扩大范围，明确查询仍可用', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-selection-'));
+test('选中操作固定稳定身份，改选和断开不扩大范围，明确查询仍可用', async ({ createDirectory, openBusiness }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-selection-'));
   const business = openBusiness(root);
-  projectCleanup(t).business(() => business); projectCleanup(t).directory(root);
+
   business.addSegment('甲'); business.addSegment('乙');
   const [a, b] = business.getSnapshot().segments;
   const tableId = business.connectTable();
@@ -57,10 +56,10 @@ test('选中操作固定稳定身份，改选和断开不扩大范围，明确�
   await assert.rejects(business.processScope(token, { scope: { kind: 'selected' }, expected: [a!], action: { kind: 'delete' } }), /重新查询/);
 });
 
-test('删除后项目序号连续，批量删除不会因自身引起的序号变化跳过目标', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-delete-order-'));
+test('删除后项目序号连续，批量删除不会因自身引起的序号变化跳过目标', async ({ createDirectory, openBusiness }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-delete-order-'));
   const business = openBusiness(root);
-  projectCleanup(t).business(() => business); projectCleanup(t).directory(root);
+
   for (const text of ['甲', '乙', '丙']) business.addSegment(text);
   const [a, b, c] = business.getSnapshot().segments;
   const token = business.acquire('codex');
@@ -69,10 +68,10 @@ test('删除后项目序号连续，批量删除不会因自身引起的序号�
   assert.deepEqual(business.getSnapshot().segments, [{ ...c!, order: 1 }]);
 });
 
-test('条件查询后的内容变化和明确身份删除逐项反馈，不静默丢失旧目标', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-stale-scope-'));
+test('条件查询后的内容变化和明确身份删除逐项反馈，不静默丢失旧目标', async ({ createDirectory, openBusiness }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-stale-scope-'));
   const business = openBusiness(root);
-  projectCleanup(t).business(() => business); projectCleanup(t).directory(root);
+
   business.addSegment('原条件甲'); business.addSegment('原条件乙');
   const expected = business.querySegments({ kind: 'query', textContains: '原条件' }).segments;
   const token = business.acquire('codex');
@@ -84,10 +83,10 @@ test('条件查询后的内容变化和明确身份删除逐项反馈，不静�
   assert.equal(business.getSnapshot().segments[0]!.text, '新内容');
 });
 
-test('超过五百个片段仍可全选查询和按固定范围处理', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-large-selection-'));
+test('超过五百个片段仍可全选查询和按固定范围处理', async ({ createDirectory, openBusiness }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-large-selection-'));
   const business = openBusiness(root);
-  projectCleanup(t).business(() => business); projectCleanup(t).directory(root);
+
   const token = business.acquire('codex');
   await business.modifyBatch(token, { changes: [{ kind: 'paste', text: Array.from({ length: 501 }, (_, i) => `片段${i}`).join('\n') }] });
   const segments = business.getSnapshot().segments;

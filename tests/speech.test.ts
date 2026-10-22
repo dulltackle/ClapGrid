@@ -1,17 +1,16 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { test, expect } from 'vitest';
+import { test } from './helpers/resource-test.js';
+import { expect } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, rmSync } from 'node:fs';
+import {  } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openBusiness } from '../src/business/index.js';
 
-test('缺凭据时提交前拒绝且不发送付费请求', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-'));
+test('缺凭据时提交前拒绝且不发送付费请求', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-speech-'));
   let calls = 0;
-  const business = openBusiness(directory, { key: () => '', configPath: '/tmp/runtime/.env', fetch: async t => { calls++; throw new Error(); } });
-  projectCleanup(t).directory(directory); projectCleanup(t).business(() => business);
+  const business = openBusiness(directory, { key: () => '', configPath: '/tmp/runtime/.env', fetch: async () => { calls++; throw new Error(); } });
+
   {
     const segment = business.addSegment('你好').segments[0]!;
     assert.throws(() => business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id }), /\/tmp\/runtime\/\.env.*TOKENDANCE_KEY/);
@@ -20,8 +19,8 @@ test('缺凭据时提交前拒绝且不发送付费请求', async t => {
   }
 });
 
-test('受理后持续锁定、重发去重，完整成功音频及输入快照重开仍保留', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-'));
+test('受理后持续锁定、重发去重，完整成功音频及输入快照重开仍保留', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-speech-'));
   let finish!: (response: Response) => void;
   let calls = 0;
   const runtime = { key: () => 'secret', configPath: '/tmp/runtime/.env', fetch: (async (url, options) => {
@@ -32,7 +31,7 @@ test('受理后持续锁定、重发去重，完整成功音频及输入快照�
     return await new Promise<Response>(resolve => { finish = resolve; });
   }) as typeof fetch };
   let business = openBusiness(directory, runtime);
-  projectCleanup(t).directory(directory); projectCleanup(t).business(() => business);
+
   {
     const segment = business.addSegment('你好').segments[0]!;
     const input = { requestId: randomUUID(), segmentId: segment.id };
@@ -59,11 +58,11 @@ test('受理后持续锁定、重发去重，完整成功音频及输入快照�
   }
 });
 
-test('统一声音保存并校验范围，改变输入只改变配音有效性', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-'));
+test('统一声音保存并校验范围，改变输入只改变配音有效性', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-speech-'));
   const runtime = { key: () => 'secret', configPath: '/tmp/runtime/.env', fetch: (async () => new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n')) as typeof fetch };
   let business = openBusiness(directory, runtime);
-  projectCleanup(t).directory(directory); projectCleanup(t).business(() => business);
+
   {
     const segment = business.addSegment('原文').segments[0]!;
     business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
@@ -83,8 +82,8 @@ test('统一声音保存并校验范围，改变输入只改变配音有效性',
   }
 });
 
-test('服务异常不重试，失败保留旧配音；中断任务重开标记未知且不重新请求', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-'));
+test('服务异常不重试，失败保留旧配音；中断任务重开标记未知且不重新请求', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-speech-'));
   let calls = 0;
   const runtime = { key: () => 'key', configPath: '/tmp/runtime/.env', fetch: (async (_url, input) => {
     calls++;
@@ -93,7 +92,7 @@ test('服务异常不重试，失败保留旧配音；中断任务重开标记�
     return new Promise<Response>((_resolve, reject) => { input?.signal?.addEventListener('abort', () => reject(input.signal?.reason), { once: true }); });
   }) as typeof fetch };
   let business = openBusiness(directory, runtime);
-  projectCleanup(t).directory(directory); projectCleanup(t).business(() => business);
+
   {
     const segment = business.addSegment('保留旧配音').segments[0]!;
     business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
@@ -115,11 +114,10 @@ test('服务异常不重试，失败保留旧配音；中断任务重开标记�
   }
 });
 
-test('等待配音运行阶段时，已失败的任务立即报告原始原因', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-speech-phase-'));
-  projectCleanup(t).directory(directory);
+test('等待配音运行阶段时，已失败的任务立即报告原始原因', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-speech-phase-'));
   const business = openBusiness(directory, { key: () => 'controlled', configPath: 'controlled', fetch: async () => new Response('', { status: 401 }) });
-  projectCleanup(t).business(() => business);
+
   const segment = business.addSegment('明确失败').segments[0]!;
   const task = business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
   await expect.poll(() => business.getSpeechStatus().locked).toBe(false);

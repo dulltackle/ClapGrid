@@ -1,8 +1,7 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { command as runCommand } from './helpers/vitest-command.js';
-import { test, vi } from 'vitest';
+import { test, type ResourceFixtures } from './helpers/resource-test.js';
+import { vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, cpSync, readFileSync, writeFileSync, rmSync, readdirSync } from 'node:fs';
+import { cpSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
@@ -10,25 +9,27 @@ import { gunzipSync } from 'node:zlib';
 import { archiveBaseline as catalog, archiveBaselinePath } from './helpers/archive-baseline.js';
 import { restorePackage, packageEnd } from './helpers/production-package.js';
 
+type Resources = Pick<ResourceFixtures, 'command' | 'createDirectory'>;
 
 const cli = resolve('scripts/production.mjs');
 const hash = (bytes: Buffer | string) => createHash('sha256').update(bytes).digest('hex');
-async function run(project: string, command: string, archive?: string) {
+async function run(t: Pick<Resources, 'command'>, project: string, command: string, archive?: string) {
   const report = join(project, `report-${command}.json`);
-  const result = (await runCommand(process.execPath, [cli, command, '--project', project, '--report', report, ...(archive ? ['--archive', archive] : [])], { encoding: 'utf8' }));
+  const result = (await t.command(process.execPath, [cli, command, '--project', project, '--report', report, ...(archive ? ['--archive', archive] : [])], { encoding: 'utf8' }));
   assert.equal(result.error, undefined);
   return { ...result, report: JSON.parse(readFileSync(report, 'utf8')) };
 }
 
 for (const kind of ['valid.tar.gz', 'valid-python-3.12.tar.gz', 'pax-overrides.tar.gz', 'new-node']) {
-  test(`独立空目录恢复 ${kind}，全成员/清单/索引按冻结旧字节与摘要核对后真实入口再验`, async t => {
-    const project = mkdtempSync(join(tmpdir(), 'clapgrid-restore-source-'));
-    const restored = mkdtempSync(join(tmpdir(), 'clapgrid-restore-independent-'));
-    projectCleanup(t).directory(project); projectCleanup(t).directory(restored);
+  test(`独立空目录恢复 ${kind}，全成员/清单/索引按冻结旧字节与摘要核对后真实入口再验`, async ({ command, createDirectory }) => {
+  const t = { command };
+    const project = createDirectory(join(tmpdir(), 'clapgrid-restore-source-'));
+    const restored = createDirectory(join(tmpdir(), 'clapgrid-restore-independent-'));
+
     cpSync(archiveBaselinePath('project'), project, { recursive: true });
     let archive = archiveBaselinePath(kind);
     if (kind === 'new-node') {
-      const packed = (await run(project, 'pack'));
+      const packed = (await run(t, project, 'pack'));
       assert.equal(packed.status, 0, packed.stdout + packed.stderr);
       archive = join(project, 'delivery.tar.gz');
     }
@@ -46,17 +47,18 @@ for (const kind of ['valid.tar.gz', 'valid-python-3.12.tar.gz', 'pax-overrides.t
       assert.equal(bytes.length, expected.size, expected.path);
       assert.equal(hash(bytes), expected.sha256, expected.path);
     }
-    const verified = (await run(restored, 'verify-package', archive));
+    const verified = (await run(t, restored, 'verify-package', archive));
     assert.equal(verified.status, 0, verified.stdout + verified.stderr);
     assert.deepEqual(verified.report.details.order, catalog.success.legacyResult.details!.order);
     assert.deepEqual(readFileSync(archive), archiveBefore);
   });
 }
 
-test('独立恢复审阅历史与证明原件，待审/否决/受控测试/人工声明保持原字节和相同证据门槛', async t => {
-  const project = mkdtempSync(join(tmpdir(), 'clapgrid-history-source-'));
-  const restored = mkdtempSync(join(tmpdir(), 'clapgrid-history-restored-'));
-  projectCleanup(t).directory(project); projectCleanup(t).directory(restored);
+test('独立恢复审阅历史与证明原件，待审/否决/受控测试/人工声明保持原字节和相同证据门槛', async ({ command, createDirectory }) => {
+  const t = { command };
+  const project = createDirectory(join(tmpdir(), 'clapgrid-history-source-'));
+  const restored = createDirectory(join(tmpdir(), 'clapgrid-history-restored-'));
+
   cpSync(archiveBaselinePath('project'), project, { recursive: true });
   const proof = '证明原件.json', artifact = '审阅产物.txt';
   const contents: Record<string, string> = {
@@ -80,11 +82,11 @@ test('独立恢复审阅历史与证明原件，待审/否决/受控测试/人�
   const original = readFileSync(manifest, 'utf8');
   assert.ok(original.includes('"files":[\n '));
   writeFileSync(manifest, original.replace('"files":[\n ', '"evidence":"证据.json","files":[\n ' + entries.join(',\n ') + ',\n '));
-  const before = (await run(project, 'evidence'));
+  const before = (await run(t, project, 'evidence'));
   assert.equal(before.status, 0, before.stdout);
   assert.equal(before.report.details.requirements[0].controlledTest, true);
   assert.equal(before.report.details.requirements[0].writeBackAllowed, false);
-  assert.equal((await run(project, 'pack')).status, 0);
+  assert.equal((await run(t, project, 'pack')).status, 0);
   const archive = join(project, 'delivery.tar.gz');
   const members = await restorePackage(archive, restored);
   assert.deepEqual(members.map(member => member.header.name).sort(), ['.clapgrid-package.json', 'production.json', ...catalog.success.members.filter(member => !['.clapgrid-package.json', 'production.json'].includes(member.path)).map(member => member.path), ...Object.keys(contents)].sort());
@@ -95,9 +97,9 @@ test('独立恢复审阅历史与证明原件，待审/否决/受控测试/人�
   assert.deepEqual(readFileSync(join(restored, 'production.json')), readFileSync(manifest));
   const index = members.find(member => member.header.name === '.clapgrid-package.json')!.body;
   assert.deepEqual(readFileSync(join(restored, '.clapgrid-package.json')), index);
-  const verified = (await run(restored, 'verify-package', archive));
+  const verified = (await run(t, restored, 'verify-package', archive));
   assert.equal(verified.status, 0, verified.stdout);
-  const after = (await run(restored, 'evidence'));
+  const after = (await run(t, restored, 'evidence'));
   assert.equal(after.status, before.status, after.stdout);
   assert.equal(after.report.details.reviewVersion, before.report.details.reviewVersion);
   assert.deepEqual(after.report.details.requirements, before.report.details.requirements);

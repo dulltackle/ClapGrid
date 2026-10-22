@@ -1,28 +1,26 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { test, expect } from 'vitest';
+import { test } from './helpers/resource-test.js';
+import { expect } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { startService } from '../src/service/server.js';
 import { createBusinessMcp } from '../src/mcp/server.js';
 import { connectTable, beginEdit, submitSpeech } from '../src/shared/client.js';
 import type { SpeechStatus, SpeechTask } from '../src/shared/contracts.js';
 
-test('HTTP 单行提交与 MCP 共用任务，面板断开不解锁且支持查询与范围试听', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-speech-http-'));
-  projectCleanup(t).directory(root);
+test('HTTP 单行提交与 MCP 共用任务，面板断开不解锁且支持查询与范围试听', async ({ createDirectory, openConnection, startService }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-speech-http-'));
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
   let finish!: (response: Response) => void;
   let calls = 0; let key = '';
-  const service = await projectCleanup(t).startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0, speechRuntime: {
+  const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0, speechRuntime: {
     configPath: '/tmp/local/.env', key: () => key, fetch: (async () => { calls++; return await new Promise<Response>(resolve => { finish = resolve; }); }) as typeof fetch,
   } });
-  const mcp = createBusinessMcp(service.url); const client = new Client({ name: '配音验证', version: '1' });
-  projectCleanup(t).connection(() => client); projectCleanup(t).connection(() => mcp);
+  const mcp = openConnection(() => createBusinessMcp(service.url)); const client = openConnection(() => new Client({ name: '配音验证', version: '1' }));
+
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
   await client.callTool({ name: 'clapgrid_modify', arguments: { changes: [{ kind: 'add', text: '真实业务流程' }] } });
   const status = await (await fetch(`${service.url}/api/status`)).json();
@@ -61,16 +59,15 @@ test('HTTP 单行提交与 MCP 共用任务，面板断开不解锁且支持查�
   assert.equal(calls, 1);
 });
 
-test('MCP 批量提交返回逐项受理，HTTP 查询与重发共享持久化结果', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-batch-http-'));
-  projectCleanup(t).directory(root);
+test('MCP 批量提交返回逐项受理，HTTP 查询与重发共享持久化结果', async ({ createDirectory, openConnection, startService }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-batch-http-'));
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
   let calls = 0;
-  const service = await projectCleanup(t).startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0, speechRuntime: {
+  const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0, speechRuntime: {
     configPath: '/tmp/.env', key: () => 'key', fetch: (async () => { calls++; return new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n'); }) as typeof fetch,
   } });
-  const mcp = createBusinessMcp(service.url); const client = new Client({ name: '批量配音验证', version: '1' });
-  projectCleanup(t).connection(() => client); projectCleanup(t).connection(() => mcp);
+  const mcp = openConnection(() => createBusinessMcp(service.url)); const client = openConnection(() => new Client({ name: '批量配音验证', version: '1' }));
+
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
   await client.callTool({ name: 'clapgrid_modify', arguments: { changes: [{ kind: 'add', text: '第一行' }, { kind: 'add', text: '第二行' }] } });
   const input = { requestId: randomUUID(), mode: 'generate', scope: { kind: 'all' } };

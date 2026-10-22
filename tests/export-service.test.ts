@@ -1,12 +1,11 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { test, expect } from 'vitest';
+import { test } from './helpers/resource-test.js';
+import { expect } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { startService } from '../src/service/server.js';
 import { createBusinessMcp } from '../src/mcp/server.js';
 import { beginEdit, queryExportSettings, saveExportSettings, queryStatus, submitSpeech } from '../src/shared/client.js';
 import type { ExportStatus } from '../src/shared/contracts.js';
@@ -15,16 +14,15 @@ import { request } from 'node:http';
 import { existsSync } from 'node:fs';
 import { queryExports, submitExport } from '../src/shared/client.js';
 
-for (const owner of ['user', 'codex'] as const) test(`${owner} 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权`, async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-edit-export-'));
-  projectCleanup(t).directory(root);
+for (const owner of ['user', 'codex'] as const) test(`${owner} 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权`, async ({ createDirectory, openConnection, startService }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-edit-export-'));
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
   const projectDirectory = join(root, 'project');
-  const service = await projectCleanup(t).startService({ projectDirectory, panelDirectory, port: 0 });
-  const mcp = createBusinessMcp(service.url); projectCleanup(t).connection(() => mcp);
-  const client = new Client({ name: '编辑期间拒绝导出', version: '1' }); projectCleanup(t).connection(() => client);
+  const service = await startService({ projectDirectory, panelDirectory, port: 0 });
+  const mcp = openConnection(() => createBusinessMcp(service.url));
+  const client = openConnection(() => new Client({ name: '编辑期间拒绝导出', version: '1' }));
   let release: (() => Promise<void>) | undefined;
-  projectCleanup(t).connection(() => ({ close: () => release?.() }));
+  openConnection(() => ({ close: () => release?.() }));
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
   if (owner === 'user') {
     const edit = await beginEdit(service.url);
@@ -55,17 +53,16 @@ for (const owner of ['user', 'codex'] as const) test(`${owner} 编辑期间 HTTP
 });
 
 // 此例往返 MCP、真实字体检查及服务重启，使用有限的产品集成预算。
-test('表格 HTTP 与 MCP 共享导出设置，自动保存恢复并遵守普通修改权及任务锁', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-export-http-'));
-  projectCleanup(t).directory(root);
+test('表格 HTTP 与 MCP 共享导出设置，自动保存恢复并遵守普通修改权及任务锁', async ({ createDirectory, openConnection, startService }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-export-http-'));
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
   let finish!: (response: Response) => void;
   const options = { projectDirectory: join(root, 'project'), panelDirectory, port: 0, speechRuntime: {
     configPath: '.env', key: () => 'key', fetch: (async () => new Promise<Response>(resolve => { finish = resolve; })) as typeof fetch,
   } };
-  let service = await projectCleanup(t).startService(options); projectCleanup(t).service(() => service);
-  const mcp = createBusinessMcp(service.url); const client = new Client({ name: '导出设置验证', version: '1' });
-  projectCleanup(t).connection(() => client); projectCleanup(t).connection(() => mcp);
+  let service = await startService(options);
+  const mcp = openConnection(() => createBusinessMcp(service.url)); const client = openConnection(() => new Client({ name: '导出设置验证', version: '1' }));
+
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
   const original = await queryExportSettings(service.url);
   const settings = { ...original.settings, fontFamily: 'Noto Sans CJK SC', fontSize: 48 };
@@ -99,16 +96,16 @@ test('表格 HTTP 与 MCP 共享导出设置，自动保存恢复并遵守普通
   assert.deepEqual((await queryExportSettings(service.url)).settings, changed);
   finish(new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n'));
   await expect.poll(async () => (await queryStatus(service.url)).taskLocked).toBeFalsy();
-  await service.close(); service = await projectCleanup(t).startService(options);
+  await service.close(); service = await startService(options);
   assert.deepEqual((await queryExportSettings(service.url)).settings, changed);
 }, 30000);
 
-test('表格与 MCP 共用全片导出任务，立即受理、重复提交、进度及取消状态一致', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-export-api-'));
+test('表格与 MCP 共用全片导出任务，立即受理、重复提交、进度及取消状态一致', async ({ createDirectory, openConnection, startService }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-export-api-'));
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
-  const service = await projectCleanup(t).startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 }); projectCleanup(t).directory(root);
-  const mcp = createBusinessMcp(service.url); const client = new Client({ name: '导出验收', version: '1' });
-  projectCleanup(t).connection(() => client); projectCleanup(t).connection(() => mcp);
+  const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
+  const mcp = openConnection(() => createBusinessMcp(service.url)); const client = openConnection(() => new Client({ name: '导出验收', version: '1' }));
+
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
   const response = await fetch(`${service.url}/api/exports/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
   assert.equal(response.status, 200);

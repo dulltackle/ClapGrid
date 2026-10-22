@@ -1,30 +1,25 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import type { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import type { TestContext } from 'vitest';
 import { rm } from 'node:fs/promises';
-import type { openBusiness } from '../../src/business/index.js';
+import { mkdtempSync } from 'node:fs';
+import { openBusiness } from '../../src/business/index.js';
 import { startService } from '../../src/service/server.js';
 import type { command } from './command.js';
 
 const { stopOwnedProcess, processIdentity } = await import(new URL('./product-process.mjs', import.meta.url).href);
 
-// 仅为具体命令资源区分测试体和独立清理信号，避免旧异步链借用清理预算。
-export const commandContext = new AsyncLocalStorage<{ context: TestContext; cleanup: boolean }>();
-
-/** 本例具体项目资源共用一次原生清理钩子；目录删除显式依赖全部关闭／退出成功。 */
-export function projectCleanup(t: TestContext) {
-  let resources = projects.get(t);
-  if (resources) return resources;
+/** 每例只有一个协调者；原生 fixture 拥有其创建和最终释放。 */
+export function createProjectResources(t: Pick<TestContext, 'signal'>) {
   let cleaning = false;
   const cleanupAbort = new AbortController();
   const directories = new Set<string>();
   const businesses: (() => Pick<ReturnType<typeof openBusiness>, 'close'> | undefined)[] = [];
   const services: (() => { close(): unknown } | Promise<{ close(): unknown }> | undefined)[] = [];
-  const connections: (() => { close(): unknown } | undefined)[] = [];
+  const connections: (() => { close(): unknown } | Promise<{ close(): unknown }> | undefined)[] = [];
   const processes: any[] = [];
   const commands: ReturnType<typeof command>[] = [];
-  resources = {
+  const resources = {
     get signal() { return cleanupAbort.signal; },
     connectMcp(client: Client, transport: StdioClientTransport) {
       connections.push(() => client);
@@ -34,22 +29,42 @@ export function projectCleanup(t: TestContext) {
       return connected;
     },
     startService(options: Parameters<typeof startService>[0]) {
-      if (!commandContext.getStore()?.cleanup) t.signal.throwIfAborted();
+      t.signal.throwIfAborted();
       const pending = startService(options);
       services.push(() => pending);
       // 即使测试在就绪前超时，后来返回的服务也必须关闭；本轮钩子仍独立确认结果。
       void pending.then(service => { if (cleaning || t.signal.aborted) return service.close(); }).catch(() => {});
       return pending;
     },
-    directory(path: string) { directories.add(path); },
-    business(read: () => Pick<ReturnType<typeof openBusiness>, 'close'> | undefined) { businesses.push(read); },
-    service(read: () => { close(): unknown } | undefined) { services.push(read); },
-    connection(read: () => { close(): unknown } | undefined) { connections.push(read); },
-    process(owner: unknown) { processes.push(owner); },
+    createDirectory(create: string | (() => string)) {
+      const path = typeof create === 'string' ? mkdtempSync(create) : create();
+      directories.add(String(path));
+      return path;
+    },
+    openBusiness(...args: Parameters<typeof openBusiness>) {
+      const business = openBusiness(...args);
+      businesses.push(() => business);
+      return business;
+    },
+    openConnection<T extends { close(): unknown } | Promise<{ close(): unknown }>>(create: () => T): T {
+      const connection = create();
+      connections.push(() => connection);
+      void Promise.resolve(connection).then(value => { if (cleaning || t.signal.aborted) return value.close(); }).catch(() => {});
+      return connection;
+    },
+    ownService(create: () => { close(): unknown }) {
+      const service = create();
+      services.push(() => service);
+      return service;
+    },
+    ownProcess(create: () => unknown) {
+      const owner = create();
+      processes.push(owner);
+      return owner;
+    },
     command(child: ReturnType<typeof command>) { commands.push(child); },
   };
-  projects.set(t, resources);
-  t.onTestFinished(() => commandContext.run({ context: t, cleanup: true }, async () => {
+  const cleanup = async () => {
     // 每例总计 8 秒；并行尝试独立资源，一处失败不阻止其余资源获得机会。
     cleaning = true;
     const started = Date.now();
@@ -66,7 +81,7 @@ export function projectCleanup(t: TestContext) {
       };
       // 连接释放依赖服务在线；服务关闭后才做进程兜底。每阶段留出后续尝试的预算。
       const results = [
-        ...await Promise.allSettled(connections.map((read, i) => close(`项目连接 ${i}`, () => read()?.close(), started + 2000))),
+        ...await Promise.allSettled(connections.map((read, i) => close(`项目连接 ${i}`, async () => (await read())?.close(), started + 2000))),
         ...await Promise.allSettled([
           ...businesses.map((read, i) => close(`项目业务 ${i}`, () => read()?.close(), deadline - 2000)),
           ...services.map((read, i) => close(`项目服务 ${i}`, async () => (await read())?.close(), deadline - 2000)),
@@ -85,17 +100,6 @@ export function projectCleanup(t: TestContext) {
       clearTimeout(abortTimer);
       cleanupAbort.abort(Error('项目清理已结束，不再启动命令'));
     }
-  }), 9000);
-  return resources;
+  };
+  return { ...resources, cleanup };
 }
-const projects = new WeakMap<TestContext, {
-  readonly signal: AbortSignal;
-  connectMcp(client: Client, transport: StdioClientTransport): Promise<void>;
-  startService(options: Parameters<typeof startService>[0]): ReturnType<typeof startService>;
-  directory(path: string): void;
-  business(read: () => Pick<ReturnType<typeof openBusiness>, 'close'> | undefined): void;
-  service(read: () => { close(): unknown } | undefined): void;
-  connection(read: () => { close(): unknown } | undefined): void;
-  process(owner: unknown): void;
-  command(child: ReturnType<typeof command>): void;
-}>();

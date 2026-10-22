@@ -1,8 +1,7 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { execCommand } from './helpers/vitest-command.js';
-import { test, vi } from 'vitest';
+import { test } from './helpers/resource-test.js';
+import { vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:net';
@@ -11,9 +10,8 @@ import { build } from 'esbuild';
 import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 import { queryStatus } from '../src/shared/client.js';
 
-
-test('打包后台入口重复启动复用同一项目，拒绝其他项目，停止后恢复原项目身份', { timeout: 30000 }, async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-runtime-'));
+test('打包后台入口重复启动复用同一项目，拒绝其他项目，停止后恢复原项目身份', { timeout: 30000 }, async ({ createDirectory, execCommand, ownProcess }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-runtime-'));
   const dist = join(root, 'dist'); const project = join(root, 'project');
   mkdirSync(join(dist, 'panel'), { recursive: true }); writeFileSync(join(root, 'package.json'), '{"type":"module"}');
   writeFileSync(join(dist, 'panel', 'index.html'), 'ClapGrid');
@@ -27,11 +25,10 @@ test('打包后台入口重复启动复用同一项目，拒绝其他项目，�
   const cli = async (action: string, directory = project) => JSON.parse((await execCommand(process.execPath,
     [join(dist, 'runtime.js'), action, '--project', directory, '--port', String(port)])).stdout);
   let pid: number | undefined;
-  projectCleanup(t).directory(root);
 
   const first = await cli('start');
   pid = first.pid;
-  const firstProcess = serviceProcess(first.pid); projectCleanup(t).process(firstProcess);
+  const firstProcess = serviceProcess(first.pid); ownProcess(() => firstProcess);
   const again = await cli('start');
   assert.deepEqual([again.instanceId, again.pid, again.snapshot.project.id], [first.instanceId, first.pid, first.snapshot.project.id]);
   await assert.rejects(cli('start', join(root, 'other')), /属于其他项目/);
@@ -39,7 +36,7 @@ test('打包后台入口重复启动复用同一项目，拒绝其他项目，�
   assert.equal((await cli('stop')).outcome, 'stopping');
   await waitForServiceExit(firstProcess);
   const reopened = await cli('start');
-  pid = reopened.pid; projectCleanup(t).process(serviceProcess(reopened.pid));
+  pid = reopened.pid; ownProcess(() => serviceProcess(reopened.pid));
   assert.equal(reopened.snapshot.project.id, first.snapshot.project.id);
   assert.notEqual(reopened.instanceId, first.instanceId);
   assert.equal(reopened.taskLocked, false);

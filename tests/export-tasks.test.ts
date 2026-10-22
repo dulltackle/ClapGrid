@@ -1,9 +1,9 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { command as runCommand, execBytes, execText } from './helpers/vitest-command.js';
+import { test, type ResourceFixtures } from './helpers/resource-test.js';
+import type { TestContext } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { test, expect, vi, type TestContext } from 'vitest';
+import { expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import fs from 'node:fs/promises';
@@ -11,6 +11,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { openBusiness } from '../src/business/index.js';
 import type { ExportTask } from '../src/shared/contracts.js';
 
+type Resources = Pick<ResourceFixtures, 'createDirectory' | 'execBytes' | 'execText' | 'openBusiness' | 'openConnection'> & Pick<TestContext, 'onTestFinished'>;
 
 async function finished(business: ReturnType<typeof openBusiness>, id: string): Promise<ExportTask> {
   let task: ExportTask | undefined;
@@ -21,11 +22,10 @@ async function finished(business: ReturnType<typeof openBusiness>, id: string): 
   return task!;
 }
 
-test('先受理再汇总空项目及设置问题，重复请求共享任务且校验期间锁定', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-task-'));
-  projectCleanup(t).directory(directory);
+test('先受理再汇总空项目及设置问题，重复请求共享任务且校验期间锁定', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-export-task-'));
   const business = openBusiness(directory);
-  projectCleanup(t).business(() => business);
+
   const task = business.submitExport();
   assert.equal(task.state, 'accepted');
   assert.equal(business.submitExport().id, task.id);
@@ -40,11 +40,10 @@ test('先受理再汇总空项目及设置问题，重复请求共享任务且�
   assert.equal(business.getSpeechStatus().tasks.length, 0);
 });
 
-test('汇总逐片段缺失视频和配音，不自动配音或跳过片段', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-invalid-'));
-  projectCleanup(t).directory(directory);
+test('汇总逐片段缺失视频和配音，不自动配音或跳过片段', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-export-invalid-'));
   const business = openBusiness(directory);
-  projectCleanup(t).business(() => business);
+
   const first = business.addSegment('甲').segments[0]!;
   const second = business.addSegment('乙').segments[1]!;
   const task = business.submitExport();
@@ -57,11 +56,10 @@ test('汇总逐片段缺失视频和配音，不自动配音或跳过片段', as
   assert.equal(business.getSpeechStatus().tasks.length, 0);
 });
 
-for (const owner of ['user', 'codex'] as const) test(`${owner} 持有修改权时拒绝导出，不创建任务且原编辑可以继续`, async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-editing-'));
-  projectCleanup(t).directory(directory);
+for (const owner of ['user', 'codex'] as const) test(`${owner} 持有修改权时拒绝导出，不创建任务且原编辑可以继续`, async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-export-editing-'));
   const business = openBusiness(directory);
-  projectCleanup(t).business(() => business);
+
   const token = business.acquire(owner);
   const before = business.getSnapshot();
   assert.throws(() => business.submitExport(), owner === 'user' ? /用户正在编辑/ : /Codex 正在修改/);
@@ -76,21 +74,20 @@ for (const owner of ['user', 'codex'] as const) test(`${owner} 持有修改权�
   assert.equal((await finished(business, task.id)).state, 'failed');
 });
 
-async function ready(t: TestContext, options: { duration?: number; sar?: number } = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-render-'));
-  projectCleanup(t).directory(root);
+async function ready(t: Pick<Resources, 'createDirectory' | 'execBytes' | 'openBusiness'>, options: { duration?: number; sar?: number } = {}) {
+  const root = t.createDirectory(join(tmpdir(), 'clapgrid-render-'));
   const source = join(root, 'source.mp4'); const audio = join(root, 'speech.mp3');
-  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=96x96:r=25:d=0.4', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:r=25:d=0.6', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=1', '-filter_complex', `[0:v][1:v]concat=n=2:v=1:a=0,setsar=${options.sar ?? 1}[v]`, '-map', '[v]', '-map', '2:a', '-c:v', 'libx264', '-c:a', 'aac', source]));
-  (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', `sine=frequency=440:duration=${options.duration ?? 0.8}`, '-ar', '24000', audio]));
+  (await t.execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=96x96:r=25:d=0.4', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:r=25:d=0.6', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=1', '-filter_complex', `[0:v][1:v]concat=n=2:v=1:a=0,setsar=${options.sar ?? 1}[v]`, '-map', '[v]', '-map', '2:a', '-c:v', 'libx264', '-c:a', 'aac', source]));
+  (await t.execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', `sine=frequency=440:duration=${options.duration ?? 0.8}`, '-ar', '24000', audio]));
   let failSpeech = false;
   const payload = readFileSync(audio).toString('base64');
   const directory = join(root, 'project');
-  const business = openBusiness(directory, { key: () => 'test-key', configPath: '.env', fetch: (async () => failSpeech
+  const business = t.openBusiness(directory, { key: () => 'test-key', configPath: '.env', fetch: (async () => failSpeech
     ? new Response('失败', { status: 500 })
     : new Response(`data: {"code":0,"data":"${payload}"}\n\ndata: {"code":20000000}\n\n`)) as typeof fetch });
   let closing: Promise<void> | undefined;
   const close = () => closing ??= business.close();
-  projectCleanup(t).business(() => ({ close }));
+
   const token = business.acquire('codex');
   const asset = await business.importVideo(token, { sourcePath: source });
   const first = business.addSegment('第一句字幕，整句随配音显示。', token).segments[0]!;
@@ -110,13 +107,12 @@ async function ready(t: TestContext, options: { duration?: number; sar?: number 
   return { root, directory, business, close, asset, first, second, waitSpeech, failNextSpeech: () => { failSpeech = true; } };
 }
 
-async function probe(path: string) { return JSON.parse((await execText('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', path], { encoding: 'utf8' }))); }
-function frame(path: string, seconds: number) { return execBytes('ffmpeg', ['-v', 'error', '-ss', String(seconds), '-i', path, '-frames:v', '1', '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-'], { maxBuffer: 8 * 1024 * 1024 }); }
+async function probe(t: Pick<Resources, 'execText'>, path: string) { return JSON.parse((await t.execText('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', path], { encoding: 'utf8' }))); }
+function frame(t: Pick<Resources, 'execBytes'>, path: string, seconds: number) { return t.execBytes('ffmpeg', ['-v', 'error', '-ss', String(seconds), '-i', path, '-frames:v', '1', '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-'], { maxBuffer: 8 * 1024 * 1024 }); }
 function pixel(data: Buffer, x: number, y: number) { return [...data.subarray((y * 1920 + x) * 3, (y * 1920 + x) * 3 + 3)]; }
 
-
-
-test('预览发布后成片目标冲突：撤销本次预览，不覆盖或删除原有文件', async t => {
+test('预览发布后成片目标冲突：撤销本次预览，不覆盖或删除原有文件', async ({ createDirectory, execBytes, openBusiness }) => {
+  const t = { createDirectory, execBytes, openBusiness };
   const { business, directory } = await ready(t);
   const task = business.submitExport();
   const exports = join(directory, 'exports');
@@ -134,7 +130,8 @@ test('预览发布后成片目标冲突：撤销本次预览，不覆盖或删�
   assert.equal(business.getExportTasks().locked, false);
 });
 
-test('成片和预览已发布后在清理期间取消：撤销两份文件，终态保存前保持占用', async t => {
+test('成片和预览已发布后在清理期间取消：撤销两份文件，终态保存前保持占用', async ({ createDirectory, execBytes, openBusiness, onTestFinished, openConnection }) => {
+  const t = { createDirectory, execBytes, openBusiness };
   const { business, directory } = await ready(t);
   const task = business.submitExport();
   const workspace = join(directory, 'exports', `.work-${task.id}`);
@@ -147,7 +144,7 @@ test('成片和预览已发布后在清理期间取消：撤销两份文件，�
     if (path === workspace) { cleaning = true; await paused; }
     return remove(path, options);
   });
-  t.onTestFinished(() => { resume(); mock.mockRestore(); });
+  openConnection(() => ({ close: () => { resume(); mock.mockRestore(); } }));
   try {
     await expect.poll(() => cleaning, { timeout: 60000 }).toBeTruthy();
     const preview = join(business.getSnapshot().storage.mediaDirectory, `${task.id}.export.webm`);
@@ -165,23 +162,23 @@ test('成片和预览已发布后在清理期间取消：撤销两份文件，�
   } finally { resume(); }
 });
 
-test('取消导出清理结束后下一例恢复真实文件删除，不泄漏暂停替身', async t => {
+test('取消导出清理结束后下一例恢复真实文件删除，不泄漏暂停替身', async ({ createDirectory }) => {
   assert.equal(vi.isMockFunction(fs.rm), false);
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-rm-restored-'));
-  projectCleanup(t).directory(directory);
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-export-rm-restored-'));
   await fs.rm(directory, { recursive: true, force: true });
   assert.equal(existsSync(directory), false);
 });
 
-test('成功产物已发布但终态保存失败：继续锁定且不可读取，重开清理后标记中断', async t => {
+test('成功产物已发布但终态保存失败：继续锁定且不可读取，重开清理后标记中断', async ({ createDirectory, execBytes, openBusiness, openConnection }) => {
+  const t = { createDirectory, execBytes, openBusiness };
   const { business, directory, close } = await ready(t);
   const history = await finished(business, business.submitExport().id);
   assert.equal(history.state, 'succeeded');
   const historicalFile = business.getExportFile(history.id);
   const historicalPreview = business.getExportFile(history.id, 'preview');
   const historicalBytes = readFileSync(historicalFile);
-  const db = new DatabaseSync(business.getSnapshot().storage.database);
-  projectCleanup(t).connection(() => db);
+  const db = openConnection(() => new DatabaseSync(business.getSnapshot().storage.database));
+
   db.exec(`CREATE TRIGGER reject_export_success BEFORE UPDATE ON export_tasks
     WHEN json_extract(NEW.value, '$.state') = 'succeeded'
     BEGIN SELECT RAISE(ABORT, '模拟成功状态保存失败'); END`);
@@ -212,7 +209,8 @@ test('成功产物已发布但终态保存失败：继续锁定且不可读取�
   } finally { await reopened.close(); }
 });
 
-test('真实全片按项目顺序导出：起点、冻结、留边、烧录字幕与 MP4 参数，失败的最新配音不妨碍有效旧配音', async t => {
+test('真实全片按项目顺序导出：起点、冻结、留边、烧录字幕与 MP4 参数，失败的最新配音不妨碍有效旧配音', async ({ createDirectory, execBytes, execText, openBusiness }) => {
+  const t = { createDirectory, execBytes, execText, openBusiness };
   const { business, first, second, failNextSpeech, waitSpeech, directory, asset } = await ready(t);
   const table = business.connectTable(); business.selectSegments(table, [second.id]);
   failNextSpeech(); business.submitSpeech({ requestId: randomUUID(), segmentId: first.id }); await waitSpeech();
@@ -226,7 +224,7 @@ test('真实全片按项目顺序导出：起点、冻结、留边、烧录字�
   assert.deepEqual(result.warnings.map(issue => issue.segmentId), [first.id]);
   const path = result.output!.path;
   assert.equal(path.startsWith(join(directory, 'exports')), true);
-  const media = (await probe(path)); const video = media.streams.find((stream: any) => stream.codec_type === 'video');
+  const media = (await probe(t, path)); const video = media.streams.find((stream: any) => stream.codec_type === 'video');
   assert.deepEqual([video.codec_name, video.width, video.height, video.r_frame_rate], ['h264', 1920, 1080, '25/1']);
   assert.equal(media.streams.filter((stream: any) => stream.codec_type === 'audio').length, 1);
   const samples = (await execBytes('ffmpeg', ['-v', 'error', '-i', path, '-vn', '-ar', '48000', '-ac', '1', '-f', 'f32le', '-']));
@@ -238,7 +236,7 @@ test('真实全片按项目顺序导出：起点、冻结、留边、烧录字�
   assert.ok(energy(440) > 100 * energy(1000), '只有配音，没有原视频的 1000 Hz 原声');
 
   assert.ok(Number(media.format.duration) >= 1.6 && Number(media.format.duration) < 1.8);
-  const start = (await frame(path, 0.1)); const frozen = (await frame(path, 0.65)); const next = (await frame(path, 0.9));
+  const start = (await frame(t, path, 0.1)); const frozen = (await frame(t, path, 0.65)); const next = (await frame(t, path, 0.9));
   assert.ok(pixel(start, 960, 100)[2]! > 200, '第一片段从蓝色画面开始');
   assert.ok(pixel(frozen, 960, 100)[2]! > 200, '视频不足时蓝色末帧冻结');
   assert.ok(pixel(next, 960, 100)[0]! > 200, '第二片段紧接红色画面');
@@ -258,7 +256,8 @@ async function rendering(business: ReturnType<typeof openBusiness>, id: string) 
   assert.equal(task!.state, 'rendering', JSON.stringify(task));
 }
 
-test('取消真实渲染显示清理状态，停止并删除本次文件后才解锁，保留历史成片', async t => {
+test('取消真实渲染显示清理状态，停止并删除本次文件后才解锁，保留历史成片', async ({ createDirectory, execBytes, openBusiness }) => {
+  const t = { createDirectory, execBytes, openBusiness };
   const { business, directory, first } = await ready(t);
   mkdirSync(join(directory, 'exports')); writeFileSync(join(directory, 'exports', 'previous.mp4'), '已有成片');
   const task = business.submitExport();
@@ -277,7 +276,8 @@ test('取消真实渲染显示清理状态，停止并删除本次文件后才�
   assert.equal(readFileSync(join(directory, 'exports', 'previous.mp4'), 'utf8'), '已有成片');
 });
 
-test('渲染器失败定位片段并清理半成品，已有成片保留且项目恢复编辑', async t => {
+test('渲染器失败定位片段并清理半成品，已有成片保留且项目恢复编辑', async ({ createDirectory, execBytes, execText, openBusiness }) => {
+  const t = { createDirectory, execBytes, openBusiness };
   const { business, directory, root, first } = await ready(t);
   const actualFfmpeg = (await execText('which', ['ffmpeg'], { encoding: 'utf8' })).trim();
   const shim = join(root, 'bin'); mkdirSync(shim);
@@ -294,7 +294,8 @@ test('渲染器失败定位片段并清理半成品，已有成片保留且项�
   } finally { if (previous === undefined) delete process.env.PATH; else process.env.PATH = previous; }
 });
 
-test('损坏视频、真实时长变化导致起点失效、待更新或损坏配音一次汇总且不产生成片', async t => {
+test('损坏视频、真实时长变化导致起点失效、待更新或损坏配音一次汇总且不产生成片', async ({ createDirectory, execBytes, openBusiness }) => {
+  const t = { createDirectory, execBytes, openBusiness };
   const { business, first, second, asset, directory, root } = await ready(t);
   const source = business.getMedia(asset.id, 'source');
   const shorter = join(root, 'short.mp4');
@@ -315,7 +316,8 @@ test('损坏视频、真实时长变化导致起点失效、待更新或损坏�
   assert.deepEqual(readdirSync(join(directory, 'exports')), []);
 });
 
-test('再次导出使用新内容和设置，生成唯一文件且保留原成片，长文案多行烧录不阻止导出', async t => {
+test('再次导出使用新内容和设置，生成唯一文件且保留原成片，长文案多行烧录不阻止导出', async ({ createDirectory, execBytes, execText, openBusiness }) => {
+  const t = { createDirectory, execBytes, execText, openBusiness };
   const { business, first, waitSpeech } = await ready(t);
   const original = await finished(business, business.submitExport().id);
   assert.equal(original.state, 'succeeded');
@@ -330,10 +332,10 @@ test('再次导出使用新内容和设置，生成唯一文件且保留原成�
   assert.equal(result.total, 2); assert.notEqual(result.output!.path, original.output!.path);
   assert.deepEqual(readFileSync(original.output!.path), before);
   assert.ok(existsSync(result.output!.path));
-  const media = (await probe(result.output!.path)); const video = media.streams.find((stream: any) => stream.codec_type === 'video');
+  const media = (await probe(t, result.output!.path)); const video = media.streams.find((stream: any) => stream.codec_type === 'video');
   assert.deepEqual([video.codec_name, video.r_frame_rate], ['mpeg4', '30/1']);
   assert.ok(result.warnings.every(issue => issue.field === 'video'));
-  const image = (await frame(result.output!.path, 0.1));
+  const image = (await frame(t, result.output!.path, 0.1));
   const bands: number[] = [];
   for (let y = 300; y < 1030; y++) {
     let whites = 0;
@@ -343,12 +345,11 @@ test('再次导出使用新内容和设置，生成唯一文件且保留原成�
   assert.ok(bands.length >= 3, `长文案至少分三行烧录，实际行带 ${bands}`);
 });
 
-test('配音刚受理及生成时拒绝导出且不创建任务，结束后恢复前置校验', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-export-speech-lock-'));
-  projectCleanup(t).directory(directory);
+test('配音刚受理及生成时拒绝导出且不创建任务，结束后恢复前置校验', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-export-speech-lock-'));
   let finish!: (response: Response) => void;
   const business = openBusiness(directory, { configPath: '.env', key: () => 'key', fetch: (async () => new Promise<Response>(resolve => { finish = resolve; })) as typeof fetch });
-  projectCleanup(t).business(() => business);
+
   const segment = business.addSegment('配音尚未完成').segments[0]!;
   business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
   assert.equal(business.getSpeechStatus().tasks[0]!.state, 'accepted');
@@ -373,7 +374,8 @@ test('配音刚受理及生成时拒绝导出且不创建任务，结束后恢�
 
 });
 
-test('配音时长不是视频帧整倍数时，拼接处不插入静音间隔', async t => {
+test('配音时长不是视频帧整倍数时，拼接处不插入静音间隔', async ({ createDirectory, execBytes, execText, openBusiness }) => {
+  const t = { createDirectory, execBytes, openBusiness };
   const { business } = await ready(t, { duration: 0.83 });
   const task = await finished(business, business.submitExport().id);
   assert.equal(task.state, 'succeeded');
@@ -387,31 +389,34 @@ test('配音时长不是视频帧整倍数时，拼接处不插入静音间隔',
 
 });
 
-test('非方形像素视频按显示宽高比缩放，不能压成方形', async t => {
+test('非方形像素视频按显示宽高比缩放，不能压成方形', async ({ createDirectory, execBytes, openBusiness }) => {
+  const t = { createDirectory, execBytes, openBusiness };
   const { business } = await ready(t, { sar: 2 });
   const task = await finished(business, business.submitExport().id);
   assert.equal(task.state, 'succeeded');
-  const image = (await frame(task.output!.path, 0.1));
+  const image = (await frame(t, task.output!.path, 0.1));
   assert.ok(pixel(image, 100, 540)[2]! > 200, '2:1 显示比例应铺满宽度');
   assert.ok(pixel(image, 960, 10).every(value => value < 5), '上下留边保持显示比例');
 });
 
-test('合法起点落在视频末帧持续区间内时，使用末帧冻结而不是丢失画面', async t => {
+test('合法起点落在视频末帧持续区间内时，使用末帧冻结而不是丢失画面', async ({ createDirectory, execBytes, openBusiness }) => {
+  const t = { createDirectory, execBytes, openBusiness };
   const { business, asset } = await ready(t);
   const token = business.acquire('user');
   await business.modifyBatch(token, { changes: [{ kind: 'video', expected: business.getSnapshot().segments[0]!, assetId: asset.id, start: 0.99 }] }); business.release(token);
   const task = await finished(business, business.submitExport().id);
   assert.equal(task.state, 'succeeded', JSON.stringify(task));
-  assert.ok(pixel((await frame(task.output!.path, 0.1)), 960, 100)[2]! > 200);
+  assert.ok(pixel((await frame(t, task.output!.path, 0.1)), 960, 100)[2]! > 200);
 });
 
-test('成片提供含字幕和声音的浏览器兼容预览，MP4 原文件仍独立保留', async t => {
+test('成片提供含字幕和声音的浏览器兼容预览，MP4 原文件仍独立保留', async ({ createDirectory, execBytes, execText, openBusiness }) => {
+  const t = { createDirectory, execBytes, execText, openBusiness };
   const { business } = await ready(t);
   const task = await finished(business, business.submitExport().id);
   assert.equal(task.state, 'succeeded');
   assert.ok(task.output!.previewUrl);
   const preview = business.getExportFile(task.id, 'preview');
-  const media = (await probe(preview));
+  const media = (await probe(t, preview));
   assert.equal(media.streams.find((stream: any) => stream.codec_type === 'video').codec_name, 'vp8');
   assert.equal(media.streams.find((stream: any) => stream.codec_type === 'audio').codec_name, 'vorbis');
   assert.equal(business.getExportFile(task.id), task.output!.path);

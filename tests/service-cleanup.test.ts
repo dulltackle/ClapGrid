@@ -1,13 +1,14 @@
-import { test, expect } from 'vitest';
+import { test } from './helpers/resource-test.js';
+import { expect } from 'vitest';
 import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { command } from './helpers/command.js';
 
 declare module 'vitest' { interface TaskMeta { serviceCleanup?: { mode: string; shutdownElapsed?: number; retained: boolean; guardianExited?: boolean } } }
 
 for (const mode of ['initialization', 'http', 'deadline', 'http-stall']) {
-  test(`原生异常报告及真实资源：${mode}`, { timeout: 25000 }, async t => {
+  test(`原生异常报告及真实资源：${mode}`, { timeout: 25000 }, async ({ command, task }) => {
+    const t = { task };
     const root = await mkdtemp(join(tmpdir(), `clapgrid-cleanup-${mode}-`));
     await writeFile(join(root, 'index.html'), 'ClapGrid');
     const report = join(root, 'vitest.json');

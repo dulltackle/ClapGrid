@@ -1,16 +1,20 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { test, expect } from 'vitest';
+import { test, type ResourceFixtures } from './helpers/resource-test.js';
+import type { TestContext } from 'vitest';
+import { expect } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { startService as attemptStartService } from '../src/service/server.js';
 import { startService } from '../src/service/server.js';
 
-async function fixture(t: import('vitest').TestContext) {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-modification-'));
+type Resources = Pick<ResourceFixtures, 'createDirectory' | 'startService'> & Pick<TestContext, 'onTestFinished'>;
+
+async function fixture(t: Pick<Resources, 'createDirectory' | 'startService'>) {
+  const root = t.createDirectory(join(tmpdir(), 'clapgrid-modification-'));
   const panelDirectory = join(root, 'panel');
   mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'ClapGrid');
-  const service = await projectCleanup(t).startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 }); projectCleanup(t).directory(root);
+  const service = await t.startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
   const post = (path: string, body: unknown, token?: string) => fetch(`${service.url}${path}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Edit-Token': token } : {}) }, body: JSON.stringify(body),
   });
@@ -18,7 +22,8 @@ async function fixture(t: import('vitest').TestContext) {
   return { service, post, status };
 }
 
-test('用户编辑期间拒绝 Codex 和无修改权保存，取消后立即可修改，旧连接不释放新修改权', async t => {
+test('用户编辑期间拒绝 Codex 和无修改权保存，取消后立即可修改，旧连接不释放新修改权', async ({ createDirectory, startService }) => {
+  const t = { createDirectory, startService };
   const { service, post, status } = await fixture(t);
   const controller = new AbortController();
   const session = await fetch(`${service.url}/api/edit-session`, { method: 'POST', signal: controller.signal });
@@ -37,13 +42,14 @@ test('用户编辑期间拒绝 Codex 和无修改权保存，取消后立即可�
   assert.equal((await status()).modification, null);
 });
 
-test('Codex 收到写请求即占用修改权，查询不受阻；中断及格式异常后释放', async t => {
+test('Codex 收到写请求即占用修改权，查询不受阻；中断及格式异常后释放', async ({ createDirectory, startService, onTestFinished, openConnection }) => {
+  const t = { createDirectory, startService };
   const { request } = await import('node:http');
   const { service, post, status } = await fixture(t);
   const pending = request(`${service.url}/api/codex/modify`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
   pending.on('error', () => {});
   pending.write('{"changes":');
-  t.onTestFinished(() => { pending.destroy(); });
+  openConnection(() => ({ close: () => { pending.destroy(); } }));
   await expect.poll(async () => !(await status()).modification).toBeFalsy();
   assert.deepEqual((await status()).modification, { owner: 'codex' });
   assert.equal((await fetch(`${service.url}/api/edit-session`, { method: 'POST' })).status, 409);
@@ -55,7 +61,8 @@ test('Codex 收到写请求即占用修改权，查询不受阻；中断及格�
   assert.equal((await status()).modification, null);
 });
 
-test('持有修改权重读目标：返回变化信息、跳过删除目标，其余逐项提交且不覆盖新文案', async t => {
+test('持有修改权重读目标：返回变化信息、跳过删除目标，其余逐项提交且不覆盖新文案', async ({ createDirectory, startService }) => {
+  const t = { createDirectory, startService };
   const { post, status } = await fixture(t);
   const batch = async (changes: unknown[]) => {
     const response = await post('/api/codex/modify', { changes });
@@ -77,7 +84,8 @@ test('持有修改权重读目标：返回变化信息、跳过删除目标，�
   assert.equal((await status()).modification, null);
 });
 
-test('用户连接断开释放修改权，旧取消凭据不能解除下一次编辑，异常保存也释放', async t => {
+test('用户连接断开释放修改权，旧取消凭据不能解除下一次编辑，异常保存也释放', async ({ createDirectory, startService }) => {
+  const t = { createDirectory, startService };
   const { beginEdit } = await import('../src/shared/client.js');
   const { service, post, status } = await fixture(t);
   const controller = new AbortController();
@@ -99,7 +107,8 @@ test('用户连接断开释放修改权，旧取消凭据不能解除下一次�
   await last.close();
 });
 
-test('Codex 存储异常逐项反馈失败，整批结束释放修改权且不提交失败内容', async t => {
+test('Codex 存储异常逐项反馈失败，整批结束释放修改权且不提交失败内容', async ({ createDirectory, startService }) => {
+  const t = { createDirectory, startService };
   const { DatabaseSync } = await import('node:sqlite');
   const { post, status } = await fixture(t);
   const initial = await status();
@@ -117,24 +126,26 @@ test('Codex 存储异常逐项反馈失败，整批结束释放修改权且不�
   assert.equal((await post('/api/codex/modify', { changes: [{ kind: 'add', text: '恢复' }] })).status, 200);
 });
 
-test('同一项目不能由不同端口的两个服务同时修改，关闭所有者后可以重开', async t => {
+test('同一项目不能由不同端口的两个服务同时修改，关闭所有者后可以重开', async ({ createDirectory, startService }) => {
+  const t = { createDirectory, startService };
   const { service, status } = await fixture(t);
   const initial = await status();
   const options = { projectDirectory: initial.snapshot.project.directory, panelDirectory: join(initial.snapshot.project.directory, '..', 'panel'), port: 0 };
   let unexpected: Awaited<ReturnType<typeof startService>> | undefined;
-  projectCleanup(t).service(() => unexpected);
+
   try {
-    await assert.rejects(async () => { unexpected = await startService(options); }, /项目已由另一服务打开/);
+    await assert.rejects(async () => { unexpected = await attemptStartService(options); }, /项目已由另一服务打开/);
   } finally { await unexpected?.close(); }
   assert.equal((await status()).modification, null);
   // fixture 的 close 应可重复调用；正常释放项目独占后允许重新打开。
   await service.close();
-  const reopened = await projectCleanup(t).startService(options);
+  const reopened = await startService(options);
   assert.equal((await (await fetch(`${reopened.url}/api/status`)).json()).snapshot.project.id, initial.snapshot.project.id);
   await reopened.close();
 });
 
-test('表格选择连接独立于修改权，断开后不能使用旧选择，表格可批量粘贴删除重排', async t => {
+test('表格选择连接独立于修改权，断开后不能使用旧选择，表格可批量粘贴删除重排', async ({ createDirectory, startService }) => {
+  const t = { createDirectory, startService };
   const { service, post, status } = await fixture(t);
   const { beginEdit } = await import('../src/shared/client.js');
   const controller = new AbortController();

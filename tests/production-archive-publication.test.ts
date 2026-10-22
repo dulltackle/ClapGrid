@@ -1,8 +1,7 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { command as runCommand } from './helpers/vitest-command.js';
-import { test, vi } from 'vitest';
+import { test, type ResourceFixtures } from './helpers/resource-test.js';
+import { vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, cpSync, rmSync, readFileSync, writeFileSync, readdirSync, existsSync, symlinkSync, linkSync, mkdirSync, openSync, writeSync, closeSync, statSync, watch } from 'node:fs';
+import { cpSync, rmSync, readFileSync, writeFileSync, readdirSync, existsSync, symlinkSync, linkSync, mkdirSync, openSync, writeSync, closeSync, statSync, watch } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawn } from 'node:child_process';
@@ -13,17 +12,18 @@ import { pipeline } from 'node:stream/promises';
 import { createHash, randomBytes } from 'node:crypto';
 import { archiveBaseline, archiveBaselinePath } from './helpers/archive-baseline.js';
 
+type Resources = Pick<ResourceFixtures, 'command' | 'createDirectory'>;
 
 const cli = resolve('scripts/production.mjs');
 const tar = createRequire(import.meta.url)('tar-stream');
-function fixture() {
-  const project = mkdtempSync(join(tmpdir(), 'clapgrid-publication-'));
+function fixture(t: Pick<Resources, 'createDirectory'>) {
+  const project = t.createDirectory(join(tmpdir(), 'clapgrid-publication-'));
   cpSync(archiveBaselinePath('project'), project, { recursive: true });
   return project;
 }
-async function run(project: string, command: string, args: string[] = []) {
+async function run(t: Pick<Resources, 'command'>, project: string, command: string, args: string[] = []) {
   const report = join(project, `report-${command}.json`);
-  const result = (await runCommand(process.execPath, [cli, command, '--project', project, '--report', report, ...args], { encoding: 'utf8', env: { ...process.env, PATH: project } }));
+  const result = (await t.command(process.execPath, [cli, command, '--project', project, '--report', report, ...args], { encoding: 'utf8', env: { ...process.env, PATH: project } }));
   assert.equal(result.error, undefined);
   assert.ok(existsSync(report), result.stdout + result.stderr);
   return { ...result, report: JSON.parse(readFileSync(report, 'utf8')) };
@@ -41,9 +41,10 @@ async function inspect(path: string) {
   return members;
 }
 
-test('真实 pack 无 Python 发布新 v1 包，全部成员与独立旧清单和索引原字节完全一致', async t => {
-  const project = fixture(); projectCleanup(t).directory(project);
-  const result = (await run(project, 'pack'));
+test('真实 pack 无 Python 发布新 v1 包，全部成员与独立旧清单和索引原字节完全一致', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+  const project = fixture(t);
+  const result = (await run(t, project, 'pack'));
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.equal(result.report.details.publication, 'published');
   const members = await inspect(join(project, 'delivery.tar.gz'));
@@ -52,12 +53,13 @@ test('真实 pack 无 Python 发布新 v1 包，全部成员与独立旧清单�
     const original = expected.path === '.clapgrid-package.json' ? readFileSync(archiveBaselinePath('expected-index.json')) : readFileSync(join(project, expected.path));
     assert.deepEqual(members.get(expected.path), original, expected.path);
   }
-  assert.equal((await run(project, 'verify-package', ['--archive', join(project, 'delivery.tar.gz')])).status, 0);
+  assert.equal((await run(t, project, 'verify-package', ['--archive', join(project, 'delivery.tar.gz')])).status, 0);
   assert.equal(readdirSync(project).some(name => name.includes('.candidate-')), false);
 });
 
-test('显式历史待审、否决和人工确认原件保持原字节，归档成功不改变记录含义', async t => {
-  const project = fixture(); projectCleanup(t).directory(project);
+test('显式历史待审、否决和人工确认原件保持原字节，归档成功不改变记录含义', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+  const project = fixture(t);
   const contents = new Map([
     ['历史待审.json', '{"status":"pending","reviewVersion":"old"}\n'],
     ['历史否决.json', '{"status":"rejected","reason":"未通过审阅"}\n'],
@@ -70,7 +72,7 @@ test('显式历史待审、否决和人工确认原件保持原字节，归档�
   }
   const manifest = join(project, 'production.json');
   writeFileSync(manifest, readFileSync(manifest, 'utf8').replace('"files":[\n ', '"files":[\n ' + additions.join(',\n ') + ',\n '));
-  const result = (await run(project, 'pack'));
+  const result = (await run(t, project, 'pack'));
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.match(result.report.details.scope, /不判定人工确认/);
   const members = await inspect(join(project, 'delivery.tar.gz'));
@@ -81,8 +83,9 @@ test('显式历史待审、否决和人工确认原件保持原字节，归档�
 });
 
 for (const kind of ['input', 'manifest', 'symlink-input', 'hardlink-input', 'parent-alias', 'index', 'dangling-index', 'parent-index', 'hardlink-index']) {
-  test(`真实 pack 拒绝输出 ${kind} 别名，原件不变且不虚报候选`, async t => {
-    const project = fixture(); projectCleanup(t).directory(project);
+  test(`真实 pack 拒绝输出 ${kind} 别名，原件不变且不虚报候选`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+    const project = fixture(t);
     const originals = new Map(archiveBaseline.success.members.filter(member => member.path !== '.clapgrid-package.json').map(member => [member.path, readFileSync(join(project, member.path))]));
     let output = join(project, 'src.ts');
     if (kind === 'manifest') output = join(project, 'production.json');
@@ -92,7 +95,7 @@ for (const kind of ['input', 'manifest', 'symlink-input', 'hardlink-input', 'par
     if (kind === 'index') output = join(project, '.clapgrid-package.json');
     if (kind === 'dangling-index') { output = join(project, 'alias.tar.gz'); symlinkSync('.clapgrid-package.json', output); }
     if (kind === 'hardlink-index') { writeFileSync(join(project, '.clapgrid-package.json'), 'reserved'); output = join(project, 'alias.tar.gz'); linkSync(join(project, '.clapgrid-package.json'), output); }
-    const result = (await run(project, 'pack', ['--output', output]));
+    const result = (await run(t, project, 'pack', ['--output', output]));
     assert.equal(result.status, 1, result.stdout + result.stderr);
     assert.match(JSON.stringify(result.report), /输出路径.*拒绝覆盖/);
     assert.equal(result.report.details.publication, 'not-published');
@@ -115,7 +118,7 @@ function largeFixture(project: string) {
   writeFileSync(path, raw.replace('"files":[\n ', '"files":[\n ' + entry + ',\n '));
 }
 
-async function observedPack(project: string, action?: (candidate: string) => void, afterWrite = false, limited = false) {
+async function observedPack(t: Pick<Resources, 'command'>, project: string, action?: (candidate: string) => void, afterWrite = false, limited = false) {
   const report = join(project, 'report-pack.json');
   let observed = false, observationError: unknown;
   const watcher = watch(project, { persistent: false }, (_, name) => {
@@ -131,8 +134,8 @@ async function observedPack(project: string, action?: (candidate: string) => voi
   if (limited) {
     const preload = join(project, 'limited-write.mjs');
     writeFileSync(preload, "process.on('SIGXFSZ', () => {});\n");
-    child = runCommand('/bin/bash', ['-c', 'ulimit -f 64; exec "$@"', 'clapgrid-file-limit', process.execPath, '--import', preload, ...args], { env: { ...process.env, PATH: project }, timeout: 30000 });
-  } else child = runCommand(process.execPath, args, { env: { ...process.env, PATH: project }, timeout: 30000 });
+    child = t.command('/bin/bash', ['-c', 'ulimit -f 64; exec "$@"', 'clapgrid-file-limit', process.execPath, '--import', preload, ...args], { env: { ...process.env, PATH: project }, timeout: 30000 });
+  } else child = t.command(process.execPath, args, { env: { ...process.env, PATH: project }, timeout: 30000 });
   try {
     const { status: code, stdout, stderr } = await child;
     if (observationError) throw observationError;
@@ -144,13 +147,14 @@ async function observedPack(project: string, action?: (candidate: string) => voi
 }
 
 for (const kind of ['changed-input', 'missing-input', 'bad-candidate', 'report-directory', 'report-hardlink']) {
-  test(`真实候选事件之后 ${kind} 保留正式包、候选及报告的正确实际状态`, { timeout: 40_000 }, async t => {
-    const project = fixture(); projectCleanup(t).directory(project);
-    assert.equal((await run(project, 'pack')).status, 0);
+  test(`真实候选事件之后 ${kind} 保留正式包、候选及报告的正确实际状态`, { timeout: 40_000 }, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+    const project = fixture(t);
+    assert.equal((await run(t, project, 'pack')).status, 0);
     const archive = join(project, 'delivery.tar.gz'), original = readFileSync(archive);
     largeFixture(project);
     const originalCard = readFileSync(join(project, 'card.json'));
-    const result = await observedPack(project, candidate => {
+    const result = await observedPack(t, project, candidate => {
       if (kind === 'changed-input') writeFileSync(join(project, 'review.mp4'), 'changed');
       if (kind === 'missing-input') rmSync(join(project, 'review.mp4'));
       if (kind === 'bad-candidate') {
@@ -165,7 +169,7 @@ for (const kind of ['changed-input', 'missing-input', 'bad-candidate', 'report-d
       assert.equal(result.report.details.publication, 'published');
       assert.ok(result.report.checks.some((check: { id: string; status: string }) => check.id === 'report' && check.status === 'failed'));
       assert.notDeepEqual(readFileSync(archive), original);
-      assert.equal((await run(project, 'verify-package', ['--archive', archive])).status, 0);
+      assert.equal((await run(t, project, 'verify-package', ['--archive', archive])).status, 0);
       assert.equal(readdirSync(project).some(name => name.includes('.candidate-')), false);
       assert.deepEqual(readFileSync(join(project, 'card.json')), originalCard);
     } else {
@@ -178,12 +182,13 @@ for (const kind of ['changed-input', 'missing-input', 'bad-candidate', 'report-d
   });
 }
 
-test('真实子进程文件大小限制导致候选 EFBIG 写失败，原有效包和部分候选原样保留', { timeout: 40_000, skip: process.platform !== 'linux' }, async t => {
-  const project = fixture(); projectCleanup(t).directory(project);
-  assert.equal((await run(project, 'pack')).status, 0);
+test('真实子进程文件大小限制导致候选 EFBIG 写失败，原有效包和部分候选原样保留', { timeout: 40_000, skip: process.platform !== 'linux' }, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+  const project = fixture(t);
+  assert.equal((await run(t, project, 'pack')).status, 0);
   const archive = join(project, 'delivery.tar.gz'), original = readFileSync(archive);
   largeFixture(project);
-  const result = await observedPack(project, undefined, false, true);
+  const result = await observedPack(t, project, undefined, false, true);
   assert.equal(result.code, 1, result.stdout + result.stderr);
   assert.match(JSON.stringify(result.report), /EFBIG|file too large/);
   assert.equal(result.report.details.publication, 'not-published');

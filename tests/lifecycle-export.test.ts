@@ -1,27 +1,22 @@
+import { test } from './helpers/resource-test.js';
 import { exportState } from './helpers/export-state.js';
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { execCommand, execBytes } from './helpers/vitest-command.js';
-import { test, vi, expect } from 'vitest';
+import { vi, expect } from 'vitest';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { mkdtempSync, rmSync, readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
-import { openBusiness } from '../src/business/index.js';
 import { queryStatus, queryExports, submitExport, modifyBatch, connectTable, querySpeech } from '../src/shared/client.js';
 
 const { ownerAlive, processIdentity } = await import(new URL('./helpers/product-process.mjs', import.meta.url).href);
 
-
-
-test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体再清理，保留成片并从最新输入重新导出', { timeout: 120000 }, async t => {
-  if (process.platform !== 'linux') t.skip('此验证需要 Linux 运行环境');
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-crash-'));
-  projectCleanup(t).directory(root);
+test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体再清理，保留成片并从最新输入重新导出', { timeout: 120000 }, async ({ connectMcp: connectOwnedMcp, createDirectory, execBytes, execCommand, openBusiness, ownProcess, skip }) => {
+  if (process.platform !== 'linux') skip('此验证需要 Linux 运行环境');
+  const root = createDirectory(join(tmpdir(), 'clapgrid-crash-'));
   const workspace = join(root, 'workspace'); const otherWorkspace = join(root, 'other'); mkdirSync(otherWorkspace);
   const directory = join(workspace, 'clapgrid'); const video = join(root, 'video.mp4'); const audio = join(root, 'voice.mp3');
   (await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:d=1', '-c:v', 'libx264', video]));
@@ -51,7 +46,7 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
   writeFileSync(host, `#!/usr/bin/env node\nconst fs=require('node:fs');require('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:{id:r.params.threadId,cwd:JSON.parse(fs.readFileSync(${JSON.stringify(hostState)},'utf8'))[r.params.threadId]}}}));});`, { mode: 0o700 });
   const env = { ...process.env, CLAPGRID_CODEX_BIN: host };
   const owners = new Map<number, ReturnType<typeof serviceProcess>>();
-  const remember = (pid: number) => { const owner = serviceProcess(pid); owners.set(pid, owner); projectCleanup(t).process(owner); };
+  const remember = (pid: number) => { const owner = serviceProcess(pid); owners.set(pid, owner); ownProcess(() => owner); };
   const signalOwned = (pid: number, signal: NodeJS.Signals) => {
     const owner = owners.get(pid);
     if (!owner) throw new Error(`进程 ${pid} 未登记，保留现场`);
@@ -69,7 +64,7 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
   };
   const connectMcp = async () => {
     const client = new Client({ name: 'lifecycle-regression', version: '1' }); clients.push(client);
-    await projectCleanup(t).connectMcp(client, new StdioClientTransport({ command: process.execPath, args: [join(dist, 'mcp/main.js')], env: Object.fromEntries(Object.entries(env).filter((entry): entry is [string, string] => typeof entry[1] === 'string')) }));
+    await connectOwnedMcp(client, new StdioClientTransport({ command: process.execPath, args: [join(dist, 'mcp/main.js')], env: Object.fromEntries(Object.entries(env).filter((entry): entry is [string, string] => typeof entry[1] === 'string')) }));
     return client;
   };
   const mcpExports = async (client: Client, id = thread) => {
@@ -118,7 +113,7 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
         const stat = readFileSync(`/proc/${child}/stat`, 'utf8');
         const fields = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
         if (Number(fields[1]) !== pid || ownerAlive(parent) !== true || ownerAlive(identity) !== true) return [];
-        owners.set(child, identity); projectCleanup(t).process(identity);
+        owners.set(child, identity); ownProcess(() => identity);
         return [child, ...descendants(child)];
       } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []; throw error; }
     });

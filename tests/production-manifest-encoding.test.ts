@@ -1,14 +1,12 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { command as runCommand } from './helpers/vitest-command.js';
-import { test, vi } from 'vitest';
+import { test } from './helpers/resource-test.js';
+import { vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
-
 
 const root = resolve('tests/fixtures/production-manifest-encoding');
 const catalog = JSON.parse(readFileSync(join(root, 'catalog.json'), 'utf8')) as {
@@ -27,9 +25,8 @@ function member(archive: Buffer, name: string) {
   throw new Error('缺少成员：' + name);
 }
 for (const entry of catalog.cases) {
-  test(`真实 Node 清单码点身份与两旧入口一致：${entry.name}`, async t => {
-    const project = mkdtempSync(join(tmpdir(), 'clapgrid-manifest-'));
-    projectCleanup(t).directory(project);
+  test(`真实 Node 清单码点身份与两旧入口一致：${entry.name}`, async ({ command: runCommand, createDirectory }) => {
+    const project = createDirectory(join(tmpdir(), 'clapgrid-manifest-'));
     cpSync(join(root,entry.name,'project'),project,{recursive:true});
     const manifest = readFileSync(join(project,'production.json'));
     assert.equal(sha(manifest),entry.manifestSha256);
@@ -58,7 +55,7 @@ for (const entry of catalog.cases) {
   });
 }
 
-test('v1 字符串按 Python 码点保持键身份、重复覆盖位置，并允许 UTF16 正常对', async () => {
+test('v1 字符串按 Python 码点保持键身份、重复覆盖位置，并允许 UTF16 正常对', async ({  }) => {
   const { parseV1, dumpV1, v1Object } = await import(pathToFileURL(resolve('scripts/production/archive-v1.mjs')).href);
   const pair = Buffer.from('eda0bdedb880','hex');
   const tree = v1Object(parseV1(Buffer.concat([Buffer.from('{"'),pair,Buffer.from('\":1,"😀":2,"'),pair,Buffer.from('\":3,"tail":4}')])));
@@ -75,9 +72,8 @@ test('v1 字符串按 Python 码点保持键身份、重复覆盖位置，并允
 });
 
 // 独立旧入口范围探针确认这些编码/类型在 Node 前置 schema 已失败，不能因 Python 解码器放宽。
-for (const variant of ['utf8-bom','utf16','schema-true']) test(`制作清单保留旧 Native 前置范围：${variant}`, async t => {
-  const project = mkdtempSync(join(tmpdir(),'clapgrid-manifest-range-'));
-  projectCleanup(t).directory(project);
+for (const variant of ['utf8-bom','utf16','schema-true']) test(`制作清单保留旧 Native 前置范围：${variant}`, async ({ command: runCommand, createDirectory }) => {
+  const project = createDirectory(join(tmpdir(),'clapgrid-manifest-range-'));
   cpSync(join(root,'escaped-pair','project'),project,{recursive:true});
   const path = join(project,'production.json'), raw = readFileSync(path);
   writeFileSync(path,variant === 'utf8-bom' ? Buffer.concat([Buffer.from('efbbbf','hex'),raw]) : variant === 'utf16' ? Buffer.from(raw.toString(),'utf16le') : Buffer.from(raw.toString().replace('"schemaVersion":1','"schemaVersion":true')));
