@@ -24,12 +24,15 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
+      # 正常约 25 秒；镜像卡顿时尽快失败并切换备用源，而不是耗尽作业时限。
       - name: 准备媒体工具与中文字体
         shell: bash
+        timeout-minutes: 5
         run: |
           set -o pipefail
           mkdir -p logs
-          { sudo apt-get update && sudo apt-get install -y ffmpeg fontconfig fonts-noto-cjk; } 2>&1 | tee logs/system-dependencies.log
+          apt_opts=(-o Acquire::http::Timeout=10 -o Acquire::Retries=3)
+          { sudo apt-get "${apt_opts[@]}" update && sudo apt-get "${apt_opts[@]}" install -y --no-install-recommends ffmpeg fontconfig fonts-noto-cjk; } 2>&1 | tee logs/system-dependencies.log
       - uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2
         id: chrome
         with:
