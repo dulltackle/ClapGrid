@@ -1,5 +1,7 @@
 ## Agent skills
 
+定位工具或技能、查询 GitHub、处理长输出时，读取 `docs/agents/tooling.md`。
+
 检查工具、CI 或正式验收变更前，读取 `docs/agents/verification.md`；样式或 UI 组件变更前，读取 `docs/ui-components.md`。
 
 ### Issue tracker
