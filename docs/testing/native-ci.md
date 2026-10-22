@@ -44,7 +44,7 @@ main 的 GitHub 分支保护要求通过 PR 合并，`check` 与 `process-trace`
 
 - Vitest 步骤同时输出 default 控制台日志和原生 JSON `logs/vitest.json`；不转换为自研报告。
 - Playwright 原生 reporter 同时输出 list、JSON `logs/playwright.json` 和 HTML `logs/playwright-report/`；失败 trace/screenshots 在 `logs/playwright-results/`，HTML 附件一起上传。浏览器由原生 fixture 管理。
-- 各检查的 stdout/stderr 与 `/usr/bin/time -v` 原始资源日志分别保存在 `logs/*.log` 与 `logs/*-resources.txt`；`ci-observation.mjs` 沿用现有作业耗时观察。资源原件包含该命令的 maxRSS/CPU，不能冒充同时进程树总峰值；准备与安装仍计入作业时窗。它们不是结果认证，实际步骤结论以 Actions 为准。
+- 各检查的 stdout/stderr 与 `/usr/bin/time -v` 原始资源日志分别保存在 `logs/*.log` 与 `logs/*-resources.txt`；作业耗时以 GitHub job 记录为准。资源原件包含该命令的 maxRSS/CPU，不能冒充同时进程树总峰值；准备与安装仍计入作业时窗。它们不是结果认证，实际步骤结论以 Actions 为准。
 
 Bash 显式 shell 使用 Actions 的 `-e -o pipefail`，`tee` 不吞没原生命令失败。检查步骤不设置 continue-on-error；失败后后续检查/构建保持 skipped。报告校验和上传使用 `always()`，并只在对应测试步骤实际启动（outcome 非空且非 skipped）时要求其报告。已启动但失败或取消的测试仍尝试保存结果，缺失必需 JSON/HTML 使独立校验失败；上传使用 `if-no-files-found: error`，上传错误也传播。未启动的 Playwright 不伪造报告或成功结果。平台强制终止可能中断附件上传，取消运行仍是取消，不能当作通过。
 
