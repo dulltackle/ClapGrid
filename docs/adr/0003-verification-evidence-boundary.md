@@ -1,3 +1,8 @@
+---
+status: partially-superseded
+superseded-by: 0011
+---
+
 # 开发检查、正式验收与技术审查分开提供证据
 
 > 2026-10-18 更新：强制本地独立固定提交验收要求已由 ADR0011 替代；产品审阅、独立技术判断及真实宿主交付边界继续适用。当前采纳设计见 [ADR0011](0011-native-test-frameworks.md)，代码迁移由 [#192](https://github.com/dulltackle/ClapGrid/issues/192) 承接。

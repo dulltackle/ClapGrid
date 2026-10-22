@@ -1,5 +1,6 @@
 ---
-status: accepted
+status: partially-superseded
+superseded-by: 0011
 ---
 
 # UI 快检与可查询的验收任务
