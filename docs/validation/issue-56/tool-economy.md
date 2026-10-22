@@ -2,6 +2,10 @@
 
 > 历史记录：原始材料已退出当前 Git 跟踪；复现前请按[原件保留与恢复说明](../README.md)恢复对应工程或证据。本页不代表当前版本验收。
 
+## 当前入口
+
+旧工具已退出；当前操作见[工具指引](../../agents/tooling.md)。下文保留历史交付原文。
+
 在 ClapGrid 的 implement、implement-spec、to-commit 流程中，需要选择解释器、定位技能、查询 GitHub 或处理长输出时，使用以下小入口。入口位于当前 ClapGrid checkout 的 `scripts/agent-tools.mjs`，在其他仓库按下列原则使用已有工具，不假定该脚本存在。
 
 1. 先用 `command -v node` 核对 Node，再执行 `node scripts/agent-tools.mjs interpreter python3 node`；只使用返回的 `selected`。候选全部缺失时停止依赖步骤，记录一次失败；本轮复用已核对结果，环境变化后重查。版本探测只对可信解释器执行。
