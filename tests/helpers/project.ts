@@ -73,6 +73,13 @@ export const test = base.extend<{ project: Project; speechRuntime: SpeechRuntime
   projectServer: [async ({}, use) => { await use(startService); }, { scope: 'worker' }],
   panelBuildIdentity: [undefined, { scope: 'worker', option: true }],
   panelDirectory: [async ({ panelBuildIdentity }, use) => {
+    if (!panelBuildIdentity) {
+      const directory = process.env.CLAPGRID_TEST_PANEL_DIRECTORY;
+      if (!directory) throw new Error('缺少 Playwright 全局准备的面板构建');
+      await use(directory);
+      return;
+    }
+    // 受控刷新测试保留独立构建，不能改写整轮共享的普通面板。
     const directory = await mkdtemp(join(tmpdir(), 'clapgrid-panel-'));
     try {
       await build({ configFile: resolve('vite.config.ts'), logLevel: 'error', define: panelBuildIdentity ? { __CLAPGRID_BUILD_IDENTITY__: JSON.stringify(panelBuildIdentity) } : undefined, build: { outDir: directory, emptyOutDir: true } });
