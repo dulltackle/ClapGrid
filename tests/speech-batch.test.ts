@@ -1,23 +1,21 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { test, expect, vi } from 'vitest';
+import { test } from './helpers/resource-test.js';
+import { expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, rmSync } from 'node:fs';
+import {  } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { openBusiness } from '../src/business/index.js';
 
 const success = () => new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n');
 
-
-test('批量固定勾选、局部失败继续、整批终态解锁且重发不重复付费', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-batch-'));
+test('批量固定勾选、局部失败继续、整批终态解锁且重发不重复付费', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-batch-'));
   const responses: ((value: Response) => void)[] = [];
   let calls = 0;
   const business = openBusiness(directory, { key: () => 'key', configPath: '/tmp/.env', fetch: (async () => {
     calls++; return new Promise<Response>(resolve => responses.push(resolve));
   }) as typeof fetch });
-  projectCleanup(t).directory(directory); projectCleanup(t).business(() => business);
+
   {
     business.addSegment('失败'); business.addSegment('成功'); business.addSegment('不在范围');
     const [a, b, c] = business.getSnapshot().segments;
@@ -44,15 +42,15 @@ test('批量固定勾选、局部失败继续、整批终态解锁且重发不�
   }
 });
 
-test('失败范围限定操作，显式重试读取最新输入并跳过已成功与已删除目标', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-retry-'));
+test('失败范围限定操作，显式重试读取最新输入并跳过已成功与已删除目标', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-retry-'));
   let fail = true;
   const texts: string[] = [];
   const business = openBusiness(directory, { key: () => 'key', configPath: '/tmp/.env', fetch: (async (_url, options) => {
     texts.push(JSON.parse(String(options?.body)).req_params.text);
     return fail ? new Response('', { status: 401 }) : success();
   }) as typeof fetch });
-  projectCleanup(t).directory(directory); projectCleanup(t).business(() => business);
+
   {
     business.addSegment('第一批'); business.addSegment('第二批');
     const [a, b] = business.getSnapshot().segments;
@@ -75,10 +73,10 @@ test('失败范围限定操作，显式重试读取最新输入并跳过已成�
   }
 });
 
-test('缺失或待更新范围、空选择及逐项拒绝不会静默扩大或追加任务', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-scope-'));
+test('缺失或待更新范围、空选择及逐项拒绝不会静默扩大或追加任务', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-scope-'));
   const business = openBusiness(directory, { key: () => 'key', configPath: '/tmp/.env', fetch: (async () => success()) as typeof fetch });
-  projectCleanup(t).directory(directory); projectCleanup(t).business(() => business);
+
   {
     business.addSegment('已成功'); business.addSegment('待更新');
     business.submitSpeechBatch({ requestId: randomUUID(), mode: 'generate', scope: { kind: 'all' } }); await expect.poll(() => business.getSpeechStatus().locked).toBe(false);
@@ -101,12 +99,12 @@ test('缺失或待更新范围、空选择及逐项拒绝不会静默扩大或�
   }
 });
 
-test('重开批量操作保留成功结果，未完成显示已中断，不续跑且重发不产生请求', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-interrupt-'));
+test('重开批量操作保留成功结果，未完成显示已中断，不续跑且重发不产生请求', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-interrupt-'));
   let calls = 0;
   const runtime = { key: () => 'key', configPath: '/tmp/.env', fetch: (async (_url, input) => { calls++; return calls === 1 ? success() : new Promise<Response>((_resolve, reject) => { input?.signal?.addEventListener('abort', () => reject(input.signal?.reason), { once: true }); }); }) as typeof fetch };
   let business = openBusiness(directory, runtime);
-  projectCleanup(t).directory(directory); projectCleanup(t).business(() => business);
+
   {
     business.addSegment('完成'); business.addSegment('中断'); business.addSegment('未启动');
     const input = { requestId: randomUUID(), mode: 'generate' as const, scope: { kind: 'all' as const } };

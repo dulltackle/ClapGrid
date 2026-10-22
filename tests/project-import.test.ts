@@ -1,10 +1,9 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { execCommand } from './helpers/vitest-command.js';
+import { test } from './helpers/resource-test.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { test, expect, vi } from 'vitest';
+import { expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync, readFileSync, renameSync, symlinkSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, rmSync, readFileSync, renameSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -13,21 +12,19 @@ import { startService } from '../src/service/server.js';
 import { beginEdit } from '../src/shared/client.js';
 import { defaultVoice, statusSchema } from '../src/shared/contracts.js';
 import { build } from 'esbuild';
-import { openBusiness } from '../src/business/index.js';
 import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 
 const { ownerAlive, processIdentity } = await import(new URL('./helpers/product-process.mjs', import.meta.url).href);
 
-
- test('显式迁入入口要求来源与无运行任务确认，复制后原件保留且拒绝覆盖', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-import-'));
+ test('显式迁入入口要求来源与无运行任务确认，复制后原件保留且拒绝覆盖', async ({ connectMcp, createDirectory, execCommand, openBusiness, startService, onTestFinished, openConnection }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-import-'));
   const live = new Set<unknown>();
-  projectCleanup(t).directory(root);
+
   const workspace = join(root, 'workspace'); mkdirSync(workspace);
   const source = join(root, 'legacy');
-  const business = openBusiness(source); let businessClosed = false; live.add(business);
-  projectCleanup(t).business(() => businessClosed ? undefined : business);
-  business.addSegment('旧项目文案'); await business.close(); businessClosed = true; live.delete(business);
+  const business = openBusiness(source); live.add(business);
+
+  business.addSegment('旧项目文案'); await business.close(); live.delete(business);
   const host = join(root, 'host.cjs');
   writeFileSync(host, `#!/usr/bin/env node\nrequire('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);console.log(JSON.stringify({id:r.id,result:r.method==='initialize'?{}:{thread:{id:'11111111-1111-4111-8111-111111111111',cwd:${JSON.stringify(workspace)}}}}));});`, { mode: 0o700 });
   const dist = join(root, 'dist'); mkdirSync(join(dist, 'panel'), { recursive: true }); writeFileSync(join(dist, 'panel', 'index.html'), 'ClapGrid'); writeFileSync(join(root, 'package.json'), '{"type":"module"}');
@@ -49,14 +46,14 @@ const { ownerAlive, processIdentity } = await import(new URL('./helpers/product-
   assert.equal(existsSync(join(workspace, 'clapgrid')), false);
   rmSync(join(source, 'media-active.json'));
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'ClapGrid');
-  const running = await projectCleanup(t).startService({ projectDirectory: source, panelDirectory, port: 0 });
+  const running = await startService({ projectDirectory: source, panelDirectory, port: 0 });
   live.add(running);
 
   await assert.rejects(cli('--source', source, '--confirm-idle'), /源项目服务仍在运行/);
   await running.close();
   const legacy = new DatabaseSync(join(source, 'clapgrid.sqlite'));
   let legacyClosed = false;
-  t.onTestFinished(() => { if (!legacyClosed) legacy.close(); });
+  openConnection(() => ({ close: () => { if (!legacyClosed) legacy.close(); } }));
   const taskId = randomUUID(); const speechId = randomUUID();
   const createdAt = '2026-01-02T03:04:05.000Z';
   const fileName = `2026-01-02T03-04-05-000Z-${taskId}.mp4`;
@@ -66,7 +63,7 @@ const { ownerAlive, processIdentity } = await import(new URL('./helpers/product-
   await assert.rejects(cli('--source', source, '--confirm-idle'), /源项目存在运行任务/);
   const ready = new DatabaseSync(join(source, 'clapgrid.sqlite'));
   let readyClosed = false;
-  t.onTestFinished(() => { if (!readyClosed) ready.close(); });
+  openConnection(() => ({ close: () => { if (!readyClosed) ready.close(); } }));
   const exportTask = { ...task, state: 'succeeded', output: { path: join(source, 'exports', fileName), url: `/api/exports/${taskId}/file` } };
   ready.prepare('UPDATE export_tasks SET value = ? WHERE id = ?').run(JSON.stringify(exportTask), taskId);
   ready.close(); readyClosed = true;
@@ -75,7 +72,7 @@ const { ownerAlive, processIdentity } = await import(new URL('./helpers/product-
   mkdirSync(join(source, 'exports')); writeFileSync(join(source, 'exports', fileName), '旧成片字节');
   const history = new DatabaseSync(join(source, 'clapgrid.sqlite'));
   let historyClosed = false;
-  t.onTestFinished(() => { if (!historyClosed) history.close(); });
+  openConnection(() => ({ close: () => { if (!historyClosed) history.close(); } }));
   const segment = history.prepare('SELECT id FROM segments').get()!;
   const originalId = history.prepare('SELECT id FROM project_identity').get()!.id;
   history.prepare('INSERT INTO speech_tasks VALUES (?, ?, ?)').run(speechId, randomUUID(), JSON.stringify({ id: speechId, requestId: randomUUID(), segmentId: segment.id, input: { text: '旧项目文案', voice: defaultVoice }, state: 'succeeded', message: '完成', createdAt, succeededAt: createdAt }));
@@ -92,7 +89,7 @@ const { ownerAlive, processIdentity } = await import(new URL('./helpers/product-
     const status = await (await fetch(`${imported.url}/api/status`)).json();
     assert.notEqual(status.snapshot.project.id, originalId);
     const client = new Client({ name: 'import-regression', version: '1.0.0' });
-    await projectCleanup(t).connectMcp(client, new StdioClientTransport({ command: process.execPath, args: [join(dist, 'mcp/main.js')], env: Object.fromEntries(Object.entries(env).filter((entry): entry is [string, string] => typeof entry[1] === 'string')) }));
+    await connectMcp(client, new StdioClientTransport({ command: process.execPath, args: [join(dist, 'mcp/main.js')], env: Object.fromEntries(Object.entries(env).filter((entry): entry is [string, string] => typeof entry[1] === 'string')) }));
     try { const mcp = await client.callTool({ name: 'clapgrid_status', arguments: {}, _meta: { threadId: '11111111-1111-4111-8111-111111111111' } }); assert.notEqual(mcp.isError, true); assert.deepEqual(statusSchema.parse(mcp.structuredContent).snapshot, status.snapshot); }
     finally { await client.close(); }
     assert.equal(status.snapshot.segments[0].text, '旧项目文案');
@@ -111,10 +108,10 @@ const { ownerAlive, processIdentity } = await import(new URL('./helpers/product-
   finally { await stop(reopened); }
  });
 
-test('迁入发布前阻止并发源修改及目标打开，中断后普通打开不能误认成功', { timeout: 20000 }, async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-import-race-'));
+test('迁入发布前阻止并发源修改及目标打开，中断后普通打开不能误认成功', { timeout: 20000 }, async ({ createDirectory, execCommand, openBusiness, ownProcess }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-import-race-'));
   let processesStopped = true;
-  projectCleanup(t).directory(root);
+
   const workspace = join(root, 'workspace'); mkdirSync(workspace);
   const alias = join(root, 'alias'); symlinkSync(workspace, alias);
   const source = join(root, 'source'); const initial = openBusiness(source); initial.addSegment('并发迁入'); await initial.close();
@@ -135,7 +132,7 @@ require('node:readline').createInterface({input:process.stdin}).on('line',async 
 
   await expect.poll(() => !existsSync(marker)).toBeFalsy();
   assert.equal(existsSync(marker), true, '等待迁入完成复制后的宿主核对');
-  guardian = JSON.parse(readFileSync(marker, 'utf8')); projectCleanup(t).process(guardian);
+  guardian = JSON.parse(readFileSync(marker, 'utf8')); ownProcess(() => guardian);
   await assert.rejects(startService({ projectDirectory: source, panelDirectory, port: 0 }), /另一服务/);
   await assert.rejects(startService({ projectDirectory: join(workspace, 'clapgrid'), panelDirectory, port: 0 }), /迁入/);
   await assert.rejects(startService({ projectDirectory: join(alias, 'clapgrid'), panelDirectory, port: 0 }), /迁入/);

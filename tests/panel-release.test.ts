@@ -1,23 +1,20 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { execCommand } from './helpers/vitest-command.js';
-import { test, vi } from 'vitest';
+import { test } from './helpers/resource-test.js';
+import { vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, cpSync, writeFileSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdirSync, cpSync, writeFileSync, readFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { connectTable, beginEdit } from '../src/shared/client.js';
 import { dependencyView } from './helpers/temporary-repository.js';
 import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 
-
-const exec = execCommand;
 const repo = resolve('.');
 
-test('纯面板发布保留服务实例、项目、绑定和旧资源，忙碌及未知面板阻止切换，失败可回滚', { timeout: 60000 }, async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-panel-release-'));
+test('纯面板发布保留服务实例、项目、绑定和旧资源，忙碌及未知面板阻止切换，失败可回滚', { timeout: 60000 }, async ({ connectMcp, createDirectory, execCommand, openConnection, ownService }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-panel-release-'));
   let stopOwnedServices: (() => Promise<void>) | undefined;
-  projectCleanup(t).directory(root);
-  projectCleanup(t).service(() => ({ close: () => stopOwnedServices?.() }));
+
+  ownService(() => ({ close: () => stopOwnedServices?.() }));
   const source = join(root, 'source'), workspace = join(root, 'workspace');
   mkdirSync(source); mkdirSync(workspace);
   for (const name of ['src', 'plugins', 'package.json', 'package-lock.json']) cpSync(join(repo, name), join(source, name), { recursive: true });
@@ -27,7 +24,7 @@ test('纯面板发布保留服务实例、项目、绑定和旧资源，忙碌�
     writeFileSync(join(source, 'dist/panel/index.html'), `<html><script src="/assets/main.js"></script>${label}</html>`);
     writeFileSync(join(source, 'dist/panel/assets/main.js'), label);
     writeFileSync(join(source, 'dist/panel/assets/theme.css'), 'body{background:url(/assets/background.png)}');
-    await exec(process.execPath, [join(repo, 'scripts/build-plugin.mjs')], { cwd: source });
+    await execCommand(process.execPath, [join(repo, 'scripts/build-plugin.mjs')], { cwd: source });
     const directory = join(root, label); cpSync(join(source, 'dist/plugin/clapgrid'), directory, { recursive: true });
     return { directory, identity: JSON.parse(readFileSync(join(directory, 'build-identity.json'), 'utf8')) };
   };
@@ -38,7 +35,7 @@ test('纯面板发布保留服务实例、项目、绑定和旧资源，忙碌�
   writeFileSync(host, `#!/usr/bin/env node\nrequire('node:readline').createInterface({input:process.stdin}).on('line',l=>{const r=JSON.parse(l);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:{id:${JSON.stringify(thread)},cwd:${JSON.stringify(workspace)}}}}));});`, { mode: 0o700 });
   const env = { ...process.env, CLAPGRID_CODEX_BIN: host, XDG_DATA_HOME: join(root, 'data') };
   const ownedServices = new Map<string, ReturnType<typeof serviceProcess>>();
-  const runtime = async (action: string) => { const result = JSON.parse((await exec(process.execPath, [join(old.directory, 'dist/runtime.js'), action, '--workspace', workspace, '--thread', thread], { env })).stdout); if (result.pid && result.pid !== process.pid && !ownedServices.has(result.instanceId)) ownedServices.set(result.instanceId, serviceProcess(result.pid)); return result; };
+  const runtime = async (action: string) => { const result = JSON.parse((await execCommand(process.execPath, [join(old.directory, 'dist/runtime.js'), action, '--workspace', workspace, '--thread', thread], { env })).stdout); if (result.pid && result.pid !== process.pid && !ownedServices.has(result.instanceId)) ownedServices.set(result.instanceId, serviceProcess(result.pid)); return result; };
   stopOwnedServices = async () => {
     if (!ownedServices.size) return;
     await runtime('workspace-status'); await runtime('workspace-stop');
@@ -51,8 +48,8 @@ test('纯面板发布保留服务实例、项目、绑定和旧资源，忙碌�
     return { ok: response.ok, body: await response.json() };
   };
   const update = (extra: object = {}) => post('/api/panel-release', { packageDirectory: next.directory, instanceId: before.instanceId, expectedPanelFingerprint: old.identity.panelFingerprint, ...extra });
-  const table = await connectTable(before.url);
-  projectCleanup(t).connection(() => table);
+  const table = await openConnection(() => connectTable(before.url));
+
   assert.equal((await update()).body.outcome, 'pending', '未知客户端状态不能默认为空闲');
   await post('/api/panel-activity', { tableId: table.tableId, busy: true });
   assert.equal((await update()).body.outcome, 'pending', '播放或本地草稿阻止切换');
@@ -92,11 +89,11 @@ test('纯面板发布保留服务实例、项目、绑定和旧资源，忙碌�
   writeFileSync(installer, `#!/usr/bin/env node\nconst fs=require('node:fs'),p=require('node:path');const src=${JSON.stringify(marketSource)};const version=JSON.parse(fs.readFileSync(p.join(src,'.codex-plugin/plugin.json'))).version;const dst=p.join(${JSON.stringify(cache)},'personal/clapgrid',version);fs.mkdirSync(dst,{recursive:true});fs.cpSync(src,dst,{recursive:true});console.log('{}');`, { mode: 0o700 });
   const args = [join(repo, 'scripts/update-plugin.mjs'), '--package', next.directory, '--marketplace-root', market, '--cache-root', cache, '--workspace', workspace, '--thread', thread, '--installer', installer, '--backup-root', join(root, 'backups')];
   const held = await beginEdit(before.url);
-  const pending = JSON.parse((await exec(process.execPath, args, { env })).stdout);
+  const pending = JSON.parse((await execCommand(process.execPath, args, { env })).stdout);
   assert.equal(pending.panel, 'pending');
   assert.equal(pending.installed, 'unchanged');
   await held.close(); await held.closed;
-  const updated = JSON.parse((await exec(process.execPath, args, { env })).stdout);
+  const updated = JSON.parse((await execCommand(process.execPath, args, { env })).stdout);
   assert.equal(updated.mode, 'panel'); assert.equal(updated.panel, 'applied');
   assert.equal(updated.host, 'kept'); assert.equal(updated.complete, false, '安装与应用不能冒充实际浏览器验收');
   assert.equal((await runtime('open')).instanceId, before.instanceId, '旧 runtime 仍可打开相容的新面板');
@@ -105,9 +102,9 @@ test('纯面板发布保留服务实例、项目、绑定和旧资源，忙碌�
   writeFileSync(hostEvidence, JSON.stringify({ source: 'actual-host', observedAt: new Date().toISOString(), status: 'reachable', response: { workspace, buildIdentity: old.identity }, serviceStatus: await status() }));
   writeFileSync(panelEvidence, JSON.stringify({ source: 'actual-browser', observedAt: new Date().toISOString(), status: 'reachable', response: { workspace, buildIdentity: next.identity, instanceId: before.instanceId } }));
   const diagnostic = [join(repo, 'scripts/diagnose-identity.mjs'), '--require-current', '--build', next.directory, '--installed', join(cache, 'personal/clapgrid', next.identity.version), '--workspace', workspace, '--service-url', new URL(before.url).origin, '--mcp-evidence', hostEvidence, '--panel-evidence', panelEvidence];
-  assert.equal(JSON.parse((await exec(process.execPath, diagnostic)).stdout).complete, true, '旧运行时与新面板按角色核对后可通过门槛');
+  assert.equal(JSON.parse((await execCommand(process.execPath, diagnostic)).stdout).complete, true, '旧运行时与新面板按角色核对后可通过门槛');
   writeFileSync(panelEvidence, JSON.stringify({ source: 'actual-browser', observedAt: new Date().toISOString(), status: 'reachable', response: { workspace, buildIdentity: old.identity, instanceId: before.instanceId } }));
-  await assert.rejects(exec(process.execPath, diagnostic), '旧页面未刷新不能通过交付');
+  await assert.rejects(execCommand(process.execPath, diagnostic), '旧页面未刷新不能通过交付');
   const receipt = JSON.parse(readFileSync(join(root, 'data/clapgrid/plugin-update.json'), 'utf8'));
   assert.equal(receipt.installedTarget.contentFingerprint, next.identity.contentFingerprint);
   assert.equal(receipt.loadedRuntime.contentFingerprint, old.identity.contentFingerprint);
@@ -115,7 +112,7 @@ test('纯面板发布保留服务实例、项目、绑定和旧资源，忙碌�
   const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
   const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js');
   const transport = new StdioClientTransport({ command: process.execPath, args: [join(old.directory, 'dist/mcp/main.js')], env, stderr: 'pipe' });
-  const client = new Client({ name: '面板更新测试', version: '1' }); await projectCleanup(t).connectMcp(client, transport);
+  const client = new Client({ name: '面板更新测试', version: '1' }); await connectMcp(client, transport);
   try { const result = await client.callTool({ name: 'clapgrid_status', arguments: {}, _meta: { threadId: thread } }); assert.equal(result.isError, undefined); assert.equal((result.structuredContent as any).instanceId, before.instanceId); }
   finally { await client.close(); }
   await post('/api/panel-release', { rollbackFingerprint: old.identity.panelFingerprint, instanceId: before.instanceId, expectedPanelFingerprint: next.identity.panelFingerprint });

@@ -1,17 +1,16 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { command as runCommand, execBytes, execText } from './helpers/vitest-command.js';
-import { test, vi, type TestContext } from 'vitest';
+import { test, type ResourceFixtures } from './helpers/resource-test.js';
+import { vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, cpSync } from 'node:fs';
+import { rmSync, mkdirSync, writeFileSync, readFileSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { dependencyView } from './helpers/temporary-repository.js';
 
+type Resources = Pick<ResourceFixtures, 'command' | 'connectMcp' | 'createDirectory' | 'execBytes' | 'execText' | 'openConnection'>;
 
 const repository = resolve('.');
-function fixture(t: TestContext) {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-build-identity-'));
-  projectCleanup(t).directory(root);
+function fixture(t: Pick<Resources, 'createDirectory'>) {
+  const root = t.createDirectory(join(tmpdir(), 'clapgrid-build-identity-'));
   for (const name of ['src', 'plugins', 'package.json', 'package-lock.json']) {
     // 依赖只共享读取；源文件和构建输出使用隔离目录。
     cpSync(join(repository, name), join(root, name), { recursive: true });
@@ -21,18 +20,19 @@ function fixture(t: TestContext) {
   writeFileSync(join(root, 'dist/panel/index.html'), '<!doctype html><html>原始面板</html>');
   return root;
 }
-async function build(root: string) {
-  (await execBytes(process.execPath, [join(repository, 'scripts/build-plugin.mjs')], { cwd: root, stdio: 'pipe', env: { ...process.env, NODE_PATH: join(repository, 'node_modules') } }));
+async function build(t: Pick<Resources, 'execBytes'>, root: string) {
+  (await t.execBytes(process.execPath, [join(repository, 'scripts/build-plugin.mjs')], { cwd: root, stdio: 'pipe', env: { ...process.env, NODE_PATH: join(repository, 'node_modules') } }));
   return JSON.parse(readFileSync(join(root, 'dist/plugin/clapgrid/build-identity.json'), 'utf8'));
 }
 
-test('插件构建携带源码状态，清单版本与身份一致，内容改变产生新版本和指纹', async t => {
+test('插件构建携带源码状态，清单版本与身份一致，内容改变产生新版本和指纹', async ({ createDirectory, execBytes }) => {
+  const t = { createDirectory, execBytes };
   const root = fixture(t);
   writeFileSync(join(root, '.gitignore'), 'dist/\nnode_modules\n');
   (await execBytes('git', ['init', '-q'], { cwd: root }));
   (await execBytes('git', ['add', '.gitignore', 'src', 'plugins', 'package.json', 'package-lock.json'], { cwd: root }));
   (await execBytes('git', ['-c', 'user.name=测试', '-c', 'user.email=test@example.invalid', 'commit', '-qm', '初始源码'], { cwd: root }));
-  const first = (await build(root));
+  const first = (await build(t, root));
   assert.equal(first.state, 'known');
   assert.match(first.source.commit, /^[a-f0-9]{40}$/);
   assert.equal(first.source.state, 'clean');
@@ -45,7 +45,7 @@ test('插件构建携带源码状态，清单版本与身份一致，内容改�
   assert.ok(readFileSync(join(plugin, 'dist/panel/index.html'), 'utf8').includes(first.contentFingerprint), '面板携带自身构建指纹');
   writeFileSync(join(root, 'src/build-identity.ts'), readFileSync(join(root, 'src/build-identity.ts'), 'utf8') + '\n// 未提交源码修改\n');
   writeFileSync(join(root, 'dist/panel/index.html'), '<html>新面板</html>');
-  const second = (await build(root));
+  const second = (await build(t, root));
   assert.equal(second.source.state, 'dirty');
   assert.equal(second.source.commit, first.source.commit);
   assert.notEqual(second.version, first.version);
@@ -54,26 +54,27 @@ test('插件构建携带源码状态，清单版本与身份一致，内容改�
   const entry = join(plugin, 'dist/mcp/main.js');
   writeFileSync(entry, readFileSync(entry, 'utf8') + '\n// 磁盘包未经构建地改变\n');
   assert.deepEqual(await readPluginIdentity(plugin), { schemaVersion: 1, state: 'unknown' });
-  (await build(root));
+  (await build(t, root));
   rmSync(join(plugin, 'build-identity.json'));
   assert.deepEqual(await readPluginIdentity(plugin), { schemaVersion: 1, state: 'unknown' });
 });
 
-test('真实 MCP 和 HTTP 报告加载身份，覆盖磁盘更新、缺失身份与诊断副作用', async t => {
+test('真实 MCP 和 HTTP 报告加载身份，覆盖磁盘更新、缺失身份与诊断副作用', async ({ command, connectMcp, createDirectory, execBytes, execText, openConnection }) => {
+  const t = { createDirectory, execBytes };
   const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
   const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js');
   const { spawn } = await import('node:child_process');
   const { existsSync, readdirSync, statSync } = await import('node:fs');
   const { createHash } = await import('node:crypto');
   const root = fixture(t);
-  const first = (await build(root));
+  const first = (await build(t, root));
   assert.equal(first.source.state, 'unknown');
   const plugin = join(root, 'dist/plugin/clapgrid');
   async function mcp() {
     const transport = new StdioClientTransport({ command: process.execPath, args: [join(plugin, 'dist/mcp/main.js')], cwd: root, stderr: 'pipe' });
-    const client = new Client({ name: '身份测试', version: '1' });
-    await projectCleanup(t).connectMcp(client, transport);
-    projectCleanup(t).connection(() => client);
+    const client = openConnection(() => new Client({ name: '身份测试', version: '1' }));
+    await connectMcp(client, transport);
+
     return client;
   }
   const client = await mcp();
@@ -82,7 +83,7 @@ test('真实 MCP 和 HTTP 报告加载身份，覆盖磁盘更新、缺失身份
   assert.deepEqual(before.buildIdentity, first);
   assert.equal(JSON.stringify(before).includes('隐藏'), false);
   assert.equal(existsSync(join(root, 'clapgrid')), false);
-  const serviceRun = runCommand(process.execPath, [join(plugin, 'dist/service/main.js'), '--workspace', root, '--port', '0'], { cwd: root, timeout: 60000 });
+  const serviceRun = command(process.execPath, [join(plugin, 'dist/service/main.js'), '--workspace', root, '--port', '0'], { cwd: root, timeout: 60000 });
   const service = serviceRun.child;
   void serviceRun.catch(() => {});
   service.stderr.resume();
@@ -143,7 +144,7 @@ test('真实 MCP 和 HTTP 报告加载身份，覆盖磁盘更新、缺失身份
   assert.deepEqual(running.buildIdentity, first);
   assert.equal(JSON.stringify(running).includes('secret-'), false);
   writeFileSync(join(root, 'dist/panel/index.html'), '<html>磁盘更新</html>');
-  const second = (await build(root));
+  const second = (await build(t, root));
   assert.notEqual(first.contentFingerprint, second.contentFingerprint);
   assert.notEqual(first.version, second.version);
   assert.equal(first.runtimeFingerprint, second.runtimeFingerprint, '纯面板变化保持运行时身份');

@@ -1,25 +1,25 @@
+import { test, type ResourceFixtures } from './helpers/resource-test.js';
+import type { TestContext } from 'vitest';
 import { speechState } from './helpers/speech-state.js';
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { execBytes } from './helpers/vitest-command.js';
-import { test, vi, type TestContext, expect } from 'vitest';
+import { vi, expect } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createBusinessMcp } from '../src/mcp/server.js';
-import { startService } from '../src/service/server.js';
 import { connectTable, importVideo, modifyBatch, queryExports, queryExportSettings, querySpeech, queryStatus, saveExportSettings, submitExport, submitSpeech, submitSpeechBatch } from '../src/shared/client.js';
 
+type Resources = Pick<ResourceFixtures, 'createDirectory' | 'execBytes' | 'openConnection' | 'startService'> & Pick<TestContext, 'onTestFinished' | 'task'>;
 
 type RejectionWindow = { outcome: string; phase?: string; start: number; end: number; taskId?: string; taskIds?: string[] };
 declare module 'vitest' {
   interface TaskMeta { exportRejectionWindows?: RejectionWindow[] }
 }
 // 具体业务窗口直接进入 Vitest 原生 JSON metadata，不建立跨框架报告格式。
-function recordWindow(t: TestContext, window: RejectionWindow) {
+function recordWindow(t: Pick<Resources, 'task'>, window: RejectionWindow) {
   const windows = (t.task.meta.exportRejectionWindows ??= []);
   windows.push(window);
 }
@@ -40,10 +40,9 @@ function pauseImmediate() {
   };
 }
 
-
-
-for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，${outcome}后恢复校验`, { timeout: 60000 }, async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-speech-export-'));
+for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可导出项目在配音及表格重连期间拒绝 HTTP 和 MCP 导出，${outcome}后恢复校验`, { timeout: 60000 }, async ({ createDirectory, execBytes, openConnection, startService, onTestFinished, task: nativeTask }) => {
+  const t = { task: nativeTask };
+  const root = createDirectory(join(tmpdir(), 'clapgrid-speech-export-'));
   const projectDirectory = join(root, 'project'); const panelDirectory = join(root, 'panel');
   mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), '验收');
   const video = join(root, 'video.mp4'); const audio = join(root, 'audio.mp3');
@@ -58,13 +57,13 @@ for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可�
       input?.signal?.addEventListener('abort', () => reject(input.signal?.reason), { once: true });
     }) : success()) as typeof fetch,
   } };
-  let service = await projectCleanup(t).startService(options);
-  const mcp = createBusinessMcp(service.url); const client = new Client({ name: '配音导出锁回归', version: '1' });
+  let service = await startService(options);
+  const mcp = openConnection(() => createBusinessMcp(service.url)); const client = openConnection(() => new Client({ name: '配音导出锁回归', version: '1' }));
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
-  let table = await connectTable(service.url);
+  let table = await openConnection(() => connectTable(service.url));
   let resumeImmediate: (() => void) | undefined;
-  t.onTestFinished(() => { resumeImmediate?.(); finish?.(success()); });
-  projectCleanup(t).directory(root); projectCleanup(t).connection(() => table); projectCleanup(t).connection(() => client); projectCleanup(t).connection(() => mcp);
+  openConnection(() => ({ close: () => { resumeImmediate?.(); finish?.(success()); } }));
+
   await modifyBatch(service.url, { changes: [{ kind: 'add', text: '配音任务锁验证' }] });
   const segment = (await queryStatus(service.url)).snapshot.segments[0]!;
   const { asset } = await importVideo(service.url, video);
@@ -90,7 +89,7 @@ for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可�
     }
     const start = Date.now();
     for (const reopen of [false, true]) {
-      if (reopen) { await table.close(); table = await connectTable(service.url); }
+      if (reopen) { await table.close(); table = await openConnection(() => connectTable(service.url)); }
       await assert.rejects(submitExport(service.url), /配音任务尚未结束/);
       const rejected = await client.callTool({ name: 'clapgrid_submit_export', arguments: {} });
       assert.equal(rejected.isError, true); assert.match(JSON.stringify(rejected.content), /配音任务尚未结束/);
@@ -110,7 +109,7 @@ for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可�
   }
   if (outcome === '中断') {
     await table.close(); await service.close(); finish(success());
-    service = await projectCleanup(t).startService(options);
+    service = await startService(options);
   } else finish(outcome === '成功' ? success() : new Response('供应商明确拒绝', { status: 401 }));
   const speech = await vi.waitFor(async () => { const value = await (() => querySpeech(service.url))(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   assert.equal(speech.tasks.at(-1)!.state, outcome === '成功' ? 'succeeded' : outcome === '明确失败' ? 'failed' : 'unknown');
@@ -128,8 +127,9 @@ for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可�
   assert.deepEqual(readdirSync(join(projectDirectory, 'exports')), files);
 });
 
-test('批量配音中尚未发送的 accepted 任务在表格重连后仍保留身份与导出锁', { timeout: 60000 }, async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-queued-export-'));
+test('批量配音中尚未发送的 accepted 任务在表格重连后仍保留身份与导出锁', { timeout: 60000 }, async ({ createDirectory, execBytes, openConnection, startService, onTestFinished, task: nativeTask }) => {
+  const t = { task: nativeTask };
+  const root = createDirectory(join(tmpdir(), 'clapgrid-queued-export-'));
   const projectDirectory = join(root, 'project'); const panelDirectory = join(root, 'panel');
   mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), '验收');
   const video = join(root, 'video.mp4'); const audio = join(root, 'audio.mp3');
@@ -139,15 +139,15 @@ test('批量配音中尚未发送的 accepted 任务在表格重连后仍保留�
   const success = () => new Response(`data: {"code":0,"data":"${bytes.toString('base64')}"}\n\ndata: {"code":20000000}\n\n`);
   let mode: 'success' | 'fail' | 'hold' = 'success';
   const pending: ((response: Response) => void)[] = [];
-  const service = await projectCleanup(t).startService({ projectDirectory, panelDirectory, port: 0, speechRuntime: {
+  const service = await startService({ projectDirectory, panelDirectory, port: 0, speechRuntime: {
     configPath: '测试配置', key: () => '测试密钥', fetch: (async () => mode === 'hold'
       ? new Promise<Response>(resolve => pending.push(resolve)) : mode === 'fail' ? new Response('', { status: 401 }) : success()) as typeof fetch,
   } });
-  const mcp = createBusinessMcp(service.url); const client = new Client({ name: '批量配音导出锁回归', version: '1' });
+  const mcp = openConnection(() => createBusinessMcp(service.url)); const client = openConnection(() => new Client({ name: '批量配音导出锁回归', version: '1' }));
   const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
-  let table = await connectTable(service.url);
-  t.onTestFinished(() => { pending.forEach(resolve => resolve(success())); });
-  projectCleanup(t).directory(root); projectCleanup(t).connection(() => table); projectCleanup(t).connection(() => client); projectCleanup(t).connection(() => mcp);
+  let table = await openConnection(() => connectTable(service.url));
+  openConnection(() => ({ close: () => { pending.forEach(resolve => resolve(success())); } }));
+
   await modifyBatch(service.url, { changes: [{ kind: 'add', text: '先执行的口播片段' }, { kind: 'add', text: '等待执行的口播片段' }] });
   const segments = (await queryStatus(service.url)).snapshot.segments;
   const { asset } = await importVideo(service.url, video);
@@ -175,7 +175,7 @@ test('批量配音中尚未发送的 accepted 任务在表格重连后仍保留�
   await speechState(() => querySpeech(service.url), ids[0]!, 'running');
   const start = Date.now();
   for (const reopen of [false, true]) {
-    if (reopen) { await table.close(); table = await connectTable(service.url); }
+    if (reopen) { await table.close(); table = await openConnection(() => connectTable(service.url)); }
     const before = await querySpeech(service.url);
     assert.deepEqual(ids.map(id => before.tasks.find(task => task.id === id)!.state), ['running', 'accepted']);
     await assert.rejects(submitExport(service.url), /配音任务尚未结束/);

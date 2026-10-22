@@ -1,21 +1,18 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
+import { test } from './helpers/resource-test.js';
 import { beginEdit } from '../src/shared/client.js';
-import { test } from 'vitest';
 import { get } from 'node:http';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { startService } from '../src/service/server.js';
 import { statusSchema } from '../src/shared/contracts.js';
 
-test('HTTP 查询共享业务层，静态面板与项目数据隔离，拒绝向查询接口写入', async (t) => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-http-'));
-  projectCleanup(t).directory(root);
+test('HTTP 查询共享业务层，静态面板与项目数据隔离，拒绝向查询接口写入', async ({ createDirectory, startService }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-http-'));
   const panelDirectory = join(root, 'panel');
   mkdirSync(panelDirectory);
   writeFileSync(join(panelDirectory, 'index.html'), '<title>ClapGrid</title>');
-  const service = await projectCleanup(t).startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
+  const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
   const status = statusSchema.parse(await (await fetch(`${service.url}/api/status`)).json());
   assert.equal(status.snapshot.project.directory, join(root, 'project'));
   assert.deepEqual(status.snapshot.segments, []);
@@ -31,13 +28,12 @@ test('HTTP 查询共享业务层，静态面板与项目数据隔离，拒绝向
   assert.equal(foreignHostStatus, 403);
 });
 
-test('异常请求路径返回 400，服务仍能查询项目状态', { timeout: 3000 }, async (t) => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-invalid-url-'));
-  projectCleanup(t).directory(root);
+test('异常请求路径返回 400，服务仍能查询项目状态', { timeout: 3000 }, async ({ createDirectory, startService }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-invalid-url-'));
   const panelDirectory = join(root, 'panel');
   mkdirSync(panelDirectory);
   writeFileSync(join(panelDirectory, 'index.html'), 'ClapGrid');
-  const service = await projectCleanup(t).startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
+  const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
   const statusCode = await new Promise<number | undefined>((resolve, reject) => {
     const request = get(service.url, { path: '//[' }, response => {
       response.resume(); resolve(response.statusCode);
@@ -49,14 +45,13 @@ test('异常请求路径返回 400，服务仍能查询项目状态', { timeout:
   assert.equal((await fetch(`${service.url}/api/status`)).status, 200);
 });
 
-test('HTTP 完成编辑才返回已提交快照，数据库占用时保存失败且重开保留原值', async (t) => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-save-'));
-  projectCleanup(t).directory(root);
+test('HTTP 完成编辑才返回已提交快照，数据库占用时保存失败且重开保留原值', async ({ createDirectory, openBusiness: openOwnedBusiness, startService }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-save-'));
   const panelDirectory = join(root, 'panel');
   mkdirSync(panelDirectory);
   writeFileSync(join(panelDirectory, 'index.html'), 'ClapGrid');
   const projectDirectory = join(root, 'project');
-  const service = await projectCleanup(t).startService({ projectDirectory, panelDirectory, port: 0 });
+  const service = await startService({ projectDirectory, panelDirectory, port: 0 });
   const post = async (path: string, body: unknown) => {
     const session = await beginEdit(service.url);
     try {
@@ -83,19 +78,17 @@ test('HTTP 完成编辑才返回已提交快照，数据库占用时保存失败
     assert.equal(failed.status, 500);
     assert.match((await failed.json()).error, /保存失败/);
   } finally { lock.exec('ROLLBACK'); lock.close(); }
-  const { openBusiness } = await import('../src/business/index.js');
-  const reopened = (await openBusiness(projectDirectory));
-  projectCleanup(t).business(() => reopened);
+  const reopened = (await openOwnedBusiness(projectDirectory));
+
   assert.equal(reopened.getSnapshot().segments[0]!.text, '已保存文案');
   assert.equal((await post('/api/segments/edit', { id, text: '恢复保存' })).status, 200);
 });
 
-test('旧服务实例的绑定地址不能在其他服务读取或修改项目', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-binding-'));
-  projectCleanup(t).directory(root);
+test('旧服务实例的绑定地址不能在其他服务读取或修改项目', async ({ createDirectory, startService }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-binding-'));
   const panelDirectory = join(root, 'panel');
   mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'ClapGrid');
-  const service = await projectCleanup(t).startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
+  const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
   const response = await fetch(`${service.url}/binding/invalid/api/status`);
   assert.equal(response.status, 409);
 });

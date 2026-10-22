@@ -1,19 +1,19 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { command as runCommand } from './helpers/vitest-command.js';
-import { test, vi } from 'vitest';
+import { test, type ResourceFixtures } from './helpers/resource-test.js';
+import { vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { inspect, rewrite, corruptRawPackage, restorePackage } from './helpers/production-package.js';
 
+type Resources = Pick<ResourceFixtures, 'command' | 'createDirectory'>;
 
 const cli = resolve('scripts/production.mjs');
 const hash = (data: string | Buffer) => createHash('sha256').update(data).digest('hex');
-function fixture() {
-  const project = mkdtempSync(join(tmpdir(), 'clapgrid-归档 项目-'));
+function fixture(t: Pick<Resources, 'createDirectory'>) {
+  const project = t.createDirectory(join(tmpdir(), 'clapgrid-归档 项目-'));
   const contents: Record<string, string | Buffer> = {
     'src.ts': 'export const scene = 1;\n', '配音.wav': Buffer.alloc(1027, 21),
     '装配.mp4': Buffer.alloc(2181, 32), '审阅.mp4': Buffer.alloc(3311, 43),
@@ -30,16 +30,17 @@ function fixture() {
   writeFileSync(join(project, 'production.json'), JSON.stringify(manifest, null, 2));
   return { project, contents, manifest, save: () => writeFileSync(join(project, 'production.json'), JSON.stringify(manifest, null, 2)) };
 }
-async function run(project: string, command: string, args: string[] = []) {
+async function run(t: Pick<Resources, 'command'>, project: string, command: string, args: string[] = []) {
   const report = join(project, `report-${command}.json`);
-  const result = (await runCommand(process.execPath, [cli, command, '--project', project, '--report', report, ...args], { encoding: 'utf8' }));
+  const result = (await t.command(process.execPath, [cli, command, '--project', project, '--report', report, ...args], { encoding: 'utf8' }));
   assert.equal(result.error, undefined);
   assert.ok(existsSync(report), result.stderr + result.stdout);
   return { ...result, report: JSON.parse(readFileSync(report, 'utf8')) };
 }
-test('真实入口从清单生成完整归档，清单自身及不同大小成员字节准确，历史与人工记录原样保留', async t => {
-  const f = fixture(); projectCleanup(t).directory(f.project);
-  const result = (await run(f.project, 'pack'));
+test('真实入口从清单生成完整归档，清单自身及不同大小成员字节准确，历史与人工记录原样保留', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+  const f = fixture(t);
+  const result = (await run(t, f.project, 'pack'));
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.equal(result.report.status, 'passed');
   const archive = join(f.project, 'delivery.tar.gz');
@@ -54,43 +55,46 @@ test('真实入口从清单生成完整归档，清单自身及不同大小成�
   assert.equal(index.manifest.sha256, hash(readFileSync(join(f.project, 'production.json'))));
   assert.equal(index.files.length, Object.keys(f.contents).length);
   assert.ok(index.files.some((x: { category: string }) => x.category === 'history'));
-  const verified = (await run(f.project, 'verify-package', ['--archive', archive]));
+  const verified = (await run(t, f.project, 'verify-package', ['--archive', archive]));
   assert.equal(verified.status, 0, verified.stdout);
   assert.equal(verified.report.details.order.length, Object.keys(members).length);
 });
 
-test('输出路径不得覆盖制作成员或清单，失败保留原输入', async t => {
-  const f = fixture(); projectCleanup(t).directory(f.project);
+test('输出路径不得覆盖制作成员或清单，失败保留原输入', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+  const f = fixture(t);
   for (const name of ['src.ts', 'production.json']) {
     const before = readFileSync(join(f.project, name));
-    const result = (await run(f.project, 'pack', ['--output', name]));
+    const result = (await run(t, f.project, 'pack', ['--output', name]));
     assert.equal(result.status, 1, result.stdout);
     assert.equal(result.report.status, 'failed');
     assert.deepEqual(readFileSync(join(f.project, name)), before);
   }
 });
 
-test('重复成员和清单自引用被拒绝，不覆盖已有有效交付包', async t => {
-  const f = fixture(); projectCleanup(t).directory(f.project);
-  assert.equal((await run(f.project, 'pack')).status, 0);
+test('重复成员和清单自引用被拒绝，不覆盖已有有效交付包', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+  const f = fixture(t);
+  assert.equal((await run(t, f.project, 'pack')).status, 0);
   const previous = readFileSync(join(f.project, 'delivery.tar.gz'));
   f.manifest.files.push({ ...f.manifest.files[0]! }); f.save();
-  let result = (await run(f.project, 'pack'));
+  let result = (await run(t, f.project, 'pack'));
   assert.equal(result.status, 1, result.stdout);
   assert.match(JSON.stringify(result.report), /重复/);
   assert.deepEqual(readFileSync(join(f.project, 'delivery.tar.gz')), previous);
   f.manifest.files.pop();
   f.manifest.files.push({ path: 'production.json', sha256: hash(readFileSync(join(f.project, 'production.json'))), category: 'production' }); f.save();
-  result = (await run(f.project, 'pack'));
+  result = (await run(t, f.project, 'pack'));
   assert.equal(result.status, 1);
   assert.match(JSON.stringify(result.report), /清单自身|自引用/);
   assert.deepEqual(readFileSync(join(f.project, 'delivery.tar.gz')), previous);
 });
 
 for (const mode of ['missing', 'extra', 'duplicate', 'digest', 'manifest', 'gzip-crc', 'truncated', 'invalid-header', 'nonzero-tail', 'bad-header-at-end', 'missing-end-blocks', 'single-end-block']) {
-  test(`真实归档拒绝 ${mode} 并保留完整失败报告与输入`, async t => {
-    const f = fixture(); projectCleanup(t).directory(f.project);
-    assert.equal((await run(f.project, 'pack')).status, 0);
+  test(`真实归档拒绝 ${mode} 并保留完整失败报告与输入`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+    const f = fixture(t);
+    assert.equal((await run(t, f.project, 'pack')).status, 0);
     const archive = join(f.project, 'delivery.tar.gz');
     if (['invalid-header', 'nonzero-tail', 'bad-header-at-end', 'missing-end-blocks', 'single-end-block'].includes(mode)) {
       corruptRawPackage(archive, mode);
@@ -99,7 +103,7 @@ for (const mode of ['missing', 'extra', 'duplicate', 'digest', 'manifest', 'gzip
     } else if (mode === 'truncated') {
       const data = readFileSync(archive); writeFileSync(archive, data.subarray(0, data.length - 9));
     } else await rewrite(archive, mode);
-    const result = (await run(f.project, 'verify-package', ['--archive', archive]));
+    const result = (await run(t, f.project, 'verify-package', ['--archive', archive]));
     assert.equal(result.status, 1, result.stdout);
     assert.equal(result.report.status, 'failed');
     assert.ok(result.report.checks.some((x: { status: string }) => x.status === 'failed'));
@@ -108,25 +112,27 @@ for (const mode of ['missing', 'extra', 'duplicate', 'digest', 'manifest', 'gzip
   });
 }
 
-test('输入缺失或内容变化时不发布半成品，原有效包字节保持', async t => {
-  const f = fixture(); projectCleanup(t).directory(f.project);
-  assert.equal((await run(f.project, 'pack')).status, 0);
+test('输入缺失或内容变化时不发布半成品，原有效包字节保持', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+  const f = fixture(t);
+  assert.equal((await run(t, f.project, 'pack')).status, 0);
   const previous = readFileSync(join(f.project, 'delivery.tar.gz'));
   writeFileSync(join(f.project, 'src.ts'), 'changed');
-  const changed = (await run(f.project, 'pack'));
+  const changed = (await run(t, f.project, 'pack'));
   assert.equal(changed.status, 1); assert.match(JSON.stringify(changed.report), /src.ts/);
   assert.deepEqual(readFileSync(join(f.project, 'delivery.tar.gz')), previous);
   rmSync(join(f.project, 'src.ts'));
-  const missing = (await run(f.project, 'pack'));
+  const missing = (await run(t, f.project, 'pack'));
   assert.equal(missing.status, 1); assert.match(JSON.stringify(missing.report), /src.ts/);
   assert.deepEqual(readFileSync(join(f.project, 'delivery.tar.gz')), previous);
 });
 
 for (const mode of ['escape', 'absolute', 'empty', 'omitted-source', 'invalid-category']) {
-  test(`清单 ${mode} 不能发布为完整制作交付包`, async t => {
-    const f = fixture(); projectCleanup(t).directory(f.project);
-    const outside = mkdtempSync(join(tmpdir(), 'clapgrid-outside-'));
-    projectCleanup(t).directory(outside);
+  test(`清单 ${mode} 不能发布为完整制作交付包`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+    const f = fixture(t);
+    const outside = createDirectory(join(tmpdir(), 'clapgrid-outside-'));
+
     writeFileSync(join(outside, 'outside.txt'), 'outside');
     if (mode === 'escape') f.manifest.files.push({ path: '../' + outside.split('/').at(-1) + '/outside.txt', sha256: hash('outside'), category: 'production' });
     if (mode === 'absolute') f.manifest.files.push({ path: join(outside, 'outside.txt'), sha256: hash('outside'), category: 'production' });
@@ -134,54 +140,57 @@ for (const mode of ['escape', 'absolute', 'empty', 'omitted-source', 'invalid-ca
     if (mode === 'omitted-source') f.manifest.files = f.manifest.files.filter(x => x.path !== 'src.ts');
     if (mode === 'invalid-category') f.manifest.files[0]!.category = 'undecided';
     f.save();
-    const result = (await run(f.project, 'pack'));
+    const result = (await run(t, f.project, 'pack'));
     assert.equal(result.status, 1, result.stdout);
     assert.equal(result.report.status, 'failed');
     assert.equal(existsSync(join(f.project, 'delivery.tar.gz')), false);
   });
 }
 
-test('发布失败保留可定位候选与已有有效包，独立恢复后全部成员可再核对', async t => {
-  const f = fixture(); projectCleanup(t).directory(f.project);
-  assert.equal((await run(f.project, 'pack')).status, 0);
+test('发布失败保留可定位候选与已有有效包，独立恢复后全部成员可再核对', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+  const f = fixture(t);
+  assert.equal((await run(t, f.project, 'pack')).status, 0);
   const archive = join(f.project, 'delivery.tar.gz');
   const previous = readFileSync(archive);
   mkdirSync(join(f.project, '拒绝发布'));
-  const failed = (await run(f.project, 'pack', ['--output', '拒绝发布']));
+  const failed = (await run(t, f.project, 'pack', ['--output', '拒绝发布']));
   assert.equal(failed.status, 1);
   assert.match(JSON.stringify(failed.report), /候选包/);
   assert.ok(readdirSync(f.project).some(x => x.startsWith('.拒绝发布.candidate-')));
   assert.deepEqual(readFileSync(archive), previous);
-  const restored = mkdtempSync(join(tmpdir(), 'clapgrid-restore-'));
-  projectCleanup(t).directory(restored);
+  const restored = createDirectory(join(tmpdir(), 'clapgrid-restore-'));
+
   const restoredMembers = await restorePackage(archive, restored);
   for (const member of restoredMembers) assert.deepEqual(readFileSync(join(restored, member.header.name)), member.body);
   assert.deepEqual(readFileSync(join(restored, 'production.json')), readFileSync(join(f.project, 'production.json')));
-  const verified = (await run(restored, 'verify-package', ['--archive', archive]));
+  const verified = (await run(t, restored, 'verify-package', ['--archive', archive]));
   assert.equal(verified.status, 0, verified.stdout);
   for (const [path, data] of Object.entries(f.contents)) assert.deepEqual(readFileSync(join(restored, path)), Buffer.from(data));
 });
 
-test('清单不能使用工具索引保留名，原清单保持且不发布错误包', async t => {
-  const f = fixture(); projectCleanup(t).directory(f.project);
+test('清单不能使用工具索引保留名，原清单保持且不发布错误包', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+  const f = fixture(t);
   const original = readFileSync(join(f.project, 'production.json'));
   writeFileSync(join(f.project, '.clapgrid-package.json'), original);
-  const result = (await run(f.project, 'pack', ['--manifest', '.clapgrid-package.json']));
+  const result = (await run(t, f.project, 'pack', ['--manifest', '.clapgrid-package.json']));
   assert.equal(result.status, 1, result.stdout);
   assert.match(JSON.stringify(result.report), /保留/);
   assert.deepEqual(readFileSync(join(f.project, '.clapgrid-package.json')), original);
   assert.equal(existsSync(join(f.project, 'delivery.tar.gz')), false);
 });
 
-test('报告指向默认交付路径时提前拒绝，失败保留旧包并另存报告', async t => {
-  const f = fixture(); projectCleanup(t).directory(f.project);
-  assert.equal((await run(f.project, 'pack')).status, 0);
+test('报告指向默认交付路径时提前拒绝，失败保留旧包并另存报告', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+  const f = fixture(t);
+  assert.equal((await run(t, f.project, 'pack')).status, 0);
   const archive = join(f.project, 'delivery.tar.gz');
   const previous = readFileSync(archive);
   // 让本次候选与旧包不同，才能发现“退出失败但先发布”的问题。
   writeFileSync(join(f.project, 'src.ts'), 'export const scene = 2;');
   f.manifest.files.find(x => x.path === 'src.ts')!.sha256 = hash('export const scene = 2;'); f.save();
-  const result = (await runCommand(process.execPath, [cli, 'pack', '--project', f.project, '--report', archive], { encoding: 'utf8' }));
+  const result = (await command(process.execPath, [cli, 'pack', '--project', f.project, '--report', archive], { encoding: 'utf8' }));
   assert.equal(result.status, 1, result.stdout);
   assert.deepEqual(readFileSync(archive), previous);
   assert.match(result.stdout, /完整报告/);
@@ -197,19 +206,20 @@ for (const [field, declarations] of [
   ['sample-video', { video: { path: '新增素材.png' }, plan: { path: '历史待审.json' } }],
   ['sample-plan', { video: { path: '审阅.mp4' }, plan: { path: '新增素材.png' } }],
 ] as const) {
-  test(`打包必须保留已声明 ${field}，不能以依赖图缺省跳过`, async t => {
-    const f = fixture(); projectCleanup(t).directory(f.project);
+  test(`打包必须保留已声明 ${field}，不能以依赖图缺省跳过`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+    const f = fixture(t);
     const bytes = Buffer.from('归档成员字节，不声明为有效媒体');
     writeFileSync(join(f.project, '新增素材.png'), bytes);
     f.manifest.files.push({ path: '新增素材.png', sha256: hash(bytes), category: 'production' });
     if (field.startsWith('sample-')) Object.assign(f.manifest, { sample: declarations });
     else Object.assign(f.manifest.segments[0]!, declarations);
     f.save();
-    assert.equal((await run(f.project, 'pack')).status, 0);
+    assert.equal((await run(t, f.project, 'pack')).status, 0);
     const archive = join(f.project, 'delivery.tar.gz');
     const previous = readFileSync(archive);
     f.manifest.files = f.manifest.files.filter(x => x.path !== '新增素材.png'); f.save();
-    const result = (await run(f.project, 'pack'));
+    const result = (await run(t, f.project, 'pack'));
     assert.equal(result.status, 1, result.stdout);
     assert.match(JSON.stringify(result.report), /遗漏.*新增素材/);
     assert.deepEqual(readFileSync(archive), previous);
@@ -217,9 +227,10 @@ for (const [field, declarations] of [
 }
 
 for (const target of ['existing-directory', 'non-report-file', 'file-parent']) {
-  test(`报告目标 ${target} 在发布前拒绝，旧有效包及报告原件保持`, async t => {
-    const f = fixture(); projectCleanup(t).directory(f.project);
-    assert.equal((await run(f.project, 'pack')).status, 0);
+  test(`报告目标 ${target} 在发布前拒绝，旧有效包及报告原件保持`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+    const f = fixture(t);
+    assert.equal((await run(t, f.project, 'pack')).status, 0);
     const archive = join(f.project, 'delivery.tar.gz');
     const previous = readFileSync(archive);
     writeFileSync(join(f.project, 'src.ts'), 'export const scene = 3;');
@@ -228,7 +239,7 @@ for (const target of ['existing-directory', 'non-report-file', 'file-parent']) {
     if (target === 'existing-directory') mkdirSync(targetPath);
     else writeFileSync(targetPath, '这不是制作报告');
     const requested = target === 'file-parent' ? join(targetPath, '报告.json') : targetPath;
-    const result = (await runCommand(process.execPath, [cli, 'pack', '--project', f.project, '--report', requested], { encoding: 'utf8' }));
+    const result = (await command(process.execPath, [cli, 'pack', '--project', f.project, '--report', requested], { encoding: 'utf8' }));
     assert.equal(result.status, 1, result.stdout);
     assert.deepEqual(readFileSync(archive), previous);
     if (target !== 'existing-directory') assert.equal(readFileSync(targetPath, 'utf8'), '这不是制作报告');
@@ -240,13 +251,14 @@ for (const target of ['existing-directory', 'non-report-file', 'file-parent']) {
 }
 
 for (const field of ['assets', 'lastFrame', 'transitions']) {
-  test(`声明的 ${field} 即使是旧报告JSON也不能被新报告覆盖`, async t => {
-    const f = fixture(); projectCleanup(t).directory(f.project);
+  test(`声明的 ${field} 即使是旧报告JSON也不能被新报告覆盖`, async ({ command, createDirectory }) => {
+  const t = { createDirectory };
+    const f = fixture(t);
     const artifact = join(f.project, '关联技术原件.json');
     const bytes = JSON.stringify({ schemaVersion: 1, report: artifact, startedAt: '2026-10-13T00:00:00Z', checks: [] });
     writeFileSync(artifact, bytes);
     Object.assign(f.manifest.segments[0]!, { [field]: field === 'lastFrame' ? '关联技术原件.json' : ['关联技术原件.json'] }); f.save();
-    const result = (await runCommand(process.execPath, [cli, 'impact', '--project', f.project, '--report', artifact], { encoding: 'utf8' }));
+    const result = (await command(process.execPath, [cli, 'impact', '--project', f.project, '--report', artifact], { encoding: 'utf8' }));
     assert.equal(result.status, 1);
     assert.equal(readFileSync(artifact, 'utf8'), bytes);
     assert.match(result.stdout, /拒绝覆盖/);
@@ -254,8 +266,9 @@ for (const field of ['assets', 'lastFrame', 'transitions']) {
 }
 
 for (const omitted of ['当前技术产物.json', '当前证明原件.json']) {
-  test(`当前审阅引用的 ${omitted} 必须入包，独立恢复后证据仍可核对`, async t => {
-    const f = fixture(); projectCleanup(t).directory(f.project);
+  test(`当前审阅引用的 ${omitted} 必须入包，独立恢复后证据仍可核对`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+    const f = fixture(t);
     const artifact = '当前技术产物.json'; const proof = '当前证明原件.json';
     const data = '隔离归档及证据机械核对产物';
     const evidence = { schemaVersion: 1, reviewVersion: 'current-review',
@@ -267,35 +280,36 @@ for (const omitted of ['当前技术产物.json', '当前证明原件.json']) {
       f.manifest.files.push({ path: path!, sha256: hash(bytes!), category: 'technical' });
     }
     Object.assign(f.manifest, { evidence: '证据.json' }); f.save();
-    const originalEvidence = (await run(f.project, 'evidence'));
+    const originalEvidence = (await run(t, f.project, 'evidence'));
     assert.equal(originalEvidence.status, 0);
-    assert.equal((await run(f.project, 'pack')).status, 0);
+    assert.equal((await run(t, f.project, 'pack')).status, 0);
     const archive = join(f.project, 'delivery.tar.gz'); const previous = readFileSync(archive);
     f.manifest.files = f.manifest.files.filter(x => x.path !== omitted); f.save();
-    const failed = (await run(f.project, 'pack'));
+    const failed = (await run(t, f.project, 'pack'));
     assert.equal(failed.status, 1, failed.stdout);
     assert.match(JSON.stringify(failed.report), /遗漏/);
     assert.deepEqual(readFileSync(archive), previous);
-    const restored = mkdtempSync(join(tmpdir(), 'clapgrid-proof-restore-')); projectCleanup(t).directory(restored);
+    const restored = createDirectory(join(tmpdir(), 'clapgrid-proof-restore-'));
     const restoredMembers = await restorePackage(archive, restored);
     for (const member of restoredMembers) assert.deepEqual(readFileSync(join(restored, member.header.name)), member.body);
     assert.equal(readFileSync(join(restored, '证据.json'), 'utf8'), JSON.stringify(evidence));
     assert.equal(readFileSync(join(restored, proof), 'utf8'), '受控测试原件，不是真实用户/宿主确认');
-    const verified = (await run(restored, 'verify-package', ['--archive', archive]));
+    const verified = (await run(t, restored, 'verify-package', ['--archive', archive]));
     assert.equal(verified.status, 0, verified.stdout);
-    const restoredEvidence = (await run(restored, 'evidence'));
+    const restoredEvidence = (await run(t, restored, 'evidence'));
     assert.equal(restoredEvidence.report.details.requirements[0].writeBackAllowed, false);
     assert.deepEqual(restoredEvidence.report.details.requirements, originalEvidence.report.details.requirements);
-    assert.equal((await run(restored, 'evidence')).status, 0);
+    assert.equal((await run(t, restored, 'evidence')).status, 0);
   });
 }
 
-test('打包保留待审及历史记录，不强求尚未生成或历史失效的原件', async t => {
-  const f = fixture(); projectCleanup(t).directory(f.project);
+test('打包保留待审及历史记录，不强求尚未生成或历史失效的原件', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+  const f = fixture(t);
   const evidence = { schemaVersion: 1, reviewVersion: 'current', requirements: [{ id: 'future', required: [{ id: 'pending', artifact: '未制作样片.mp4' }] }],
     records: [{ reviewVersion: 'old', artifact: { path: '旧版已失效.mp4' }, provenance: { record: '旧版记录.txt' } }, { reviewVersion: 'current', provenance: { record: 'https://example.invalid/user-review' } }] };
   const bytes = JSON.stringify(evidence); writeFileSync(join(f.project, '待审历史.json'), bytes);
   f.manifest.files.push({ path: '待审历史.json', sha256: hash(bytes), category: 'history' }); Object.assign(f.manifest, { evidence: '待审历史.json' }); f.save();
-  const result = (await run(f.project, 'pack')); assert.equal(result.status, 0, result.stdout);
+  const result = (await run(t, f.project, 'pack')); assert.equal(result.status, 0, result.stdout);
   assert.equal((await inspect(join(f.project, 'delivery.tar.gz')))['待审历史.json'], Buffer.from(bytes).toString('base64'));
 });

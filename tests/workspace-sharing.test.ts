@@ -1,8 +1,7 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { execCommand } from './helpers/vitest-command.js';
-import { test, expect, vi } from 'vitest';
+import { test } from './helpers/resource-test.js';
+import { expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -15,11 +14,9 @@ import { beginEdit, queryStatus, querySpeech, submitSpeech, connectTable } from 
 import type { ServiceStatus, SpeechTask, SpeechStatus } from '../src/shared/contracts.js';
 import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 
-
 // 只替代宿主协议和外部配音供应商；真实入口、服务、绑定、HTTP、MCP 与持久化均参与。
-test('同工作空间并发打开复用项目与服务，不同工作空间独立', { timeout: 60000 }, async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-sharing-open-'));
-  projectCleanup(t).directory(root);
+test('同工作空间并发打开复用项目与服务，不同工作空间独立', { timeout: 60000 }, async ({ createDirectory, execCommand, ownProcess }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-sharing-open-'));
   const first = join(root, 'first'); const second = join(root, 'second'); const dist = join(root, 'dist');
   mkdirSync(first); mkdirSync(second); mkdirSync(join(dist, 'panel'), { recursive: true });
   writeFileSync(join(root, 'package.json'), '{"type":"module"}');
@@ -33,7 +30,7 @@ test('同工作空间并发打开复用项目与服务，不同工作空间独�
 
   const results = await Promise.allSettled(threads.map(async (thread, i) => {
     const workspace = i === 2 ? second : first;
-    const result = await cli('open', workspace, thread); opened.push({ workspace, thread, result, process: serviceProcess(result.pid) }); projectCleanup(t).process(serviceProcess(result.pid)); return result;
+    const result = await cli('open', workspace, thread); opened.push({ workspace, thread, result, process: serviceProcess(result.pid) }); ownProcess(() => serviceProcess(result.pid)); return result;
   }));
   for (const result of results) assert.equal(result.status, 'fulfilled', result.status === 'rejected' ? String(result.reason) + '\n' + [first, second].map(workspace => { try { return readFileSync(join(workspace, 'clapgrid', 'service.log'), 'utf8'); } catch { return ''; } }).join('\n') : undefined);
   const [a, b, c] = results.map(result => (result as PromiseFulfilledResult<ServiceStatus & { url: string }>).value);
@@ -43,26 +40,25 @@ test('同工作空间并发打开复用项目与服务，不同工作空间独�
   assert.notEqual(a!.url, b!.url, '共享项目仍使用各自聊天绑定');
 });
 
-test('绑定入口两端共享修改权、任务和去重，另一个工作空间并行配音且产物隔离', { timeout: 60000 }, async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-sharing-tasks-'));
-  projectCleanup(t).directory(root);
+test('绑定入口两端共享修改权、任务和去重，另一个工作空间并行配音且产物隔离', { timeout: 60000 }, async ({ createDirectory, execCommand, openConnection, startService, onTestFinished }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-sharing-tasks-'));
   const first = join(root, 'first'); const second = join(root, 'second'); const panelDirectory = join(root, 'panel');
   mkdirSync(first); mkdirSync(second); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'ClapGrid');
   const threads = [randomUUID(), randomUUID(), randomUUID()]; const host = join(root, 'host.cjs');
   writeFileSync(host, `#!/usr/bin/env node\nconst roots=${JSON.stringify({ [threads[0]!]: first, [threads[1]!]: first, [threads[2]!]: second })};require('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:{id:r.params.threadId,cwd:roots[r.params.threadId]}}}));});`, { mode: 0o700 });
   const previous = process.env.CLAPGRID_CODEX_BIN; process.env.CLAPGRID_CODEX_BIN = host;
-  t.onTestFinished(() => { if (previous === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = previous; });
+  onTestFinished(() => { if (previous === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = previous; });
   const services: Awaited<ReturnType<typeof startService>>[] = [];
   const clients: Client[] = []; const servers: ReturnType<typeof createBusinessMcp>[] = [];
 
-  projectCleanup(t).connection(() => ({ close: () => Promise.all(clients.map(client => client.close())) }));
-  projectCleanup(t).connection(() => ({ close: () => Promise.all(servers.map(server => server.close())) }));
+  openConnection(() => ({ close: () => Promise.all(clients.map(client => client.close())) }));
+  openConnection(() => ({ close: () => Promise.all(servers.map(server => server.close())) }));
   const gates = [0, 1].map(() => {
     let finish!: (response: Response) => void;
     const response = new Promise<Response>(resolve => { finish = resolve; });
     return { finish, response, calls: 0 };
   });
-  for (const [i, workspace] of [first, second].entries()) services.push(await projectCleanup(t).startService({
+  for (const [i, workspace] of [first, second].entries()) services.push(await startService({
     projectDirectory: join(workspace, 'clapgrid'), workspaceDirectory: workspace, panelDirectory, port: 0,
     speechRuntime: { configPath: '/tmp/clapgrid-test-provider.env', key: () => 'test-only', fetch: (async () => { gates[i]!.calls++; return gates[i]!.response; }) as typeof fetch },
   }));
@@ -131,9 +127,8 @@ test('绑定入口两端共享修改权、任务和去重，另一个工作空�
   assert.deepEqual(gates.map(gate => gate.calls), [1, 1], '重连和重发不重复请求供应商');
 });
 
-test('并发打开全部返回后停止服务，不得由迟到启动候选复活', { timeout: 60000 }, async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-sharing-stop-'));
-  projectCleanup(t).directory(root);
+test('并发打开全部返回后停止服务，不得由迟到启动候选复活', { timeout: 60000 }, async ({ createDirectory, execCommand, annotate }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-sharing-stop-'));
   const workspace = join(root, 'workspace'); const dist = join(root, 'dist');
   mkdirSync(workspace); mkdirSync(join(dist, 'panel'), { recursive: true });
   writeFileSync(join(root, 'package.json'), '{"type":"module"}');
@@ -155,7 +150,7 @@ test('并发打开全部返回后停止服务，不得由迟到启动候选复�
   await new Promise(resolve => setTimeout(resolve, 1200));
   const status = await cli('workspace-status', threads[0], ['--allow-offline']);
   const ended = await Promise.allSettled(candidates.map(identity => waitForServiceExit(identity, { timeoutMs: 2000 })));
-  await t.annotate(JSON.stringify({ event: 'concurrent-open-candidates-ended', candidates, allOriginalCandidatesExited: ended.every(result => result.status === 'fulfilled'), stateAfterStop: status.state ?? 'online' }));
+  await annotate(JSON.stringify({ event: 'concurrent-open-candidates-ended', candidates, allOriginalCandidatesExited: ended.every(result => result.status === 'fulfilled'), stateAfterStop: status.state ?? 'online' }));
   assert.equal(status.state, 'offline', '所有 open 返回后停止，服务不得被迟到候选重新打开');
   assert.ok(ended.every(result => result.status === 'fulfilled'), '必须确认原出生身份的全部启动候选已退出');
 });

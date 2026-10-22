@@ -1,24 +1,20 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { test, expect, vi } from 'vitest';
+import { test } from './helpers/resource-test.js';
+import { expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { openBusiness } from '../src/business/index.js';
-import { startService } from '../src/service/server.js';
 import { beginEdit, modifyBatch, queryExports, querySpeech, queryStatus, submitExport, submitSpeech } from '../src/shared/client.js';
 
-
-
-for (const kind of ['单片段配音', '批量配音', '导出'] as const) test(`${kind}受理保存失败后释放占用，不留下任务或阻止后续编辑`, async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-admission-failure-'));
+for (const kind of ['单片段配音', '批量配音', '导出'] as const) test(`${kind}受理保存失败后释放占用，不留下任务或阻止后续编辑`, async ({ createDirectory, openBusiness, openConnection }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-admission-failure-'));
   let calls = 0;
   const business = openBusiness(directory, { key: () => '测试', configPath: '测试', fetch: (async () => { calls++; throw new Error('不应调用供应商'); }) as typeof fetch });
   const segment = business.addSegment('任务受理失败').segments[0]!;
-  const db = new DatabaseSync(business.getSnapshot().storage.database);
-  projectCleanup(t).connection(() => db); projectCleanup(t).business(() => business); projectCleanup(t).directory(directory);
+  const db = openConnection(() => new DatabaseSync(business.getSnapshot().storage.database));
+
   const table = kind === '单片段配音' ? 'speech_tasks' : kind === '批量配音' ? 'speech_operations' : 'export_tasks';
   // 批量操作最后落盘失败，验证此前写入的配音任务也被回滚。
   db.exec(`CREATE TRIGGER reject_acceptance BEFORE INSERT ON ${table} BEGIN SELECT RAISE(ABORT, '模拟受理保存失败'); END`);
@@ -37,18 +33,18 @@ for (const kind of ['单片段配音', '批量配音', '导出'] as const) test(
   assert.equal(calls, 0);
 });
 
-for (const kind of ['speech', 'export'] as const) test(`${kind}终态保存失败时查询、准入和默认退出均保持锁定，重开恢复后解锁`, async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-terminal-lock-'));
+for (const kind of ['speech', 'export'] as const) test(`${kind}终态保存失败时查询、准入和默认退出均保持锁定，重开恢复后解锁`, async ({ createDirectory, openConnection, startService }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-terminal-lock-'));
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
   let calls = 0;
   const options = { projectDirectory: join(root, 'project'), panelDirectory, port: 0, speechRuntime: {
     key: () => '测试', configPath: '测试', fetch: (async () => { calls++; return new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n'); }) as typeof fetch,
   } };
-  let service = await projectCleanup(t).startService(options);
+  let service = await startService(options);
   await modifyBatch(service.url, { changes: [{ kind: 'add', text: '终态保存失败' }] });
   const before = await queryStatus(service.url);
-  const db = new DatabaseSync(before.snapshot.storage.database);
-  projectCleanup(t).service(() => service); projectCleanup(t).connection(() => db); projectCleanup(t).directory(root);
+  const db = openConnection(() => new DatabaseSync(before.snapshot.storage.database));
+
   db.exec(`CREATE TRIGGER reject_terminal BEFORE UPDATE ON ${kind}_tasks
     WHEN json_extract(NEW.value, '$.state') IN ('succeeded', 'failed', 'cancelled', 'interrupted')
     BEGIN SELECT RAISE(ABORT, '模拟终态保存失败'); END`);
@@ -71,7 +67,7 @@ for (const kind of ['speech', 'export'] as const) test(`${kind}终态保存失�
   });
   assert.equal((await stop.json()).outcome, 'kept');
   db.exec('DROP TRIGGER reject_terminal');
-  await service.close(); service = await projectCleanup(t).startService(options);
+  await service.close(); service = await startService(options);
   await expect.poll(async () => !(await queryStatus(service.url)).taskLocked, { timeout: 10000 }).toBeTruthy();
   if (kind === 'speech') {
     const recovered = (await querySpeech(service.url)).tasks[0]!;
@@ -85,8 +81,8 @@ for (const kind of ['speech', 'export'] as const) test(`${kind}终态保存失�
   const edit = await beginEdit(service.url); await edit.close();
 });
 
-test('中断导出恢复清理失败时继续占用，修复文件后重开才开放编辑', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'clapgrid-recovery-lock-'));
+test('中断导出恢复清理失败时继续占用，修复文件后重开才开放编辑', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-recovery-lock-'));
   let business = openBusiness(directory);
   const database = business.getSnapshot().storage.database;
   const mediaDirectory = business.getSnapshot().storage.mediaDirectory;
@@ -98,7 +94,7 @@ test('中断导出恢复清理失败时继续占用，修复文件后重开才�
   const previewDirectory = join(mediaDirectory, `${task.id}.export.webm`);
   mkdirSync(previewDirectory);
   business = openBusiness(directory);
-  projectCleanup(t).business(() => business); projectCleanup(t).directory(directory);
+
   await expect.poll(() => business.getExportTasks().tasks.some(item => item.message.includes('清理失败')), { timeout: 10000 }).toBeTruthy();
   assert.equal(business.getActivity().taskLocked, true);
   assert.equal(business.getExportTasks().locked, true);

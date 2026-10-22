@@ -1,16 +1,13 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { execText } from './helpers/vitest-command.js';
-import { test, vi } from 'vitest';
+import { test } from './helpers/resource-test.js';
+import { vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, readdirSync, rmSync } from 'node:fs';
+import { writeFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-
 const command = resolve('scripts/diagnose-identity.mjs');
-test('汇总命令缺少身份与宿主证据时保留未知，服务不可达且不创建文件', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-diagnose-'));
-  projectCleanup(t).directory(root);
+test('汇总命令缺少身份与宿主证据时保留未知，服务不可达且不创建文件', async ({ createDirectory, execText }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-diagnose-'));
   writeFileSync(join(root, 'credentials.json'), 'secret-provider-value');
   const before = readdirSync(root);
   const output = (await execText(process.execPath, [command, '--build', root, '--installed', root,
@@ -24,9 +21,8 @@ test('汇总命令缺少身份与宿主证据时保留未知，服务不可达�
   assert.deepEqual(readdirSync(root), before);
 });
 
-test('宿主证据明确记录不可达、过期和来源，不泄露额外字段', async t => {
-  const root = mkdtempSync(join(tmpdir(), 'clapgrid-evidence-'));
-  projectCleanup(t).directory(root);
+test('宿主证据明确记录不可达、过期和来源，不泄露额外字段', async ({ createDirectory, execText }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-evidence-'));
   const file = join(root, 'evidence.json');
   const run = async (evidence: unknown) => {
     writeFileSync(file, JSON.stringify(evidence));
@@ -44,7 +40,7 @@ test('宿主证据明确记录不可达、过期和来源，不泄露额外字�
   assert.equal((await run({ ...current, status: 'reachable', response: { version: '0.1.0', directory: root } })).mcp.status, 'unknown');
 });
 
-test('交付验收入口缺实际宿主和面板证据时返回非成功退出码', async () => {
+test('交付验收入口缺实际宿主和面板证据时返回非成功退出码', async ({ execText }) => {
   await assert.rejects(() => execText(process.execPath, [command, '--require-current', '--build', '/不存在的插件构建'], { encoding: 'utf8' }), (error: any) => {
     assert.equal(error.status, 2);
     const report = JSON.parse(error.stdout);

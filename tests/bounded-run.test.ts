@@ -1,16 +1,17 @@
-import { test, expect } from 'vitest';
+import { test } from './helpers/resource-test.js';
+import { expect } from 'vitest';
 import { mkdtempSync, readFileSync, existsSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { build } from 'esbuild';
-import { command } from './helpers/command.js';
 declare module 'vitest' { interface TaskMeta { boundedRun?: { mode: string; elapsedMs: number; status: number | null; retained: boolean; outerFallback: boolean } } }
 const { processIdentity, ownerAlive } = await import(new URL('./helpers/product-process.mjs', import.meta.url).href);
 
 for (const mode of ['timeout', 'cancel', 'refuse-term', 'cleanup-failure', 'cleanup-stall', 'startup-timeout', 'startup-partial', 'unknown-owner', 'command-cleanup-failure']) {
-  test(`外部观察 ${mode}：运行退出、原因及项目资源结果`, { timeout: 20000 }, async t => {
+  test(`外部观察 ${mode}：运行退出、原因及项目资源结果`, { timeout: 20000 }, async ({ command, onTestFinished, signal, task }) => {
+    const t = { onTestFinished, signal, task };
     const root = mkdtempSync(join(tmpdir(), `clapgrid-bounded-${mode}-`));
     const report = join(root, 'vitest.json');
     let foreign: ReturnType<typeof command> | undefined;

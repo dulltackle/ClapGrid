@@ -1,18 +1,18 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
+import { test, type ResourceFixtures } from './helpers/resource-test.js';
 import assert from 'node:assert/strict';
-import { test, vi, type TestContext } from 'vitest';
+import { vi } from 'vitest';
 
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 
+type Resources = Pick<ResourceFixtures, 'createDirectory'>;
 
 // 隔离机制测试：声明的真实来源仅用于验证规则，不构成实际用户审阅或制作许可。
 const api = await import(new URL('../scripts/production/evidence.mjs', import.meta.url).href);
-function fixture(t: TestContext) {
-  const project = mkdtempSync(join(tmpdir(), '证据复核 机制测试 '));
-  projectCleanup(t).directory(project);
+function fixture(t: Pick<Resources, 'createDirectory'>) {
+  const project = t.createDirectory(join(tmpdir(), '证据复核 机制测试 '));
   for (const id of ['A', 'B']) writeFileSync(join(project, `${id}.txt`), `已审阅产物 ${id}`);
   const required = ['A', 'B'].map(id => ({ id, kind: 'user', artifact: `${id}.txt`, scope: [id] }));
   const records = required.flatMap(criterion => {
@@ -31,7 +31,8 @@ function fixture(t: TestContext) {
   return { project, evidence, save, evaluate };
 }
 
-test('公开业务接口保留原核对结果并独立复核不同影响集合，同步收回整条回写资格', async t => {
+test('公开业务接口保留原核对结果并独立复核不同影响集合，同步收回整条回写资格', async ({ createDirectory }) => {
+  const t = { createDirectory };
   const f = fixture(t);
   const original = await f.evaluate();
   const before = structuredClone(original);
@@ -58,8 +59,8 @@ test('公开业务接口保留原核对结果并独立复核不同影响集合�
   assert.deepEqual(original, before);
 });
 
-
-test('复核保持已有否决失败待审跳过及受控限制，不提升或掩盖原结论', async t => {
+test('复核保持已有否决失败待审跳过及受控限制，不提升或掩盖原结论', async ({ createDirectory }) => {
+  const t = { createDirectory };
   const f = fixture(t);
   const statuses = ['failed', 'denied', 'pending', 'skipped', 'passed'];
   f.evidence.requirements[0]!.required = statuses.map(id => ({ id, kind: 'user', artifact: 'A.txt', scope: ['A'] }));

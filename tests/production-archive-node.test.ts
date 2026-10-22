@@ -1,8 +1,7 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { command as runCommand } from './helpers/vitest-command.js';
-import { test, vi } from 'vitest';
+import { test, type ResourceFixtures } from './helpers/resource-test.js';
+import { vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdtempSync, cpSync, rmSync, readFileSync, writeFileSync, existsSync, symlinkSync } from 'node:fs';
+import { cpSync, rmSync, readFileSync, writeFileSync, existsSync, symlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { archiveBaseline, archiveBaselinePath } from './helpers/archive-baseline.js';
@@ -10,25 +9,27 @@ import { gzipSync, gunzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 
+type Resources = Pick<ResourceFixtures, 'command' | 'createDirectory'>;
 
 const cli = resolve('scripts/production.mjs');
-function fixture() {
-  const project = mkdtempSync(join(tmpdir(), 'clapgrid-node-v1-'));
+function fixture(t: Pick<Resources, 'createDirectory'>) {
+  const project = t.createDirectory(join(tmpdir(), 'clapgrid-node-v1-'));
   cpSync(archiveBaselinePath('project'), project, { recursive: true });
   return project;
 }
-async function verify(project: string, archive: string, env = process.env) {
+async function verify(t: Pick<Resources, 'command'>, project: string, archive: string, env = process.env) {
   const report = join(project, 'archive-report.json');
   rmSync(report, { force: true });
-  const result = (await runCommand(process.execPath, [cli, 'verify-package', '--project', project, '--archive', archive, '--report', report], { encoding: 'utf8', env }));
+  const result = (await t.command(process.execPath, [cli, 'verify-package', '--project', project, '--archive', archive, '--report', report], { encoding: 'utf8', env }));
   assert.equal(result.error, undefined);
   assert.ok(existsSync(report), result.stdout + result.stderr);
   return { ...result, report: JSON.parse(readFileSync(report, 'utf8')) };
 }
 
-test('verify-package 全程使用 Node 核对固定旧 v1 包，PATH 中没有 Python 仍保留成员顺序与审阅含义', async t => {
-  const project = fixture(); projectCleanup(t).directory(project);
-  const result = (await verify(project, archiveBaselinePath('valid.tar.gz'), { ...process.env, PATH: project }));
+test('verify-package 全程使用 Node 核对固定旧 v1 包，PATH 中没有 Python 仍保留成员顺序与审阅含义', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+  const project = fixture(t);
+  const result = (await verify(t, project, archiveBaselinePath('valid.tar.gz'), { ...process.env, PATH: project }));
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.equal(result.report.status, 'passed');
   assert.deepEqual(result.report.details.order, archiveBaseline.success.legacyResult.details!.order);
@@ -37,10 +38,11 @@ test('verify-package 全程使用 Node 核对固定旧 v1 包，PATH 中没有 P
 });
 
 for (const path of ['valid.tar.gz', 'pax-overrides.tar.gz', 'valid-python-3.12.tar.gz']) {
-  test(`真实 Node 入口接受独立旧成功包 ${path}`, async t => {
-    const project = fixture(); projectCleanup(t).directory(project);
+  test(`真实 Node 入口接受独立旧成功包 ${path}`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+    const project = fixture(t);
     const before = readFileSync(join(project, 'production.json'));
-    const result = (await verify(project, archiveBaselinePath(path), { ...process.env, PATH: project }));
+    const result = (await verify(t, project, archiveBaselinePath(path), { ...process.env, PATH: project }));
     assert.equal(result.status, 0, result.stdout + result.stderr);
     assert.deepEqual(result.report.details.order, archiveBaseline.success.legacyResult.details!.order);
     assert.deepEqual(readFileSync(join(project, 'production.json')), before);
@@ -48,8 +50,9 @@ for (const path of ['valid.tar.gz', 'pax-overrides.tar.gz', 'valid-python-3.12.t
 }
 
 for (const name of ['positive-nanoseconds', 'negative-nanoseconds']) {
-  test(`真实 Node 入口接受旧统一入口实际写出的 PAX 科学记数时间 ${name}`, async t => {
-    const project = fixture(); projectCleanup(t).directory(project);
+  test(`真实 Node 入口接受旧统一入口实际写出的 PAX 科学记数时间 ${name}`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+    const project = fixture(t);
     const root = resolve('tests/fixtures/production-archive-pax-time');
     const provenance = JSON.parse(readFileSync(join(root, 'catalog.json'), 'utf8'));
     assert.equal(provenance.source.archiveSha256, archiveBaseline.source.sha256);
@@ -65,17 +68,18 @@ for (const name of ['positive-nanoseconds', 'negative-nanoseconds']) {
       assert.equal(actual.sha256, expected.sha256, expected.path);
     }
     assert.equal(entry.members.find((member: { path: string }) => member.path === 'src.ts').pax.mtime, name === 'positive-nanoseconds' ? '1.0000000000000001e-07' : '-9.999999994736442e-08');
-    const result = (await verify(project, archive, { ...process.env, PATH: project }));
+    const result = (await verify(t, project, archive, { ...process.env, PATH: project }));
     assert.equal(result.status, 0, result.stdout + result.stderr);
     assert.deepEqual(result.report.details.order, archiveBaseline.success.legacyResult.details!.order);
   });
 }
 
 for (const sample of archiveBaseline.corrupt) {
-  test(`真实 Node 入口按旧完整流语义核对独立样本 ${sample.name}`, async t => {
-    const project = fixture(); projectCleanup(t).directory(project);
+  test(`真实 Node 入口按旧完整流语义核对独立样本 ${sample.name}`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+    const project = fixture(t);
     const before = readFileSync(join(project, 'production.json'));
-    const result = (await verify(project, archiveBaselinePath(sample.path), { ...process.env, PATH: project }));
+    const result = (await verify(t, project, archiveBaselinePath(sample.path), { ...process.env, PATH: project }));
     assert.equal(result.status, sample.requiredStatus === 'passed' ? 0 : 1, result.stdout + result.stderr);
     assert.equal(result.report.status, sample.requiredStatus, JSON.stringify(result.report));
     assert.deepEqual(readFileSync(join(project, 'production.json')), before);
@@ -83,7 +87,7 @@ for (const sample of archiveBaseline.corrupt) {
   });
 }
 
-test('复杂 v1 数字直接字节约定覆盖科学阈值、最小非零值、负零与整数精度', async () => {
+test('复杂 v1 数字直接字节约定覆盖科学阈值、最小非零值、负零与整数精度', async ({  }) => {
   const { dumpV1, parseV1 } = await import(pathToFileURL(resolve('scripts/production/archive-v1.mjs')).href);
   const raw = Buffer.from('[1.0,-0.0,-0,1e-4,1e-5,1e15,1e16,5e-324,1.7976931348623157e308,1e400,-1e400,1234567890123456789012345678901234567890]');
   // 独立 Python 3.12/3.14 对照的已知字面结果，不调用待测序列化器生成 expected。
@@ -93,8 +97,9 @@ test('复杂 v1 数字直接字节约定覆盖科学阈值、最小非零值、�
 });
 
 for (const mode of ['escape', 'absolute', 'backslash', 'noncanonical', 'duplicate', 'self', 'reserved', 'category', 'digest-shape', 'omitted-required', 'symlink', 'changed-source']) {
-  test(`真实 Node 入口保持成员声明 ${mode} 的拒绝规则`, async t => {
-    const project = fixture(); projectCleanup(t).directory(project);
+  test(`真实 Node 入口保持成员声明 ${mode} 的拒绝规则`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+    const project = fixture(t);
     const path = join(project, 'production.json');
     const manifest = JSON.parse(readFileSync(path, 'utf8'));
     let expected: RegExp;
@@ -115,7 +120,7 @@ for (const mode of ['escape', 'absolute', 'backslash', 'noncanonical', 'duplicat
     }
     // 只制造声明错误，断言相应错误原因，避免索引身份变化掩盖缺失领域规则。
     if (!['symlink', 'changed-source'].includes(mode)) writeFileSync(path, JSON.stringify(manifest));
-    const result = (await verify(project, archiveBaselinePath('valid.tar.gz')));
+    const result = (await verify(t, project, archiveBaselinePath('valid.tar.gz')));
     assert.equal(result.status, 1, result.stdout + result.stderr);
     assert.match(JSON.stringify(result.report), expected);
   });
@@ -140,13 +145,14 @@ function checksum(tar: Buffer, offset: number) {
   tar.write(sum.toString(8).padStart(6, '0') + '\0 ', offset + 148, 'ascii');
 }
 for (const type of ['1', '2', '3', '4', '5', '6', '7', 'S', 'L', 'K', 'Q']) {
-  test(`真实 Node 入口明确拒绝范围外 tar 成员类型 ${type}`, async t => {
-    const project = fixture(); projectCleanup(t).directory(project);
+  test(`真实 Node 入口明确拒绝范围外 tar 成员类型 ${type}`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+    const project = fixture(t);
     const tar = gunzipSync(readFileSync(archiveBaselinePath('valid.tar.gz')));
     const member = physical(tar).find(entry => entry.name === 'src.ts')!;
     tar.write(type, member.offset + 156, 'ascii'); checksum(tar, member.offset);
     const archive = join(project, 'unsupported.tar.gz'); writeFileSync(archive, gzipSync(tar));
-    const result = (await verify(project, archive));
+    const result = (await verify(t, project, archive));
     assert.equal(result.status, 1, result.stdout + result.stderr);
     assert.match(JSON.stringify(result.report), /不支持|不是普通文件/);
   });
@@ -167,13 +173,14 @@ function paxBlock(template: Buffer, body: Buffer, type = 'x') {
 }
 for (const key of ['mtime', 'atime', 'ctime']) {
   for (const value of ['1e-07', '-1e-07', 'NaN', 'Infinity', '1e400', '1e-', '1e-07junk']) {
-    test(`真实 Node 入口核对 PAX 时间 ${key}=${value} 的完整有限数值`, async t => {
-      const project = fixture(); projectCleanup(t).directory(project);
+    test(`真实 Node 入口核对 PAX 时间 ${key}=${value} 的完整有限数值`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+      const project = fixture(t);
       const tar = gunzipSync(readFileSync(archiveBaselinePath('valid.tar.gz')));
       const local = physical(tar).find(entry => entry.type === 'x')!;
       const bytes = Buffer.concat([tar.subarray(0, local.offset), paxBlock(tar.subarray(local.offset, local.offset + 512), paxRecord(key, value)), tar.subarray(local.offset + 512 + Math.ceil(local.size / 512) * 512)]);
       const archive = join(project, 'pax-time.tar.gz'); writeFileSync(archive, gzipSync(bytes));
-      const result = (await verify(project, archive, { ...process.env, PATH: project }));
+      const result = (await verify(t, project, archive, { ...process.env, PATH: project }));
       const accepted = value === '1e-07' || value === '-1e-07';
       assert.equal(result.status, accepted ? 0 : 1, JSON.stringify(result.report));
       if (!accepted) assert.match(JSON.stringify(result.report), /PAX .*时间无效/);
@@ -181,8 +188,9 @@ for (const key of ['mtime', 'atime', 'ctime']) {
   }
 }
 for (const mode of ['wrong-byte-length', 'truncated-record', 'invalid-utf8', 'empty-path', 'bad-size', 'negative-size', 'sparse', 'bad-octal', 'bad-header-utf8', 'unknown-format', 'after-end-member', 'nonaligned-zero-tail', 'duplicate-pax-key', 'consecutive-local-pax', 'global-pax-effective']) {
-  test(`真实 Node 入口严格核对 tar/PAX 物理规则 ${mode}`, async t => {
-    const project = fixture(); projectCleanup(t).directory(project);
+  test(`真实 Node 入口严格核对 tar/PAX 物理规则 ${mode}`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+    const project = fixture(t);
     let tar = gunzipSync(readFileSync(archiveBaselinePath('valid.tar.gz')));
     const entries = physical(tar);
     const local = entries.find(entry => entry.type === 'x')!;
@@ -228,7 +236,7 @@ for (const mode of ['wrong-byte-length', 'truncated-record', 'invalid-utf8', 'em
     }
     if (body) tar = Buffer.concat([tar.subarray(0, local.offset), paxBlock(template, body), tar.subarray(local.offset + 512 + Math.ceil(local.size / 512) * 512)]);
     const archive = join(project, 'pax-test.tar.gz'); writeFileSync(archive, gzipSync(tar));
-    const result = (await verify(project, archive, { ...process.env, PATH: project }));
+    const result = (await verify(t, project, archive, { ...process.env, PATH: project }));
     assert.equal(result.status, accepted ? 0 : 1, JSON.stringify(result.report) + result.stderr);
     assert.equal(result.report.status, accepted ? 'passed' : 'failed');
     if (accepted) assert.deepEqual(result.report.details.order, archiveBaseline.success.legacyResult.details!.order);
@@ -236,7 +244,7 @@ for (const mode of ['wrong-byte-length', 'truncated-record', 'invalid-utf8', 'em
   });
 }
 
-test('完整 gzip 对照在逐字节输入切块下仍消费零尾之后的后续流及错误', async () => {
+test('完整 gzip 对照在逐字节输入切块下仍消费零尾之后的后续流及错误', async ({  }) => {
   const { decodeArchiveGzip } = await import(pathToFileURL(resolve('scripts/production/archive-streams.mjs')).href);
   const first = gzipSync(Buffer.from('first')), second = gzipSync(Buffer.from('second'));
   async function* bytes(data: Buffer) { for (const byte of data) yield Buffer.from([byte]); }
@@ -248,8 +256,9 @@ test('完整 gzip 对照在逐字节输入切块下仍消费零尾之后的后�
   await assert.rejects(async () => { for await (const _ of decodeArchiveGzip(bytes(Buffer.concat([first, Buffer.alloc(7), Buffer.from('junk')])))) {} }, /header|gzip/i);
 });
 
-test('真实 Node 入口顺序核对较大成员，独立旧索引和原字节只变更相应内容身份', async t => {
-  const project = fixture(); projectCleanup(t).directory(project);
+test('真实 Node 入口顺序核对较大成员，独立旧索引和原字节只变更相应内容身份', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
+  const project = fixture(t);
   const hash = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
   const originalAudio = readFileSync(join(project, 'audio.wav'));
   const audio = Buffer.alloc(16 * 1024 * 1024);
@@ -276,7 +285,7 @@ test('真实 Node 入口顺序核对较大成员，独立旧索引和原字节�
   }
   parts.push(tar.subarray(end));
   const archive = join(project, 'large-member.tar.gz'); writeFileSync(archive, gzipSync(Buffer.concat(parts)));
-  const result = (await verify(project, archive, { ...process.env, PATH: project }));
+  const result = (await verify(t, project, archive, { ...process.env, PATH: project }));
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.deepEqual(result.report.details.order, archiveBaseline.success.legacyResult.details!.order);
 });

@@ -1,11 +1,12 @@
-import { test, expect } from 'vitest';
+import { test } from './helpers/resource-test.js';
+import { expect } from 'vitest';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { command } from './helpers/command.js';
 const { ownerAlive } = await import(new URL('./helpers/product-process.mjs', import.meta.url).href);
 
-test('取消启动 CLI 时，拒绝正常终止的已拥有后代也确认退出', async t => {
+test('取消启动 CLI 时，拒绝正常终止的已拥有后代也确认退出', async ({ command, onTestFinished, signal }) => {
+    const t = { onTestFinished, signal };
   const root = mkdtempSync(join(tmpdir(), 'clapgrid-command-exit-'));
   const marker = join(root, 'owner.json');
   const script = join(root, 'refuse.cjs');

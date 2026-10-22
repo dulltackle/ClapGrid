@@ -1,18 +1,17 @@
-import { projectCleanup } from './helpers/project-cleanup.js';
-import { command as runCommand } from './helpers/vitest-command.js';
+import { test, type ResourceFixtures } from './helpers/resource-test.js';
 import assert from 'node:assert/strict';
-import { test, vi, type TestContext } from 'vitest';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
+import { vi } from 'vitest';
+import { writeFileSync, readFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 
+type Resources = Pick<ResourceFixtures, 'command' | 'createDirectory'>;
 
 const entry = fileURLToPath(new URL('../scripts/production.mjs', import.meta.url));
-function fixture(t: TestContext) {
-  const project = mkdtempSync(join(tmpdir(), '制作证据 中文 '));
-  projectCleanup(t).directory(project);
+function fixture(t: Pick<Resources, 'command' | 'createDirectory'>) {
+  const project = t.createDirectory(join(tmpdir(), '制作证据 中文 '));
   writeFileSync(join(project, '产物.txt'), '已审阅内容');
   const sha256 = createHash('sha256').update('已审阅内容').digest('hex');
   const evidence = {
@@ -30,14 +29,15 @@ function fixture(t: TestContext) {
   const save = () => writeFileSync(join(project, '审阅记录.json'), JSON.stringify(evidence));
   save();
   const run = async (output = join(project, '结果.json')) => {
-    const result = (await runCommand(process.execPath, [entry, 'evidence', '--project', project, '--report', output], { encoding: 'utf8' }));
+    const result = (await t.command(process.execPath, [entry, 'evidence', '--project', project, '--report', output], { encoding: 'utf8' }));
     const actualReport = result.stdout.match(/完整报告：(.+)\n/)?.[1] ?? output;
     return { ...result, reportPath: actualReport, report: JSON.parse(readFileSync(actualReport, 'utf8')) };
   };
   return { project, evidence, save, run };
 }
 
-test('技术证据通过但混合条款仍缺人工确认时保持待审且不允许回写', async t => {
+test('技术证据通过但混合条款仍缺人工确认时保持待审且不允许回写', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   const before = readFileSync(join(f.project, '审阅记录.json'));
   const result = (await f.run());
@@ -49,7 +49,8 @@ test('技术证据通过但混合条款仍缺人工确认时保持待审且不�
   assert.deepEqual(readFileSync(join(f.project, '审阅记录.json')), before);
 });
 
-test('全部对应证据完整时机械检查通过，受控测试记录仍不允许实际回写', async t => {
+test('全部对应证据完整时机械检查通过，受控测试记录仍不允许实际回写', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   f.evidence.requirements[0]!.required.push({ id: 'reading', kind: 'reviewed', artifact: '产物.txt', scope: ['A'] });
   const base = f.evidence.records[0]!;
@@ -65,7 +66,8 @@ test('全部对应证据完整时机械检查通过，受控测试记录仍不�
   assert.deepEqual(requirement.evidenceIds, ['E1', 'E2', 'E3']);
 });
 
-test('当前版本记录声明复用时必须能追溯到有效原证据，缺失关联不能通过', async t => {
+test('当前版本记录声明复用时必须能追溯到有效原证据，缺失关联不能通过', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   f.evidence.records.push({ ...f.evidence.records[0]!, id: 'E2', criterion: 'visual', kind: 'user', reuseOf: 'missing-origin' });
   f.save();
@@ -87,7 +89,8 @@ const incomplete: { name: string; change: (record: ReturnType<typeof fixture>['e
   { name: '错误产物路径', change: record => { record.artifact = { ...record.artifact, path: '其他产物.txt' }; }, expected: 'failed' },
   { name: '错误内容身份', change: record => { record.artifact = { ...record.artifact, sha256: '0'.repeat(64) }; }, expected: 'failed' },
 ];
-for (const scenario of incomplete) test(`真实入口将${scenario.name}定位到子项，整条不得回写`, async t => {
+for (const scenario of incomplete) test(`真实入口将${scenario.name}定位到子项，整条不得回写`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   writeFileSync(join(f.project, '其他产物.txt'), '已审阅内容');
   const record = { ...f.evidence.records[0]!, id: 'E2', criterion: 'visual', kind: 'user' };
@@ -102,7 +105,8 @@ for (const scenario of incomplete) test(`真实入口将${scenario.name}定位�
   assert.equal(result.report.details.requirements[0].writeBackAllowed, false);
 });
 
-test('内容与范围不变可显式复用旧版本，记录文字变化不会使媒体确认失效', async t => {
+test('内容与范围不变可显式复用旧版本，记录文字变化不会使媒体确认失效', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   const original = { ...f.evidence.records[0]!, id: 'original-user', criterion: 'visual', kind: 'user', reviewVersion: 'review-1' };
   f.evidence.records.push(original, { ...original, id: 'reuse-user', reviewVersion: 'review-2', reuseOf: original.id });
@@ -124,7 +128,8 @@ test('内容与范围不变可显式复用旧版本，记录文字变化不会�
   assert.match(changed.report.checks.find((c: { id: string }) => c.id === 'R1:visual').message, /内容摘要已变化/);
 });
 
-test('复用原记录的否决、变更范围与循环关联均不能被新版本覆盖', async t => {
+test('复用原记录的否决、变更范围与循环关联均不能被新版本覆盖', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   const original = { ...f.evidence.records[0]!, id: 'old-user', criterion: 'visual', kind: 'user', reviewVersion: 'review-1' };
   f.evidence.records.push(original, { ...original, id: 'new-user', reviewVersion: 'review-2', reuseOf: original.id });
@@ -141,7 +146,8 @@ test('复用原记录的否决、变更范围与循环关联均不能被新版�
   }
 });
 
-test('原始项目证据与历史档案保持原字节，工具只输出回写判定', async t => {
+test('原始项目证据与历史档案保持原字节，工具只输出回写判定', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   f.evidence.records.push({ ...f.evidence.records[0]!, id: 'E2', criterion: 'visual', kind: 'user' });
   f.save();
@@ -153,7 +159,8 @@ test('原始项目证据与历史档案保持原字节，工具只输出回写�
   files.forEach((file, index) => assert.deepEqual(readFileSync(join(f.project, file)), before[index]));
 });
 
-test('显式复用也不能绕过同一内容与范围的新否决或待审结论', async t => {
+test('显式复用也不能绕过同一内容与范围的新否决或待审结论', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   const original = { ...f.evidence.records[0]!, id: 'old-pass', criterion: 'visual', kind: 'user', reviewVersion: 'review-1' };
   const newer = { ...original, id: 'newer-decision', reviewVersion: 'review-1-followup', status: 'denied',
@@ -167,7 +174,8 @@ test('显式复用也不能绕过同一内容与范围的新否决或待审结�
   }
 });
 
-test('受控历史通过与类型不合格的历史来源都不能覆盖真实来源否决', async t => {
+test('受控历史通过与类型不合格的历史来源都不能覆盖真实来源否决', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   f.evidence.requirements[0]!.required.shift();
   const original = { ...f.evidence.records[0]!, id: 'real-old-pass', criterion: 'visual', kind: 'user', reviewVersion: 'review-1', source: 'user-confirmation',
@@ -187,7 +195,8 @@ test('受控历史通过与类型不合格的历史来源都不能覆盖真实�
   }
 });
 
-for (const collision of ['产物直接路径', '产物别名到真实文件', '报告别名到产物', '原证明文件', '原证明别名到真实文件']) test(`报告拒绝覆盖证据的${collision}并另存失败结果`, async t => {
+for (const collision of ['产物直接路径', '产物别名到真实文件', '报告别名到产物', '原证明文件', '原证明别名到真实文件']) test(`报告拒绝覆盖证据的${collision}并另存失败结果`, async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   f.evidence.records.push({ ...f.evidence.records[0]!, id: 'E2', criterion: 'visual', kind: 'user' });
   const realFile = '原技术报告.json';
@@ -215,8 +224,8 @@ for (const collision of ['产物直接路径', '产物别名到真实文件', '�
   assert.deepEqual(readFileSync(join(f.project, '审阅记录.json')), before);
 });
 
-
-test('公开业务结果按要求和子项身份分别定位，报告转换保留碰撞检查标识', async t => {
+test('公开业务结果按要求和子项身份分别定位，报告转换保留碰撞检查标识', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   const base = f.evidence.records[0]!;
   f.evidence.requirements = [
@@ -244,8 +253,8 @@ test('公开业务结果按要求和子项身份分别定位，报告转换保�
   assert.deepEqual(cli.report.details, report.details);
 });
 
-
-test('真实来源的新否决不污染受控历史分组的机械判断', async t => {
+test('真实来源的新否决不污染受控历史分组的机械判断', async ({ command, createDirectory }) => {
+  const t = { command, createDirectory };
   const f = fixture(t);
   f.evidence.requirements[0]!.required.shift();
   const current = { ...f.evidence.records[0]!, id: 'controlled-current', criterion: 'visual', kind: 'user' };
