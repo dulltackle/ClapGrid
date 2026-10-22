@@ -1,3 +1,8 @@
+---
+status: partially-superseded
+superseded-by: 0011
+---
+
 # 检查按工作树互斥，正式验收先预检并集中复验失败项
 
 > 2026-10-18 更新：自研工作树锁、强制预检与集中失败复验的结构要求已由 ADR0011 替代；必要产品资源清理继续验证。当前采纳设计见 [ADR0011](0011-native-test-frameworks.md)，代码迁移由 [#192](https://github.com/dulltackle/ClapGrid/issues/192) 承接。

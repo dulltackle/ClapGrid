@@ -1,3 +1,8 @@
+---
+status: partially-superseded
+superseded-by: 0011
+---
+
 # 代码检查输入与制作历史分开管理
 
 > 2026-10-18 更新：测试源码身份、选测与 watch 共用 code-check-v1 协议的要求已由 ADR0011 替代；历史制作材料的归档、恢复及产品输入边界继续适用。当前采纳设计见 [ADR0011](0011-native-test-frameworks.md)，代码迁移由 [#192](https://github.com/dulltackle/ClapGrid/issues/192) 承接。

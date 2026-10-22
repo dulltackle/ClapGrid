@@ -1,5 +1,6 @@
 ---
-status: accepted
+status: partially-superseded
+superseded-by: 0011
 ---
 
 # 测试执行者试点与同次累计证据
