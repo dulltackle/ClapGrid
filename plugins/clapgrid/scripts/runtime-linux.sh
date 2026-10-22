@@ -57,8 +57,8 @@ case "$action" in
       echo '自动安装仅支持 Ubuntu 24.04；其他 Linux 可提供兼容组件后执行 check。' >&2; exit 11;
     }
     case "$(uname -m)" in
-      x86_64) arch=x64; digest=df450af89261115ef9f9e3830c3eeb2cc9213b63c720b1af623cb5dcbe2e02de ;;
-      aarch64) arch=arm64; digest=a44aeb94849a299b22df10b9e622ec2f605c2183501bc40590705131de7c740f ;;
+      x86_64) arch=x64; digest=1805bcd35e6815559bd2eb97db438d3fdb0eb3a5e6a977b7c1badca76337e9ce ;;
+      aarch64) arch=arm64; digest=6287aa46b6c375d816e63ae66d024fbbfd70404825aabdfdf898a970871d2f4b ;;
       *) echo '自动安装仅支持 x86_64/aarch64。' >&2; exit 11 ;;
     esac
     for tool in curl tar xz sha256sum mktemp mkdir mv rm flock; do
@@ -70,16 +70,16 @@ case "$action" in
     if ! node_ready; then
       temporary=$(mktemp -d "$runtime_home/.install-XXXXXXXX") || install_failed '无法创建下载目录'
       trap 'rm -rf -- "$temporary"' EXIT
-      archive="node-v22.23.3-linux-$arch.tar.xz"
+      archive="node-v22.23.4-linux-$arch.tar.xz"
       curl --fail --location --proto '=https' --proto-redir '=https' --connect-timeout 15 --max-time 180 \
-        "https://nodejs.org/dist/v22.23.3/$archive" -o "$temporary/$archive" || install_failed 'Node 下载失败'
+        "https://nodejs.org/dist/v22.23.4/$archive" -o "$temporary/$archive" || install_failed 'Node 下载失败'
       (cd -- "$temporary" && printf '%s  %s\n' "$digest" "$archive" | sha256sum -c -) || install_failed 'Node 摘要校验失败'
       tar -xJf "$temporary/$archive" -C "$temporary" || install_failed 'Node 解压失败'
-      "$temporary/node-v22.23.3-linux-$arch/bin/node" --input-type=module -e 'await import("node:sqlite")' >/dev/null 2>&1 || install_failed '下载的 Node 无法运行'
+      "$temporary/node-v22.23.4-linux-$arch/bin/node" --input-type=module -e 'await import("node:sqlite")' >/dev/null 2>&1 || install_failed '下载的 Node 无法运行'
       if [[ -e $runtime_home/node || -L $runtime_home/node ]]; then
         mv -- "$runtime_home/node" "$runtime_home/node.invalid.$$" || install_failed '无法保留旧组件'
       fi
-      mv -- "$temporary/node-v22.23.3-linux-$arch" "$runtime_home/node" || install_failed '无法发布 Node 组件'
+      mv -- "$temporary/node-v22.23.4-linux-$arch" "$runtime_home/node" || install_failed '无法发布 Node 组件'
     fi
     if ! media_ready; then
       elevate=()
