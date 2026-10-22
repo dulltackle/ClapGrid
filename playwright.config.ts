@@ -3,8 +3,9 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './tests',
   testMatch: '**/*.spec.ts',
+  globalSetup: './tests/helpers/panel-setup.ts',
   fullyParallel: false,
-  workers: 2,
+  workers: 3,
   retries: 0,
   forbidOnly: true,
   timeout: 40000,
