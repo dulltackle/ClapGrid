@@ -11,15 +11,16 @@ function fixture() {
   const row = { rowIndex: 3, setSelected: vi.fn() };
   const grid = { getRowNode: vi.fn(() => row), ensureColumnVisible: vi.fn(), ensureIndexVisible: vi.fn(), setFilterModel: vi.fn(), startEditingCell: vi.fn() };
   const details = { isOpen: () => false, show: vi.fn(), hide: vi.fn() };
-  const inline = vi.fn(async (_id: string, _field: string, _intent: { valid: () => boolean }) => {});
+  const inline = vi.fn(async (ready: (apply: () => void) => void) => { ready(() => {}); });
   const acceptGridUpdate = vi.fn((apply: () => void) => apply());
+  const cancel = vi.fn(async () => true);
   const navigation = segmentNavigation({
     grid: () => grid as unknown as GridApi<Segment>,
-    editing: { getState: () => ({ busy, editing: false, owner: null }), subscribe: listener => { listeners.add(listener); return () => { listeners.delete(listener); }; }, cancel: vi.fn(async () => true) },
+    editing: { getState: () => ({ busy, editing: false, owner: null }), subscribe: listener => { listeners.add(listener); return () => { listeners.delete(listener); }; }, cancel },
     focus: { intent: () => { const version = epoch; return { valid: () => epoch === version }; }, acceptGridUpdate, close: (_origin, apply) => apply(), captureSegment: () => origin() },
     stopInline: vi.fn(), clearSearch: vi.fn(), details, inline, failed: vi.fn(),
   });
-  return { navigation, grid, row, details, inline, acceptGridUpdate,
+  return { navigation, grid, row, details, inline, acceptGridUpdate, cancel,
     interact: () => { epoch++; }, busy: (value: boolean) => { busy = value; listeners.forEach(listener => listener()); } };
 }
 function origin() { return Object.assign(vi.fn(), { cancel: vi.fn() }) as FocusReturn; }
@@ -67,7 +68,7 @@ test('等待行内保存结束时，后发导航接管同一序列', async () =>
   const continuing = current.arrive(() => {}, { id: 'b', mode: 'inline' });
   await arriving; expect(f.inline).not.toHaveBeenCalled();
   f.busy(false); await continuing;
-  expect(f.inline).toHaveBeenCalledOnce(); expect(f.inline.mock.calls[0]![0]).toBe('b');
+  expect(f.inline).toHaveBeenCalledOnce(); expect(f.grid.getRowNode).toHaveBeenLastCalledWith('b');
 });
 
 test('普通新增清除查找后定位、勾选并请求详情文案焦点', async () => {
@@ -77,4 +78,17 @@ test('普通新增清除查找后定位、勾选并请求详情文案焦点', as
   expect(f.grid.ensureIndexVisible).toHaveBeenCalledWith(3, 'middle');
   expect(f.row.setSelected).toHaveBeenCalledWith(true, true);
   expect(f.details.show.mock.calls[0]![0]).toMatchObject({ id: 'new', focusText: true });
+});
+
+
+test('行内修改权迟到仍接收快照，并释放租约而不开始编辑', async () => {
+  const f = fixture(); let release!: () => void; let received!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const requested = new Promise<void>(resolve => { received = resolve; });
+  const apply = vi.fn();
+  f.inline.mockImplementationOnce(async ready => { received(); await gate; ready(apply); });
+  const navigating = f.navigation.request().arrive(() => {}, { id: 'a', mode: 'inline' });
+  await requested; f.interact(); release(); await navigating;
+  expect(apply).toHaveBeenCalledOnce(); expect(f.acceptGridUpdate).toHaveBeenCalledTimes(2);
+  expect(f.cancel).toHaveBeenCalledWith('segments'); expect(f.grid.startEditingCell).not.toHaveBeenCalled();
 });

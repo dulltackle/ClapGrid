@@ -13,7 +13,7 @@ export function segmentNavigation({ grid, editing, focus, stopInline, clearSearc
   editing: Pick<ProjectEditing, 'getState' | 'subscribe' | 'cancel'>;
   focus: Focus; stopInline: () => void; clearSearch: () => void;
   details: { isOpen: () => boolean; show: (destination: NonNullable<SegmentDestination>, intent: FocusIntent) => void; hide: () => void };
-  inline: (id: string, field: SegmentTextField, intent: FocusIntent) => Promise<void>;
+  inline: (ready: (applySnapshot: () => void) => void) => Promise<void>;
   failed: (cause: Error) => void;
 }) {
   let sequence = 0;
@@ -57,7 +57,7 @@ export function segmentNavigation({ grid, editing, focus, stopInline, clearSearc
         if (row?.rowIndex == null) { cancel(); failed(new Error('口播片段已删除，请选择其他片段。')); return; }
         const field = destination.field ?? 'text';
         grid()?.ensureColumnVisible(field); grid()?.ensureIndexVisible(row.rowIndex, 'middle');
-        if (destination.mode === 'details' || destination.mode === 'locate' || details.isOpen()) row.setSelected(true, true);
+        if (destination.mode === 'details' || destination.mode === 'locate' || origin || details.isOpen()) row.setSelected(true, true);
         ended = true; pending = undefined;
         if (destination.mode === 'details') {
           const nextSource = origin ?? (destination.focusText ? focus.captureSegment({ id: destination.id, column: field }) : undefined);
@@ -67,7 +67,15 @@ export function segmentNavigation({ grid, editing, focus, stopInline, clearSearc
           origin?.cancel();
           if (destination.mode === 'inline') {
             if (details.isOpen()) details.show(destination, { valid });
-            await inline(destination.id, field, { valid });
+            await inline(applySnapshot => {
+              focus.acceptGridUpdate(applySnapshot);
+              if (!valid()) { void editing.cancel('segments'); return; }
+              const current = grid()?.getRowNode(destination.id);
+              if (current?.rowIndex == null) throw new Error('口播片段已删除，请选择其他片段。');
+              if (origin || details.isOpen()) current.setSelected(true, true);
+              grid()?.ensureColumnVisible(field);
+              grid()?.startEditingCell({ rowIndex: current.rowIndex, colKey: field });
+            });
           }
         }
       },
