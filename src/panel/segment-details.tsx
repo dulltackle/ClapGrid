@@ -3,68 +3,46 @@ import { Button, Textarea, AlertDialog, AlertDialogContent, AlertDialogTitle, Al
 import type { Segment, ServiceStatus } from '../shared/contracts.js';
 import type { FocusIntent, FocusReturn, segmentFocusCoordinator } from './dialog-focus.js';
 import type { ProjectEditing } from './project-editing.js';
+import type { SegmentDestination, SegmentNavigation, SegmentTextField } from './segment-navigation.js';
+export type { SegmentTextField } from './segment-navigation.js';
 
-export type SegmentTextField = 'text' | 'visualNote';
 export type SegmentIntent = { id: string; inline?: boolean; field?: SegmentTextField; focusText?: boolean } | null;
 
 /** 详情草稿持有现有编辑租约；导航意图按稳定身份保存，提交成功后才继续。 */
-export function useSegmentDetails({ editing, status, accept, save, failed, inline, stopInline, focus }: {
+export function useSegmentDetails({ editing, status, accept, save, failed, navigation, focus }: {
   editing: ProjectEditing; status: ServiceStatus | undefined; accept: (status: ServiceStatus) => void;
   save: (id: string, fields: { text: string; visualNote: string }) => Promise<boolean>; failed: (error: Error) => void;
-  inline: (id: string, field: SegmentTextField) => Promise<void>; stopInline: () => void; focus: ReturnType<typeof segmentFocusCoordinator>;
+  navigation: SegmentNavigation; focus: ReturnType<typeof segmentFocusCoordinator>;
 }) {
   const [id, setId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ id: string; base: string; text: string; baseVisualNote: string; visualNote: string } | null>(null);
   const [focusRequest, setFocusRequest] = useState<{ target: 'text' | 'panel'; intent: FocusIntent } | null>(null);
-  const [pending, setPending] = useState<{ intent: SegmentIntent; origin?: FocusReturn } | null>(null);
+  const [pending, setPending] = useState<{ destination: SegmentDestination; origin?: FocusReturn } | null>(null);
   const text = useRef<HTMLTextAreaElement>(null);
   const visualNote = useRef<HTMLTextAreaElement>(null);
   const activeField = useRef<SegmentTextField>('text');
   const panel = useRef<HTMLElement>(null);
-  const sequence = useRef(0);
-  const returnSource = useRef<FocusReturn | undefined>(undefined);
-  const current = useRef(status); current.current = status;
   const pendingSource = useRef(pending?.origin); pendingSource.current = pending?.origin;
-  useEffect(() => () => { sequence.current++; returnSource.current?.cancel(); pendingSource.current?.cancel(); }, []);
+  useEffect(() => () => { pendingSource.current?.cancel(); }, []);
   const dirty = !!draft && (draft.text !== draft.base || draft.visualNote !== draft.baseVisualNote);
-  const idle = () => new Promise<void>(resolve => {
-    const check = () => { const state = editing.getState(); if (!state.busy && !state.editing) { unsubscribe(); resolve(); } };
-    const unsubscribe = editing.subscribe(check); check();
-  });
-  const execute = async (intent: SegmentIntent, origin?: FocusReturn, requested = focus.intent()) => {
-    const version = ++sequence.current;
+  const execute = async (destination: SegmentDestination, origin?: FocusReturn, ticket = navigation.request(origin)) => {
     if (draft) { await editing.cancel('segments'); setDraft(null); }
-    else { stopInline(); await idle(); }
-    if (version !== sequence.current || !requested.valid()) { origin?.cancel(); return; }
-    if (!intent) {
-      const restore = returnSource.current;
-      returnSource.current = undefined;
-      if (restore) focus.close(restore, () => { setId(null); restore(); });
-      else setId(null);
-      return;
-    }
-    if (!current.current?.snapshot.segments.some(segment => segment.id === intent.id)) { origin?.cancel(); failed(new Error('口播片段已删除，请选择其他片段。')); return; }
-    if (!intent.inline || id) setId(intent.id);
-    // 只有业务导航真正提交后才替换来源；内部浏览沿用本次抽屉的起点。
-    if (origin) { returnSource.current?.cancel(); returnSource.current = origin; }
-    if (intent.inline) await inline(intent.id, intent.field ?? 'text');
-    else setFocusRequest({ target: intent.focusText ? 'text' : 'panel', intent: requested });
+    await ticket.arrive(() => {}, destination);
   };
-  const navigate = (intent: SegmentIntent, origin?: FocusReturn, requested = focus.intent()) => {
-    if (!requested.valid()) { origin?.cancel(); return; }
+  const navigate = (intent: SegmentIntent, origin?: FocusReturn) => {
+    const destination: SegmentDestination = intent && { ...intent, mode: intent.inline ? 'inline' : 'details' };
     if (editing.getState().busy && (draft || !intent?.inline)) { origin?.cancel(); return; }
-    if (dirty) { pending?.origin?.cancel(); setPending({ intent, origin }); return; }
-    void execute(intent, origin, requested);
+    if (dirty) { pending?.origin?.cancel(); setPending({ destination, origin }); return; }
+    void execute(destination, origin, navigation.request(origin, { waitForInline: !draft && !!intent?.inline }));
   };
   const begin = (field: SegmentTextField = 'text') => {
     activeField.current = field;
     if (!id || draft || editing.getState().editing || editing.getState().busy) return;
-    const requested = sequence.current;
-    const focusIntent = focus.intent();
+    const focusIntent = navigation.intent();
     const input = field === 'text' ? text : visualNote;
     const origin = input.current;
     let acquired = false;
-    const stillRequested = () => requested === sequence.current && focusIntent.valid() && (document.activeElement === origin || document.activeElement === panel.current);
+    const stillRequested = () => focusIntent.valid() && (document.activeElement === origin || document.activeElement === panel.current);
     void editing.begin('segments', next => {
       if (!stillRequested()) { void editing.cancel('segments'); return; }
       const segment = next.snapshot.segments.find(item => item.id === id);
@@ -91,6 +69,11 @@ export function useSegmentDetails({ editing, status, accept, save, failed, inlin
   return { id, draft, dirty, pending, text, visualNote, panel, navigate, begin, focusRequest, consumeFocus: () => setFocusRequest(null),
     change: (value: string, field: SegmentTextField = 'text') => setDraft(previous => previous && ({ ...previous, [field]: value })),
     commit,
+    show: (destination: NonNullable<SegmentDestination>, intent: FocusIntent) => {
+      setId(destination.id);
+      if (destination.mode === 'details') setFocusRequest({ target: destination.focusText ? 'text' : 'panel', intent });
+    },
+    hide: () => setId(null),
     continueEditing: () => {
       pending?.origin?.cancel();
       const field = (activeField.current === 'text' ? text : visualNote).current;
@@ -99,13 +82,13 @@ export function useSegmentDetails({ editing, status, accept, save, failed, inlin
       else setPending(null);
     },
     discard: async () => {
-      const intent = pending?.intent ?? null; const origin = pending?.origin;
-      setPending(null); await execute(intent, origin);
+      const destination = pending?.destination ?? null; const origin = pending?.origin;
+      setPending(null); await execute(destination, origin);
     },
     saveAndContinue: async () => {
-      const intent = pending?.intent ?? null; const origin = pending?.origin;
-      const requested = focus.intent();
-      if (await commit()) { setPending(null); await execute(intent, origin, requested); }
+      const destination = pending?.destination ?? null; const origin = pending?.origin;
+      const ticket = navigation.request(origin);
+      if (await commit()) { setPending(null); await execute(destination, origin, ticket); }
     },
   };
 }

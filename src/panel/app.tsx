@@ -12,7 +12,7 @@ import { DeleteConfirm } from './delete-confirm.js';
 import { AudioHistoryPanel } from './audio-panels.js';
 import { DetailPanel } from './detail-panel.js';
 import { VoicePanel } from './voice-panel.js';
-import { segmentFocusCoordinator, type FocusReturn, type FocusIntent } from './dialog-focus.js';
+import { segmentFocusCoordinator, type FocusReturn } from './dialog-focus.js';
 import { ExportTaskDetails, exportStateLabel, useExportTasks } from './export-tasks.js';
 import { ExportSettingsPanel } from './export-settings.js';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
@@ -22,6 +22,7 @@ import { AgGridProvider, AgGridReact } from 'ag-grid-react';
 import { queryStatus, querySpeech, submitSpeech, setVoice, importVideo, saveSegment, beginEdit, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
 import type { Segment, ServiceStatus, SpeechStatus, Voice, Batch } from '../shared/contracts.js';
 import { projectEditing } from './project-editing.js';
+import { segmentNavigation } from './segment-navigation.js';
 import { textMatches } from './text-search.js';
 import { TextEditor } from './text-editor.js';
 import './style.css';
@@ -193,20 +194,10 @@ export function App() {
     grid.current?.stopEditing(true);
     failed(new Error('编辑连接已断开，未提交输入已取消；请重新读取后编辑。'));
   };
-  const startEdit = (id: string, field: 'text' | 'visualNote' = 'text', intent?: FocusIntent) => {
-    if ((intent && !intent.valid()) || panelRestore || status?.taskLocked || speech?.locked || exports.exports?.locked) return Promise.resolve();
+  const startEdit = (ready: (applySnapshot: () => void) => void) => {
+    if (panelRestore || status?.taskLocked || speech?.locked || exports.exports?.locked) return Promise.resolve();
     return editing.begin('segments', next => {
-      if (intent && !intent.valid()) {
-        focusReturns.acceptGridUpdate(() => setStatus(next));
-        void editing.cancel('segments');
-        return;
-      }
-      flushSync(() => { setStatus(next); setError(''); setSaveError(''); setSaveState('saved'); });
-      const row = grid.current?.getRowNode(id);
-      if (row?.rowIndex == null) throw new Error('口播片段已删除，请选择其他片段。');
-      if (segmentDetail.id) row.setSelected(true, true);
-      grid.current?.ensureColumnVisible(field);
-      grid.current?.startEditingCell({ rowIndex: row.rowIndex, colKey: field });
+      ready(() => { setStatus(next); setError(''); setSaveError(''); setSaveState('saved'); });
     }, disconnected, cause => {
       if (cause.message === 'Codex 正在修改' || cause.message === '用户正在编辑') {
         setSaveState('saved');
@@ -249,46 +240,41 @@ export function App() {
     const next = await saveSegment(panelServiceUrl(), change, token);
     action.apply(() => { setStatus(next); setError(''); setSaveState('saved'); });
   }, cause => failed(new Error(`保存失败：${cause.message}`)));
-  const segmentDetail = useSegmentDetails({ editing, status, accept: setStatus, failed, inline: startEdit,
-    stopInline: () => grid.current?.stopEditing(), focus: focusReturns,
+  const navigationView = useRef<ReturnType<typeof useSegmentDetails> | null>(null);
+  const inlineEntry = useRef(startEdit); inlineEntry.current = startEdit;
+  const [navigation] = useState(() => segmentNavigation({
+    grid: () => grid.current, editing, focus: focusReturns,
+    stopInline: () => grid.current?.stopEditing(),
+    clearSearch: () => flushSync(() => { setQuery(''); setCurrentMatch(null); setSearchOpen(false); }),
+    details: { isOpen: () => !!navigationView.current?.id, show: (destination, intent) => navigationView.current?.show(destination, intent), hide: () => navigationView.current?.hide() },
+    inline: ready => inlineEntry.current(ready), failed,
+  }));
+  useEffect(() => () => navigation.dispose(), [navigation]);
+  const segmentDetail = useSegmentDetails({ editing, status, accept: setStatus, failed, navigation, focus: focusReturns,
     save: async (id, fields) => {
       let saved = false;
       await editing.save('segments', { acquire: true }, async (token, action) => {
         setSaveState('saving'); setSaveError('');
         const next = await saveSegment(panelServiceUrl(), { id, ...fields }, token);
-        action.apply(() => { setStatus(next); setSaveState('saved'); saved = true; });
+        action.apply(() => { focusReturns.acceptGridUpdate(() => { setStatus(next); setSaveState('saved'); saved = true; }); });
       }, cause => failed(new Error(`保存失败：${cause.message}`)));
       return saved;
     },
   });
+  navigationView.current = segmentDetail;
   const detailSegment = status?.snapshot.segments.find(item => item.id === segmentDetail.id);
   const detailAsset = status?.snapshot.assets.find(item => item.id === detailSegment?.video?.assetId);
   const addSegment = async () => {
-    const requested = focusReturns.intent();
-    let created: string | undefined;
+    const ticket = navigation.request();
     await editing.save('segments', { acquire: true }, async (token, action) => {
       setSaveState('saving'); setSaveError('');
       const result = await modifyUserBatch(panelServiceUrl(), { changes: [{ kind: 'add', text: '' }] }, token, action.signal);
       const added = result.results[0];
+      action.apply(() => { void ticket.arrive(() => { setStatus(result.status); },
+        added?.outcome === 'applied' && added.id ? { id: added.id, mode: 'details', clearSearch: true, focusText: true } : undefined); });
       if (added?.outcome !== 'applied' || !added.id) throw new Error(added?.message ?? '未能确认新增片段，请重新读取项目。');
-      const next = result.status;
-      action.apply(() => {
-        created = added.id;
-        if (!requested.valid()) {
-          focusReturns.acceptGridUpdate(() => { setStatus(next); setSaveState('saved'); });
-          return;
-        }
-        flushSync(() => { setStatus(next); setQuery(''); setCurrentMatch(null); setSearchOpen(false); setSaveState('saved'); });
-        if (!requested.valid()) return;
-        grid.current?.setFilterModel(null);
-        const row = grid.current?.getRowNode(created!);
-        if (row?.rowIndex != null) { grid.current?.ensureIndexVisible(row.rowIndex, 'middle'); row.setSelected(true, true); }
-      });
-    }, cause => failed(new Error(`新增失败：${cause.message}`)));
-    if (created && requested.valid()) {
-      const id = created;
-      segmentDetail.navigate({ id, focusText: true }, focusReturns.captureSegment({ id, column: 'text' }), requested);
-    }
+      action.apply(() => { setSaveState('saved'); });
+    }, cause => { ticket.fail(); failed(new Error(`新增失败：${cause.message}`)); });
   };
   const organize = (batch: Batch) => editing.save('segments', { acquire: true }, async (token, action) => {
     setSaveState('saving'); setSaveError('');
@@ -449,29 +435,17 @@ export function App() {
   const insertRelative = async (placement: 'before' | 'after') => {
     if (!rowMenu || selectedIds.length !== 1 || disabled || editing.getState().busy || editing.getState().editing) return;
     const relative = { anchor: rowMenu.anchor, expectedIds: rowMenu.expectedIds, placement };
-    const origin = rowMenu.origin;
-    const intent = focusReturns.intent();
+    const ticket = navigation.request(rowMenu.origin);
     menuRestore.current = false; setRowMenuOpen(false);
-    let inserted: string | undefined;
-    let restoring = false;
     await editing.save('segments', { acquire: true }, async (token, action) => {
       setSaveState('saving'); setSaveError('');
       const result = await modifyUserBatch(panelServiceUrl(), { changes: [{ kind: 'add', text: '', relative }] }, token, action.signal);
-      action.apply(() => { focusReturns.acceptGridUpdate(() => setStatus(result.status)); });
       const item = result.results[0];
+      action.apply(() => { void ticket.arrive(() => setStatus(result.status),
+        item?.outcome === 'applied' && item.id ? { id: item.id, mode: 'inline' } : undefined); });
       if (item?.outcome !== 'applied' || !item.id) throw new Error(item?.message ?? '未能确认新增口播片段');
-      action.apply(() => {
-        inserted = item.id; setSaveState('saved');
-        if (!intent.valid()) return;
-        const node = grid.current?.getRowNode(item.id!);
-        if (node?.rowIndex != null) { node.setSelected(true, true); grid.current?.ensureColumnVisible('text'); grid.current?.ensureIndexVisible(node.rowIndex, 'middle'); }
-      });
-    }, cause => {
-      failed(cause);
-      if (intent.valid()) { restoring = true; origin(); }
-    });
-    if (!restoring) origin.cancel();
-    if (inserted && intent.valid()) await startEdit(inserted, 'text', intent);
+      action.apply(() => { setSaveState('saved'); });
+    }, cause => { ticket.fail(); failed(cause); });
   };
 
   const speechTask = speech?.tasks.at(-1);
