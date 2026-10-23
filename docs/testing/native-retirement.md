@@ -23,7 +23,9 @@
 - 配音导出互斥仍由 `speech-export-lock.test.ts`、`verify-speech-export-processes.mjs` 和每个 PR 的专项验证（手动入口保留）；保留真实FFmpeg正向exec及七拒绝窗口。产品正常/失败/取消退出及只清理本次拥有资源的保障不删除。
 - `style-collisions.mjs`、例外理由数据及真实生产CSS冲突测试保留。`review:check` 与产品审阅引用检查保留。`ci-observation.mjs` 及两个工作流的观察起点/耗时步骤已删除：其计时不含 runner 准备与上传，作业状态、耗时与检出以 GitHub job 记录为准。
 
-## 当前入口与验收边界
+## #200 迁移时的入口与验收边界（历史）
+
+本节保留迁移时的执行方式及一次性验收约定；日常命令与当前验收规则见[检查与验收](../agents/verification.md)。
 
 `npm test` 直接执行 `vitest run`，`npm run test:ui` 直接执行 `playwright test`。过滤、watch、debug使用各框架CLI；`npm run check` 只依次组合 `npm run typecheck && npm test && npm run test:ui && npm run build`。原生零重试、禁止only、空收集失败保持，配置无专用旧文件exclude或第二份执行清单。#199的CI在自身checkout分别执行这些原生命令，本票不改workflow。
 
