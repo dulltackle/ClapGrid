@@ -22,6 +22,7 @@ import { AgGridProvider, AgGridReact } from 'ag-grid-react';
 import { queryStatus, querySpeech, submitSpeech, setVoice, importVideo, saveSegment, beginEdit, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
 import type { Segment, ServiceStatus, SpeechStatus, Voice, Batch } from '../shared/contracts.js';
 import { projectEditing } from './project-editing.js';
+import { segmentNavigation } from './segment-navigation.js';
 import { textMatches } from './text-search.js';
 import { TextEditor } from './text-editor.js';
 import './style.css';
@@ -249,18 +250,28 @@ export function App() {
     const next = await saveSegment(panelServiceUrl(), change, token);
     action.apply(() => { setStatus(next); setError(''); setSaveState('saved'); });
   }, cause => failed(new Error(`保存失败：${cause.message}`)));
-  const segmentDetail = useSegmentDetails({ editing, status, accept: setStatus, failed, inline: startEdit,
-    stopInline: () => grid.current?.stopEditing(), focus: focusReturns,
+  const navigationView = useRef<ReturnType<typeof useSegmentDetails> | null>(null);
+  const inlineEntry = useRef(startEdit); inlineEntry.current = startEdit;
+  const [navigation] = useState(() => segmentNavigation({
+    grid: () => grid.current, editing, focus: focusReturns,
+    stopInline: () => grid.current?.stopEditing(),
+    clearSearch: () => flushSync(() => { setQuery(''); setCurrentMatch(null); setSearchOpen(false); }),
+    details: { isOpen: () => !!navigationView.current?.id, show: (destination, intent) => navigationView.current?.show(destination, intent), hide: () => navigationView.current?.hide() },
+    inline: (id, field, intent) => inlineEntry.current(id, field, intent), failed,
+  }));
+  useEffect(() => () => navigation.dispose(), [navigation]);
+  const segmentDetail = useSegmentDetails({ editing, status, accept: setStatus, failed, navigation, focus: focusReturns,
     save: async (id, fields) => {
       let saved = false;
       await editing.save('segments', { acquire: true }, async (token, action) => {
         setSaveState('saving'); setSaveError('');
         const next = await saveSegment(panelServiceUrl(), { id, ...fields }, token);
-        action.apply(() => { setStatus(next); setSaveState('saved'); saved = true; });
+        action.apply(() => { focusReturns.acceptGridUpdate(() => { setStatus(next); setSaveState('saved'); saved = true; }); });
       }, cause => failed(new Error(`保存失败：${cause.message}`)));
       return saved;
     },
   });
+  navigationView.current = segmentDetail;
   const detailSegment = status?.snapshot.segments.find(item => item.id === segmentDetail.id);
   const detailAsset = status?.snapshot.assets.find(item => item.id === detailSegment?.video?.assetId);
   const addSegment = async () => {
@@ -287,7 +298,7 @@ export function App() {
     }, cause => failed(new Error(`新增失败：${cause.message}`)));
     if (created && requested.valid()) {
       const id = created;
-      segmentDetail.navigate({ id, focusText: true }, focusReturns.captureSegment({ id, column: 'text' }), requested);
+      segmentDetail.navigate({ id, focusText: true }, focusReturns.captureSegment({ id, column: 'text' }));
     }
   };
   const organize = (batch: Batch) => editing.save('segments', { acquire: true }, async (token, action) => {
