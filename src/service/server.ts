@@ -416,9 +416,8 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
         } catch (error) { reject(409, (error as Error).message); return; }
         const completeEdit = business.retainEdit(token);
         pendingEdits.set(token, { binding: bindingPrefix, cancel: () => business.release(token) });
-        const exportUser = path === '/api/export-settings';
         const release = () => codex ? business.release(token) : finishSession(token);
-        response.on('close', () => { if (!exportUser || !response.writableFinished) release(); });
+        response.on('close', () => { if (!response.writableFinished) release(); });
         // 请求体断开或一直未完成都不能永久占用普通修改权。
         const timeout = setTimeout(() => { release(); request.destroy(); }, 10000);
         try {
@@ -441,7 +440,7 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
             try {
               const settings = await business.setExportSettings(token, input as import('../shared/contracts.js').UpdateExportSettings);
               completeEdit();
-              if (!exportUser) release();
+              if (codex) release();
               json({ settings, status: status() });
             } catch (error) { if (!response.destroyed) reject(400, (error as Error).message); }
           } else if (path === '/api/video/import' || path === '/api/codex/import-video') {
@@ -449,31 +448,31 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
             if (!parsed.success) { reject(400, '请提供用户明确指定的视频路径'); return; }
             try {
               const asset = await business.importVideo(token, parsed.data);
-              completeEdit(); release(); json({ asset, status: status() });
+              completeEdit(); if (codex) release(); json({ asset, status: status() });
             } catch (error) { if (!response.destroyed) reject(400, (error as Error).message); }
           } else if (path === '/api/codex/process') {
             const parsed = scopedOperationSchema.safeParse(input);
             if (!parsed.success) { reject(400, '请提供明确范围、查询快照和有效操作。'); return; }
             try {
               const result = await business.processScope(token, parsed.data, tableOwner);
-              completeEdit(); release(); json({ ...result, status: status() });
+              completeEdit(); if (codex) release(); json({ ...result, status: status() });
             } catch (error) { reject(409, (error as Error).message); }
           } else if (codex || path === '/api/segments/modify') {
             const parsed = batchSchema.safeParse(input);
             if (!parsed.success) { reject(400, '批量修改格式无效；修改和删除必须提供查询时的目标快照。'); return; }
             const result = await business.modifyBatch(token, parsed.data);
-            completeEdit(); release(); json({ ...result, status: status() });
+            completeEdit(); if (codex) release(); json({ ...result, status: status() });
           } else {
             const parsed = (path.endsWith('/add') ? addSegmentSchema : editSegmentSchema).safeParse(input);
             if (!parsed.success) { reject(400, '请提供有效的片段身份及文案或画面说明，不允许修改其他状态。'); return; }
             const data = parsed.data;
             if ('id' in data) business.updateSegment(data.id, data, token);
             else business.addSegment(data.text, token, data.visualNote);
-            completeEdit(); release(); json(status());
+            completeEdit(); if (codex) release(); json(status());
           }
         } catch {
           if (!response.destroyed) reject(500, '保存失败，未确认本次编辑已保存；请检查项目目录或数据库占用后重试。');
-        } finally { clearTimeout(timeout); if (!exportUser) release(); pendingEdits.delete(token); completeEdit(); }
+        } finally { clearTimeout(timeout); if (codex) release(); pendingEdits.delete(token); completeEdit(); }
         return;
       }
       if (request.method !== 'GET') {

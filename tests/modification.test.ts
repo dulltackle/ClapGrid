@@ -84,7 +84,7 @@ test('持有修改权重读目标：返回变化信息、跳过删除目标，�
   assert.equal((await status()).modification, null);
 });
 
-test('用户连接断开释放修改权，旧取消凭据不能解除下一次编辑，异常保存也释放', async ({ createDirectory, startService }) => {
+test('用户连接断开释放修改权，旧取消凭据不能解除下一次编辑，异常保存后仍持有直到面板释放', async ({ createDirectory, startService }) => {
   const t = { createDirectory, startService };
   const { beginEdit } = await import('../src/shared/client.js');
   const { service, post, status } = await fixture(t);
@@ -99,12 +99,15 @@ test('用户连接断开释放修改权，旧取消凭据不能解除下一次�
   assert.deepEqual((await status()).modification, { owner: 'user' });
   assert.equal((await post('/api/segments/add', { text: '旧请求' }, oldToken)).status, 409);
   assert.equal((await post('/api/segments/edit', { id: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa', text: '不存在' }, next.token)).status, 500);
-  assert.equal((await status()).modification, null);
+  assert.deepEqual((await status()).modification, { owner: 'user' });
+  await assert.rejects(beginEdit(service.url));
   await next.close();
+  assert.equal((await status()).modification, null);
   const last = await beginEdit(service.url);
   assert.equal((await post('/api/segments/add', { text: '恢复正常' }, last.token)).status, 200);
-  assert.equal((await status()).modification, null);
+  assert.deepEqual((await status()).modification, { owner: 'user' });
   await last.close();
+  assert.equal((await status()).modification, null);
 });
 
 test('Codex 存储异常逐项反馈失败，整批结束释放修改权且不提交失败内容', async ({ createDirectory, startService }) => {
