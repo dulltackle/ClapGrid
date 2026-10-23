@@ -42,6 +42,8 @@ for (const width of [1600, 420]) test(`查找与勾选不改变全部范围或�
   await page.locator(`[row-id="${ids[0]}"] [data-segment-script]`).click({ button: 'right' });
   await page.keyboard.press('Escape'); await expect(page.getByRole('menu')).toHaveCount(0);
   await expect.poll(() => selected(page)).toEqual(ids.slice(0, 2).sort());
+  // 菜单卸载后仍需完成异步焦点恢复，第二次 Escape 才属于表格。
+  await expect(page.locator(`[row-id="${ids[0]}"] [col-id="text"]`)).toBeFocused();
   await page.keyboard.press('Escape'); await expect.poll(() => selected(page)).toEqual([]);
   await expect(search).toHaveValue('匹配');
   await search.press('Escape'); await expect(search).toHaveCount(0);
