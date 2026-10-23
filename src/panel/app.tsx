@@ -275,31 +275,16 @@ export function App() {
   const detailSegment = status?.snapshot.segments.find(item => item.id === segmentDetail.id);
   const detailAsset = status?.snapshot.assets.find(item => item.id === detailSegment?.video?.assetId);
   const addSegment = async () => {
-    const requested = focusReturns.intent();
-    let created: string | undefined;
+    const ticket = navigation.request();
     await editing.save('segments', { acquire: true }, async (token, action) => {
       setSaveState('saving'); setSaveError('');
       const result = await modifyUserBatch(panelServiceUrl(), { changes: [{ kind: 'add', text: '' }] }, token, action.signal);
       const added = result.results[0];
+      action.apply(() => { void ticket.arrive(() => { setStatus(result.status); },
+        added?.outcome === 'applied' && added.id ? { id: added.id, mode: 'details', clearSearch: true, focusText: true } : undefined); });
       if (added?.outcome !== 'applied' || !added.id) throw new Error(added?.message ?? '未能确认新增片段，请重新读取项目。');
-      const next = result.status;
-      action.apply(() => {
-        created = added.id;
-        if (!requested.valid()) {
-          focusReturns.acceptGridUpdate(() => { setStatus(next); setSaveState('saved'); });
-          return;
-        }
-        flushSync(() => { setStatus(next); setQuery(''); setCurrentMatch(null); setSearchOpen(false); setSaveState('saved'); });
-        if (!requested.valid()) return;
-        grid.current?.setFilterModel(null);
-        const row = grid.current?.getRowNode(created!);
-        if (row?.rowIndex != null) { grid.current?.ensureIndexVisible(row.rowIndex, 'middle'); row.setSelected(true, true); }
-      });
-    }, cause => failed(new Error(`新增失败：${cause.message}`)));
-    if (created && requested.valid()) {
-      const id = created;
-      segmentDetail.navigate({ id, focusText: true }, focusReturns.captureSegment({ id, column: 'text' }));
-    }
+      action.apply(() => { setSaveState('saved'); });
+    }, cause => { ticket.fail(); failed(new Error(`新增失败：${cause.message}`)); });
   };
   const organize = (batch: Batch) => editing.save('segments', { acquire: true }, async (token, action) => {
     setSaveState('saving'); setSaveError('');

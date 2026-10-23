@@ -38,8 +38,9 @@ export function segmentNavigation({ grid, editing, focus, stopInline, clearSearc
     const cancel = () => { if (!ended) { ended = true; origin?.cancel(); if (pending === origin) pending = undefined; } };
     return {
       valid,
-      async arrive(applySnapshot: () => void, destination: SegmentDestination) {
+      async arrive(applySnapshot: () => void, destination?: SegmentDestination) {
         focus.acceptGridUpdate(applySnapshot);
+        if (destination === undefined) return;
         if (ended) return;
         if (!valid()) { cancel(); return; }
         stopInline(); await idle(valid);
