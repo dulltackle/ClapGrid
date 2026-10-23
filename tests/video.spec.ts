@@ -96,6 +96,29 @@ test('关联保存中取消不撤回已提交数据，迟到响应不抢新查�
   await expect.poll(async () => (await project.status()).modification).toBeNull();
 });
 
+for (const entry of ['关联', '导入本地视频'] as const) test(`${entry}申请迟到仍接收项目快照，保留查找焦点并释放修改权`, async ({ page, project }) => {
+  const [id] = await project.seed(['原文案']); await page.goto(project.url);
+  if (entry === '关联') await page.locator(`[row-id="${id}"] [data-row-details]`).press('Enter');
+  else await page.getByRole('button', { name: '更多', exact: true }).click();
+  // 挂起全部状态轮询；只有迟到的修改权申请能把新快照带回面板。
+  let releaseStatus!: () => void;
+  const statusWaiting = new Promise<void>(resolve => { releaseStatus = resolve; });
+  await page.route('**/api/status', async route => { await statusWaiting; await route.continue(); });
+  const gate = await holdRequest(page, '/api/edit-session');
+  try {
+    await page.getByRole('button', { name: entry, exact: true }).click(); await gate.received;
+    await project.modify({ changes: [{ kind: 'edit', expected: (await project.status()).snapshot.segments[0]!, text: '外部更新文案' }] });
+    await page.getByRole('button', { name: '查找', exact: true }).click();
+    const search = page.getByLabel('查找文案', { exact: true }); await search.fill('文案');
+    gate.release(); await gate.answered;
+    await expect.poll(async () => (await project.status()).modification).toBeNull();
+    await expect(page.locator(`[row-id="${id}"] [col-id="text"] .text-summary`)).toHaveText('外部更新文案');
+    await expect(search).toBeFocused(); await expect(search).toHaveValue('文案');
+    await expect(page.getByRole('dialog', { name: '关联视频', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: '导入本地视频', exact: true })).toHaveCount(0);
+  } finally { gate.release(); releaseStatus(); }
+});
+
 test('取消等待中的关联申请后旧修改权释放，父详情仍可连续关闭', async ({ page, project }) => {
   const [id] = await project.seed(['A']); await page.goto(project.url);
   await page.locator(`[row-id="${id}"] [data-row-details]`).press('Enter');
