@@ -1,3 +1,4 @@
+import { projectModification } from './project-modification.js';
 import { SERVICE_CLEANUP_MS, beforeServiceDeadline, ServiceCleanupError } from '../service-cleanup.js';
 import { loadPanelRelease, panelDocument, type PanelRelease } from './panel-releases.js';
 import { buildIdentity } from '../build-identity.js';
@@ -135,19 +136,12 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
       tableSessions.delete(id);
       close?.close();
     };
-    const pendingEdits = new Map<string, { binding: string; cancel: () => void }>();
-    const sessions = new Map<string, { binding: string; close: () => void }>();
-    const finishSession = (token: string) => {
-      business.release(token);
-      sessions.get(token)?.close();
-      sessions.delete(token);
-    };
+    const modification = projectModification(business, status);
     closeConnections = () => {
       const errors: unknown[] = [];
       const revoke = (run: () => void) => { try { run(); } catch (error) { errors.push(error); } };
       for (const id of tableSessions.keys()) revoke(() => finishTable(id));
-      for (const token of sessions.keys()) revoke(() => finishSession(token));
-      for (const operation of pendingEdits.values()) revoke(operation.cancel);
+      revoke(() => modification.revokeAll());
       if (errors.length) throw new AggregateError(errors, '连接撤销失败');
     };
     const closeService = close;
@@ -196,8 +190,7 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
             const revoked = `/binding/${token}`;
             if (heartbeatChecks.get(threadId)?.binding === revoked) heartbeatChecks.delete(threadId);
             for (const [id, session] of tableSessions) if (session.binding === revoked) finishTable(id);
-            for (const [id, session] of sessions) if (session.binding === revoked) finishSession(id);
-            for (const operation of pendingEdits.values()) if (operation.binding === revoked) operation.cancel();
+            modification.revokeBinding(revoked);
             throw error;
           }
         };
@@ -372,108 +365,49 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
         finally { clearTimeout(timeout); }
         return;
       }
+      const modificationContext = { request, response, binding: bindingPrefix, verifyBinding };
       if (path === '/api/edit-session') {
-        if (request.method !== 'POST') { reject(405, '请使用 POST 申请修改权。'); return; }
-        let token: string;
-        try { token = business.acquire('user', verifyBinding); }
-        catch (error) { reject(409, (error as Error).message); return; }
-        try {
-          const initial = { token, status: status() };
-          response.writeHead(200, { 'Content-Type': 'application/x-ndjson; charset=utf-8' });
-          response.write(JSON.stringify(initial) + '\n');
-          // 长连接属于一次编辑；心跳让失联连接可被发现，关闭时只释放该 token。
-          const timer = heartbeat(() => finishSession(token));
-          const cleanup = () => { clearInterval(timer); response.end(); };
-          sessions.set(token, { binding: bindingPrefix, close: cleanup });
-          response.on('close', () => finishSession(token));
-        } catch { finishSession(token); reject(500, '读取项目失败，修改权已释放。'); }
+        modification.openSession(modificationContext, () => verifyBinding(threadId => readHeartbeatWorkspace(threadId, bindingPrefix)));
         return;
       }
       if (path === '/api/edit-session/release') {
-        if (request.method !== 'POST') { reject(405, '请使用 POST 释放修改权。'); return; }
-        const token = request.headers['x-edit-token'];
-        if (typeof token !== 'string') { reject(400, '缺少修改权凭据。'); return; }
-        finishSession(token); json({ released: true }); return;
+        modification.releaseSession(modificationContext);
+        return;
       }
       if ((path === '/api/export-settings' && request.method !== 'GET') || path === '/api/codex/export-settings' || path === '/api/video/import' || path === '/api/codex/import-video' || path === '/api/segments/add' || path === '/api/segments/edit' || path === '/api/codex/modify' || path === '/api/segments/modify' || path === '/api/codex/process') {
-        if (request.method !== 'POST') {
-          response.setHeader('Allow', 'POST'); reject(405, '请使用 POST 提交编辑。'); return;
-        }
-        if (request.headers['content-type']?.split(';')[0]?.trim() !== 'application/json') {
-          reject(415, '编辑请求必须使用 application/json。'); return;
-        }
         const codex = path.startsWith('/api/codex/');
-        let token: string;
-        try {
-          if (codex) token = business.acquire('codex', verifyBinding);
-          else {
-            const supplied = request.headers['x-edit-token'];
-            if (typeof supplied !== 'string' || !business.owns(supplied, 'user')) {
-              reject(409, business.getModification()?.owner === 'codex' ? 'Codex 正在修改' : '请先取得用户修改权，修改权可能已失效。'); return;
-            }
-            token = supplied;
-          }
-        } catch (error) { reject(409, (error as Error).message); return; }
-        const completeEdit = business.retainEdit(token);
-        pendingEdits.set(token, { binding: bindingPrefix, cancel: () => business.release(token) });
-        const exportUser = path === '/api/export-settings';
-        const release = () => codex ? business.release(token) : finishSession(token);
-        response.on('close', () => { if (!exportUser || !response.writableFinished) release(); });
-        // 请求体断开或一直未完成都不能永久占用普通修改权。
-        const timeout = setTimeout(() => { release(); request.destroy(); }, 10000);
-        try {
-          const chunks: Buffer[] = [];
-          let size = 0;
-          for await (const chunk of request) {
-            size += chunk.length;
-            if (size > 8 * 1024 * 1024) { reject(413, '请求内容过大。'); return; }
-            chunks.push(Buffer.from(chunk));
-          }
-          clearTimeout(timeout);
-          let input: unknown;
-          try { input = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
-          catch { reject(400, '编辑请求格式无效。'); return; }
-          await verifyBinding();
-          if (!business.owns(token, codex ? 'codex' : 'user')) {
-            reject(409, '修改权已失效，请重新读取项目后编辑。'); return;
-          }
+        await modification.handle(modificationContext, codex ? 'codex' : 'user', async (token, input) => {
           if (path === '/api/export-settings' || path === '/api/codex/export-settings') {
             try {
               const settings = await business.setExportSettings(token, input as import('../shared/contracts.js').UpdateExportSettings);
-              completeEdit();
-              if (!exportUser) release();
-              json({ settings, status: status() });
-            } catch (error) { if (!response.destroyed) reject(400, (error as Error).message); }
+              return { data: { settings } };
+            } catch (error) { return { status: 400, error: (error as Error).message }; }
           } else if (path === '/api/video/import' || path === '/api/codex/import-video') {
             const parsed = importVideoSchema.safeParse(input);
-            if (!parsed.success) { reject(400, '请提供用户明确指定的视频路径'); return; }
+            if (!parsed.success) return { status: 400, error: '请提供用户明确指定的视频路径' };
             try {
               const asset = await business.importVideo(token, parsed.data);
-              completeEdit(); release(); json({ asset, status: status() });
-            } catch (error) { if (!response.destroyed) reject(400, (error as Error).message); }
+              return { data: { asset } };
+            } catch (error) { return { status: 400, error: (error as Error).message }; }
           } else if (path === '/api/codex/process') {
             const parsed = scopedOperationSchema.safeParse(input);
-            if (!parsed.success) { reject(400, '请提供明确范围、查询快照和有效操作。'); return; }
+            if (!parsed.success) return { status: 400, error: '请提供明确范围、查询快照和有效操作。' };
             try {
-              const result = await business.processScope(token, parsed.data, tableOwner);
-              completeEdit(); release(); json({ ...result, status: status() });
-            } catch (error) { reject(409, (error as Error).message); }
+              return { data: await business.processScope(token, parsed.data, tableOwner) };
+            } catch (error) { return { status: 409, error: (error as Error).message }; }
           } else if (codex || path === '/api/segments/modify') {
             const parsed = batchSchema.safeParse(input);
-            if (!parsed.success) { reject(400, '批量修改格式无效；修改和删除必须提供查询时的目标快照。'); return; }
-            const result = await business.modifyBatch(token, parsed.data);
-            completeEdit(); release(); json({ ...result, status: status() });
+            if (!parsed.success) return { status: 400, error: '批量修改格式无效；修改和删除必须提供查询时的目标快照。' };
+            return { data: await business.modifyBatch(token, parsed.data) };
           } else {
             const parsed = (path.endsWith('/add') ? addSegmentSchema : editSegmentSchema).safeParse(input);
-            if (!parsed.success) { reject(400, '请提供有效的片段身份及文案或画面说明，不允许修改其他状态。'); return; }
+            if (!parsed.success) return { status: 400, error: '请提供有效的片段身份及文案或画面说明，不允许修改其他状态。' };
             const data = parsed.data;
             if ('id' in data) business.updateSegment(data.id, data, token);
             else business.addSegment(data.text, token, data.visualNote);
-            completeEdit(); release(); json(status());
+            return {};
           }
-        } catch {
-          if (!response.destroyed) reject(500, '保存失败，未确认本次编辑已保存；请检查项目目录或数据库占用后重试。');
-        } finally { clearTimeout(timeout); if (!exportUser) release(); pendingEdits.delete(token); completeEdit(); }
+        });
         return;
       }
       if (request.method !== 'GET') {
