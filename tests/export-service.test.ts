@@ -1,7 +1,7 @@
 import { test } from './helpers/resource-test.js';
 import { expect } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -12,7 +12,63 @@ import type { ExportStatus } from '../src/shared/contracts.js';
 import { randomUUID } from 'node:crypto';
 import { request } from 'node:http';
 import { existsSync } from 'node:fs';
-import { queryExports, submitExport } from '../src/shared/client.js';
+import { queryExports, submitExport, modifyBatch, importVideo, querySpeech } from '../src/shared/client.js';
+
+test('绑定地址下成片与兼容预览链接带当前绑定前缀，可读取对应媒体且去前缀后拒绝访问', { timeout: 60000 }, async ({ createDirectory, execBytes, startService, onTestFinished }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-bound-export-'));
+  const workspace = join(root, 'workspace'); mkdirSync(workspace);
+  const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
+  const video = join(root, 'video.mp4'); const audio = join(root, 'speech.mp3');
+  await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:r=10:d=0.4', '-c:v', 'libx264', video]);
+  await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=0.4', '-ar', '24000', audio]);
+  const payload = readFileSync(audio).toString('base64');
+  const threadId = randomUUID(); const host = join(root, 'host.cjs');
+  writeFileSync(host, `#!/usr/bin/env node\nrequire('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:${JSON.stringify({ id: threadId, cwd: workspace })}}}));});`, { mode: 0o700 });
+  const previousHost = process.env.CLAPGRID_CODEX_BIN;
+  onTestFinished(() => { if (previousHost === undefined) delete process.env.CLAPGRID_CODEX_BIN; else process.env.CLAPGRID_CODEX_BIN = previousHost; });
+  process.env.CLAPGRID_CODEX_BIN = host;
+  const service = await startService({ projectDirectory: join(workspace, 'clapgrid'), workspaceDirectory: workspace, panelDirectory, port: 0, speechRuntime: {
+    configPath: '.env', key: () => 'test-key',
+    fetch: async () => new Response(`data: {"code":0,"data":"${payload}"}\n\ndata: {"code":20000000}\n\n`),
+  } });
+  const origin = service.url;
+  const identityResponse = await fetch(`${origin}/api/identity`);
+  assert.equal(identityResponse.status, 200);
+  const identity = await identityResponse.json();
+  const bindingResponse = await fetch(`${origin}/api/binding`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ threadId, workspace: identity.workspace, projectId: identity.projectId, instanceId: identity.instanceId }) });
+  assert.equal(bindingResponse.status, 200);
+  const { binding } = await bindingResponse.json();
+  assert.equal(typeof binding, 'string'); assert.ok(binding);
+  const prefix = `/binding/${binding}`; const url = `${origin}${prefix}`;
+
+  const added = await modifyBatch(url, { changes: [{ kind: 'add', text: '绑定地址导出验证' }] });
+  const segment = added.status.snapshot.segments[0]!;
+  const { asset } = await importVideo(url, video);
+  await modifyBatch(url, { changes: [{ kind: 'video', expected: segment, assetId: asset.id, start: 0 }] });
+  const { settings } = await queryExportSettings(url);
+  await saveExportSettings(url, { expected: settings, settings: { ...settings, fps: 25, fontFamily: 'Noto Sans CJK SC', fontSize: 48 } });
+  await submitSpeech(url, { segmentId: segment.id, requestId: randomUUID() });
+  await expect.poll(async () => (await querySpeech(url)).locked, { timeout: 15000 }).toBe(false);
+  const speech = await querySpeech(url);
+  assert.equal(speech.tasks[0]!.state, 'succeeded', JSON.stringify(speech));
+  const accepted = await submitExport(url);
+  await expect.poll(async () => (await queryExports(url)).locked, { timeout: 30000 }).toBe(false);
+  const task = (await queryExports(url)).tasks.find(task => task.id === accepted.id);
+  assert.equal(task?.state, 'succeeded', JSON.stringify(task));
+  assert.ok(task?.output, '导出任务必须提供成片');
+  assert.ok(task.output.previewUrl, '导出任务必须提供兼容预览链接');
+  for (const [outputUrl, contentType] of [[task.output.url, 'video/mp4'], [task.output.previewUrl, 'video/webm']] as const) {
+    assert.ok(outputUrl.startsWith(`${prefix}/`), `输出链接必须带当前绑定前缀：${outputUrl}`);
+    const response = await fetch(new URL(outputUrl, origin));
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('content-type'), contentType);
+    assert.ok((await response.arrayBuffer()).byteLength > 0, '媒体响应必须可读取且非空');
+    const unbound = await fetch(new URL(outputUrl.slice(prefix.length), origin));
+    assert.equal(unbound.status, 409);
+    await unbound.body?.cancel();
+  }
+});
 
 for (const owner of ['user', 'codex'] as const) test(`${owner} 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权`, async ({ createDirectory, openConnection, startService }) => {
   const root = createDirectory(join(tmpdir(), 'clapgrid-edit-export-'));
