@@ -47,3 +47,15 @@
 ## 最终本地检查
 
 `npm run check` 退出 0：类型检查通过，Vitest 65 个文件/669 项通过，Playwright 169 项通过，生产构建成功。日志 `/tmp/clapgrid-206-check.1trNBk/output.log`，退出码文件同目录 `exit-code.txt`；Playwright 原生 JSON/HTML/附件位于工作树 `logs/`。只读 OCR 子代理审查未发现有效修复项。真实 GitHub CI 未执行，仍待验。
+
+## 续接：实际内置浏览器点击入口（2026-10-23）
+
+用户授权修正规格、补验点击入口、推送和创建 PR 后，#206 已改为 Chrome 自动回归加实际 Codex 内置浏览器验收，删除失效的无专利浏览器近似要求。
+
+在候选源码 `d705212` 上再次运行既有真实成片测试，临时延长测试末尾等待以保留本次 fixture 的服务；验收结束后恢复原测试并由 fixture 清理。服务 `http://127.0.0.1:43441/`，临时项目 `/tmp/clapgrid-browser-ElzkEm`，任务 `3df07b68-c972-4b97-a6fd-83a4a61c0355`。没有修改用户项目或创建长期导出 fixture。
+
+实际内置浏览器从面板“更多 → 任务记录 → 导出成功 → 打开成片”点击后，新增标签页 7。该页 URL 为任务的准确兼容预览地址 `/api/exports/3df07b68-c972-4b97-a6fd-83a4a61c0355/preview`，并非通过工具直接导航创建。
+
+2026-10-23 03:20:58（America/Los_Angeles，`10:20:58.788Z`）在此新标签页主动重播并采样：起点 `currentTime=0`，终点 `0.305256`；两次均 `readyState=4`、`paused=false`、`duration=2.009`，无媒体错误。播放推进超过 0.2 秒。实际点击入口和播放均通过，取代上文该入口“待验”的状态。此结果仍不代表本机安装包或完整插件身份验收。
+
+本次第一次尝试捕获到准确 `Page.windowOpen` 和新标签页，但浏览器工具调用长时间阻塞导致 fixture 等待超时；该次记录为失败，未冒充播放通过。第二次恢复服务后完整补验成功。原始证据保存在 `/tmp/clapgrid-206-entry2/`（`live.json`、`tabs.json`、`playback.json`、`preview.png`、`run.log`、`exit-code.txt`）；首次超时日志位于 `/tmp/clapgrid-206-entry/`。临时等待不作为自动测试性能样本，也不纳入提交。
