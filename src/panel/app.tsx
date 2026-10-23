@@ -305,7 +305,10 @@ export function App() {
     const origin = returnFocus.current.video;
     const requested = focusReturns.intent(origin);
     return editing.begin('segments', next => {
-      if (!requested.valid()) { void editing.cancel('segments'); return; }
+      if (!requested.valid()) {
+        focusReturns.acceptGridUpdate(() => setStatus(next));
+        void editing.cancel('segments'); return;
+      }
       setStatus(next); setSaveError(''); setSaveState('saved');
       if (id) {
         const segment = next.snapshot.segments.find(segment => segment.id === id);
