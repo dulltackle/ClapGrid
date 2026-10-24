@@ -87,8 +87,15 @@ export const test = base.extend<{ project: Project; speechRuntime: SpeechRuntime
     } finally { await rm(directory, { recursive: true, force: true }); }
   }, { scope: 'worker' }],
   speechRuntime: [undefined, { option: true }],
-  project: async ({ panelDirectory, speechRuntime, projectServer }, use) => {
-    await useProject({ panelDirectory, speechRuntime }, projectServer, use);
+  project: async ({ panelDirectory, speechRuntime, projectServer, context }, use) => {
+    await useProject({ panelDirectory, speechRuntime }, projectServer, async project => {
+      try { await use(project); }
+      finally {
+        // 路由中的 route.fetch 仍依赖真实服务；先停止拦截并等待已有处理完成，再释放项目。
+        for (const page of context.pages()) await page.unrouteAll({ behavior: 'wait' });
+        await context.unrouteAll({ behavior: 'wait' });
+      }
+    });
   },
 });
 export { expect };
