@@ -22,15 +22,29 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
-      # 正常约 25 秒；镜像卡顿时尽快失败并切换备用源，而不是耗尽作业时限。
+      - name: 生成系统依赖缓存键
+        id: system-key
+        shell: bash
+        run: echo "key=system-debs-${ImageOS}-${ImageVersion}-$(sha256sum scripts/ci/system-packages.txt | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+      - name: 恢复系统依赖缓存
+        id: system-cache
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+        with:
+          path: .cache/system-packages/*.deb
+          key: ${{ steps.system-key.outputs.key }}
       - name: 准备媒体工具与中文字体
         shell: bash
         timeout-minutes: 5
-        run: |
-          set -o pipefail
-          mkdir -p logs
-          apt_opts=(-o Acquire::http::Timeout=10 -o Acquire::Retries=3)
-          { sudo apt-get "${apt_opts[@]}" update && sudo apt-get "${apt_opts[@]}" install -y --no-install-recommends ffmpeg fontconfig fonts-noto-cjk; } 2>&1 | tee logs/system-dependencies.log
+        env:
+          CLAPGRID_APT_CACHE_HIT: ${{ steps.system-cache.outputs.cache-hit || 'false' }}
+          CLAPGRID_APT_LOG: logs/system-dependencies.log
+        run: scripts/ci/install-system-packages.sh ffmpeg fontconfig fonts-noto-cjk
+      - name: 保存系统依赖缓存
+        if: steps.system-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+        with:
+          path: .cache/system-packages/*.deb
+          key: ${{ steps.system-key.outputs.key }}
       - uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2
         id: chrome
         with:

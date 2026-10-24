@@ -53,3 +53,15 @@ Bash 显式 shell 使用 Actions 的 `-e -o pipefail`，`tee` 不吞没原生命
 ## #199 阶段验收（历史）
 
 本票只验证 YAML/bash 接线、定向原生 reporter 和必要类型检查，不触发远端运行。完整保留套件、制作归档/插件兼容及专项的收集一致性，以及真实 Actions 步骤和 artifact 上传失败传播，待 #200 后稳定候选实际运行，未执行子句保持待验。源码测试接线不更新插件安装包或实际宿主。性能仍按用户确认前后各1轮报告实际观察，不把开发定向检查当成性能样本。
+
+## 系统依赖的有界恢复（#240）
+
+两个检查 workflow 调用 `scripts/ci/install-system-packages.sh <包...>`，各自只安装需要的包。脚本先执行 `apt-get update` 与 `apt-get install --download-only`，下载 `scripts/ci/system-packages.txt` 中的并集（ffmpeg、fontconfig、fonts-noto-cjk、strace），随后用 `--no-download` 安装调用方指定的包。两个检查和预热共用 `.cache/system-packages/*.deb`；精确缓存键由并集文件的 SHA-256、runner 的 `ImageOS`、`ImageVersion` 组成，不跨镜像版本模糊恢复，也不缓存 apt 索引或锁文件。
+
+连接空闲超时无法发现仍在缓慢传输的下载；runner 的 `mirror+file` 也只在请求失败时切换。首次下载阶段有 90 秒外层期限，只有超时或明确网络错误才能恢复一次，第二次下载阶段最多 150 秒；依赖步骤仍以 5 分钟兜底。每次下载包含更新索引，使用 `APT::Update::Error-Mode=any`，避免部分索引失败被误判成功。apt 内部重试关闭。签名、哈希、包不存在、未知错误直接失败；这些错误与网络错误并存时优先判为不可恢复。安装阶段不下载、不重试；恢复后仍失败、产品测试失败照常传播。
+
+恢复只调整 `/etc/apt/apt-mirrors.txt` 已有条目：把 azure 移到末尾并将其显式 `priority` 改为其余源之后的数字。仅移动文本行不会覆盖 runner 的 `priority:1`，因此必须同时调整该值。沿用 runner 自带的 archive/security 源、密钥和签名链，不添加第三方镜像。
+
+PR 无法读取其他 PR 写入的缓存，而 main push 按 ADR0011 不重复运行检查，因此新增 `warm-system-packages.yml`，每周一 UTC 08:23 和手动触发，作业限制 main。它只下载并保存并集缓存，不安装、不执行检查。首次引入的分支手动验收需临时放开 main 限制，验收后撤回，不保留故障注入入口。
+
+脚本支持 `CLAPGRID_APT_MIRRORLIST`、`CLAPGRID_APT_PRIMARY_SECONDS`、`CLAPGRID_APT_FALLBACK_SECONDS` 覆盖镜像文件和期限；`CLAPGRID_APT_CACHE_DIR`、`CLAPGRID_APT_LOG` 指定缓存和日志路径，`CLAPGRID_APT_CACHE_HIT` 记录 Actions 返回的命中状态。`--download-only` 用于预热。每次尝试记录镜像、UTC 起止、退出码、失败分类和实际次数，退出时向 `$GITHUB_STEP_SUMMARY` 追加一行摘要，区分首次通过和恢复通过。依赖失败时仍由 `always()` 上传日志；平台强制终止可能截断脚本的退出摘要，但此前日志仍尝试上传。
