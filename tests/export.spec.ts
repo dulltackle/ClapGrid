@@ -1,4 +1,6 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import type { Page } from '@playwright/test';
 import { test, expect } from './helpers/media-project.js';
 import { importVideo, queryExports, queryExportSettings, querySpeech, saveExportSettings, submitSpeech } from '../src/shared/client.js';
 
@@ -29,13 +31,14 @@ for (const viewport of [{ width: 1600, height: 1000 }, { width: 420, height: 360
   await expect(page.getByRole('dialog', { name: '任务记录', exact: true })).toContainText(task.id);
 });
 
-test('真实成片和兼容预览提供正确链接，任务到诊断保持键盘链', async ({ page, project, mediaFiles }) => {
+test('真实成片的兼容预览在 Chrome 播放，下载原片一致，任务到诊断保持键盘链', async ({ page, project, mediaFiles }, testInfo) => {
+  test.slow();
   const [id] = await project.seed(['真实成片']); const { asset } = await importVideo(project.url, mediaFiles.video);
   await project.modify({ changes: [{ kind: 'video', expected: (await project.status()).snapshot.segments[0]!, assetId: asset.id, start: 1 }] });
   await submitSpeech(project.url, { requestId: randomUUID(), segmentId: id! });
   await expect.poll(async () => (await querySpeech(project.url)).locked).toBe(false);
   const details = await queryExportSettings(project.url); expect(details.fonts.length).toBeGreaterThan(0);
-  await saveExportSettings(project.url, { expected: details.settings, settings: { ...details.settings, codec: 'mpeg4', fps: 24, fontFamily: details.fonts[0]!, fontSize: 32 } });
+  await saveExportSettings(project.url, { expected: details.settings, settings: { ...details.settings, codec: 'libx264', fps: 24, fontFamily: details.fonts[0]!, fontSize: 32 } });
   await page.goto(project.url); await page.getByRole('button', { name: '导出全片', exact: true }).click();
   await expect.poll(async () => (await queryExports(project.url)).tasks[0]?.state, { timeout: 30000 }).toBe('succeeded');
   const task = (await queryExports(project.url)).tasks[0]!; expect(task.output).toBeTruthy();
@@ -44,9 +47,26 @@ test('真实成片和兼容预览提供正确链接，任务到诊断保持键�
   const dialog = page.getByRole('dialog', { name: '任务记录', exact: true });
   await dialog.locator('summary').filter({ hasText: '导出成功' }).click();
   const open = page.getByRole('link', { name: '打开成片', exact: true }); const download = page.getByRole('link', { name: '下载 MP4 原片', exact: true });
-  await expect(open).toHaveAttribute('href', task.output!.previewUrl!); await expect(download).toHaveAttribute('href', task.output!.url);
-  await expect(download).toHaveAttribute('download', ''); await expect(open).toHaveCSS('text-decoration-line', 'underline');
-  expect((await page.request.get(new URL(task.output!.url, project.url).href)).status()).toBe(200);
+  await expect(open).toHaveCSS('text-decoration-line', 'underline');
+  const previewUrl = new URL(task.output!.previewUrl!, project.url).href;
+  const popupPromise = page.waitForEvent('popup');
+  await open.click();
+  const popup = await popupPromise;
+  try {
+    await expect(popup).toHaveURL(previewUrl);
+    await expectPreviewPlaying(popup);
+  } finally { await popup.close(); }
+
+  const downloadPromise = page.waitForEvent('download');
+  await download.click();
+  const downloaded = await downloadPromise;
+  expect(await downloaded.failure()).toBeNull();
+  expect(downloaded.suggestedFilename()).toMatch(/\.mp4$/i);
+  const downloadedPath = testInfo.outputPath('成片.mp4');
+  await downloaded.saveAs(downloadedPath);
+  const [actual, expected] = await Promise.all([readFile(downloadedPath), readFile(task.output!.path)]);
+  expect(actual.byteLength).toBe(expected.byteLength);
+  expect(createHash('sha256').update(actual).digest('hex')).toBe(createHash('sha256').update(expected).digest('hex'));
   await page.getByRole('button', { name: '连接诊断', exact: true }).click();
   const diagnostics = page.getByRole('dialog', { name: '连接诊断', exact: true });
   for (const label of ['面板版本', '服务版本', '版本核对', '项目路径', '服务实例', 'PID']) await expect(diagnostics.locator('dt').filter({ hasText: label })).toHaveCount(1);
@@ -94,3 +114,17 @@ test('取消错误跨详情和连接恢复保留，重试期间禁用并在成�
   await gate.delivered;
   await expect(page.locator('footer')).not.toContainText('本例取消导出失败');
 });
+
+/** 只验证播放能力；媒体文档不自动播放时主动 play()，不验证自动播放策略。 */
+async function expectPreviewPlaying(page: Page) {
+  const video = page.locator('video');
+  await video.evaluate(node => (node as HTMLVideoElement).play());
+  await expect.poll(() => video.evaluate(node => {
+    const media = node as HTMLVideoElement;
+    return media.readyState >= 2 && !media.paused;
+  })).toBe(true);
+  // 配音 fixture 是两秒正弦音；成片按配音时长生成，允许音频及视频帧边界误差。
+  expect(await video.evaluate(node => (node as HTMLVideoElement).duration)).toBeCloseTo(2, 1);
+  const startedAt = await video.evaluate(node => (node as HTMLVideoElement).currentTime);
+  await expect.poll(() => video.evaluate(node => (node as HTMLVideoElement).currentTime)).toBeGreaterThan(startedAt + 0.2);
+}
