@@ -23,10 +23,9 @@ npm run dev -- --project /绝对路径/验证项目
 
 开发模式在 `http://127.0.0.1:48762` 同源提供 Vite 页面与 API。修改后刷新页面；服务端修改需重新运行。开发模式是前台进程，Ctrl+C 正常停止。
 
+检查命令与范围见[检查与验收](docs/agents/verification.md#开发检查)。构建并运行：
+
 ```bash
-npm run typecheck
-npm test
-npx tsx --test tests/business.test.ts
 npm run build
 npm run start -- --project /绝对路径/验证项目
 ```
@@ -178,27 +177,6 @@ npm run plugin:build
 
 ## 自动检查与本地复现
 
-已采纳 [#192](https://github.com/dulltackle/ClapGrid/issues/192) 的原生测试方案，最终决定见 [ADR0011](docs/adr/0011-native-test-frameworks.md)，日常边界见 [检查与验收](docs/agents/verification.md)。原生测试与 CI 接线已经迁移，旧执行和报告机制已退出；稳定候选的全套结果及性能观察须以本轮实际运行记录为准。
+日常检查先读[检查与验收](docs/agents/verification.md)：准备环境、选择定向或完整检查，并按实际运行范围记录结果。该文档统一维护常用命令、CI 验收规则和性能结论的适用范围；命令定义以 `package.json` 为准。
 
-直接使用 Vitest 运行逻辑和服务测试、过滤与 watch，使用 Playwright 的原生 fixtures、页面操作、断言、等待和调试。旧测试命令、报告格式、日志目录与后台验收协议直接废弃，不保留兼容层；完整检查可以简单组合类型检查、两套原生测试与生产构建。
-
-常用原生入口：
-
-```bash
-npm test                                      # Vitest 全套逻辑与服务测试
-npm exec vitest -- run tests/project-editing.test.ts
-npm exec vitest -- --watch tests/project-editing.test.ts
-npm run test:ui                                # Playwright 全套浏览器测试
-npm exec playwright -- test tests/editing.spec.ts --debug
-npm run check                                  # typecheck → Vitest → Playwright → build
-```
-
-`npm run check` 只按顺序组合上述命令；旧 suite、related、失败复验、后台状态和 `verify` 参数直接废弃。定向样式检查可用 `npm exec vitest -- run tests/style-collisions.test.ts` 并按实际改动选择 Playwright 场景。产品制作 `production ... evidence/verify-package`、插件 `plugin:verify` 继续保留。删除边界及产品承接见 [原生测试机制退出清单](docs/testing/native-retirement.md)。
-
-CI 作为合并前完整验收的主要依据，使用自身检出的提交安装锁定依赖并运行全套保留测试，不再嵌套创建独立检出运行 `verify`。PR、main push 及手动检查分别记录实际检出的提交；功能分支 push 不额外触发。以 CI 状态和原生报告、失败附件定位问题，取消、跳过和未执行不能冒充通过。原生配置保持零重试、禁止 `.only`、零收集失败，必要 UI 实际运行浏览器。
-
-使用仓库声明的 Node 版本与锁定依赖，并准备实际测试需要的浏览器、FFmpeg/ffprobe、Fontconfig 和中文字体；环境版本与安装失败记录随 CI 保存。检查使用夹具和本地服务，不传入真实供应商凭据或发起收费调用。产品资源通过原生生命周期和必要产品夹具清理，避免影响其他工作树。
-
-产品行为、数据与归档兼容测试继续按独立故障保障保留或合并；仅服务旧测试协议的代码和测试退出。CI 证明实际运行的代码行为，插件安装、加载、重载和面板交互仍按 [本机插件交付](docs/agents/plugin-delivery.md) 提供实际宿主证据。
-
-2026-10-20 用户确认本次性能对照采用改前、改后各 1 轮，取代原三轮及“改善超出波动”的要求，只报告实际观察及范围差异；计入准备、安装、执行、报告保存和清理，记录总 runner 占用、峰值内存及嵌套进程成本，同一 runner 且总占用不增加，不增加机器或分片。单轮不足以判断波动或稳定提速；历史调度结果保持原义，不代替新候选的性能或 CI 结论。
+排查 CI 时查看[原生 CI 说明](docs/testing/native-ci.md)中的执行接线与原始报告位置；查询旧测试机制的退出和产品保障承接时查看[迁移记录](docs/testing/native-retirement.md)。插件安装与实际宿主交付另按[本机插件交付](docs/agents/plugin-delivery.md)核对。

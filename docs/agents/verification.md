@@ -4,9 +4,22 @@
 
 ## 开发检查
 
+使用仓库声明的 Node 版本与锁定依赖，并准备实际测试需要的浏览器、FFmpeg/ffprobe、Fontconfig 和中文字体。检查使用夹具和本地服务，不传入真实供应商凭据或发起收费调用；环境准备与失败记录按[工具指引](tooling.md)留存。
+
 直接使用 Vitest 运行逻辑与服务测试，使用 Playwright 运行浏览器测试；过滤、watch 和调试使用框架原生 CLI。按变更执行定向测试及必要类型检查、构建。非导入资源、外部程序或配置变化需显式扩大范围，不能假定相关选测覆盖所有依赖。样式和 UI 变更同时实际核对面板。
 
-当前命令以 `package.json` 为准；`npm run check` 依次组合类型检查、两套原生测试和生产构建。本地允许未提交内容，中断后可重跑，结论限于实际执行范围；取消和未执行不能算通过。
+当前命令定义以 [`package.json`](../../package.json) 为准。常用入口：
+
+```bash
+npm test                                      # Vitest 全套逻辑与服务测试
+npm exec vitest -- run tests/business.test.ts   # 定向业务测试
+npm exec vitest -- --watch tests/project-editing.test.ts
+npm run test:ui                                # Playwright 全套浏览器测试
+npm exec playwright -- test tests/editing.spec.ts --debug
+npm run check                                  # 类型检查、两套原生测试与生产构建
+```
+
+定向样式检查使用 `npm exec vitest -- run tests/style-collisions.test.ts`，并按实际改动选择 Playwright 场景。本地允许未提交内容，中断后可重跑，结论限于实际执行范围；取消和未执行不能算通过。
 
 ## 测试保障
 
@@ -22,8 +35,12 @@ CI 在自身检出的提交上安装锁定依赖，执行类型检查、全套�
 
 PR 合并结果和手动 ref 的结论分别对应实际检出，不跨运行复用成功结论，也不把 PR 通过表述成 main 提交重新测试通过。保留自动事件去重策略，手动和重跑独立；必要专项仍在合并前执行。发布安装包时针对实际产物独立验证，安装包及实际宿主状态按[插件交付](plugin-delivery.md)分别验证。
 
+执行接线、环境配置与报告位置见[原生 CI 说明](../testing/native-ci.md)，实际触发事件与步骤以[主检查 workflow](../../.github/workflows/check.yml)和[进程追踪 workflow](../../.github/workflows/process-trace.yml)为准。
+
 ## 性能与历史参考
 
 性能结论注明实际源码、范围、工具、环境、缓存和配置，计入准备、安装、执行、报告保存与清理，披露 runner 总占用和资源成本。单轮结果只描述观察，不能推断波动或稳定改善。
 
 测试迁移范围、旧机制退出及 #192 一次性性能验收约定见 [ADR0011](../adr/0011-native-test-frameworks.md)；承接清单见 [native-retirement](../testing/native-retirement.md)。这些历史约定不自动成为新任务的测量轮次要求。旧验证协议可查提交 `2f6fa2a` 中的 `docs/agents/verification-protocols.md`，仅用于理解历史证据。历史通过记录不能作为新候选的执行结果。
+
+旧测试命令、参数、报告与后台验收协议已退出，不提供兼容入口。产品制作的 `evidence` / `verify-package` 和插件 `plugin:verify` 仍按[制作命令](../production.md)及[插件交付](plugin-delivery.md)使用。
