@@ -31,8 +31,8 @@ jobs:
         with:
           path: .cache/system-packages/*.deb
           key: ${{ steps.system-key.outputs.key }}
-      - name: 临时故障注入：首选镜像不可路由
-        run: echo '192.0.2.1 azure.archive.ubuntu.com' | sudo tee -a /etc/hosts
+      - name: 临时故障注入：首选及备用镜像均不可路由
+        run: echo '192.0.2.1 azure.archive.ubuntu.com archive.ubuntu.com security.ubuntu.com' | sudo tee -a /etc/hosts
       - name: 准备媒体工具与中文字体
         shell: bash
         timeout-minutes: 5
@@ -40,6 +40,7 @@ jobs:
           CLAPGRID_APT_CACHE_HIT: ${{ steps.system-cache.outputs.cache-hit || 'false' }}
           CLAPGRID_APT_LOG: logs/system-dependencies.log
           CLAPGRID_APT_PRIMARY_SECONDS: 3
+          CLAPGRID_APT_FALLBACK_SECONDS: 3
         run: scripts/ci/install-system-packages.sh ffmpeg fontconfig fonts-noto-cjk
       - name: 保存系统依赖缓存
         if: steps.system-cache.outputs.cache-hit != 'true'
