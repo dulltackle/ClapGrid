@@ -54,6 +54,7 @@ jobs:
       - name: 全套 Playwright 浏览器测试
         id: playwright
         env:
+          CLAPGRID_PLAYWRIGHT_RUN_DIR: logs/playwright/ci
           CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
         run: /usr/bin/time -v -o logs/playwright-resources.txt node_modules/.bin/playwright test 2>&1 | tee logs/playwright.log
       - name: 生产构建
@@ -73,17 +74,17 @@ jobs:
       - name: 核对 Playwright 必需报告已保存
         if: ${{ always() && steps.playwright.outcome != '' && steps.playwright.outcome != 'skipped' }}
         run: |
-          test -s logs/playwright.json
-          test -s logs/playwright-report/index.html
+          test -s logs/playwright/ci/report.json
+          test -s logs/playwright/ci/report/index.html
       - name: 保留 Playwright 原生报告和失败附件
         if: ${{ always() && steps.playwright.outcome != '' && steps.playwright.outcome != 'skipped' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: playwright-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            logs/playwright.json
-            logs/playwright-report/
-            logs/playwright-results/
+            logs/playwright/ci/report.json
+            logs/playwright/ci/report/
+            logs/playwright/ci/results/
           if-no-files-found: error
           retention-days: 14
       - name: 保留完整检查日志（包括失败）

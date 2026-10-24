@@ -19,6 +19,8 @@ npm exec playwright -- test tests/editing.spec.ts --debug
 npm run check                                  # 类型检查、两套原生测试与生产构建
 ```
 
+Playwright 每轮默认分配 `logs/playwright/<UTC 时间戳>-<pid>/`，`results/`、`report/` 与 `report.json` 同属该轮，主进程将目录写回 `CLAPGRID_PLAYWRIGHT_RUN_DIR` 供 worker 继承。可显式指定该变量；已有非空目录会在测试前拒绝使用，换名后重跑。Vitest 目录策略不变。本地命令日志、进程组续跑与手动清理见[工具指引](tooling.md#playwright-运行目录与中断续跑)。
+
 定向样式检查使用 `npm exec vitest -- run tests/style-collisions.test.ts`，并按实际改动选择 Playwright 场景。本地允许未提交内容，中断后可重跑，结论限于实际执行范围；取消和未执行不能算通过。
 
 ## 测试保障
