@@ -4,10 +4,19 @@
 
 当前已支持本地项目创建／重开、口播片段新增、文案编辑、删除、重排、多行粘贴、明确范围操作、自动保存、表格与 Codex 交替修改、本地视频导入／复用／预览和业务 MCP。现已支持 TokenDance 配音、试听、带字幕全片导出和独立后台任务。Linux 正式插件提供组件准备入口；三平台完整交付仍需各自验收。
 
+## 使用入口
+
+| 要做的事 | 当前说明 |
+| --- | --- |
+| 在 Codex 中打开或重开项目 | 使用已安装的 `open-clapgrid`；[打开流程](plugins/clapgrid/skills/open-clapgrid/SKILL.md#日常快速重开)区分在线重开、首次打开和明确离线 |
+| 准备缺失的 Linux 组件 | [组件准备流程](plugins/clapgrid/skills/open-clapgrid/references/linux.md)；版本、来源与维护说明见 [Linux 用户目录运行组件](docs/linux-components.md) |
+| 构建用于安装的插件包 | [业务 MCP 与插件](#业务-mcp-与插件) |
+| 更新已安装插件并核对宿主 | [本机插件交付](docs/agents/plugin-delivery.md)，区分面板快更新与完整更新 |
+
 ## 运行条件
 
-- Node.js **22.13 以上**及 npm；本轮验证 Node.js 22.23.3、Ubuntu 24.04。
-- 视频处理要求本机 `ffmpeg` 与 `ffprobe` 在 PATH 中，FFmpeg 含 `libvpx` 编码器；本轮验证 FFmpeg 6.1.1。Linux 正式插件可由 Codex 经宿主许可执行组件安装；开发模式缺失时明确失败。正式产品 Linux 验证由 #29 跟进，原型干净桌面首装保留在 #15。
+- Node.js **22.13 以上**；开发与构建另需 npm。Linux 正式插件的固定组件版本和复用规则见 [Linux 用户目录运行组件](docs/linux-components.md)。
+- 视频处理要求运行进程的 PATH 中有 `ffmpeg` 与 `ffprobe`，FFmpeg 含 `libvpx` 编码器。Linux 正式插件按[组件准备流程](plugins/clapgrid/skills/open-clapgrid/references/linux.md)复用兼容组件或补齐缺失组件；开发模式缺失时明确失败。
 - 采用 Node 内置 `node:sqlite`，无需单独编译 SQLite 扩展；Node 22 会输出实验性 API 警告。运行时要求与版本锁定记在 `package.json` 和 `package-lock.json`。
 - Codex 桌面端须有右侧内置浏览器与宿主命令执行能力。外部浏览器仅可辅助开发，不能替代右侧验收。
 - 首次 `npm ci` 需要联网。宿主限制安装、文件写入或后台启动时遵守其审批；拒绝后停止，不改变安全配置或替换执行路径。
@@ -83,9 +92,9 @@ npm run runtime -- status --project /绝对路径/验证项目
 
 ## 本机插件更新
 
-Git 合并只更新源码；已安装插件和后台服务由独立的交付流程更新。执行 `npm run plugin:update -- --revision <目标提交> --marketplace-root <本地市场根目录> --cache-root <插件缓存根目录> --workspace <工作空间> --thread <宿主聊天ID>`，从干净提交构建、备份和安装，再重启空闲服务。已有任务或编辑时停止更新并保留任务；失败返回备份位置与恢复结果。
+更新已安装插件时先读[本机插件交付](docs/agents/plugin-delivery.md)，按实际安装来源执行更新，并依据运行时与协议是否相容选择面板快更新或完整更新。该文档统一维护命令、空闲条件、恢复位置及实际宿主验收步骤。
 
-安装完成仍需重载宿主并核对实际 MCP、服务和面板。`npm run plugin:verify -- ...` 在证据缺失、超过 5 分钟或版本不一致时退出 2。完整步骤及证据格式见 [本机插件交付](docs/agents/plugin-delivery.md)。面板“连接诊断”显示实际加载版本；版本不一致时先更新再重新打开。
+源码合并、安装完成与实际宿主加载分别报告；安装成功不能代替 MCP、服务和面板的实际验证。日常重开使用[打开流程](plugins/clapgrid/skills/open-clapgrid/SKILL.md#日常快速重开)，更新后的验收仍按交付规程执行。
 
 ## 业务 MCP 与插件
 
@@ -106,11 +115,13 @@ npm run plugin:build
 
 插件源为 `plugins/clapgrid/`，含清单、stdio MCP 配置、`open-clapgrid` 技能。`plugin:build` 生成 **`dist/plugin/clapgrid/`**，打包服务、MCP 的依赖及面板，运行需要满足要求的 Node.js，视频功能另需上述 FFmpeg 组件。注册或安装时使用这个完整目录，源码模板本身不可直接安装。Linux 上构建的包会将 MCP 接到同一组件选择器；其他系统仍使用 Node 入口。插件 MCP 的 `cwd: "."` 由宿主相对于插件根目录解析。
 
-将构建目录接入个人插件市场并安装后，在新会话使用 `open-clapgrid`，由 Codex 检查组件、查询／启动服务、打开右侧面板并查询 MCP。本仓库不自动写入个人市场、不更改用户 Codex 安全策略。安装后的技能发现和 MCP 加载需另行实测；从构建包执行协议测试不等同于宿主安装验收。Linux 的组件方案、正式安装步骤、实测版本及尚未通过的桌面验收见 [Linux 正式插件交付](docs/validation/issue-29/README.md)。
+将完整构建目录接入个人插件市场并安装后，在新会话使用已安装的 `open-clapgrid`，由 Codex 按[当前打开流程](plugins/clapgrid/skills/open-clapgrid/SKILL.md)连接工作空间项目。`plugin:build` 只生成安装包；市场接入与安装使用实际宿主支持的方式并遵守宿主审批。安装后的技能发现和 MCP 加载需另行实测；从构建包执行协议测试不等同于宿主安装验收。
+
+Linux 组件的准备步骤见[组件准备流程](plugins/clapgrid/skills/open-clapgrid/references/linux.md)，维护和来源见[组件说明](docs/linux-components.md)。查阅既往交付证据时使用 [#29 历史验收记录](docs/validation/issue-29/README.md)；其中安装命令、系统限制和未验证项仅对应当时版本，现行打开与更新按上述流程执行。
 
 ## 工作空间固定项目
 
-正式打开入口为 `runtime open --workspace <宿主当前目录> --thread <宿主聊天ID>`，随后独立执行相同参数的 `workspace-status`。入口交叉核对公开 `codex app-server` 的 `thread/read`，自动创建或恢复固定 `clapgrid/` 目录，不提供日常项目和端口选择。无本地工作空间时先选择或创建工作空间，不能使用插件安装目录代替。
+日常打开由已安装的 `open-clapgrid` 按[打开流程](plugins/clapgrid/skills/open-clapgrid/SKILL.md#日常快速重开)处理：在线时使用 `clapgrid_prepare_panel` 返回的完整面板地址；首次打开或明确离线时进入组件准备、`open` 和独立 `workspace-status` 核对。项目固定在宿主工作空间的 `clapgrid/` 目录，不提供日常项目和端口选择。无本地工作空间时先选择或创建工作空间，不能使用插件安装目录代替。
 
 服务通过系统分配端口，发布项目内的 `service.json` 供发现；数据库、媒体、配音及成片仍由同一个项目服务管理。表格保留完整 `/binding/…` URL，每个业务请求核对项目服务实例和聊天当前目录。工作空间改变后关闭旧面板并重新打开；旧项目任务继续，失效连接不自动重发制作请求。
 

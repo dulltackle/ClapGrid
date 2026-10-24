@@ -2,6 +2,8 @@
 
 源码合并、安装成功和宿主加载是三个独立阶段。涉及本机插件的工作按下列流程收尾；用户已有更新授权时继续执行，受保护路径仍走宿主审批。
 
+仅打开或重开项目时使用已安装的 `open-clapgrid`，按[打开流程](../../plugins/clapgrid/skills/open-clapgrid/SKILL.md#日常快速重开)执行；Linux 缺组件时按[组件准备流程](../../plugins/clapgrid/skills/open-clapgrid/references/linux.md)处理。更新插件后仍须完成本页的实际宿主验收。
+
 ## UI 迭代与面板快更新
 
 开发检查与合并验收按[检查与验收](verification.md)执行。样式迭代实际核对面板，稳定后统一更新；安装身份和真实宿主交付按本页流程验证。

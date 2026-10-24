@@ -1,5 +1,7 @@
 # Linux 用户目录运行组件
 
+首次打开或明确离线时，按[组件准备流程](../plugins/clapgrid/skills/open-clapgrid/references/linux.md)检查和补齐组件；日常在线重开按[打开流程](../plugins/clapgrid/skills/open-clapgrid/SKILL.md#日常快速重开)执行。本页说明组件的存放、来源与维护。
+
 安装与启动入口为 `plugins/clapgrid/scripts/runtime-linux.sh`，决策见 [ADR0012](adr/0012-user-linux-components.md)，实施事项为 [#219](https://github.com/dulltackle/ClapGrid/issues/219)。固定版本、URL 和 SHA-256 以入口为准；`check` 输出本次实际使用的版本。
 
 组件根目录默认是 `${XDG_DATA_HOME:-$HOME/.local/share}/clapgrid/runtime`，可通过所有调用共同设置的 `CLAPGRID_RUNTIME_HOME` 覆盖。系统中可用的组件逐个优先复用；用户 Node 放在 `node/`，媒体程序分别放在 `media/ffmpeg/` 和 `media/ffprobe/`，字体及许可放在 `fonts/`。拆开两个媒体程序的 PATH 目录，避免补齐 ffprobe 时遮蔽已有的系统 ffmpeg，反向同理。
