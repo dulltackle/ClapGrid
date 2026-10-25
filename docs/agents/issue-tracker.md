@@ -3,6 +3,18 @@
 事项和规格存放于 dulltackle/ClapGrid 的 GitHub Issues。
 使用 gh CLI，显式指定 --repo dulltackle/ClapGrid。
 
+## ready 标签与验收区域
+
+任何标为 `ready-for-agent` 或 `ready-for-human` 的 Issue（包括 Spec）必须在正文中有且只有一个合规的二级验收标题。标题文字去除首尾空白后，仅接受以下三种措辞：
+
+- `## 验收标准`
+- `## 验收条件`
+- `## Acceptance criteria`（英文不区分大小写）
+
+验收区域从该标题延伸至下一个二级标题，其下至少有一条带文字的复选项：`- [ ] 验证内容` 或 `- [x] 已验证内容`。一级、三级标题、其他措辞、重复验收标题、空区域及仅有无文字复选项均不合格。发布 Spec 或其他 Issue 的技能在添加 ready 标签前须遵守此约定。
+
+[验收区域 workflow](../../.github/workflows/issue-readiness.yml)在 Issue 打开、加标签或编辑时，对仍打开且带上述 ready 标签的 Issue 复查。不合格时移除两个 ready 标签、添加 `needs-info`，并创建或更新同一条机器人说明评论。修复正文后重新添加所需 ready 标签触发复查；合格且存在该机器人的拦截标记评论时，移除 `needs-info` 并将原评论更新为已通过。首次合规的 Issue 不做写操作。此检查只验证区域格式，不代表验收条目已实现，不自动关闭或重开 Issue。
+
 ## 常用操作
 
 - 创建：gh issue create --title "标题" --body-file <正文文件>
