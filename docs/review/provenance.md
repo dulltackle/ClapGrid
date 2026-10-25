@@ -16,7 +16,7 @@
 | C3–C4 | [#9 未知计费结果](https://github.com/dulltackle/ClapGrid/issues/9#issuecomment-5833392026)、[#22 配音有效性](https://github.com/dulltackle/ClapGrid/issues/22#issuecomment-5866202444)。保留请求身份与输入快照判断。 |
 | C5 | [#26 清理后解锁](https://github.com/dulltackle/ClapGrid/issues/26#issuecomment-5868366978)、[#33 accepted 窗口](https://github.com/dulltackle/ClapGrid/issues/33#issuecomment-5998010658)。保持整项目锁及异步受理语义。 |
 | C6 | [#25 媒体边界](https://github.com/dulltackle/ClapGrid/issues/25#issuecomment-5868010491)、[#41 迁入规格](https://github.com/dulltackle/ClapGrid/issues/41)。仅相关改动适用。 |
-| V1–V4 | [#29 安装隔离](https://github.com/dulltackle/ClapGrid/issues/29#issuecomment-5875120704)、[#42 重载核对](https://github.com/dulltackle/ClapGrid/issues/42#issuecomment-5987106704)、[#47 退出前已完成](https://github.com/dulltackle/ClapGrid/issues/47#issuecomment-5995130621)。结论严格受证据范围约束。 |
+| V1–V4 | [#29 安装隔离](https://github.com/dulltackle/ClapGrid/issues/29#issuecomment-5875120704)、[#42 重载核对](https://github.com/dulltackle/ClapGrid/issues/42#issuecomment-5987106704)、[#47 退出前已完成](https://github.com/dulltackle/ClapGrid/issues/47#issuecomment-5995130621)、[#226 旧状态等待](https://github.com/dulltackle/ClapGrid/issues/226)、[#241 本次操作完成条件](https://github.com/dulltackle/ClapGrid/issues/241#issuecomment-6392230366)。结论严格受证据范围约束；等待绑定本次操作由审查判断，不新增文本匹配检查。 |
 | V5–V6 | [#29 媒体兼容](https://github.com/dulltackle/ClapGrid/issues/29#issuecomment-5975748610)、[#35 宿主验证](https://github.com/dulltackle/ClapGrid/issues/35#issuecomment-5968806367)。沿用面板规范，不复制样式规则。 |
 
 机械要求复用类型检查、测试与构建；本轮补充本地审查上下文链接的确定性检查，以有效链接和删除目标后的违规输入验证退出状态。未把任务锁、收费幂等或证据是否足够等判断性规则伪装成文本匹配检查。
