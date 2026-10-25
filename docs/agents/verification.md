@@ -45,7 +45,7 @@ PR 合并结果和手动 ref 的结论分别对应实际检出，不跨运行复
 
 性能结论注明实际源码、范围、工具、环境、缓存和配置，计入准备、安装、执行、报告保存与清理，披露 runner 总占用和资源成本。单轮结果只描述观察，不能推断波动或稳定改善。
 
-测试迁移范围、旧机制退出及 #192 一次性性能验收约定见 [ADR0011](../adr/0011-native-test-frameworks.md)；承接清单见 [native-retirement](../testing/native-retirement.md)。这些历史约定不自动成为新任务的测量轮次要求。旧验证协议可查提交 `2f6fa2a` 中的 `docs/agents/verification-protocols.md`，仅用于理解历史证据。历史通过记录不能作为新候选的执行结果。
+测试迁移范围、旧机制退出及 #192 一次性性能验收约定见 [ADR0011](../adr/0011-native-test-frameworks.md)，旧机制退出与保障承接清单见 [#200](https://github.com/dulltackle/ClapGrid/issues/200)。这些历史约定不自动成为新任务的测量轮次要求。旧验证协议可查提交 `2f6fa2a` 中的 `docs/agents/verification-protocols.md`，仅用于理解历史证据。历史通过记录不能作为新候选的执行结果。
 
 旧测试命令、参数、报告与后台验收协议已退出，不提供兼容入口。产品制作的 `evidence` / `verify-package` 和插件 `plugin:verify` 仍按[制作命令](../production.md)及[插件交付](plugin-delivery.md)使用。
 
