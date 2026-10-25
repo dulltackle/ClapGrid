@@ -16,7 +16,7 @@ export function useSegmentDetails({ editing, status, accept, save, failed, navig
 }) {
   const [id, setId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ id: string; base: string; text: string; baseVisualNote: string; visualNote: string } | null>(null);
-  const [focusRequest, setFocusRequest] = useState<{ target: 'text' | 'panel'; intent: FocusIntent } | null>(null);
+  const [focusRequest, setFocusRequest] = useState<{ target: SegmentTextField | 'panel'; intent: FocusIntent } | null>(null);
   const [pending, setPending] = useState<{ destination: SegmentDestination; origin?: FocusReturn } | null>(null);
   const text = useRef<HTMLTextAreaElement>(null);
   const visualNote = useRef<HTMLTextAreaElement>(null);
@@ -71,7 +71,7 @@ export function useSegmentDetails({ editing, status, accept, save, failed, navig
     commit,
     show: (destination: NonNullable<SegmentDestination>, intent: FocusIntent) => {
       setId(destination.id);
-      if (destination.mode === 'details') setFocusRequest({ target: destination.focusText ? 'text' : 'panel', intent });
+      if (destination.mode === 'details') setFocusRequest({ target: destination.field === 'visualNote' ? 'visualNote' : destination.focusText ? 'text' : 'panel', intent });
     },
     hide: () => setId(null),
     continueEditing: () => {
@@ -110,7 +110,7 @@ export function SegmentDetails({ controller, segment, segments, busy, disabled, 
     const request = controller.focusRequest;
     const frame = requestAnimationFrame(() => {
       if (!request.intent.valid()) { controller.consumeFocus(); return; }
-      const target = request.target === 'text' ? controller.text.current : controller.panel.current;
+      const target = request.target === 'text' ? controller.text.current : request.target === 'visualNote' ? controller.visualNote.current : controller.panel.current;
       if (target && !target.matches(':disabled')) { controller.consumeFocus(); target.focus({ preventScroll: true }); }
     });
     return () => cancelAnimationFrame(frame);

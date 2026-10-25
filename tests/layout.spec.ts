@@ -97,6 +97,34 @@ for (const [width, height] of [[1600, 1000], [780, 579], [541, 579], [420, 800],
   });
 }
 
+for (const width of [780, 420]) test(`双击画面说明直接编辑、保存并恢复来源焦点 ${width}`, async ({ page, project }) => {
+  const [id] = await project.seed(['保留文案']);
+  await page.setViewportSize({ width, height: 579 });
+  await page.goto(project.url);
+  await row(page, id!).locator('[data-note-toggle]').click();
+  const original = page.getByLabel('画面说明原文', { exact: true });
+  await expect(original).toHaveText('暂无画面说明');
+  await original.dblclick();
+  const editor = page.getByLabel('详情画面说明', { exact: true });
+  await expect(editor).toBeFocused();
+  await expect(editor).toBeEditable();
+  await editor.fill('双击后填写的说明\n保留换行');
+  await page.getByRole('button', { name: '保存画面说明', exact: true }).click();
+  await expect.poll(async () => {
+    const status = await project.status();
+    return { note: status.snapshot.segments[0]!.visualNote, text: status.snapshot.segments[0]!.text, modification: status.modification };
+  }).toEqual({ note: '双击后填写的说明\n保留换行', text: '保留文案', modification: null });
+  await page.getByRole('button', { name: '关闭详情', exact: true }).click();
+  await expect(original).toBeFocused();
+  await expect(original).toHaveText('双击后填写的说明\n保留换行');
+  await original.press('F2');
+  await expect(editor).toBeFocused();
+  await expect(editor).toBeEditable();
+  await expect(editor).toHaveValue('双击后填写的说明\n保留换行');
+  await editor.press('Escape');
+  await expect(original).toBeFocused();
+});
+
 for (const width of [1600, 420]) test(`长文案摘要保留原文，全文编辑可滚动、Tab 保存与字符入口正常 ${width}`, async ({ page, project }) => {
   const text = '长文案完整内容\n'.repeat(100);
   const [id] = await project.seed([text]);

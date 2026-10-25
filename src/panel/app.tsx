@@ -655,7 +655,7 @@ export function App() {
       overlayLoadingTemplate="<span>正在连接本地服务…</span>"
       noRowsOverlayComponent={EmptyProject}
       noRowsOverlayComponentParams={{ message: error ? '暂时无法读取口播片段' : '暂无口播片段' }} /></AgGridProvider>
-      <SegmentRowDetails expandedId={expandedNote} mainHeight={mainRowHeight(expandedNote ?? undefined)} onHeight={setNoteHeight} onCollapse={() => setExpandedNote(null)} element={gridElement} segments={reorderPreview ?? status?.snapshot.segments ?? []} onOpen={(id, trigger) => { segmentDetail.navigate({ id }, focusReturns.capture(trigger)); }} />
+      <SegmentRowDetails expandedId={expandedNote} mainHeight={mainRowHeight(expandedNote ?? undefined)} onHeight={setNoteHeight} onCollapse={() => setExpandedNote(null)} element={gridElement} segments={reorderPreview ?? status?.snapshot.segments ?? []} onOpen={(id, trigger, field) => { segmentDetail.navigate({ id, field }, focusReturns.capture(trigger)); }} />
     </div>
     </ContextMenuTrigger>
     {rowMenu && <RowMenu onCloseAutoFocus={event => {
