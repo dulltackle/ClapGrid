@@ -12,7 +12,7 @@ GitHub 单事项按任务选择 `gh issue view --repo dulltackle/ClapGrid <编�
 
 ## 执行与留存
 
-使用每次运行独立的目录，保留 stdout、stderr 和实际退出码，避免后续执行覆盖失败现场。优先使用 Vitest、Playwright 和 GitHub Actions 的原生报告及附件。需要普通命令日志时，可直接使用 shell，例如：
+使用每次运行独立的目录，在任务活跃期保留 stdout、stderr 和实际退出码，避免后续执行覆盖失败现场。证据生命周期与删除条件统一按[验收原件与手动收尾](verification.md#验收原件与手动收尾)执行，持久摘要写入 GitHub Issue/PR 评论。优先使用 Vitest、Playwright 和 GitHub Actions 的原生报告及附件。需要普通命令日志时，可直接使用 shell，例如：
 
 ```bash
 set -eu
@@ -55,11 +55,11 @@ printf '%s\n' "$run_status" >"$CLAPGRID_PLAYWRIGHT_RUN_DIR/exit-code.txt"
 
 外层终止不代表浏览器和其他子进程已退出。需要可控中断时，可使用 `setsid node_modules/.bin/playwright test` 启动原生入口并记录该次 PID/PGID（后台启动后用 `ps -o pid,ppid,pgid,sid,comm -p "$!"` 核对）。续跑前用 `ps -eo pid,ppid,pgid,sid,comm` 按记录的 PGID 核对原组；必要时只对该组发送信号（例如 `kill -TERM -- "-$run_pgid"`，仍有残留才 `kill -KILL -- "-$run_pgid"`），确认该组退出后换新目录重跑。禁止按进程名扫描终止其他运行或其他工作树的资源；不自动判断或清理旧运行。进程已退出也不表示强制中断时报告已完整保存。
 
-历史目录不自动轮换、删除，也没有 `latest` 链接。确认对应运行及其进程组已退出、证据不再需要后，先列出 `find logs/playwright -mindepth 1 -maxdepth 1 -type d -print`，再按明确目录手动清理，例如 `rm -r -- logs/playwright/<已核对的运行目录>`；不要对仍在运行的目录执行清理。
+`logs/playwright` 与 acceptance 运行目录采用同一任务生命周期；任务活跃期保留，Issue 关闭或 PR 合并且摘要写入后手动清理。不按固定天数清理，不自动轮换、删除，也没有 `latest` 链接。按[手动收尾清单](verification.md#验收原件与手动收尾)确认无活跃依赖、对应运行及其进程组已退出后，先列出 `find logs/playwright -mindepth 1 -maxdepth 1 -type d -print`，再按明确目录手动清理，例如 `rm -r -- logs/playwright/<已核对的运行目录>`；不要对仍在运行的目录执行清理。
 
 ## 旧工具退出
 
-`agent-tools.mjs` 及其专属测试、夹具已退出，不保留兼容命令或自定义日志格式。历史研究与验证记录保留当时结论；其中旧命令不再是执行入口。其他检查、产品工具与资源 helper 继续使用现有实现。
+`agent-tools.mjs` 及其专属测试、夹具已退出，不保留兼容命令或自定义日志格式。历史研究与验证结论通过 GitHub Issue/PR 评论和旧提交追溯，本机原件按任务生命周期清理；其中旧命令不再是执行入口。其他检查、产品工具与资源 helper 继续使用现有实现。
 
 ## 持续交互验收的启动、查询与停止
 
@@ -95,7 +95,7 @@ ps -eo pid,ppid,pgid,sid,lstart,comm | awk -v group="$acceptance_pgid" 'NR == 1 
 kill -TERM -- "-$acceptance_pgid"
 ```
 
-fixture teardown 沿用 `useProject`，关闭服务、确认媒体资源退出后删除临时项目；验收专用 preload 仅让媒体守护进程忽略组的 INT/TERM，由已有 IPC 关闭流程释放它。`acceptance.json` 不删除，停止后原子追加 `stop.reason`（`signal` / `expired`）、信号、停止时间及 `cleanup.projectRemoved` / `cleanup.serviceClosed`。两项均为 true 才表示清理成功；到期停止正常通过，SIGINT 可能由 Playwright 以 interrupted 报告。保留本轮日志并再次核对进程组已退出；父启动进程退出不等于整组已经清理。
+fixture teardown 沿用 `useProject`，关闭服务、确认媒体资源退出后删除临时项目；验收专用 preload 仅让媒体守护进程忽略组的 INT/TERM，由已有 IPC 关闭流程释放它。fixture 停止时保留 `acceptance.json`，原子追加 `stop.reason`（`signal` / `expired`）、信号、停止时间及 `cleanup.projectRemoved` / `cleanup.serviceClosed`。两项均为 true 才表示清理成功；到期停止正常通过，SIGINT 可能由 Playwright 以 interrupted 报告。任务活跃期保留本轮日志并再次核对进程组已退出；父启动进程退出不等于整组已经清理。停止记录与本轮目录在任务收尾时按上述清单一并手动删除。
 
 `SIGKILL`、终端会话被强制销毁或其他异常终止不能运行 teardown。没有完整 stop 记录或清理结果为 false 时保留现场，不自动处理旧轮次。手动恢复时：
 

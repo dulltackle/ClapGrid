@@ -66,7 +66,7 @@ temp/
 # 本地安装的 Remotion 技能
 /.agents/skills/remotion-*/
 
-# 历史制作工程、验收原件与设计图仅在本机保留，不再提交。
+# 本机临时／历史产物，不承诺保留，不得提交。
 /docs/productions/
 /docs/validation/
 /docs/design/
