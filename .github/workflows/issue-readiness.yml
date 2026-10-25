@@ -1,0 +1,30 @@
+name: Issue 验收区域检查
+on:
+  issues:
+    types: [opened, labeled, edited]
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: issue-readiness-${{ github.event.issue.number }}
+  cancel-in-progress: false
+jobs:
+  readiness:
+    if: >-
+      github.event.issue.state == 'open' &&
+      (contains(github.event.issue.labels.*.name, 'ready-for-agent') ||
+       contains(github.event.issue.labels.*.name, 'ready-for-human'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const { pathToFileURL } = require('node:url');
+            const path = require('node:path');
+            const moduleURL = pathToFileURL(path.join(process.env.GITHUB_WORKSPACE, 'scripts/ci/issue-readiness.mjs'));
+            const { enforceIssueReadiness } = await import(moduleURL.href);
+            await enforceIssueReadiness(github, context);
