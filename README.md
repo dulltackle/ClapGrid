@@ -117,7 +117,7 @@ npm run plugin:build
 
 将完整构建目录接入个人插件市场并安装后，在新会话使用已安装的 `open-clapgrid`，由 Codex 按[当前打开流程](plugins/clapgrid/skills/open-clapgrid/SKILL.md)连接工作空间项目。`plugin:build` 只生成安装包；市场接入与安装使用实际宿主支持的方式并遵守宿主审批。安装后的技能发现和 MCP 加载需另行实测；从构建包执行协议测试不等同于宿主安装验收。
 
-Linux 组件的准备步骤见[组件准备流程](plugins/clapgrid/skills/open-clapgrid/references/linux.md)，维护和来源见[组件说明](docs/linux-components.md)。查阅既往交付证据时使用 [#29 历史验收记录](docs/validation/issue-29/README.md)；其中安装命令、系统限制和未验证项仅对应当时版本，现行打开与更新按上述流程执行。
+Linux 组件的准备步骤见[组件准备流程](plugins/clapgrid/skills/open-clapgrid/references/linux.md)，维护和来源见[组件说明](docs/linux-components.md)。查阅既往交付证据时使用 [#29](https://github.com/dulltackle/ClapGrid/issues/29)；其中安装命令、系统限制和未验证项仅对应当时版本，现行打开与更新按上述流程执行。
 
 ## 工作空间固定项目
 
@@ -125,17 +125,17 @@ Linux 组件的准备步骤见[组件准备流程](plugins/clapgrid/skills/open-
 
 服务通过系统分配端口，发布项目内的 `service.json` 供发现；数据库、媒体、配音及成片仍由同一个项目服务管理。表格保留完整 `/binding/…` URL，每个业务请求核对项目服务实例和聊天当前目录。工作空间改变后关闭旧面板并重新打开；旧项目任务继续，失效连接不自动重发制作请求。
 
-此能力依赖宿主提供聊天请求元数据以及可运行的本地 `codex app-server`。绑定版已通过实际插件与业务 MCP 的打开、双向编辑和重开验证，具体边界见 [#42 记录](docs/validation/issue-42/README.md)。当前按宿主实际本地工作目录绑定；「移出桌面项目但保留 cwd」的禁用语义由 #48 后续处理。本文此前的 `--project` 与 `--port` 命令仅用于开发/历史服务维护，不是正式插件日常入口。
+此能力依赖宿主提供聊天请求元数据以及可运行的本地 `codex app-server`。绑定版已通过实际插件与业务 MCP 的打开、双向编辑和重开验证，具体边界见 [#42](https://github.com/dulltackle/ClapGrid/issues/42)。当前按宿主实际本地工作目录绑定；「移出桌面项目但保留 cwd」的禁用语义由 #48 后续处理。本文此前的 `--project` 与 `--port` 命令仅用于开发/历史服务维护，不是正式插件日常入口。
 
 ## 验证范围
 
-自动化边界经确认：共享业务层公开接口、HTTP 接口、MCP 工具接口。测试使用临时 SQLite 和真实本机服务，MCP 使用 SDK 协议传输；面板单独在 Codex 内实际检查。执行记录见 [工程骨架验证](docs/validation/issue-16.md)。
+自动化边界经确认：共享业务层公开接口、HTTP 接口、MCP 工具接口。测试使用临时 SQLite 和真实本机服务，MCP 使用 SDK 协议传输；面板单独在 Codex 内实际检查。执行记录见 [#16](https://github.com/dulltackle/ClapGrid/issues/16)。
 
-自动化验证使用模拟供应商响应，不产生配音费用；导出测试执行真实本机媒体处理。项目编辑与保存验证见 [#17 验证记录](docs/validation/issue-17.md)。交替修改验证见 [#18 验证记录](docs/validation/issue-18.md)。片段组织与明确范围验证见 [#19 验证记录](docs/validation/issue-19.md)。Windows、macOS 安装与正式组件分发仍属于后续事项；Linux 的真实任务跨 Codex 退出及实际重启恢复已完成验证，见 [#26 验证记录](docs/validation/issue-26.md)。
+自动化验证使用模拟供应商响应，不产生配音费用；导出测试执行真实本机媒体处理。项目编辑与保存验证见 [#17](https://github.com/dulltackle/ClapGrid/issues/17)。交替修改验证见 [#18](https://github.com/dulltackle/ClapGrid/issues/18)。片段组织与明确范围验证见 [#19](https://github.com/dulltackle/ClapGrid/issues/19)。Windows、macOS 安装与正式组件分发仍属于后续事项；Linux 的真实任务跨 Codex 退出及实际重启恢复已完成验证，见 [#26](https://github.com/dulltackle/ClapGrid/issues/26)。
 
 实现参考：[AG Grid React 官方入门](https://www.ag-grid.com/react-data-grid/getting-started/)、[OpenAI 插件打包说明](https://developers.openai.com/plugins/build/plugins)。
 
-本地视频验证见 [#20 验证记录](docs/validation/issue-20.md)。
+本地视频验证见 [#20](https://github.com/dulltackle/ClapGrid/issues/20)。
 
 ## 单片段配音
 
@@ -151,7 +151,7 @@ Linux 组件的准备步骤见[组件准备流程](plugins/clapgrid/skills/open-
 - `clapgrid_submit_speech`：`{ requestId, segmentId }`，一次操作固定 UUID；重发复用同一标识，只有用户明确的新生成才换新 UUID。返回 `accepted` 不是成功。
 - `clapgrid_speech_status`：查询配置状态、统一声音、锁、任务和音频。按 `id` 或 `requestId` 查找原操作，音频 `url` 相对于本地服务地址。
 
-表格提交前把请求标识保存到浏览器本地存储。提交未确认时，再点按钮会复用原标识核对，不会自动创建新的付费请求。验收证据及未验证项见 [#21 验证记录](docs/validation/issue-21.md)。
+表格提交前把请求标识保存到浏览器本地存储。提交未确认时，再点按钮会复用原标识核对，不会自动创建新的付费请求。验收证据及未验证项见 [#21](https://github.com/dulltackle/ClapGrid/issues/21)。
 
 ## 全片导出
 
@@ -169,7 +169,7 @@ Linux 组件的准备步骤见[组件准备流程](plugins/clapgrid/skills/open-
 - `clapgrid_export_status` / `GET /api/exports`：查询任务、锁、完成片段数、问题、警告及成片位置；`output.url` 相对于服务地址。
 - `clapgrid_cancel_export` / `POST /api/exports/cancel`：参数 `{ taskId }`，`cleaning` 不等于已取消，继续查询至终态。
 
-新请求返回 `succeeded` 才确认成片可打开；请求断线时先查询任务，不自动重发。测试使用本机合成素材和模拟供应商音频，不产生配音费用；导出测试实际运行 FFmpeg。验证记录见 [#25 验证记录](docs/validation/issue-25.md)。服务退出与恢复见下一节；三平台宿主交付继续由 #27—#30 承接。
+新请求返回 `succeeded` 才确认成片可打开；请求断线时先查询任务，不自动重发。测试使用本机合成素材和模拟供应商音频，不产生配音费用；导出测试实际运行 FFmpeg。验证记录见 [#25](https://github.com/dulltackle/ClapGrid/issues/25)。服务退出与恢复见下一节；三平台宿主交付继续由 #27—#30 承接。
 
 
 ## 服务退出与中断恢复
@@ -184,10 +184,10 @@ Linux 组件的准备步骤见[组件准备流程](plugins/clapgrid/skills/open-
 
 服务通过独立媒体守护进程运行 FFmpeg/ffprobe；服务崩溃导致 IPC 断开，守护进程终止媒体子进程并等待 `close`，然后释放 `media-owner.sqlite`。新服务取得项目锁和媒体锁后才恢复业务状态。`media-active.json` 记录正在运行的媒体守护进程；守护进程本身异常且无法确认子进程停止时保留文件并拒绝恢复，不仅凭 PID 或锁文件推断已安全结束。Linux 使用本次开机标识区分关机遗留；其他平台遇到守护进程异常遗留时采取保守拒绝恢复，关机恢复仍需后续平台交付完善和实测。
 
-跨退出验收记录见 [#26 验证记录](docs/validation/issue-26.md)。自动化中的模拟供应商响应不算真实配音验收，关闭启动命令也不等于完全退出 Codex。
+跨退出验收记录见 [#26](https://github.com/dulltackle/ClapGrid/issues/26)。自动化中的模拟供应商响应不算真实配音验收，关闭启动命令也不等于完全退出 Codex。
 
 ## 自动检查与本地复现
 
 日常检查先读[检查与验收](docs/agents/verification.md)：准备环境、选择定向或完整检查，并按实际运行范围记录结果。该文档统一维护常用命令、CI 验收规则和性能结论的适用范围；命令定义以 `package.json` 为准。
 
-排查 CI 时查看[原生 CI 说明](docs/testing/native-ci.md)中的执行接线与原始报告位置；查询旧测试机制的退出和产品保障承接时查看[迁移记录](docs/testing/native-retirement.md)。插件安装与实际宿主交付另按[本机插件交付](docs/agents/plugin-delivery.md)核对。
+排查 CI 时查看[原生 CI 说明](docs/testing/native-ci.md)中的执行接线与原始报告位置；旧测试机制的退出和产品保障承接见 [#200](https://github.com/dulltackle/ClapGrid/issues/200)。插件安装与实际宿主交付另按[本机插件交付](docs/agents/plugin-delivery.md)核对。

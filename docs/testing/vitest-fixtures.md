@@ -25,4 +25,4 @@ test('通过真实服务读取项目', async ({ createDirectory, startService, o
 
 Vitest 的 fixture teardown 早于 `onTestFinished`。阻止服务退出的测试阻塞门、HTTP 请求和故障 SQLite 连接应由连接 fixture 拥有，在连接阶段解除。仅记录最终观测、恢复环境变量或释放故障测试外层现场的原生钩子可以保留。
 
-迁移覆盖原 `projectCleanup` 调用文件及命令、退出专项；旧弱映射、统一结束钩子与 `aroundEach` 接线已删除。测试名称、用例数量、预算、文件并行配置与冻结样本保持原范围。回归入口是 `bounded-run`、`service-cleanup`、`command-exit`、`service-exit-wait` 专项，以及全套 Vitest 和类型检查。
+回归入口是 `bounded-run`、`service-cleanup`、`command-exit`、`service-exit-wait` 专项，以及全套 Vitest 和类型检查。

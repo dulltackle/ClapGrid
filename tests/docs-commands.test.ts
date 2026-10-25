@@ -52,12 +52,15 @@ test('当前指南必须从根目录文档或插件 SKILL 沿相对链接可达'
   }))).toEqual(['docs/cycle.md: 孤立当前指南', 'docs/orphan.md: 孤立当前指南']);
 });
 
-test('历史证据与夹具不检查命令、链接或孤立状态，其他新目录默认受检', () => {
-  const files = Object.fromEntries(['docs/validation', 'docs/research', 'docs/productions', 'docs/adr', 'tests/fixtures'].map(dir => [
+test('ADR 与夹具不检查命令、链接或孤立状态，其他目录默认受检', () => {
+  const files = Object.fromEntries(['docs/adr', 'tests/fixtures'].map(dir => [
     `${dir}/old.md`, 'npm run missing\ntsx --test\nnode --import tsx --test\n[旧路径](missing.md)\nnpm exec vitest -- run tests/missing.ts',
   ]));
   expect(checkDocs(repository({ 'README.md': '', ...files }))).toEqual([]);
-  expect(checkDocs(repository({ 'README.md': '', 'new/guide.md': '' }))).toEqual(['new/guide.md: 孤立当前指南']);
+  expect(checkDocs(repository({ 'README.md': '', 'new/guide.md': '', 'docs/validation/old.md': '' }))).toEqual([
+    'docs/validation/old.md: 孤立当前指南',
+    'new/guide.md: 孤立当前指南',
+  ]);
 });
 
 test('仓库当前指南满足文档契约', () => {

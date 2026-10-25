@@ -22,12 +22,10 @@ MCP 使用 `clapgrid_export_settings` 查询，`clapgrid_set_export_settings` �
 
 需要 PATH 中的 FFmpeg、ffprobe、Fontconfig 的 `fc-list`。FFmpeg 需包含 libx264、原生 mpeg4、libass，并使用 Fontconfig 字体提供者；探测不符合时反馈安装/构建要求。Windows、macOS 同样需要这套组件与字体配置，不能把 Fontconfig 枚举结果直接交给另一字体提供者。新安装或卸载字体后重新打开设置入口刷新列表；下一次导出还会重新校验。
 
-本次自动测试在 Linux 上验证两种编码、五种帧率、中文字体烧录、组件缺失、设置保存恢复、修改权与配音锁。Windows/macOS 的组件安装和实际运行仍须由 #11、#12 的平台验收验证；不能将 Linux 结果视为三平台通过。
+Windows/macOS 的组件安装和实际运行须由 [#11](https://github.com/dulltackle/ClapGrid/issues/11)、[#12](https://github.com/dulltackle/ClapGrid/issues/12) 的平台验收验证；不能将 Linux 结果视为三平台通过。
 
-## 后续导出接入
+## 导出读取接口
 
-`business.getCurrentExportSettings()` 返回经过当前环境验证的独立设置值及固定输出参数，缺少必填项、环境不可用、项目正在修改或配音进行中均拒绝。异步探测完成后再比较当前设置，防止采用过时配置；后续导出任务须在自己的任务锁边界调用并固定返回值。`exportEncodingArguments` 提供与探测一致的编码输出参数。
-
-#24 只实现设置与导出前读取，不实现全片导出任务、取消、字幕布局或成片生成。修改设置不写配音、片段或 `exports/`，已有导出快照与文件不变；后续每次任务须重新读取当前设置。完整成片采用设置的端到端验证留到导出任务接入后执行。
+`business.getCurrentExportSettings()` 返回经过当前环境验证的独立设置值及固定输出参数，缺少必填项、环境不可用、项目正在修改或配音进行中均拒绝。异步探测完成后再比较当前设置，防止采用过时配置；导出任务须在自己的任务锁边界调用并固定返回值。`exportEncodingArguments` 提供与探测一致的编码输出参数。
 
 参考：[FFmpeg subtitles 过滤器](https://ffmpeg.org/ffmpeg-filters.html#subtitles)、[Fontconfig 开发文档](https://fontconfig.pages.freedesktop.org/fontconfig/fontconfig-devel/)、[fc-list 手册](https://xorg.freedesktop.org/archive/X11R7.0/doc/html/fc-list.1.html)。

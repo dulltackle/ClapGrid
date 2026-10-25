@@ -16,4 +16,4 @@
 
 BtbN 的[保留策略](https://github.com/BtbN/FFmpeg-Builds#release-retention-policy)是最近 14 个日构建及两年的月末构建，故从 [ClapGrid 固定组件 Release](https://github.com/dulltackle/ClapGrid/releases/tag/linux-components-2026-10-21) 下载原包，不依赖上游的清理周期。该 Release 长期保留原始二进制、对应 FFmpeg 本体源码、依赖源码、固定构建脚本和 SHA256SUMS；完整源码缓存的分卷拼接方式见 Release 说明。FFmpeg 的 GPL 许可在原包 LICENSE.txt 中。
 
-维护者更换固定组件时应同时保留对应源码、构建脚本和许可，并校验两个架构的原包摘要；安装后的试运行及媒体能力检查继续执行。真实验收范围见 [#219 验证记录](validation/linux-runtime/issue219.md)，容器结果与实际 Codex 宿主交付分开记录。
+维护者更换固定组件时应同时保留对应源码、构建脚本和许可，并校验两个架构的原包摘要；安装后的试运行及媒体能力检查继续执行。真实验收范围见 [#219](https://github.com/dulltackle/ClapGrid/issues/219)，容器结果与实际 Codex 宿主交付分开记录。

@@ -42,7 +42,7 @@ function linkTargets(text: string): string[] {
 export function checkDocs(root: string): string[] {
   const files = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean);
   const scripts = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')).scripts ?? {};
-  const current = (file: string) => file.endsWith('.md') && !/^(?:docs\/(?:validation|research|productions|adr)|tests\/fixtures)\//.test(file);
+  const current = (file: string) => file.endsWith('.md') && !/^(?:docs\/adr|tests\/fixtures)\//.test(file);
   const errors: string[] = [];
   const edges = new Map<string, string[]>();
   for (const file of files.filter(file => file.endsWith('.md'))) {
