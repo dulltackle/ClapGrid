@@ -232,6 +232,15 @@ for(const [width,height] of [[780,579],[541,579],[420,360]])test(`五类配音�
  expect(await status.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
  const group=region.getByRole('group');await expect(group.getByRole('button')).toHaveCount(1);
  const controls=await group.boundingBox(),text=await status.boundingBox();expect(controls!.x+controls!.width).toBeLessThanOrEqual(text!.x+1);
+ const script=await row(page,ids[i]!).locator('[data-segment-script]').boundingBox();
+ const support=await row(page,ids[i]!).locator('[data-segment-support]').boundingBox();
+ const speech=await region.boundingBox();
+ expect(speech!.y).toBeGreaterThanOrEqual(script!.y);
+ expect(speech!.y+speech!.height).toBeLessThanOrEqual(script!.y+script!.height+1);
+ expect(script!.x+script!.width).toBeLessThanOrEqual(speech!.x);
+ expect(speech!.y+speech!.height).toBeLessThanOrEqual(support!.y);
+ await status.click();
+ await expect(page.getByLabel('文案全文',{exact:true})).toHaveCount(0);
  expect(await row(page,ids[i]!).evaluate(e=>e.getBoundingClientRect().height)).toBe(102);
  }
  await expect(row(page,ids[2]!).getByRole('button',{name:'生成中',exact:true})).toBeDisabled();

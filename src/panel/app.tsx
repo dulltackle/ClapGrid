@@ -638,7 +638,7 @@ export function App() {
         if (currentMatch) { const index = event.api.getRowNode(currentMatch)?.rowIndex; if (index != null) searchAnchor.current = index; }
       }}
       getRowHeight={params => mainRowHeight(params.data?.id) + (params.data?.id === searchLayout.current.expandedNote ? searchLayout.current.noteHeight : 0)}
-      onCellClicked={event => { if ((event.colDef.field === 'text' || event.colDef.field === 'visualNote') && event.data && !(event.event?.target as HTMLElement)?.closest('textarea, button, [data-segment-support]')) { segmentDetail.navigate({ id: event.data.id, inline: true, field: event.colDef.field as 'text' | 'visualNote' }); } }}
+      onCellClicked={event => { if ((event.colDef.field === 'text' || event.colDef.field === 'visualNote') && event.data && !(event.event?.target as HTMLElement)?.closest('textarea, button, [data-segment-support], [data-segment-speech]')) { segmentDetail.navigate({ id: event.data.id, inline: true, field: event.colDef.field as 'text' | 'visualNote' }); } }}
       onCellKeyDown={event => {
         if ((event.event?.target as HTMLElement)?.closest('button')) return;
         const key = (event.event as KeyboardEvent).key;

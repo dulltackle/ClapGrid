@@ -41,7 +41,7 @@ export function SegmentSpeech({ segment, speech, disabled, reason, playing, gene
   const explanation = !segment.text.trim() ? '请先填写文案' : reason;
   const pending = latest?.state === 'accepted' || latest?.state === 'running';
   const statusLine = (label: string, tone: string, spinning = false) => <span className="flex items-center gap-1 text-[12px] text-muted-foreground">{spinning ? <ReloadIcon aria-hidden className="size-3 shrink-0 animate-spin text-primary motion-reduce:animate-none" /> : <DotFilledIcon aria-hidden className={`size-3 shrink-0 ${tone}`} />}<span className={tone === 'text-destructive' ? tone : undefined}>{label}</span></span>;
-  return <section title={explanation || undefined} aria-label={detail ? '详情配音' : `片段 ${segment.order} 配音`} className={detail ? 'space-y-2' : 'flex shrink-0 items-center gap-2 leading-5'}>
+  return <section data-segment-speech title={explanation || undefined} aria-label={detail ? '详情配音' : `片段 ${segment.order} 配音`} className={detail ? 'space-y-2' : 'flex shrink-0 items-center gap-2 leading-5'}>
     {!detail && <div role="group" aria-label="配音操作" className="flex min-w-0 items-center gap-1">
       <Button variant={audio || pending ? 'outline' : problem ? 'outline' : 'default'} size="xs"
         className={`h-7 min-w-0 gap-1 shrink-0 rounded-md px-2.5 text-[12px] has-[>svg]:px-2.5 ${!audio && problem ? 'border-destructive/30 text-destructive bg-destructive/5 hover:bg-destructive/10' : ''}`}
