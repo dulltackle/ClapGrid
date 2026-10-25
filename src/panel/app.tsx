@@ -1,5 +1,5 @@
 import { SegmentSpeech } from './segment-speech.js';
-import { SegmentRowCell, SegmentRowActions } from './segment-row.js';
+import { SegmentRowCell, SegmentRowActions, SegmentRowSupport } from './segment-row.js';
 import { SegmentDetails, useSegmentDetails } from './segment-details.js';
 import { DragHandleDots2Icon } from '@radix-ui/react-icons';
 import { SegmentRowDetails } from './segment-row-details.js';
@@ -465,6 +465,7 @@ export function App() {
       cellRendererParams: { ...rowControls, query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: Math.max(102, searchRowHeight), toggleNote, expandedId: expandedNote, assets: status?.snapshot.assets ?? [],
         preview: (segment: Segment, trigger: HTMLButtonElement) => { rememberOrigin(trigger, 'preview'); setPreview(segment.video); }, suppressMouseEventHandling: cellControlMouse },
       cellEditor: TextEditor, cellEditorPopup: false,
+      cellEditorParams: ({ data }: { data: Segment }) => ({ speech: <SegmentSpeech {...rowControls} disabled segment={data} generate={() => {}} history={trigger => rowControls.history(data.id, trigger)} />, support: <SegmentRowSupport data={data} assets={status?.snapshot.assets ?? []} expandedId={expandedNote} toggleNote={toggleNote} disabled preview={() => {}} /> }),
       suppressKeyboardEvent: params => {
         if ((params.event.target as HTMLElement).closest('button')) return cellControlKeyboard(params);
         if (params.editing && params.event.key === 'Tab') { params.api.stopEditing(); return true; }

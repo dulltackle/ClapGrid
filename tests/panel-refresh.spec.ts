@@ -20,7 +20,7 @@ test('受控兼容面板提示保护编辑草稿、保存中、详情、菜单�
  await expect(refresh).toBeDisabled();await expect(editor).toHaveValue('保留未提交草稿');
  await expect.poll(()=>activity.includes(true)).toBe(true);
  const gate=await holdResponse(page,'/api/segments/edit');
- try { await editor.press('Enter');await gate.received;await expect(refresh).toBeDisabled(); } finally {gate.release();}
+ try { await editor.press('Control+Enter');await gate.received;await expect(refresh).toBeDisabled(); } finally {gate.release();}
  await gate.delivered;await expect(refresh).toBeEnabled();
  await expect.poll(()=>activity.at(-1)).toBe(false);
  await page.locator(`[row-id="${id}"] [data-row-details]`).click();await expect(refresh).toBeDisabled();

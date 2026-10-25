@@ -30,7 +30,7 @@ for (const placement of ['上方添加', '下方添加'] as const) test(`相对$
   else await page.getByRole('menuitem', { name: placement, exact: true }).click();
   const input = page.getByLabel('文案全文', { exact: true });
   await expect(input).toBeFocused(); await expect(input).toBeInViewport();
-  await input.fill('插入文案'); await input.press('Enter');
+  await input.fill('插入文案'); await input.press('Control+Enter');
   await expect(page.locator('[data-save-status]')).toHaveText('已保存');
   const segments = (await project.status()).snapshot.segments;
   expect(segments.map(segment => segment.text)).toEqual(placement === '上方添加' ? ['插入文案', 'A', 'B'] : ['A', '插入文案', 'B']);
