@@ -20,7 +20,7 @@
 
 ## 自动样式门槛
 
-`npm run styles:check` 复用生产同源 Vite/Tailwind 编译，解析生成的 utilities 层与项目内既有 CSS 类名，发现同名冲突即失败。例外集中于 `scripts/style-collision-exceptions.json`，每项必须写完整 className 和经审查的 reason；重复、空理由或已不存在的冲突都会失败。优先消除冲突，例外不是忽略整类检查的开关。
+`npm exec vitest -- run tests/style-collisions.test.ts` 复用生产同源 Vite/Tailwind 编译，解析生成的 utilities 层与项目内既有 CSS 类名，发现同名冲突即失败。例外集中于 `scripts/style-collision-exceptions.json`，每项必须写完整 className 和经审查的 reason；重复、空理由或已不存在的冲突都会失败。优先消除冲突，例外不是忽略整类检查的开关。
 
 `tests/helpers/theme-contract.ts` 集中维护 Button、行菜单和删除确认框的可见主题契约，包括背景、文字、边框、禁用透明度与键盘焦点轮廓；既有宽窄视口行菜单测试负责实际调用，保留表格布局、未迁移控件和行为回归。修改主题时同时审查矩阵预期，不能为了通过测试降低可见性要求。完整 `check` 和 CI 包含这些检查。
 
@@ -60,7 +60,7 @@ Alert Dialog 源码取自 [官方 new-york-v4 registry](https://ui.shadcn.com/r/
 
 等待已确认请求时仍可取消或 Escape 关闭确认；这不撤回已发出的请求。若用户已转去查找，迟到响应不会重新打开确认或抢焦点。失败及结果未知均不自动重试。原有 Dialog 及非试点按钮继续服务设置、素材、配音等浮层；其嵌套与键盘测试保留。
 
-完整试点体积、方法与推广边界见 [试点评估](ui-pilot-evaluation.md)。本节描述源码行为，不能作为本机安装或实际宿主交付成功证明。
+完整试点体积、方法与推广边界见 [试点评估](research/ui-pilot-evaluation.md)。本节描述源码行为，不能作为本机安装或实际宿主交付成功证明。
 
 ## 导出设置表单（#80）
 
