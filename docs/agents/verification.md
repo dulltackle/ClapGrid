@@ -2,6 +2,8 @@
 
 采用 [ADR0011：直接使用 Vitest 和 Playwright](../adr/0011-native-test-frameworks.md)。工具定位、GitHub 查询和长日志处理见[工具指引](tooling.md)。
 
+文档新增、移动与整理遵循[文档维护约定](documentation.md)，由 [docs-commands 契约测试](../../tests/docs-commands.test.ts)随 `npm test` 与 CI 校验。
+
 ## 开发检查
 
 使用仓库声明的 Node 版本与锁定依赖，并准备实际测试需要的浏览器、FFmpeg/ffprobe、Fontconfig 和中文字体。检查使用夹具和本地服务，不传入真实供应商凭据或发起收费调用；环境准备与失败记录按[工具指引](tooling.md)留存。

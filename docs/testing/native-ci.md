@@ -2,7 +2,7 @@
 
 `.github/workflows/check.yml` 在 GitHub Actions 本身的 checkout 执行 `npm ci`、`npm run typecheck`、`vitest run`、`playwright test` 和 `npm run build`，各自为独立步骤。没有第二个检出、旧 verify 或跨运行成功复用。`logs/source-commit.log` 保存实际 HEAD；PR 合并结果及手动 ref 以该运行 checkout 为准，不额外声明 main 提交已经重新测试。
 
-运行环境保持 Ubuntu 24.04、锁定 Chrome 131.0.6778.204 和 Node 版本文件。入口为 PR 和手动执行，取消 main push 自动运行，原 concurrency 表达式保持不变。自动首次相同 workflow/event/ref 可替换，手动和 rerun 使用独立组。Vitest 默认使用 forks、文件并行及 `maxWorkers: '50%'`（本机 16 核为 8 workers，CI 4 vCPU 为 2 workers）；Playwright 使用 3 workers（#215 CI 单轮对照见 [Playwright 并发选择](playwright-workers.md)），不增加机器或 shard。`process-trace.yml` 同样在每个 PR 和手动运行，承担真实 FFmpeg 正向及七个拒绝窗口的 strace 专项；全套逻辑中的同名业务用例与额外进程追踪是不同验证边界，不是统一套件重复运行。
+运行环境保持 Ubuntu 24.04、锁定 Chrome 131.0.6778.204 和 Node 版本文件。入口为 PR 和手动执行，取消 main push 自动运行，原 concurrency 表达式保持不变。自动首次相同 workflow/event/ref 可替换，手动和 rerun 使用独立组。Vitest 默认使用 forks、文件并行及 `maxWorkers: '50%'`（本机 16 核为 8 workers，CI 4 vCPU 为 2 workers）；Playwright 使用 3 workers（#215 CI 单轮对照见 [Playwright 并发选择](../research/playwright-workers.md)），不增加机器或 shard。`process-trace.yml` 同样在每个 PR 和手动运行，承担真实 FFmpeg 正向及七个拒绝窗口的 strace 专项；全套逻辑中的同名业务用例与额外进程追踪是不同验证边界，不是统一套件重复运行。
 
 Vitest 使用自身配置 `tests/**/*.test.ts`，Playwright 使用 `**/*.spec.ts`。现有原生配置 `retry/retries: 0`、`allowOnly: false`/`forbidOnly: true` 保持，Vitest `passWithNoTests: false`、Playwright 未启用 pass-with-no-tests；收集为空失败。没有迁移中临时 exclude 清单。#200 已删除该命名空间内的旧工具专属测试；稳定候选仍须执行全套检查与真实 CI，原生收集通过本身不等于完整产品验收。
 
