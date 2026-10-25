@@ -205,6 +205,35 @@ for (const count of [2,7]) test(`笔和鼠标的真实悬浮及时更新且保�
  await pen.detach();
 });
 
+test('鼠标取消勾选后恢复普通行背景且保留键盘焦点可见性', async ({ page, project }) => {
+  const [id] = await project.seed(['取消选中的片段']);
+  await page.goto(project.url);
+  const first = row(page, id!);
+  const checkbox = first.locator('input[type="checkbox"]');
+  const overlay = () => first.evaluate(e => {
+    const s = getComputedStyle(e.querySelector('.ag-grid-scrolling-cells')!, '::before');
+    return { background: s.backgroundColor, image: s.backgroundImage };
+  });
+  await expect(first).toBeVisible();
+  await page.mouse.move(1, 1);
+  const baseline = await overlay();
+  await checkbox.click();
+  await expect(checkbox).toBeChecked();
+  await expect(first).toHaveClass(/ag-row-selected/);
+  await checkbox.click();
+  await expect(checkbox).not.toBeChecked();
+  await expect(first).not.toHaveClass(/ag-row-selected/);
+  await page.mouse.move(1, 1);
+  await expect.poll(overlay).toEqual(baseline);
+  await expect(first.locator('.ag-checkbox-input-wrapper')).toHaveCSS('box-shadow', 'none');
+  await checkbox.press(' ');
+  await expect(checkbox).toBeChecked();
+  await expect(first.locator('.ag-checkbox-input-wrapper')).not.toHaveCSS('box-shadow', 'none');
+  await checkbox.press(' ');
+  await expect(checkbox).not.toBeChecked();
+  await expect(first.locator('.ag-checkbox-input-wrapper')).not.toHaveCSS('box-shadow', 'none');
+});
+
 test('说明草稿断线后拒绝覆盖新说明，清空只修改说明',async({page,project})=>{
  const [id]=await project.seed(['原文']);await page.goto(project.url);
  await row(page,id!).locator('[data-row-details]').click();
