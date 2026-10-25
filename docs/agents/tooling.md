@@ -60,3 +60,48 @@ printf '%s\n' "$run_status" >"$CLAPGRID_PLAYWRIGHT_RUN_DIR/exit-code.txt"
 ## 旧工具退出
 
 `agent-tools.mjs` 及其专属测试、夹具已退出，不保留兼容命令或自定义日志格式。历史研究与验证记录保留当时结论；其中旧命令不再是执行入口。其他检查、产品工具与资源 helper 继续使用现有实现。
+
+## 持续交互验收的启动、查询与停止
+
+使用独立配置保持现场，无需改写测试源码或延长自动测试。裸入口默认空项目，每轮只允许一个固定场景；需要实际成片时把下面的 `空项目$` 换为 `真实成片已导出$`。在能保持运行的终端会话中执行：
+
+```bash
+umask 077
+acceptance_root=$(mktemp -d "${TMPDIR:-/tmp}/clapgrid-acceptance.XXXXXX")
+export CLAPGRID_PLAYWRIGHT_RUN_DIR="$acceptance_root/run"
+# 可选，例如 60 分钟；默认 30 分钟，小数也可用。
+# export CLAPGRID_ACCEPTANCE_MAX_MINUTES=60
+setsid npm run acceptance -- --grep '空项目$' >"$acceptance_root/stdout.log" 2>"$acceptance_root/stderr.log" < /dev/null &
+acceptance_launcher=$!
+printf '%s\n' "$acceptance_launcher" >"$acceptance_root/launcher.pid"
+ps -o pid,ppid,pgid,sid,lstart,comm -p "$acceptance_launcher"
+```
+
+就绪标志只有 `$CLAPGRID_PLAYWRIGHT_RUN_DIR/acceptance.json`，路径也会打印在 stdout；没有停止文件或控制通道。启动失败看本轮 stdout/stderr 和 Playwright 原生报告，不把进程存在当作场景已就绪。JSON 记录场景、源码提交、dirty 状态、面板构建身份、服务 URL/实例、临时项目、服务所在 worker 的 PID/PGID、启动和到期时间，以及候选源码证据范围。
+
+查询时读取记录并核对进程组（PID 是服务所在 worker，PGID 是 `setsid` 创建的组）：
+
+```bash
+acceptance_record="$CLAPGRID_PLAYWRIGHT_RUN_DIR/acceptance.json"
+cat "$acceptance_record"
+acceptance_pgid=$(jq -r .pgid "$acceptance_record")
+kill -0 -- "-$acceptance_pgid"
+ps -eo pid,ppid,pgid,sid,lstart,comm | awk -v group="$acceptance_pgid" 'NR == 1 || $3 == group'
+```
+
+`kill -0` 只说明组仍存在；同时核对记录的 PID、PGID、启动时间及命令，避免对旧记录中已被复用的 PGID 操作。正常停止优先向已核对的组发送 `SIGTERM`（也支持 `SIGINT`）：
+
+```bash
+kill -TERM -- "-$acceptance_pgid"
+```
+
+fixture teardown 沿用 `useProject`，关闭服务、确认媒体资源退出后删除临时项目；验收专用 preload 仅让媒体守护进程忽略组的 INT/TERM，由已有 IPC 关闭流程释放它。`acceptance.json` 不删除，停止后原子追加 `stop.reason`（`signal` / `expired`）、信号、停止时间及 `cleanup.projectRemoved` / `cleanup.serviceClosed`。两项均为 true 才表示清理成功；到期停止正常通过，SIGINT 可能由 Playwright 以 interrupted 报告。保留本轮日志并再次核对进程组已退出；父启动进程退出不等于整组已经清理。
+
+`SIGKILL`、终端会话被强制销毁或其他异常终止不能运行 teardown。没有完整 stop 记录或清理结果为 false 时保留现场，不自动处理旧轮次。手动恢复时：
+
+1. 从该轮 JSON、launcher.pid 和日志取精确 PID/PGID、临时项目路径及时间；用上述 `ps` 命令确认原进程组。若身份不符或无法确认，停止操作，保留现场。
+2. 原组仍在则先 `kill -TERM -- "-$acceptance_pgid"`，核对后仍有残留才对同组发 `SIGKILL`；不按进程名扫描或终止其他工作树资源。确认本轮媒体命令及守护进程均已退出。
+3. 确认端口关闭、资源释放，并核对 `projectDirectory` 确为该轮新建临时项目后，才手动 `rm -r -- <该轮精确临时项目路径>`。不能据此删除用户工作空间或 `clapgrid/`。其他保留目录仅在本轮日志能证明归属且资源已释放时按精确路径处理，不按通配符扫除。
+4. 记录异常、人工处理结果及原报告，换新运行目录重开；不伪造旧轮的正常停止或补写为验收通过。
+
+实际浏览器能力探测和候选源码证据边界见[检查与验收](verification.md#持续交互验收入口)。

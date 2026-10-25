@@ -21,6 +21,7 @@
     "production": "node scripts/production.mjs",
     "test": "vitest run",
     "test:ui": "playwright test",
+    "acceptance": "playwright test -c playwright.acceptance.config.ts",
     "check": "npm run typecheck && npm test && npm run test:ui && npm run build"
   },
   "dependencies": {

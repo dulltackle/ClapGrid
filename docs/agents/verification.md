@@ -46,3 +46,17 @@ PR 合并结果和手动 ref 的结论分别对应实际检出，不跨运行复
 测试迁移范围、旧机制退出及 #192 一次性性能验收约定见 [ADR0011](../adr/0011-native-test-frameworks.md)；承接清单见 [native-retirement](../testing/native-retirement.md)。这些历史约定不自动成为新任务的测量轮次要求。旧验证协议可查提交 `2f6fa2a` 中的 `docs/agents/verification-protocols.md`，仅用于理解历史证据。历史通过记录不能作为新候选的执行结果。
 
 旧测试命令、参数、报告与后台验收协议已退出，不提供兼容入口。产品制作的 `evidence` / `verify-package` 和插件 `plugin:verify` 仍按[制作命令](../production.md)及[插件交付](plugin-delivery.md)使用。
+
+## 持续交互验收入口
+
+使用 `npm run acceptance -- --grep '空项目$'` 或 `npm run acceptance -- --grep '真实成片已导出$'`，默认选择空项目，每轮只允许一个场景；宽泛筛选选中多场景时，后续场景在创建现场前报错。独立配置只收集 `tests/acceptance/**/*.acceptance.ts`，不启动 Playwright 浏览器；`test:ui` 和 CI 的浏览器阶段不收集这些文件。CI 的 Vitest 进程测试仍验证空项目的信号停止、到期停止与资源清理。
+
+场景通过 API 准备；“真实成片已导出”使用受控配音供应商及真实 `submitExport` 渲染。项目只在本轮新建的临时目录中，服务只监听 `127.0.0.1`，没有用户项目路径或真实供应商选项。场景准备完成后，原子写入运行目录下的 `acceptance.json` 并在 stdout 输出路径，文件存在即就绪。默认每个场景存活 30 分钟，`CLAPGRID_ACCEPTANCE_MAX_MINUTES` 可设为有限正数（支持小数，无人为上限）；从验收 fixture 初始化起计时，到期正常 teardown、退出 0。启动、查询和停止步骤见 [工具指引](tooling.md#持续交互验收的启动查询与停止)。
+
+实际浏览器验收清单：
+
+1. 在实际连接的浏览器中读取并记录 `navigator.userAgent`，以及 `document.createElement('video').canPlayType('video/mp4; codecs="avc1.42E01E"')`、`canPlayType('video/webm; codecs="vp8"')`。记录观察时间、浏览器名称和三项原始结果；不能用另起的 Playwright 浏览器代替。
+2. 按探测结果选择成片或兼容预览路径。打开面板的任务记录，核对真实导出成功和成片链接；观察播放、时长、`currentTime` 推进与媒体错误，记录实际结果。编码不支持时记录能力限制，不靠改测试源码延长现场。
+3. 记录本轮 `acceptance.json`、源码提交与 dirty 状态、面板构建身份、服务实例及截图。停止后核对 JSON 的停止原因与 `cleanup`，确认端口关闭、临时项目删除。`SIGINT` 可由 Playwright 报为 interrupted；到期退出必须成功。
+
+入口固定标注 `evidenceScope: candidate-source-service`，只证明候选源码服务及其独立面板。`candidate-panel` 身份的指纹对应这轮面板构建，不是完整插件包身份。它不能作为 `plugin:verify` 所需的实际 MCP 宿主或面板证据；源码、安装包和实际插件宿主仍按[插件交付](plugin-delivery.md)分别报告。此入口不探测浏览器、不新增产品探测端点、不修改成片或兼容预览契约。
