@@ -21,7 +21,7 @@ export function createBusinessMcp(url?: string) {
     }
     return bound;
   };
-  const server = new McpServer({ name: 'clapgrid', version: '0.1.0' });
+  const server = new McpServer({ name: 'clapgrid', version: '0.2.0' });
   let rootChanges = 0;
   server.server.setNotificationHandler(RootsListChangedNotificationSchema, () => { rootChanges++; });
   server.registerTool('clapgrid_host_context', {
