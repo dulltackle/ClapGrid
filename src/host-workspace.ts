@@ -38,7 +38,7 @@ export function readHostWorkspace(threadId: string): Promise<string> {
         }
       } catch { finish(new Error('无法核对本地工作空间，请先选择或创建工作空间并重新打开 ClapGrid。')); }
     });
-    send({ id: 1, method: 'initialize', params: { clientInfo: { name: 'clapgrid-workspace', version: '0.1.0' } } });
+    send({ id: 1, method: 'initialize', params: { clientInfo: { name: 'clapgrid-workspace', version: '0.2.0' } } });
   });
 }
 
