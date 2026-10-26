@@ -13,8 +13,8 @@ export function segmentSpeech(segmentId: string, speech: SpeechStatus | undefine
 }
 
 /** 表格行尾与详情复用同一组配音操作；菜单关闭交接仍由真实入口负责。 */
-export function SegmentSpeechMenu({ segment, speech, disabled, generate, history }: {
-  segment: Segment; speech: SpeechStatus | undefined; disabled: boolean; generate: () => void;
+export function SegmentSpeechMenu({ segment, speech, disabled, draftText, generate, history }: {
+  segment: Segment; speech: SpeechStatus | undefined; disabled: boolean; draftText?: string; generate: () => void;
   history: (trigger: HTMLElement) => void;
 }) {
   const { latest, generateLabel } = segmentSpeech(segment.id, speech);
@@ -24,21 +24,21 @@ export function SegmentSpeechMenu({ segment, speech, disabled, generate, history
   return <DropdownMenu modal={false} onOpenChange={open => { if (open) handoff.current = false; }}>
     <DropdownMenuTrigger asChild><Button ref={trigger} variant="ghost" size="xs" className="h-7 w-7 shrink-0 rounded-md p-0" data-speech-more aria-label={`片段 ${segment.order} 配音更多操作`} title="配音更多操作"><DotsHorizontalIcon aria-hidden className="size-4" /></Button></DropdownMenuTrigger>
     <DropdownMenuContent align="end" aria-label={`片段 ${segment.order} 配音操作`} onCloseAutoFocus={event => { if (handoff.current) event.preventDefault(); }} onClick={event => event.stopPropagation()}>
-      <DropdownMenuItem data-speech-generate disabled={disabled || !segment.text.trim() || pending} onSelect={generate}>{generateLabel}</DropdownMenuItem>
+      <DropdownMenuItem data-speech-generate disabled={disabled || !(draftText ?? segment.text).trim() || pending} onSelect={generate}>{generateLabel}</DropdownMenuItem>
       <DropdownMenuItem data-speech-history onSelect={() => { if (trigger.current) { handoff.current = true; history(trigger.current); } }}>保留音频与任务记录</DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>;
 }
 
 /** 状态来自服务输入快照；控件不推测任务完成或配音有效性。 */
-export function SegmentSpeech({ segment, speech, disabled, reason, playing, generate, listen, history, detail = false, onError }: {
-  segment: Segment; speech: SpeechStatus | undefined; disabled: boolean; reason: string; playing: string | null;
+export function SegmentSpeech({ segment, speech, disabled, draftText, reason, playing, generate, listen, history, detail = false, onError }: {
+  segment: Segment; speech: SpeechStatus | undefined; disabled: boolean; draftText?: string; reason: string; playing: string | null;
   generate: () => void; listen: (audio: SpeechStatus['audio'][number]) => void; history: (trigger: HTMLElement) => void;
   detail?: boolean; onError: () => void;
 }) {
   const { latest, audio, state, generateLabel } = segmentSpeech(segment.id, speech);
   const problem = latest?.state === 'failed' || latest?.state === 'unknown';
-  const explanation = !segment.text.trim() ? '请先填写文案' : reason;
+  const explanation = !(draftText ?? segment.text).trim() ? '请先填写文案' : reason;
   const pending = latest?.state === 'accepted' || latest?.state === 'running';
   const statusLine = (label: string, tone: string, spinning = false) => <span className="flex items-center gap-1 text-[12px] text-muted-foreground">{spinning ? <ReloadIcon aria-hidden className="size-3 shrink-0 animate-spin text-primary motion-reduce:animate-none" /> : <DotFilledIcon aria-hidden className={`size-3 shrink-0 ${tone}`} />}<span className={tone === 'text-destructive' ? tone : undefined}>{label}</span></span>;
   return <section data-segment-speech title={explanation || undefined} aria-label={detail ? '详情配音' : `片段 ${segment.order} 配音`} className={detail ? 'space-y-2' : 'flex shrink-0 items-center gap-2 leading-5'}>
@@ -47,7 +47,7 @@ export function SegmentSpeech({ segment, speech, disabled, reason, playing, gene
         className={`h-7 min-w-0 gap-1 shrink-0 rounded-md px-2.5 text-[12px] has-[>svg]:px-2.5 ${!audio && problem ? 'border-destructive/30 text-destructive bg-destructive/5 hover:bg-destructive/10' : ''}`}
         aria-label={audio ? playing === audio.taskId ? '暂停试听' : '试听' : pending ? state : generateLabel}
         title={audio ? audio.valid ? '试听配音' : '试听配音（待更新）' : explanation || generateLabel}
-        disabled={!audio && (disabled || !segment.text.trim() || pending)} onClick={() => audio ? listen(audio) : generate()}>
+        disabled={!audio && (disabled || !(draftText ?? segment.text).trim() || pending)} onClick={() => audio ? listen(audio) : generate()}>
         {audio ? playing === audio.taskId ? <PauseIcon aria-hidden className="size-4 text-primary" /> : <TriangleRightIcon aria-hidden className="size-4 text-primary" /> : <ReloadIcon aria-hidden className={`size-3 ${pending ? 'animate-spin motion-reduce:animate-none' : ''}`} />}
         <span>{audio ? playing === audio.taskId ? '暂停' : '试听' : pending ? state : generateLabel}</span>
       </Button>
@@ -57,7 +57,7 @@ export function SegmentSpeech({ segment, speech, disabled, reason, playing, gene
         {audio && latest && latest.state !== 'succeeded' && statusLine(audio.valid ? '有效配音' : '配音待更新', audio.valid ? 'text-green-600' : 'text-amber-500')}
         {statusLine(!detail && pending && !audio ? '请稍候' : state, problem ? 'text-destructive' : pending ? 'text-primary' : audio ? audio.valid ? 'text-green-600' : 'text-amber-500' : 'text-muted-foreground', pending)}
       </div>
-      {detail && <Button size="sm" variant="outline" className="ml-auto" title={explanation || generateLabel} disabled={disabled || !segment.text.trim()} onClick={generate}>{generateLabel}</Button>}
+      {detail && <Button size="sm" variant="outline" className="ml-auto" title={explanation || generateLabel} disabled={disabled || !(draftText ?? segment.text).trim()} onClick={generate}>{generateLabel}</Button>}
     </div>
     {detail && <>
       {audio && <audio key={audio.url} controls preload="none" className="block w-full" aria-label="详情配音播放器" src={audio.url} onError={onError} />}

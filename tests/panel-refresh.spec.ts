@@ -15,7 +15,7 @@ test('受控兼容面板提示保护编辑草稿、保存中、详情、菜单�
  await expect(refresh).toBeEnabled();
  await expect.poll(()=>activity.at(-1)).toBe(false);
  activity.length=0;
- await page.locator(`[row-id="${id}"] [data-segment-script]`).click();
+ await page.locator(`[row-id="${id}"] [data-segment-script]`).dblclick();
  const editor=page.getByLabel('文案全文',{exact:true});await editor.fill('保留未提交草稿');
  await expect(refresh).toBeDisabled();await expect(editor).toHaveValue('保留未提交草稿');
  await expect.poll(()=>activity.includes(true)).toBe(true);

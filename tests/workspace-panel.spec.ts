@@ -61,7 +61,7 @@ test('工作空间绑定面板完成文案保存、刷新和本地视频播放',
   await page.goto(url);
 
   await test.step('从绑定地址编辑文案，刷新后仍读取已保存内容', async () => {
-    await page.locator(`[row-id="${segment.id}"] [data-segment-script]`).click();
+    await page.locator(`[row-id="${segment.id}"] [data-segment-script]`).dblclick();
     const editor = page.getByLabel('文案全文', { exact: true });
     await editor.fill('工作空间项目中已保存的文案');
     // Ctrl+Enter 后先等本次保存响应，避免把上一次的“已保存”当成当前请求已完成。

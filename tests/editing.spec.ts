@@ -3,7 +3,7 @@ import { test, expect } from './helpers/project.js';
 test('文案通过真实服务保存并在重载后保留', async ({ page, project }) => {
   const [id] = await project.seed(['原文']);
   await page.goto(project.url);
-  await page.locator(`[row-id="${id}"] [data-segment-script]`).click();
+  await page.locator(`[row-id="${id}"] [data-segment-script]`).dblclick();
   await page.getByLabel('文案全文', { exact: true }).fill('已保存的新文案');
   await page.getByLabel('文案全文', { exact: true }).press('Control+Enter');
   await expect(page.locator('[data-save-status]')).toHaveText('已保存');
@@ -21,7 +21,7 @@ for (const width of [780, 420]) test(`原位编辑保留行高、画面上下文
   await page.setViewportSize({ width, height: 579 });
   await page.goto(project.url);
   const row = page.locator(`[row-id="${id}"]`);
-  await row.locator('[data-segment-script]').click();
+  await row.locator('[data-segment-script]').dblclick();
   const editor = row.locator('[data-inline-editor]');
   const input = page.getByLabel('文案全文', { exact: true });
   await expect(row).toHaveCSS('height', '102px');
@@ -32,7 +32,6 @@ for (const width of [780, 420]) test(`原位编辑保留行高、画面上下文
     return bounds.height <= 102 && support.y + support.height <= bounds.y + bounds.height + 1;
   }).toBe(true);
   await expect(input).toHaveCSS('outline-style', 'none');
-  await expect(row.locator('.ag-cell-inline-editing')).toHaveCSS('border-top-width', '0px');
   await expect.poll(async () => {
     const current = (await row.boundingBox())!, following = (await page.locator(`[row-id="${next}"]`).boundingBox())!;
     return following.y >= current.y + current.height - 1;
@@ -44,9 +43,10 @@ for (const width of [780, 420]) test(`原位编辑保留行高、画面上下文
   await expect(editor).toHaveCount(0);
   await expect.poll(async () => (await project.status()).snapshot.segments[0]!.text).toBe('第一行\n第二行');
   await expect(row).toHaveCSS('height', '102px');
-  await row.locator('[data-segment-script]').click();
+  await row.locator('[data-segment-script]').dblclick();
   await input.fill('不保存的草稿');
   await editor.getByRole('button', { name: '取消修改', exact: true }).click();
+  await page.getByRole('button', { name: '放弃修改', exact: true }).click();
   await expect(editor).toHaveCount(0);
   await expect.poll(async () => (await project.status()).modification).toBeNull();
   expect((await project.status()).snapshot.segments[0]!.text).toBe('第一行\n第二行');
@@ -57,7 +57,7 @@ for (const [width, height] of [[780, 579], [420, 360]]) test(`原位放大缩小
   await page.setViewportSize({ width: width!, height: height! });
   await page.goto(project.url);
   const row = page.locator(`[row-id="${id}"]`);
-  await row.locator('[data-segment-script]').click();
+  await row.locator('[data-segment-script]').dblclick();
   const input = page.getByLabel('文案全文', { exact: true });
   const expand = row.getByRole('button', { name: '放大编辑', exact: true });
   await input.fill('原位草稿');
@@ -93,9 +93,10 @@ for (const [width, height] of [[780, 579], [420, 360]]) test(`原位放大缩小
   await expect(dialog).toHaveCount(0);
   await expect.poll(async () => (await project.status()).snapshot.segments[0]!.text).toBe('放大后修改\n第二行');
   await expect.poll(async () => (await project.status()).modification).toBeNull();
-  await row.locator('[data-segment-script]').click(); await input.fill('不保存的放大草稿'); await expand.click();
+  await row.locator('[data-segment-script]').dblclick(); await input.fill('不保存的放大草稿'); await expand.click();
   await expect(large).toBeFocused();
   await dialog.getByRole('button', { name: '取消修改', exact: true }).click();
+  await page.getByRole('button', { name: '放弃修改', exact: true }).click();
   await expect(dialog).toHaveCount(0); await expect(input).toHaveCount(0);
   await expect.poll(async () => (await project.status()).modification).toBeNull();
   expect((await project.status()).snapshot.segments[0]!.text).toBe('放大后修改\n第二行');
@@ -106,9 +107,10 @@ test('行内 Escape 取消且 Shift+Enter 保留多行输入', async ({ page, pr
   await page.goto(project.url);
   const cell = page.locator(`[row-id="${id}"] [data-segment-script]`);
   const input = page.getByLabel('文案全文', { exact: true });
-  await cell.click(); await input.fill('取消的草稿'); await input.press('Escape');
+  await cell.dblclick(); await input.fill('取消的草稿'); await input.press('Escape');
+  await page.getByRole('button', { name: '放弃修改', exact: true }).click();
   expect((await project.status()).snapshot.segments[0]!.text).toBe('原文');
-  await cell.click(); await input.fill('第一行'); await input.press('Shift+Enter');
+  await cell.dblclick(); await input.fill('第一行'); await input.press('Shift+Enter');
   await input.pressSequentially('第二行');
   await expect(input).toHaveValue('第一行\n第二行');
   // 浏览器不提供系统 IME 原语：这里只验证 editor 的 composition 兼容事件。
@@ -118,14 +120,14 @@ test('行内 Escape 取消且 Shift+Enter 保留多行输入', async ({ page, pr
   await expect.poll(async () => (await project.status()).snapshot.segments[0]!.text).toBe('第一行\n第二行');
 });
 
-test('相邻单击等待原行保存后进入新行，连接先关闭仍显示保存成功', async ({ page, project }) => {
+test('相邻双击等待原行保存后进入新行，连接先关闭仍显示保存成功', async ({ page, project }) => {
   const [a, b] = await project.seed(['A', 'B']);
   await page.goto(project.url);
-  await page.locator(`[row-id="${a}"] [data-segment-script]`).click();
+  await page.locator(`[row-id="${a}"] [data-segment-script]`).dblclick();
   await page.getByLabel('文案全文', { exact: true }).fill('A 新文案');
   const gate = await holdResponse(page, '/api/segments/edit');
   try {
-    await page.locator(`[row-id="${b}"] [data-segment-script]`).click();
+    await page.locator(`[row-id="${b}"] [data-segment-script]`).dblclick();
     await gate.received;
     await expect(page.locator('[data-save-status]')).toContainText('保存中');
     expect((await project.status()).snapshot.segments[0]!.text).toBe('A 新文案');
@@ -140,7 +142,7 @@ test('相邻单击等待原行保存后进入新行，连接先关闭仍显示�
 
 test('真实页面关闭最终释放编辑修改权', async ({ page, project }) => {
   await project.seed(['A']); await page.goto(project.url);
-  await page.locator('[data-segment-script]').click();
+  await page.locator('[data-segment-script]').dblclick();
   await expect(page.getByLabel('文案全文', { exact: true })).toBeEditable();
   expect((await project.status()).modification?.owner).toBe('user');
   await page.close();

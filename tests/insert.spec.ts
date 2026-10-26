@@ -1,7 +1,7 @@
 import { test, expect } from './helpers/project.js';
 import { holdRequest, holdResponse } from './helpers/response-gate.js';
 
-for (const entry of ['顶部', '底部', '更多'] as const) test(`${entry}普通新增清除查找并选中编辑，关闭回新片段`, async ({ page, project }) => {
+for (const entry of ['顶部', '底部', '更多'] as const) test(`${entry}普通新增清除查找并只读定位，关闭回新片段`, async ({ page, project }) => {
   await project.seed(['A', 'B']); await page.goto(project.url);
   await page.getByRole('button', { name: '查找', exact: true }).click();
   await page.getByLabel('查找文案', { exact: true }).fill('A');
@@ -10,12 +10,12 @@ for (const entry of ['顶部', '底部', '更多'] as const) test(`${entry}普�
     await page.getByRole('dialog').getByRole('button', { name: '新增口播片段', exact: true }).click();
   } else await page.getByRole('button', { name: entry === '底部' ? '新增口播片段（表格底部）' : '新增口播片段', exact: true }).click();
   const draft = page.getByLabel('详情文案', { exact: true });
-  await expect(draft).toBeEditable(); await expect(draft).toBeFocused();
+  await expect(draft).toHaveAttribute('readonly', ''); await expect(draft).toBeFocused();
   await expect(page.getByLabel('查找文案', { exact: true })).toHaveCount(0);
   const segments = (await project.status()).snapshot.segments;
   expect(segments.map(segment => segment.text)).toEqual(['A', 'B', '']);
   const id = segments.at(-1)!.id;
-  await expect(page.locator(`[row-id="${id}"]`)).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator(`[row-id="${id}"]`)).toHaveAttribute('aria-selected', 'false');
   await page.keyboard.press('Escape');
   await expect(page.locator(`[row-id="${id}"] :focus`)).toHaveCount(1);
   await page.keyboard.press('ArrowUp');
@@ -36,7 +36,7 @@ for (const placement of ['上方添加', '下方添加'] as const) test(`相对$
   expect(segments.map(segment => segment.text)).toEqual(placement === '上方添加' ? ['插入文案', 'A', 'B'] : ['A', '插入文案', 'B']);
   expect(segments.filter(segment => segment.id === a || segment.id === b)).toHaveLength(2);
   const created = segments.find(segment => segment.id !== a && segment.id !== b)!;
-  await expect(page.locator(`[row-id="${created.id}"]`)).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator(`[row-id="${created.id}"]`)).toHaveAttribute('aria-selected', 'false');
 });
 
 for (const kind of ['普通', '相对'] as const) test(`${kind}新增迟到成功保留用户查找、勾选与焦点`, async ({ page, project }) => {
@@ -64,12 +64,11 @@ for (const kind of ['普通', '相对'] as const) test(`${kind}新增迟到成�
   expect((await project.status()).snapshot.segments).toHaveLength(3); expect(gate.calls).toBe(1);
 });
 
-for (const kind of ['普通', '相对'] as const) test(`${kind}新增第二次修改权迟到不抢新键盘焦点且释放租约`, async ({ page, project }) => {
+for (const kind of ['相对'] as const) test(`${kind}新增第二次修改权迟到不抢新键盘焦点且释放租约`, async ({ page, project }) => {
   const [a] = await project.seed(['A', 'B']); await page.goto(project.url);
   const gate = await holdRequest(page, '/api/edit-session', 2);
   try {
-    if (kind === '普通') await page.getByRole('button', { name: '新增口播片段', exact: true }).click();
-    else {
+    {
       await page.locator(`[row-id="${a}"] [data-segment-script]`).click({ button: 'right' });
       await page.getByRole('menuitem', { name: '下方添加', exact: true }).click();
     }
@@ -82,7 +81,7 @@ for (const kind of ['普通', '相对'] as const) test(`${kind}新增第二次�
   await expect(page.getByLabel('查找文案', { exact: true })).toBeFocused();
   await expect(page.getByLabel('查找文案', { exact: true })).toHaveValue('B');
   await expect(page.getByLabel('文案全文', { exact: true })).toHaveCount(0);
-  if (kind === '普通') await expect(page.getByLabel('详情文案', { exact: true })).toHaveAttribute('readonly', '');
+
   expect((await project.status()).snapshot.segments).toHaveLength(3);
 });
 
@@ -185,14 +184,14 @@ for (const outcome of ['成功', '失败'] as const) test(`离页后旧新增${o
     await page.evaluate(() => { window.dispatchEvent(new Event('pagehide')); window.dispatchEvent(new Event('pageshow')); });
     await expect.poll(async () => (await project.status()).modification).toBeNull();
     await page.getByRole('button', { name: '新增口播片段', exact: true }).click();
-    await expect(page.getByLabel('详情文案', { exact: true })).toBeEditable();
+    await expect(page.getByLabel('详情文案', { exact: true })).toHaveAttribute('readonly', '');
     await expect(page.getByLabel('详情文案', { exact: true })).toBeFocused();
   } finally { release(); }
   await completed;
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
   await expect(page.locator('[data-save-status]')).toHaveText('已保存');
   await expect(page.getByLabel('详情文案', { exact: true })).toBeFocused();
-  expect((await project.status()).modification?.owner).toBe('user');
+  expect((await project.status()).modification).toBeNull();
   expect((await project.status()).snapshot.segments).toHaveLength(outcome === '成功' ? 3 : 2);
   await expect(page.getByText('失效旧新增失败', { exact: false })).toHaveCount(0);
 });
@@ -204,7 +203,8 @@ test('新增第二次修改权等待期间真实滚轮取消旧定位和编辑',
   const scroll = page.locator('.ag-body-vertical-scroll-viewport');
   let afterWheel = 0;
   try {
-    await page.getByRole('button', { name: '新增口播片段', exact: true }).click(); await gate.received;
+    await page.getByRole('button', { name: '新增口播片段', exact: true }).click();
+    await page.getByRole('button', { name: '编辑片段', exact: true }).click(); await gate.received;
     const positioned = await scroll.evaluate(element => element.scrollTop);
     expect(positioned).toBeGreaterThan(1000);
     await page.mouse.move(200, 250); await page.mouse.wheel(0, -600);

@@ -21,7 +21,7 @@ function ExpandedNote({ segment, mainHeight, width, left, onHeight, onCollapse, 
     return () => observer.disconnect();
   }, [onHeight, segment.id]);
   return <div ref={content} id={`segment-note-${segment.id}`} role="region" aria-label={`片段 ${segment.order} 画面说明`} className="pointer-events-auto absolute z-10 bg-background px-3 pb-3" style={{ top: mainHeight, width, left }} onClick={event => event.stopPropagation()} onKeyDown={event => {
-    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onCollapse(); }
+    if (event.key === 'Escape' && !event.nativeEvent.isComposing) { event.preventDefault(); event.stopPropagation(); onCollapse(); }
   }}>
     <div className="rounded-md bg-primary/5 px-3 py-2">
       <div className="mb-1 flex items-center gap-2 text-xs font-medium">

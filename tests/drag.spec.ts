@@ -35,7 +35,7 @@ test('拖未选中行仅移动自身，Escape及自身目标或不变顺序不�
   let calls = 0; page.on('request', request => { if (request.url().endsWith('/api/segments/modify')) calls++; });
   await begin(page, ids[5]!); await target(page, ids[0]!, false); await page.mouse.up();
   await expect.poll(async () => (await project.status()).snapshot.segments.map(s => s.id)).toEqual([ids[5], ...ids.slice(0, 5)]);
-  await expect(page.locator('.ag-row[aria-selected="true"]')).toHaveCount(1); await expect(page.locator(`[row-id="${ids[5]}"]`)).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('.ag-row[aria-selected="true"]')).toHaveCount(2); await expect(page.locator(`[row-id="${ids[5]}"]`)).toHaveAttribute('aria-selected', 'false');
   await expect(page.locator('[data-save-status]')).toHaveText('已保存'); const saved = calls;
   await begin(page, ids[5]!); await target(page, ids[0]!, false); await page.mouse.up();
   await expect(page.getByLabel('口播片段插入位置', { exact: true })).toHaveCount(0); expect(calls).toBe(saved);
