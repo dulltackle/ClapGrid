@@ -44,14 +44,18 @@ for (const width of [1600, 780, 420]) test(`勾选与浏览、编辑、菜单和
 });
 
 test('保存失败保留原位草稿并阻止查看与删除，重试后只导航到最新目标', async ({ page, project }) => {
-  const [a] = await project.seed(['A', 'B', 'C', 'D']); await page.goto(project.url);
-  await page.locator(`[row-id="${a}"] [data-segment-script]`).dblclick();
+  const [a, b, c] = await project.seed(['A', 'B', 'C', 'D']); await page.goto(project.url);
+  await page.locator(`[row-id="${a}"] input[type="checkbox"]`).click();
+  await page.locator(`[row-id="${c}"] input[type="checkbox"]`).click();
+  await page.locator(`[row-id="${b}"] [data-segment-script]`).dblclick();
   const input = page.getByLabel('文案全文', { exact: true }); await input.fill('保留草稿');
   await page.route('**/api/segments/edit', route => route.fulfill({ status: 500, json: { error: '本例保存失败' } }));
-  await page.getByRole('button', { name: '查看片段 2 的详情', exact: true }).click();
+  await page.getByRole('button', { name: '查看片段 4 的详情', exact: true }).click();
   await expect(input).toHaveValue('保留草稿');
   await expect(page.locator('footer')).toContainText('本例保存失败');
   await expect(page.getByLabel('口播片段详情', { exact: true })).toHaveCount(0);
+  await expect(page.locator(`[row-id="${a}"] input[type="checkbox"]`)).toBeChecked();
+  await expect(page.locator(`[row-id="${c}"] input[type="checkbox"]`)).toBeChecked();
   await page.unroute('**/api/segments/edit');
   const gate = await holdResponse(page, '/api/segments/edit');
   try {
@@ -61,7 +65,7 @@ test('保存失败保留原位草稿并阻止查看与删除，重试后只导�
   } finally { gate.release(); }
   await gate.delivered;
   await expect(page.getByLabel('详情文案', { exact: true })).toHaveValue('D');
-  expect((await project.status()).snapshot.segments[0]!.text).toBe('保留草稿');
+  expect((await project.status()).snapshot.segments[1]!.text).toBe('保留草稿');
 });
 
 for (const entry of ['原位', '详情'] as const) test(`${entry}草稿在确认删除前保持，确认后保存再删除固定范围`, async ({ page, project }) => {
