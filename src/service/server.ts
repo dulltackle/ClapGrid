@@ -67,12 +67,13 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
     const businessClosing = ownedBusiness
       ? ownedBusiness.close(deadline, Promise.allSettled([...requests])).then(() => true, error => { errors.push(error); return false; })
       : Promise.resolve(businessInitializationReleased);
+    // HMR 复用 HTTP 服务，先释放升级后的 WebSocket，避免 HTTP 关闭等待连接。
+    const viteStopped = !vite || await attempt('Vite 关闭', () => vite!.close());
     let httpStopped = true;
     if (listeningServer) httpStopped = await attempt('HTTP 关闭', async () => {
       listeningServer!.closeAllConnections();
       await new Promise<void>((resolve, reject) => listeningServer!.close(error => error && (error as NodeJS.ErrnoException).code !== 'ERR_SERVER_NOT_RUNNING' ? reject(error) : resolve()));
     });
-    const viteStopped = !vite || await attempt('Vite 关闭', () => vite!.close());
     const businessStopped = await businessClosing;
     // 即使业务失败，也关闭 guardian 以取消其媒体；未知业务状态下仍保留数据库和服务保护。
     let mediaStopped = false;
@@ -106,10 +107,7 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
     if (workspace && workspaceProject(workspace).project !== business.getSnapshot().project.directory) throw new Error('项目不属于指定工作空间。');
     const startedAt = new Date().toISOString();
     const files = new Map<string, Buffer>();
-    if (options.dev) {
-      const { createServer: createViteServer } = await import('vite');
-      vite = await createViteServer({ server: { middlewareMode: true, hmr: false }, appType: 'spa' });
-    } else {
+    if (!options.dev) {
       // 显式白名单只包含构建产物，项目数据库与媒体永不经静态路由暴露。
       for (const file of readdirSync(options.panelDirectory, { recursive: true, withFileTypes: true })) {
         if (file.isFile()) {
@@ -477,6 +475,10 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
       requests.add(pending);
       void pending.catch(error => { console.error('服务请求失败', error); response.destroy(); }).finally(() => requests.delete(pending));
     });
+    if (options.dev) {
+      const { createServer: createViteServer } = await import('vite');
+      vite = await createViteServer({ server: { middlewareMode: true, ws: { server } }, appType: 'spa' });
+    }
     await new Promise<void>((resolve, reject) => {
       server.once('error', reject);
       server.listen(options.port, '127.0.0.1', () => {
