@@ -181,8 +181,10 @@ for (const fail of [false, true]) test(`拖动期间保留草稿，取消不保�
   const input = page.getByLabel('文案全文', { exact: true }); await input.fill('B 拖动草稿');
   const begin = async () => {
     const handle = page.getByRole('button', { name: '拖动片段 2', exact: true }); await handle.hover();
-    const box = (await handle.boundingBox())!;
-    await page.mouse.move(box.x + 12, box.y + 12); await page.mouse.down();
+    // 拖动取消会重渲染手柄；hover 后的旧节点也可能在测量前被替换。
+    let box: Awaited<ReturnType<typeof handle.boundingBox>>;
+    await expect.poll(async () => { box = await handle.boundingBox(); return box !== null; }).toBe(true);
+    await page.mouse.move(box!.x + 12, box!.y + 12); await page.mouse.down();
   };
   const move = async () => {
     const box = (await page.locator(`[row-id="${c}"] [col-id="order"]`).boundingBox())!;
