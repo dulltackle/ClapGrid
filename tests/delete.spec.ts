@@ -33,7 +33,7 @@ for (const width of [1600, 420]) test(`行菜单固定选择范围，删除确�
   await expect(page.locator('.ag-row[aria-selected="true"]')).toHaveCount(2);
   await openDelete(page, c!); await expect(dialog(page)).toContainText('确定删除这个口播片段');
   await page.keyboard.press('Escape'); await expect(dialog(page)).toHaveCount(0);
-  await expect(page.locator(`[row-id="${c}"]`)).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator(`[row-id="${c}"]`)).toHaveAttribute('aria-selected', 'false');
   await openDelete(page, c!);
   const request = page.waitForRequest(r => r.url().endsWith('/api/segments/modify'));
   await dialog(page).getByRole('button', { name: '删除', exact: true }).click();
@@ -58,7 +58,7 @@ for (const width of [1600, 420]) test(`右下边缘菜单全部导航键与 Spac
   await page.mouse.click(point.x, point.y, { button: 'right' });
   const menu = page.getByRole('menu'); await expect(menu).toBeVisible();
   const box = (await menu.boundingBox())!; expect(box.x).toBeGreaterThanOrEqual(0); expect(box.y).toBeGreaterThanOrEqual(0); expect(box.x + box.width).toBeLessThanOrEqual(width); expect(box.y + box.height).toBeLessThanOrEqual(360);
-  for (const [key, name] of [['End', '下方添加'], ['ArrowUp', '上方添加'], ['Home', '删除口播片段'], ['ArrowDown', '上方添加'], ['Home', '删除口播片段']]) {
+  for (const [key, name] of [['End', '下方添加'], ['ArrowUp', '上方添加'], ['Home', '删除本片段'], ['ArrowDown', '上方添加'], ['Home', '删除本片段']]) {
     await page.keyboard.press(key!); await expect(page.getByRole('menuitem', { name, exact: true })).toBeFocused();
   }
   await page.keyboard.press('Space'); await expect(dialog(page)).toBeVisible(); await expect(dialog(page).getByRole('button', { name: '取消', exact: true })).toBeFocused();
@@ -180,7 +180,7 @@ for (const outcome of ['成功', '失败'] as const) test(`迟到删除${outcome
   // 勾选所在行可能已经虚拟卸载；通过重新回到行位置读取其稳定身份。
   await page.locator('.ag-grid-viewport').evaluate(node => { node.scrollTop = 0; });
   await expect(page.locator(`[row-id="${ids[1]}"]`)).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('.ag-row[aria-selected="true"]')).toHaveCount(1);
+  await expect(page.locator('.ag-row[aria-selected="true"]')).toHaveCount(outcome === '成功' ? 1 : 2);
   expect((await project.status()).snapshot.segments.map(s => s.id)).toEqual(outcome === '成功' ? ids.slice(1) : ids); expect(calls).toBe(1);
 });
 

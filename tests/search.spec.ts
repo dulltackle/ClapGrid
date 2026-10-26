@@ -46,11 +46,11 @@ test('虚拟屏外长文案命中完整可见，轮询不抢编辑且失效等�
   const poll = await holdResponse(page, '/api/status');
   await poll.received;
   const editor = page.getByLabel('文案全文', { exact: true });
-  try { await target.click(); await editor.fill('新的输入'); } finally { poll.release(); }
+  try { await target.dblclick(); await editor.fill('新的输入'); } finally { poll.release(); }
   await poll.delivered;
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
   await expect.poll(async () => (await project.status()).modification?.owner).toBe('user');
-  await expect(editor).toBeFocused(); await expect(editor).toHaveValue('新的输入'); await editor.press('Enter');
+  await expect(editor).toBeFocused(); await expect(editor).toHaveValue('新的输入'); await editor.press('Control+Enter');
   await expect.poll(async () => (await project.status()).snapshot.segments[79]!.text).toBe('新的输入');
   await page.getByRole('button', { name: '查找', exact: true }).click();
   await expect(page.getByLabel('查找口播片段').getByRole('status')).toHaveAttribute('aria-label', /无匹配片段/);

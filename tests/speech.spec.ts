@@ -202,3 +202,58 @@ test('结果未知仍保留旧有效音频，完整计费警告可从历史访�
   await expect(page.getByRole('dialog', { name: '配音详情与保留音频', exact: true })).toContainText('可能已计费');
   expect((await querySpeech(project.url)).audio).toHaveLength(1);
 });
+
+for (const entry of ['原位', '详情'] as const) test(`${entry}配音先保存草稿，失败不调用供应商，试听不结束编辑`, async ({ page, project, speechControl }) => {
+  const [id] = await project.seed(['原配音文案']);
+  await submitSpeech(project.url, { requestId: randomUUID(), segmentId: id! });
+  await expect.poll(async () => (await querySpeech(project.url)).audio.length).toBe(1);
+  await page.goto(project.url);
+  if (entry === '原位') await page.locator(`[row-id="${id}"] [data-segment-script]`).dblclick();
+  else {
+    await page.getByRole('button', { name: '查看片段 1 的详情', exact: true }).click();
+    await page.getByRole('button', { name: '编辑片段', exact: true }).click();
+  }
+  const input = page.getByLabel(entry === '原位' ? '文案全文' : '详情文案', { exact: true });
+  await input.fill('保存后用于配音的新文案');
+  const area = entry === '原位' ? page.locator(`[row-id="${id}"]`) : page.getByRole('complementary');
+  if (entry === '原位') await area.getByRole('button', { name: '试听', exact: true }).click();
+  else { const audio = area.getByLabel('详情配音播放器'); await audio.focus(); await audio.press('Space'); }
+  await expect(input).toHaveValue('保存后用于配音的新文案');
+  expect((await project.status()).snapshot.segments[0]!.text).toBe('原配音文案');
+  if (entry === '原位') await area.getByRole('button', { name: '暂停试听', exact: true }).click();
+  else await area.getByLabel('详情配音播放器').press('Space');
+  const generate = async () => {
+    if (entry === '原位') {
+      await area.getByRole('button', { name: '片段 1 配音更多操作', exact: true }).click();
+      await page.getByRole('menuitem', { name: '重新生成', exact: true }).click();
+    } else await area.getByRole('button', { name: '重新生成', exact: true }).click();
+  };
+  await page.route('**/api/segments/edit', route => route.fulfill({ status: 500, json: { error: '配音前保存失败' } }));
+  await generate();
+  await expect(page.locator('footer')).toContainText('配音前保存失败');
+  expect(speechControl.requests).toHaveLength(1);
+  await expect(input).toHaveValue('保存后用于配音的新文案');
+  await page.unroute('**/api/segments/edit');
+  await generate();
+  await expect.poll(() => speechControl.requests.map(request => request.text)).toEqual(['原配音文案', '保存后用于配音的新文案']);
+  await expect.poll(async () => (await querySpeech(project.url)).audio.length).toBe(2);
+  expect((await project.status()).snapshot.segments[0]!.text).toBe('保存后用于配音的新文案');
+});
+
+test('空文案的未保存输入也能从明确入口保存后生成配音', async ({ page, project, speechControl }) => {
+  const [id] = await project.seed(['']); await page.goto(project.url);
+  await page.locator(`[row-id="${id}"] [data-segment-script]`).dblclick();
+  await page.getByLabel('文案全文', { exact: true }).fill('新输入的第一句');
+  await page.locator(`[row-id="${id}"]`).getByRole('button', { name: '生成配音', exact: true }).click();
+  await expect.poll(() => speechControl.requests.map(request => request.text)).toEqual(['新输入的第一句']);
+  expect((await project.status()).snapshot.segments[0]!.text).toBe('新输入的第一句');
+});
+
+test('行尾配音菜单根据空文案的新草稿启用，保存后只生成一次', async ({ page, project, speechControl }) => {
+  const [id] = await project.seed(['']); await page.goto(project.url);
+  await page.locator(`[row-id="${id}"] [data-segment-script]`).dblclick();
+  await page.getByLabel('文案全文', { exact: true }).fill('菜单发起的新配音');
+  await page.getByRole('button', { name: '片段 1 配音更多操作', exact: true }).click();
+  await page.getByRole('menuitem', { name: '生成配音', exact: true }).click();
+  await expect.poll(() => speechControl.requests.map(request => request.text)).toEqual(['菜单发起的新配音']);
+});

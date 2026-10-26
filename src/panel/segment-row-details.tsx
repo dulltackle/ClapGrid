@@ -8,7 +8,7 @@ type Row = { element: HTMLElement; id: string };
 
 function ExpandedNote({ segment, mainHeight, width, left, onHeight, onCollapse, onOpen }: {
   segment: Segment; mainHeight: number; width: number; left: number; onHeight: (height: number) => void;
-  onCollapse: () => void; onOpen: (id: string, trigger: HTMLButtonElement) => void;
+  onCollapse: () => void; onOpen: (id: string, trigger: HTMLElement, field?: 'visualNote') => void;
 }) {
   const content = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -21,7 +21,7 @@ function ExpandedNote({ segment, mainHeight, width, left, onHeight, onCollapse, 
     return () => observer.disconnect();
   }, [onHeight, segment.id]);
   return <div ref={content} id={`segment-note-${segment.id}`} role="region" aria-label={`片段 ${segment.order} 画面说明`} className="pointer-events-auto absolute z-10 bg-background px-3 pb-3" style={{ top: mainHeight, width, left }} onClick={event => event.stopPropagation()} onKeyDown={event => {
-    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onCollapse(); }
+    if (event.key === 'Escape' && !event.nativeEvent.isComposing) { event.preventDefault(); event.stopPropagation(); onCollapse(); }
   }}>
     <div className="rounded-md bg-primary/5 px-3 py-2">
       <div className="mb-1 flex items-center gap-2 text-xs font-medium">
@@ -29,7 +29,9 @@ function ExpandedNote({ segment, mainHeight, width, left, onHeight, onCollapse, 
         <Button variant="ghost" size="xs" className="h-6 text-xs text-muted-foreground" data-row-details onClick={event => onOpen(segment.id, event.currentTarget)}>编辑与片段详情</Button>
         <Button variant="ghost" size="xs" className="h-6 gap-1 text-xs text-primary" onClick={onCollapse}>收起<ChevronUpIcon aria-hidden /></Button>
       </div>
-      <p tabIndex={0} aria-label="画面说明原文" className="m-0 max-h-[88px] overflow-y-auto whitespace-pre-wrap wrap-anywhere text-[13px] leading-[22px] text-muted-foreground">{segment.visualNote || '暂无画面说明'}</p>
+      <p data-note-original tabIndex={0} aria-label="画面说明原文" title="双击编辑画面说明，或按 Enter / F2" onDoubleClick={event => { event.stopPropagation(); onOpen(segment.id, event.currentTarget, 'visualNote'); }} onKeyDown={event => {
+        if (['Enter', 'F2'].includes(event.key) && !event.nativeEvent.isComposing) { event.preventDefault(); event.stopPropagation(); onOpen(segment.id, event.currentTarget, 'visualNote'); }
+      }} className="m-0 max-h-[88px] cursor-text overflow-y-auto whitespace-pre-wrap wrap-anywhere text-[13px] leading-[22px] text-muted-foreground">{segment.visualNote || '暂无画面说明'}</p>
     </div>
   </div>;
 }
@@ -38,7 +40,7 @@ function ExpandedNote({ segment, mainHeight, width, left, onHeight, onCollapse, 
 export function SegmentRowDetails({ element, segments, expandedId, mainHeight, onHeight, onCollapse, onOpen }: {
   element: RefObject<HTMLDivElement | null>; segments: Segment[]; expandedId: string | null; mainHeight: number;
   onHeight: (height: number) => void; onCollapse: () => void;
-  onOpen: (id: string, trigger: HTMLButtonElement) => void;
+  onOpen: (id: string, trigger: HTMLElement, field?: 'visualNote') => void;
 }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [width, setWidth] = useState(0);

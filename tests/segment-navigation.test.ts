@@ -10,7 +10,7 @@ function fixture() {
   const listeners = new Set<() => void>();
   const row = { rowIndex: 3, setSelected: vi.fn() };
   const grid = { getRowNode: vi.fn(() => row), ensureColumnVisible: vi.fn(), ensureIndexVisible: vi.fn(), setFilterModel: vi.fn(), startEditingCell: vi.fn() };
-  const details = { isOpen: () => false, show: vi.fn(), hide: vi.fn() };
+  const details = { show: vi.fn(), hide: vi.fn() };
   const inline = vi.fn(async (ready: (apply: () => void) => void) => { ready(() => {}); });
   const acceptGridUpdate = vi.fn((apply: () => void) => apply());
   const cancel = vi.fn(async () => true);
@@ -18,7 +18,7 @@ function fixture() {
     grid: () => grid as unknown as GridApi<Segment>,
     editing: { getState: () => ({ busy, editing: false, owner: null }), subscribe: listener => { listeners.add(listener); return () => { listeners.delete(listener); }; }, cancel },
     focus: { intent: () => { const version = epoch; return { valid: () => epoch === version }; }, acceptGridUpdate, close: (_origin, apply) => apply(), captureSegment: () => origin() },
-    stopInline: vi.fn(), clearSearch: vi.fn(), details, inline, failed: vi.fn(),
+    prepareInline: vi.fn(), clearSearch: vi.fn(), details, inline, failed: vi.fn(),
   });
   return { navigation, grid, row, details, inline, acceptGridUpdate, cancel,
     interact: () => { epoch++; }, busy: (value: boolean) => { busy = value; listeners.forEach(listener => listener()); } };
@@ -71,12 +71,12 @@ test('等待行内保存结束时，后发导航接管同一序列', async () =>
   expect(f.inline).toHaveBeenCalledOnce(); expect(f.grid.getRowNode).toHaveBeenLastCalledWith('b');
 });
 
-test('普通新增清除查找后定位、勾选并请求详情文案焦点', async () => {
+test('普通新增清除查找后定位并请求详情文案焦点', async () => {
   const f = fixture();
   await f.navigation.request().arrive(() => {}, { id: 'new', mode: 'details', clearSearch: true, focusText: true });
   expect(f.grid.setFilterModel).toHaveBeenCalledWith(null);
   expect(f.grid.ensureIndexVisible).toHaveBeenCalledWith(3, 'middle');
-  expect(f.row.setSelected).toHaveBeenCalledWith(true, true);
+  expect(f.row.setSelected).not.toHaveBeenCalled();
   expect(f.details.show.mock.calls[0]![0]).toMatchObject({ id: 'new', focusText: true });
 });
 

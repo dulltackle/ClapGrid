@@ -97,7 +97,36 @@ for (const [width, height] of [[1600, 1000], [780, 579], [541, 579], [420, 800],
   });
 }
 
-for (const width of [1600, 420]) test(`长文案摘要保留原文，全文编辑可滚动、Tab 保存与字符入口正常 ${width}`, async ({ page, project }) => {
+for (const width of [780, 420]) test(`双击画面说明直接编辑、保存并恢复来源焦点 ${width}`, async ({ page, project }) => {
+  const [id] = await project.seed(['保留文案']);
+  await page.setViewportSize({ width, height: 579 });
+  await page.goto(project.url);
+  await row(page, id!).locator('[data-note-toggle]').click();
+  const original = page.getByLabel('画面说明原文', { exact: true });
+  await expect(original).toHaveText('暂无画面说明');
+  await original.dblclick();
+  const editor = page.getByLabel('详情画面说明', { exact: true });
+  await expect(editor).toBeFocused();
+  await expect(editor).toBeEditable();
+  await editor.fill('双击后填写的说明\n保留换行');
+  await page.getByRole('button', { name: '保存画面说明', exact: true }).click();
+  await expect.poll(async () => {
+    const status = await project.status();
+    return { note: status.snapshot.segments[0]!.visualNote, text: status.snapshot.segments[0]!.text, modification: status.modification };
+  }).toEqual({ note: '双击后填写的说明\n保留换行', text: '保留文案', modification: null });
+  await page.getByRole('button', { name: '关闭详情', exact: true }).click();
+  await expect(original).toBeFocused();
+  await expect(original).toHaveText('双击后填写的说明\n保留换行');
+  await original.press('F2');
+  await expect(editor).toBeFocused();
+  await expect(editor).toBeEditable();
+  await expect(editor).toHaveValue('双击后填写的说明\n保留换行');
+  await editor.press('Escape');
+  await expect(editor).toHaveAttribute('readonly', ''); await editor.press('Escape');
+  await expect(original).toBeFocused();
+});
+
+for (const width of [1600, 420]) test(`长文案摘要保留原文，全文编辑可滚动、Tab 保留草稿且字符不启动编辑 ${width}`, async ({ page, project }) => {
   const text = '长文案完整内容\n'.repeat(100);
   const [id] = await project.seed([text]);
   await page.setViewportSize({width,height:800});
@@ -106,7 +135,7 @@ for (const width of [1600, 420]) test(`长文案摘要保留原文，全文编�
   await expect(first.locator('.text-summary')).toHaveText(text);
   const summary = await first.locator('.text-summary').evaluate(e=>({height:e.getBoundingClientRect().height,line:parseFloat(getComputedStyle(e).lineHeight)}));
   expect(summary.height).toBeGreaterThanOrEqual(summary.line*2);expect(summary.height).toBeLessThanOrEqual(summary.line*3+1);
-  await first.locator('[data-segment-script]').click();
+  await first.locator('[data-segment-script]').dblclick();
   const editor = page.getByLabel('文案全文', { exact: true });
   await expect(editor).toHaveValue(text); await expect(editor).toBeFocused();
   await inside(editor,width,800);
@@ -114,11 +143,13 @@ for (const width of [1600, 420]) test(`长文案摘要保留原文，全文编�
   await editor.press('Control+End');
   expect(await editor.evaluate(e => e.scrollTop)).toBeGreaterThan(0);
   await editor.fill(text + '末尾'); await editor.press('Tab');
+  expect((await project.status()).snapshot.segments[0]!.text).toBe(text);
+  await editor.press('Control+Enter');
   await expect.poll(async () => (await project.status()).snapshot.segments[0]!.text).toBe(text + '末尾');
   await first.locator('[col-id="text"]').focus(); await page.keyboard.press('Enter');
   await expect(editor).toHaveValue(text + '末尾'); await editor.press('Escape');
   await first.locator('[col-id="text"]').focus();await page.keyboard.press('x');
-  await expect(editor).toHaveValue(text+'末尾');await expect(editor).toBeFocused();await inside(editor,width,800);await editor.press('Escape');
+  await expect(editor).toHaveCount(0); expect((await project.status()).snapshot.segments[0]!.text).toBe(text+'末尾');
 });
 
 for (const width of [1600, 420]) test(`页头主题、查找键盘与模态边界 ${width}`, async ({ page, project }) => {
@@ -177,10 +208,39 @@ for (const count of [2,7]) test(`笔和鼠标的真实悬浮及时更新且保�
  await pen.detach();
 });
 
+test('鼠标取消勾选后恢复普通行背景且保留键盘焦点可见性', async ({ page, project }) => {
+  const [id] = await project.seed(['取消选中的片段']);
+  await page.goto(project.url);
+  const first = row(page, id!);
+  const checkbox = first.locator('input[type="checkbox"]');
+  const overlay = () => first.evaluate(e => {
+    const s = getComputedStyle(e.querySelector('.ag-grid-scrolling-cells')!, '::before');
+    return { background: s.backgroundColor, image: s.backgroundImage };
+  });
+  await expect(first).toBeVisible();
+  await page.mouse.move(1, 1);
+  const baseline = await overlay();
+  await checkbox.click();
+  await expect(checkbox).toBeChecked();
+  await expect(first).toHaveClass(/ag-row-selected/);
+  await checkbox.click();
+  await expect(checkbox).not.toBeChecked();
+  await expect(first).not.toHaveClass(/ag-row-selected/);
+  await page.mouse.move(1, 1);
+  await expect.poll(overlay).toEqual(baseline);
+  await expect(first.locator('.ag-checkbox-input-wrapper')).toHaveCSS('box-shadow', 'none');
+  await checkbox.press(' ');
+  await expect(checkbox).toBeChecked();
+  await expect(first.locator('.ag-checkbox-input-wrapper')).not.toHaveCSS('box-shadow', 'none');
+  await checkbox.press(' ');
+  await expect(checkbox).not.toBeChecked();
+  await expect(first.locator('.ag-checkbox-input-wrapper')).not.toHaveCSS('box-shadow', 'none');
+});
+
 test('说明草稿断线后拒绝覆盖新说明，清空只修改说明',async({page,project})=>{
  const [id]=await project.seed(['原文']);await page.goto(project.url);
  await row(page,id!).locator('[data-row-details]').click();
- const note=page.getByLabel('详情画面说明',{exact:true});await note.click();await note.fill('断线草稿');
+ const note=page.getByLabel('详情画面说明',{exact:true});await note.dblclick();await note.fill('断线草稿');
  await project.restart();
  await expect(page.getByText(/编辑连接已断开|连接已断开/).first()).toBeVisible();
  let snapshot=(await project.status()).snapshot;
@@ -188,8 +248,8 @@ test('说明草稿断线后拒绝覆盖新说明，清空只修改说明',async(
  await page.getByRole('button',{name:'保存画面说明',exact:true}).click();
  await expect(page.getByText(/不能覆盖新内容/).first()).toBeVisible();await expect(note).toHaveValue('断线草稿');
  expect((await project.status()).snapshot.segments[0]!.visualNote).toBe('外部新说明');
- await page.getByRole('button',{name:'关闭详情',exact:true}).click();await page.locator('[data-discard-draft]').click();
- await row(page,id!).locator('[data-row-details]').click();await note.click();await note.fill('');
+ await note.press('Escape');await page.getByRole('button',{name:'放弃修改',exact:true}).click();await page.getByRole('button',{name:'关闭详情',exact:true}).click();
+ await row(page,id!).locator('[data-row-details]').click();await note.dblclick();await note.fill('');
  await page.getByRole('button',{name:'保存画面说明',exact:true}).click();
  await expect.poll(async()=>({text:(await project.status()).snapshot.segments[0]!.text,note:(await project.status()).snapshot.segments[0]!.visualNote})).toEqual({text:'原文',note:''});
 });
@@ -204,6 +264,15 @@ for(const [width,height] of [[780,579],[541,579],[420,360]])test(`五类配音�
  expect(await status.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
  const group=region.getByRole('group');await expect(group.getByRole('button')).toHaveCount(1);
  const controls=await group.boundingBox(),text=await status.boundingBox();expect(controls!.x+controls!.width).toBeLessThanOrEqual(text!.x+1);
+ const script=await row(page,ids[i]!).locator('[data-segment-script]').boundingBox();
+ const support=await row(page,ids[i]!).locator('[data-segment-support]').boundingBox();
+ const speech=await region.boundingBox();
+ expect(speech!.y).toBeGreaterThanOrEqual(script!.y);
+ expect(speech!.y+speech!.height).toBeLessThanOrEqual(script!.y+script!.height+1);
+ expect(script!.x+script!.width).toBeLessThanOrEqual(speech!.x);
+ expect(speech!.y+speech!.height).toBeLessThanOrEqual(support!.y);
+ await status.click();
+ await expect(page.getByLabel('文案全文',{exact:true})).toHaveCount(0);
  expect(await row(page,ids[i]!).evaluate(e=>e.getBoundingClientRect().height)).toBe(102);
  }
  await expect(row(page,ids[2]!).getByRole('button',{name:'生成中',exact:true})).toBeDisabled();
@@ -229,27 +298,18 @@ test('服务首次读取、失败与成功空项目各有明确界面',async({pa
  fail=false;await expect(page.getByText('暂无口播片段',{exact:true})).toBeVisible();
 });
 
-test('只读详情跟随行内文案，脏详情到行内编辑保留原意图', async ({ page, project }) => {
+test('进入原位收起详情，详情草稿保存后才进入另一行', async ({ page, project }) => {
   const [a, b] = await project.seed(['A 原文', 'B 原文']);
   await page.setViewportSize({ width: 780, height: 579 }); await page.goto(project.url);
   await row(page, a!).locator('[data-row-details]').click();
-  const detail = page.getByLabel('详情文案', { exact: true });
-  await expect(detail).toHaveValue('A 原文');
-  await row(page, b!).locator('[data-segment-script]').click({position:{x:12,y:12}});
+  const detail = page.getByLabel('详情文案', { exact: true }); await expect(detail).toHaveValue('A 原文');
+  await row(page, b!).locator('[data-segment-script]').dblclick({ position: { x: 12, y: 12 } });
   const inline = page.getByLabel('文案全文', { exact: true });
-  await expect(inline).toHaveValue('B 原文'); await expect(inline).toBeFocused();
-  await expect(detail).toHaveValue('B 原文');
+  await expect(inline).toHaveValue('B 原文'); await expect(inline).toBeFocused(); await expect(detail).toHaveCount(0);
+  await expect(row(page, b!).getByRole('button', { name: '保存修改', exact: true })).toBeInViewport();
   await inline.press('Escape');
-  await detail.click(); await detail.fill('B 详情草稿');
-  await row(page, a!).locator('[data-segment-script]').click({position:{x:12,y:12}});
-  const confirm = page.getByRole('alertdialog'); await expect(confirm).toBeVisible();
-  await page.getByRole('button', { name: '继续编辑', exact: true }).click();
-  await expect(detail).toHaveValue('B 详情草稿'); await expect(detail).toBeFocused();
-  expect((await project.status()).snapshot.segments.map(s => s.text)).toEqual(['A 原文', 'B 原文']);
-  await row(page, a!).locator('[data-segment-script]').click({position:{x:12,y:12}}); await expect(confirm).toBeVisible();
-  await page.getByRole('button', { name: '放弃修改', exact: true }).click();
-  await expect(inline).toHaveValue('A 原文'); await expect(inline).toBeFocused();
-  await expect(detail).toHaveValue('A 原文');
-  await inline.press('Escape');
-  expect((await project.status()).snapshot.segments.map(s => s.text)).toEqual(['A 原文', 'B 原文']);
+  await row(page, b!).locator('[data-row-details]').click(); await detail.dblclick(); await detail.fill('B 详情草稿');
+  await row(page, a!).locator('[data-segment-script]').dblclick({ position: { x: 12, y: 12 } });
+  await expect(inline).toHaveValue('A 原文'); await expect(inline).toBeFocused(); await expect(detail).toHaveCount(0);
+  expect((await project.status()).snapshot.segments.map(s => s.text)).toEqual(['A 原文', 'B 详情草稿']);
 });

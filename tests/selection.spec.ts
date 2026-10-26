@@ -7,14 +7,8 @@ for (const width of [1600, 420]) test(`鼠标单选、多选与范围勾选经�
   await page.setViewportSize({ width, height: 800 });
   const [a, b, c] = await project.seed(['A', 'B', 'C']); await page.goto(project.url);
   const cell = (id: string) => page.locator(`[row-id="${id}"] [col-id="order"]`);
-  await cell(a!).click(); await expect.poll(() => selected(page)).toEqual([a]);
-  await cell(b!).click(); await expect.poll(() => selected(page)).toEqual([b]);
-  await cell(a!).click({ modifiers: ['Control'] }); await expect.poll(() => selected(page)).toEqual([a, b].sort());
-  await cell(b!).click({ modifiers: ['Control'] }); await expect.poll(() => selected(page)).toEqual([a]);
-  await cell(c!).click({ modifiers: ['Meta'] }); await expect.poll(() => selected(page)).toEqual([a, c].sort());
-  await cell(a!).click(); await cell(c!).click({ modifiers: ['Shift'] });
-  await expect.poll(() => selected(page)).toEqual([a, b, c].sort());
-  await page.keyboard.press('Escape'); await expect.poll(() => selected(page)).toEqual([]);
+  await cell(a!).click(); await cell(b!).click();
+  await expect.poll(() => selected(page)).toEqual([]);
   const outgoing = page.waitForResponse(response => response.url().endsWith('/api/table-selection') && response.request().postDataJSON().ids.length === 1);
   await page.locator(`[row-id="${a}"] input[type="checkbox"]`).click();
   expect((await outgoing).ok()).toBe(true);
@@ -44,29 +38,29 @@ for (const width of [1600, 420]) test(`查找与勾选不改变全部范围或�
   await expect.poll(() => selected(page)).toEqual(ids.slice(0, 2).sort());
   // 菜单卸载后仍需完成异步焦点恢复，第二次 Escape 才属于表格。
   await expect(page.locator(`[row-id="${ids[0]}"] [col-id="text"]`)).toBeFocused();
-  await page.keyboard.press('Escape'); await expect.poll(() => selected(page)).toEqual([]);
+  await page.keyboard.press('Escape'); await expect.poll(() => selected(page)).toEqual(ids.slice(0, 2).sort());
   await expect(search).toHaveValue('匹配');
   await search.press('Escape'); await expect(search).toHaveCount(0);
   await expect(page.getByRole('button', { name: '查找', exact: true })).toBeFocused();
 });
 
-test('详情导航勾选目标，历史及编辑键盘保留表格上下文', async ({ page, project }) => {
+test('详情导航保留勾选，历史及编辑键盘保留表格上下文', async ({ page, project }) => {
   const [a, b] = await project.seed(['A', 'B']); await page.goto(project.url);
-  await page.locator(`[row-id="${a}"] [col-id="order"]`).click();
+  await page.locator(`[row-id="${a}"] input[type="checkbox"]`).click();
   await page.getByRole('button', { name: '查看片段 2 的详情', exact: true }).click();
-  await expect.poll(() => selected(page)).toEqual([b]); await page.keyboard.press('Escape');
+  await expect.poll(() => selected(page)).toEqual([a]); await page.keyboard.press('Escape');
   await page.getByLabel('片段 2 配音更多操作', { exact: true }).click(); await page.locator('[data-speech-history]').click();
-  await expect(page.getByRole('dialog')).toBeVisible(); await expect.poll(() => selected(page)).toEqual([b]);
-  await page.keyboard.press('Escape'); await expect(page.getByRole('dialog')).toHaveCount(0); await expect.poll(() => selected(page)).toEqual([b]);
-  await page.locator(`[row-id="${b}"] [role="status"]`).click(); await expect.poll(() => selected(page)).toEqual([b]);
+  await expect(page.getByRole('dialog')).toBeVisible(); await expect.poll(() => selected(page)).toEqual([a]);
+  await page.keyboard.press('Escape'); await expect(page.getByRole('dialog')).toHaveCount(0); await expect.poll(() => selected(page)).toEqual([a]);
+  await page.locator(`[row-id="${b}"] [role="status"]`).click(); await expect.poll(() => selected(page)).toEqual([a]);
   await page.locator(`[row-id="${b}"] [col-id="order"]`).click(); await page.keyboard.press('ArrowUp');
-  await expect(page.locator(`[row-id="${a}"] [col-id="order"]`)).toBeFocused(); await expect.poll(() => selected(page)).toEqual([b]);
+  await expect(page.locator(`[row-id="${a}"] [col-id="order"]`)).toBeFocused(); await expect.poll(() => selected(page)).toEqual([a]);
   const text = page.locator(`[row-id="${a}"] [col-id="text"]`);
   for (const key of ['F2', 'Enter']) {
     await text.focus(); await page.keyboard.press(key);
     await expect(page.getByLabel('文案全文', { exact: true })).toBeEditable();
     await page.keyboard.press('Escape'); await expect(page.getByLabel('文案全文', { exact: true })).toHaveCount(0);
-    await expect.poll(() => selected(page)).toEqual([b]);
+    await expect.poll(() => selected(page)).toEqual([a]);
   }
 });
 
@@ -97,7 +91,7 @@ test('多选禁用相对插入，动态外部修改权禁用全部菜单项并�
   await expect(page.getByRole('menuitem', { name: '上方添加', exact: true })).toHaveAttribute('aria-disabled', 'true');
   await expect(page.getByRole('menuitem', { name: '下方添加', exact: true })).toHaveAttribute('aria-disabled', 'true');
   await expect.poll(() => selected(page)).toEqual([a, b].sort());
-  await page.keyboard.press('Home'); await expect(page.getByRole('menuitem', { name: '删除口播片段', exact: true })).toBeFocused();
+  await page.keyboard.press('Home'); await expect(page.getByRole('menuitem', { name: '删除已勾选的 2 条', exact: true })).toBeFocused();
   const edit = await beginEdit(project.url);
   try {
     for (const item of await page.getByRole('menuitem').all()) await expect(item).toHaveAttribute('aria-disabled', 'true');
@@ -108,11 +102,11 @@ test('多选禁用相对插入，动态外部修改权禁用全部菜单项并�
   } finally { await edit.close(); }
 });
 
-test('文案编辑器保留系统右键菜单并禁止拖拽', async ({ page, project }) => {
+test('文案编辑器保留系统右键菜单且允许准备拖拽', async ({ page, project }) => {
   const [a] = await project.seed(['A']); await page.goto(project.url);
-  await page.locator(`[row-id="${a}"] [data-segment-script]`).click();
+  await page.locator(`[row-id="${a}"] [data-segment-script]`).dblclick();
   const editor = page.getByLabel('文案全文', { exact: true }); await expect(editor).toBeEditable();
-  await expect(page.locator(`[row-id="${a}"] [aria-label^="拖动片段 "]`)).toBeDisabled();
+  await expect(page.locator(`[row-id="${a}"] [aria-label^="拖动片段 "]`)).toBeEnabled();
   await page.evaluate(() => document.addEventListener('contextmenu', event => {
     queueMicrotask(() => { document.body.dataset.nativeContext = `${(event.target as Element).tagName}:${event.defaultPrevented}`; });
   }, { once: true, capture: true }));

@@ -8,11 +8,12 @@ export type SegmentDestination = { id: string; mode: 'locate' | 'inline' | 'deta
 type Focus = Pick<ReturnType<typeof segmentFocusCoordinator>, 'intent' | 'close' | 'captureSegment' | 'acceptGridUpdate'>;
 
 /** 口播片段导航事务：快照始终接收，只有当前票据可以提交定位与来源。 */
-export function segmentNavigation({ grid, editing, focus, stopInline, clearSearch, details, inline, failed }: {
+export function segmentNavigation({ grid, editing, focus, clearSearch, details, inline, prepareInline, failed }: {
   grid: () => GridApi<Segment> | null;
   editing: Pick<ProjectEditing, 'getState' | 'subscribe' | 'cancel'>;
-  focus: Focus; stopInline: () => void; clearSearch: () => void;
-  details: { isOpen: () => boolean; show: (destination: NonNullable<SegmentDestination>, intent: FocusIntent) => void; hide: () => void };
+  focus: Focus; clearSearch: () => void;
+  details: { show: (destination: NonNullable<SegmentDestination>, intent: FocusIntent) => void; hide: () => void };
+  prepareInline: (segment: Segment, field: SegmentTextField) => void;
   inline: (ready: (applySnapshot: () => void) => void) => Promise<void>;
   failed: (cause: Error) => void;
 }) {
@@ -43,7 +44,7 @@ export function segmentNavigation({ grid, editing, focus, stopInline, clearSearc
         if (destination === undefined) return;
         if (ended) return;
         if (!valid()) { cancel(); return; }
-        stopInline(); await idle(valid);
+        await idle(valid);
         if (!valid()) { cancel(); return; }
         if (!destination) {
           ended = true; pending = undefined;
@@ -57,7 +58,6 @@ export function segmentNavigation({ grid, editing, focus, stopInline, clearSearc
         if (row?.rowIndex == null) { cancel(); failed(new Error('口播片段已删除，请选择其他片段。')); return; }
         const field = destination.field ?? 'text';
         grid()?.ensureColumnVisible(field); grid()?.ensureIndexVisible(row.rowIndex, 'middle');
-        if (destination.mode === 'details' || destination.mode === 'locate' || origin || details.isOpen()) row.setSelected(true, true);
         ended = true; pending = undefined;
         if (destination.mode === 'details') {
           const nextSource = origin ?? (destination.focusText ? focus.captureSegment({ id: destination.id, column: field }) : undefined);
@@ -66,15 +66,14 @@ export function segmentNavigation({ grid, editing, focus, stopInline, clearSearc
         } else {
           origin?.cancel();
           if (destination.mode === 'inline') {
-            if (details.isOpen()) details.show(destination, { valid });
+            details.hide();
             await inline(applySnapshot => {
               focus.acceptGridUpdate(applySnapshot);
               if (!valid()) { void editing.cancel('segments'); return; }
               const current = grid()?.getRowNode(destination.id);
               if (current?.rowIndex == null) throw new Error('口播片段已删除，请选择其他片段。');
-              if (origin || details.isOpen()) current.setSelected(true, true);
+              if (current.data) prepareInline(current.data, field);
               grid()?.ensureColumnVisible(field);
-              grid()?.startEditingCell({ rowIndex: current.rowIndex, colKey: field });
             });
           }
         }
