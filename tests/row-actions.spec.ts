@@ -64,3 +64,29 @@ for (const viewport of [{ width: 1200, height: 800 }, { width: 780, height: 579 
   expect(visited).toEqual(expect.arrayContaining(['片段 1 本行菜单', '生成配音', '片段 2 配音更多操作', '关联画面', '展开片段 2 的画面说明']));
   await page.keyboard.press('Shift+Tab'); await expect(page.locator('[row-index="1"]').getByRole('button', { name: '关联画面', exact: true })).toBeFocused();
 });
+
+test.describe('真实触控输入', () => {
+  test.use({ viewport: { width: 780, height: 579 }, hasTouch: true, isMobile: true });
+  test('无需悬停或右键即可关联、打开本行菜单、取消删除并拖动片段', async ({ page, project, context }) => {
+    const [a, b] = await project.seed(['A', 'B']); await page.goto(project.url);
+    expect(await page.evaluate(() => matchMedia('(hover: none)').matches)).toBe(true);
+    await page.locator(`[row-id="${a}"]`).getByRole('button', { name: '关联画面', exact: true }).tap();
+    await expect(page.getByRole('dialog', { name: '关联视频', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '取消', exact: true }).tap();
+    await page.getByRole('button', { name: '片段 1 本行菜单', exact: true }).tap();
+    await page.getByRole('menuitem', { name: '删除本片段', exact: true }).tap();
+    await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).tap();
+    const handle = page.getByRole('button', { name: '拖动片段 1', exact: true });
+    await expect(handle).toBeEnabled();
+    const origin = (await handle.boundingBox())!;
+    const destination = (await page.locator(`[row-id="${b}"] [col-id="order"]`).boundingBox())!;
+    const touch = await context.newCDPSession(page);
+    // Playwright 没有连续触控拖动 API；CDP 只负责设备输入，项目与表格保持真实。
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: origin.x + origin.width / 2, y: origin.y + origin.height / 2 }] });
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: destination.x + 15, y: destination.y + destination.height - 5 }] });
+    await expect(page.getByText('移动 1 条', { exact: true })).toBeVisible();
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect.poll(async () => (await project.status()).snapshot.segments.map(item => item.id)).toEqual([b, a]);
+    await touch.detach();
+  });
+});

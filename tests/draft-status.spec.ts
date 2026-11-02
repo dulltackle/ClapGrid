@@ -78,6 +78,9 @@ for (const width of [1600, 420]) for (const entry of ['原位', '说明'] as con
       await page.getByRole('button', { name: '回到草稿', exact: true }).click();
       await expect(copy).toBeVisible(); await expect(copy).toHaveValue('保留的草稿');
       await expect(copy).toHaveAttribute('readonly', ''); await expect(copy).toBeEnabled();
+      await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+      await page.getByRole('button', { name: '复制草稿', exact: true }).click();
+      await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(entry === '原位' ? '保留的草稿\n\n' : '原文\n\n保留的草稿');
       const footer = page.getByLabel('项目状态', { exact: true });
       expect(await footer.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
       await page.keyboard.press('Escape');
