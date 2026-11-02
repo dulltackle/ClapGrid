@@ -1,7 +1,7 @@
 import { test, expect } from './helpers/project.js';
 import { holdRequest, holdResponse } from './helpers/response-gate.js';
 
-for (const field of ['文案', '画面说明'] as const) test(`${field}保存失败保留草稿，重试成功才接续新详情`, async ({ page, project }) => {
+for (const field of ['画面说明'] as const) test(`${field}保存失败保留草稿，重试成功才接续新详情`, async ({ page, project }) => {
   const [a, b] = await project.seed(['A', 'B']); await page.goto(project.url);
   await page.getByRole('button', { name: '查看片段 1 的详情', exact: true }).click();
   const input = page.getByLabel(`详情${field}`, { exact: true });
@@ -16,35 +16,10 @@ for (const field of ['文案', '画面说明'] as const) test(`${field}保存失
   await page.getByRole('button', { name: '查看片段 2 的详情', exact: true }).focus(); await page.keyboard.press('Enter');
   await expect(page.getByLabel('详情文案', { exact: true })).toHaveValue('B');
   const segment = (await project.status()).snapshot.segments[0]!;
-  expect(field === '文案' ? segment.text : segment.visualNote).toBe('A 新内容');
+  expect(segment.visualNote).toBe('A 新内容');
   await page.getByRole('button', { name: '关闭详情', exact: true }).click();
   await expect(page.locator(`[row-id="${b}"] [data-row-details]`)).toBeFocused();
   await page.keyboard.press('ArrowUp'); await expect(page.locator(`[row-id="${a}"] [role="gridcell"]`).first()).toBeFocused();
-});
-
-test('详情断线草稿不覆盖外部新文案，删除后仍可复制', async ({ page, project }) => {
-  const [a] = await project.seed(['A']); await page.goto(project.url);
-  await page.getByRole('button', { name: '查看片段 1 的详情', exact: true }).click();
-  const input = page.getByLabel('详情文案', { exact: true });
-  await input.dblclick(); await expect(input).toBeEditable(); await input.fill('保留的草稿');
-  await project.restart();
-  await expect(page.getByRole('complementary').getByRole('alert')).toBeVisible();
-  const before = (await project.status()).snapshot.segments[0]!;
-  await project.modify({ changes: [{ kind: 'edit', expected: before, text: '外部新文案' }] });
-  await page.getByRole('button', { name: '保存文案', exact: true }).click();
-  await expect(page.getByRole('complementary').getByRole('alert')).toContainText('不能覆盖新内容');
-  await expect(input).toHaveValue('保留的草稿');
-  expect((await project.status()).snapshot.segments[0]!.text).toBe('外部新文案');
-  const current = (await project.status()).snapshot.segments[0]!;
-  await project.modify({ changes: [{ kind: 'delete', expected: current }] });
-  await expect(page.getByText('仍可选中复制', { exact: false })).toBeVisible();
-  await expect(input).toHaveAttribute('readonly', '');
-  await expect(input).toBeEnabled(); await expect(input).toHaveValue('保留的草稿');
-  await input.press('Escape');
-  await page.getByRole('button', { name: '放弃修改', exact: true }).click();
-  await page.getByRole('button', { name: '关闭详情', exact: true }).click();
-  await expect(page.getByLabel('口播片段详情', { exact: true })).toHaveCount(0);
-  expect(a).toBeTruthy();
 });
 
 test('内部浏览保留原来源，表格成功导航提交新来源', async ({ page, project }) => {

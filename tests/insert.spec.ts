@@ -116,7 +116,8 @@ for (const kind of ['普通', '相对'] as const) test(`${kind}新增明确失�
     await ready; await page.getByRole('button', { name: '查找', exact: true }).click();
     await page.getByLabel('查找文案', { exact: true }).fill('A');
   } finally { fail(); }
-  await expect(page.locator('[data-save-status]')).toHaveText('保存失败');
+  await expect(page.getByLabel('操作异常', { exact: true })).toContainText('本例新增失败');
+  await expect(page.locator('[data-save-status]')).toHaveText('已保存');
   await expect(page.getByLabel('查找文案', { exact: true })).toBeFocused();
   await expect(page.getByLabel('查找文案', { exact: true })).toHaveValue('A');
   expect((await project.status()).snapshot.segments.map(segment => segment.text)).toEqual(['A']);
@@ -130,7 +131,8 @@ test('相对插入保留菜单打开时锚点，外部修改冲突不误插入',
   const first = (await project.status()).snapshot.segments[0]!;
   await project.modify({ changes: [{ kind: 'edit', expected: first, text: '外部改变 A' }] });
   await page.getByRole('menuitem', { name: '上方添加', exact: true }).click();
-  await expect(page.locator('[data-save-status]')).toHaveText('保存失败');
+  await expect(page.getByLabel('操作异常', { exact: true })).toContainText('锚点');
+  await expect(page.locator('[data-save-status]')).toHaveText('已保存');
   expect((await project.status()).snapshot.segments.map(segment => segment.text)).toEqual(['外部改变 A', 'B']);
   await expect(page.locator(`[row-id="${a}"] [col-id="text"]`)).toBeFocused();
   await page.keyboard.press('ArrowDown');
@@ -157,7 +159,8 @@ test('已提交但响应未知的新增不自动重试，真实数据仍只有�
   let calls = 0;
   await page.route('**/api/segments/modify', async route => { calls++; await route.fetch(); await route.abort('failed'); });
   await page.getByRole('button', { name: '新增口播片段', exact: true }).click();
-  await expect(page.locator('[data-save-status]')).toHaveText('保存失败');
+  await expect(page.getByLabel('操作异常', { exact: true })).toContainText('Failed to fetch');
+  await expect(page.locator('[data-save-status]')).toHaveText('已保存');
   await expect.poll(async () => (await project.status()).modification).toBeNull();
   expect((await project.status()).snapshot.segments.map(segment => segment.text)).toEqual(['A', '']);
   await expect(page.getByLabel('详情文案', { exact: true })).toHaveCount(0);
