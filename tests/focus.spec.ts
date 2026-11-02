@@ -145,8 +145,8 @@ test('申请修改权忙态拒绝新的详情导航，迟到连接取消后仍�
   const input = parent.getByLabel('详情文案', { exact: true });
   const gate = await holdRequest(page, '/api/edit-session');
   try {
-    await input.click(); await gate.received;
-    await expect(input).toBeDisabled();
+    await input.dblclick(); await gate.received;
+    await expect(input).toHaveAttribute('readonly', '');
     await page.locator(`[row-id="${b}"] [data-row-details]`).press('Enter');
     await expect(input).toHaveValue('A');
   } finally { gate.release(); }

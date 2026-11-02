@@ -4,7 +4,7 @@ import type { Segment } from '../shared/contracts.js';
 
 type Grid = () => GridApi<Segment> | null;
 type ElementRef = () => HTMLElement | null;
-type Destination = { id: string; column?: string; details?: boolean };
+type Destination = { id: string; column?: string; details?: boolean; note?: boolean };
 type Origin = Partial<Destination> & { index: number; trigger?: HTMLElement; parent?: HTMLElement };
 export type FocusIntent = { valid: () => boolean };
 export type FocusReturn = (() => void) & { cancel: () => void };
@@ -111,12 +111,12 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
         }
         if (!origin.id && focus(origin.trigger)) { finish(); return; }
         const api = grid();
-        if (origin.id && (origin.column || origin.details) && api && !api.isDestroyed()) {
+        if (origin.id && (origin.column || origin.details || origin.note) && api && !api.isDestroyed()) {
           const original = api.getRowNode(origin.id);
           const index = original?.rowIndex ?? Math.min(origin.index, api.getDisplayedRowCount() - 1);
           const row = index >= 0 ? api.getDisplayedRowAtIndex(index) : undefined;
           if (row?.id) {
-            const selector = `[row-id="${CSS.escape(row.id)}"] ${origin.details ? '[data-row-details]' : `[col-id="${CSS.escape(origin.column!)}"]`}`;
+            const selector = `[row-id="${CSS.escape(row.id)}"] ${origin.note ? '[data-note-original]' : origin.details ? '[data-row-details]' : `[col-id="${CSS.escape(origin.column!)}"]`}`;
             const range = api.getVerticalPixelRange();
             const top = row.rowTop ?? 0;
             if (!document.querySelector(selector) || top < range.top || top + (row.rowHeight ?? 0) > range.bottom) {
@@ -171,7 +171,7 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
     const row = trigger.closest('[row-id]');
     return source({ trigger, parent: trigger.closest<HTMLElement>('[aria-label="口播片段详情"], [role="dialog"], [role="alertdialog"]') ?? undefined,
       id: row?.getAttribute('row-id') ?? undefined, index: Number(row?.getAttribute('row-index') ?? 0),
-      column: trigger.hasAttribute('data-row-details') ? undefined : trigger.closest('[col-id]')?.getAttribute('col-id') ?? undefined, details: trigger.hasAttribute('data-row-details') }, options);
+      column: trigger.hasAttribute('data-row-details') ? undefined : trigger.closest('[col-id]')?.getAttribute('col-id') ?? undefined, details: trigger.hasAttribute('data-row-details'), note: trigger.hasAttribute('data-note-original') }, options);
   };
   const captureSegment = (destination: Destination, options: ReturnOptions = {}): FocusReturn => {
     const api = grid();

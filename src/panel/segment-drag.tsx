@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent, type RefObject } from 'react';
 import type { GridApi } from 'ag-grid-community';
 import type { Segment } from '../shared/contracts.js';
+import { segmentTargets } from './segment-interaction.js';
 
 type Options = {
   segments: Segment[]; disabled: boolean; grid: RefObject<GridApi<Segment> | null>;
@@ -14,6 +15,7 @@ type Target = { id: string; after: boolean; top: number; left: number; width: nu
 export function useSegmentDrag(options: Options) {
   const latest = useRef(options); latest.current = options;
   const [line, setLine] = useState<Target | null>(null);
+  const [count, setCount] = useState(0);
   const cancel = useRef<(() => void) | null>(null);
   useEffect(() => () => cancel.current?.(), []);
   const start = (event: PointerEvent<HTMLButtonElement>, id: string) => {
@@ -23,9 +25,7 @@ export function useSegmentDrag(options: Options) {
     const { grid, segments, element } = latest.current;
     const api = grid.current;
     if (!api) return;
-    const node = api.getRowNode(id);
-    if (!node?.isSelected()) node?.setSelected(true, true);
-    const selected = new Set(api.getSelectedRows().map(segment => segment.id));
+    const selected = new Set(segmentTargets(segments, api.getSelectedRows().map(segment => segment.id), id).map(segment => segment.id));
     const expectedIds = segments.map(segment => segment.id);
     const moving = expectedIds.filter(value => selected.has(value));
     let target: Target | null = null;
@@ -43,6 +43,7 @@ export function useSegmentDrag(options: Options) {
       const rect = row.getBoundingClientRect();
       target = { id: row.getAttribute('row-id')!, after: y >= rect.top + rect.height / 2,
         top: y >= rect.top + rect.height / 2 ? rect.bottom : rect.top, left: bounds.left, width: bounds.width };
+      setCount(moving.length);
       const next = target;
       setLine(previous => previous?.id === next.id && previous.after === next.after
         && previous.top === next.top && previous.left === next.left && previous.width === next.width ? previous : next);
@@ -94,5 +95,5 @@ export function useSegmentDrag(options: Options) {
     window.addEventListener('pointercancel', cleanup); window.addEventListener('keydown', escape, true);
     window.addEventListener('scroll', update, true); window.addEventListener('blur', cleanup); frame = requestAnimationFrame(scroll);
   };
-  return { start, indicator: line && <div className="pointer-events-none fixed z-100 h-[3px] bg-[var(--color-accent)]" aria-label="口播片段插入位置" data-target-id={line.id} data-placement={line.after ? 'after' : 'before'} style={{ top: line.top, left: line.left, width: line.width }} /> };
+  return { start, indicator: line && <div className="pointer-events-none fixed z-100 h-[3px] bg-[var(--color-accent)]" aria-label="口播片段插入位置" data-target-id={line.id} data-placement={line.after ? 'after' : 'before'} style={{ top: line.top, left: line.left, width: line.width }}><span className="absolute bottom-1 left-2 rounded bg-background px-2 py-1 text-xs text-foreground shadow" role="status">移动 {count} 条</span></div> };
 }
