@@ -44,12 +44,12 @@ for (const width of [1600, 420]) test(`查找与勾选不改变全部范围或�
   await expect(page.getByRole('button', { name: '查找', exact: true })).toBeFocused();
 });
 
-test('详情导航保留勾选，历史及编辑键盘保留表格上下文', async ({ page, project }) => {
+test('原位编辑保留勾选，历史及编辑键盘保留表格上下文', async ({ page, project }) => {
   const [a, b] = await project.seed(['A', 'B']); await page.goto(project.url);
   await page.locator(`[row-id="${a}"] input[type="checkbox"]`).click();
-  await page.getByRole('button', { name: '查看片段 2 的详情', exact: true }).click();
+  await page.locator(`[row-id="${b}"] [col-id="text"]`).press('F2');
   await expect.poll(() => selected(page)).toEqual([a]); await page.keyboard.press('Escape');
-  await page.getByLabel('片段 2 配音更多操作', { exact: true }).click(); await page.locator('[data-speech-history]').click();
+  await page.getByLabel('片段 2 配音更多操作', { exact: true }).click(); await page.getByRole('menuitem', { name: '历史', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible(); await expect.poll(() => selected(page)).toEqual([a]);
   await page.keyboard.press('Escape'); await expect(page.getByRole('dialog')).toHaveCount(0); await expect.poll(() => selected(page)).toEqual([a]);
   await page.locator(`[row-id="${b}"] [role="status"]`).click(); await expect.poll(() => selected(page)).toEqual([a]);

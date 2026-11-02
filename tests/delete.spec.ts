@@ -4,7 +4,7 @@ import { beginEdit } from '../src/shared/client.js';
 import { holdResponse } from './helpers/response-gate.js';
 
 async function openDelete(page: Page, id: string, details = false) {
-  await page.locator(`[row-id="${id}"] ${details ? '[data-row-details]' : '[data-segment-script]'}`).click({ button: 'right' });
+  await page.locator(`[row-id="${id}"] ${details ? '[aria-label$="本行菜单"]' : '[data-segment-script]'}`).click({ button: 'right' });
   await page.keyboard.press('Home'); await page.keyboard.press('Enter');
   await expect(page.getByRole('alertdialog', { name: '删除口播片段', exact: true })).toBeVisible();
 }
@@ -133,15 +133,15 @@ for (const next of ['查找', '原片段'] as const) test(`等待删除响应取
   expect(gate.calls).toBe(1); expect((await project.status()).snapshot.segments.map(s => s.id)).toEqual([b, c]);
 });
 
-test('删除确认从详情入口交接不提前回表格，取消后继续方向键', async ({ page, project }) => {
+test('删除确认从本行菜单入口交接不提前回表格，取消后继续方向键', async ({ page, project }) => {
   const [a, b, c] = await project.seed(['A', 'B', 'C']); await page.goto(project.url);
-  await page.locator(`[row-id="${b}"] [data-row-details]`).click({ button: 'right' });
+  await page.locator(`[row-id="${b}"] [aria-label$="本行菜单"]`).click({ button: 'right' });
   await page.evaluate(() => { document.body.dataset.intermediateTableFocus = 'false'; document.addEventListener('focusin', event => { if ((event.target as Element).closest('[row-id]')) document.body.dataset.intermediateTableFocus = 'true'; }); });
   await page.keyboard.press('Home'); await page.keyboard.press('Enter');
   await expect(dialog(page).getByRole('button', { name: '取消', exact: true })).toBeFocused();
   await expect(page.locator('body')).toHaveAttribute('data-intermediate-table-focus', 'false');
   await dialog(page).getByRole('button', { name: '取消', exact: true }).click();
-  await expect(page.locator(`[row-id="${b}"] [data-row-details]`)).toBeFocused();
+  await expect(page.locator(`[row-id="${b}"] [col-id="noteToggle"]`)).toBeFocused();
   await page.keyboard.press('ArrowDown'); await expect(page.locator(`[row-id="${c}"] [role="gridcell"]:focus`)).toHaveCount(1);
   await page.locator(`[row-id="${a}"] [data-segment-script]`).click({ button: 'right' }); await page.keyboard.press('Escape');
   await expect(page.locator(`[row-id="${a}"] [col-id="text"]`)).toBeFocused();

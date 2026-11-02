@@ -84,8 +84,7 @@ test('工作空间绑定面板完成文案保存、刷新和本地视频播放',
     await page.getByRole('button', { name: '导入并复制', exact: true }).click();
     await expect(page.getByRole('dialog', { name: '导入本地视频', exact: true })).toHaveCount(0);
     const asset = (await queryStatus(url)).snapshot.assets[0]!;
-    await page.locator(`[row-id="${segment.id}"] [data-row-details]`).press('Enter');
-    await page.getByRole('button', { name: '关联', exact: true }).click();
+    await page.getByRole('button', { name: '关联画面', exact: true }).click();
     await page.getByLabel('关联素材', { exact: true }).selectOption(asset.id);
     await page.getByRole('button', { name: '保存关联与起点', exact: true }).click();
     await expect(page.getByRole('dialog', { name: '关联视频', exact: true })).toHaveCount(0);
@@ -93,8 +92,7 @@ test('工作空间绑定面板完成文案保存、刷新和本地视频播放',
   });
 
   await test.step('绑定地址下的缩略图可解码，真实视频播放时间持续前进', async () => {
-    const details = page.getByRole('complementary', { name: '口播片段详情', exact: true });
-    const preview = details.getByRole('button', { name: '播放预览', exact: true });
+    const preview = page.getByRole('button', { name: '播放 实际素材.mp4', exact: true });
     const thumbnail = preview.locator('img');
     await expect.poll(() => thumbnail.evaluate(node => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
     const thumbnailUrl = await thumbnail.evaluate(node => (node as HTMLImageElement).src);

@@ -2,7 +2,6 @@ import { Button } from '@/components/ui/index.js';
 import { DetailPanel } from './detail-panel.js';
 import type { SpeechStatus } from '../shared/contracts.js';
 
-type Audio = SpeechStatus['audio'][number];
 type Closing = { onClose: () => void; restoreFocus: () => void };
 
 export function AudioHistoryPanel({ segmentId, speech, onClose, restoreFocus }: Closing & { segmentId: string; speech: SpeechStatus | undefined }) {
@@ -16,12 +15,5 @@ export function AudioHistoryPanel({ segmentId, speech, onClose, restoreFocus }: 
       <audio className="mb-3 block w-full" controls preload="none" src={audio.url} aria-label={`试听 ${audio.input.text}`} />
     </li>)}</ul>
     <Button variant="outline" className="self-start shrink-0" onClick={onClose}>关闭</Button>
-  </DetailPanel>;
-}
-
-export function AudioListeningPanel({ audio, currentAudio, onClose, restoreFocus, onError }: Closing & { audio: Audio; currentAudio: Audio | undefined; onError: () => void }) {
-  return <DetailPanel label="配音试听" title="配音试听" description={!currentAudio ? '配音状态无法确认：此音频已不在当前保留音频列表中。' : currentAudio.valid ? '有效配音' : '配音待更新：此音频与当前文案或声音设置不一致。'} onClose={onClose} restoreFocus={restoreFocus} restoreWithinLayer>
-    <audio className="mb-3 block w-full shrink-0" controls autoPlay src={audio.url} aria-label="配音试听播放器" onError={onError} />
-    <Button variant="outline" className="self-start shrink-0" onClick={onClose}>关闭试听</Button>
   </DetailPanel>;
 }

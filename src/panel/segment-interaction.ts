@@ -4,36 +4,27 @@ import type { GridApi } from 'ag-grid-community';
 import { saveSegment } from '../shared/client.js';
 import { panelServiceUrl } from './service-url.js';
 import type { Segment, ServiceStatus } from '../shared/contracts.js';
-import type { FocusIntent, FocusReturn, segmentFocusCoordinator } from './dialog-focus.js';
+import type { FocusReturn, segmentFocusCoordinator } from './dialog-focus.js';
 import type { ProjectEditing } from './project-editing.js';
 import type { SegmentDestination, SegmentNavigation, SegmentTextField } from './segment-navigation.js';
 
-/** 右键与拖动共用固定身份范围，按项目顺序保留勾选集合的内部顺序。 */
-export function segmentTargets(segments: Segment[], checkedIds: string[], id: string) {
-  const ids = new Set(checkedIds.includes(id) ? checkedIds : [id]);
-  return segments.filter(segment => ids.has(segment.id));
-}
+export { segmentTargets } from './segment-targets.js';
 
-export type SegmentIntent = { id: string; inline?: boolean; field?: SegmentTextField; focusText?: boolean; edit?: boolean } | null;
+export type SegmentIntent = { id: string; inline?: boolean; field?: SegmentTextField } | null;
 
-type Draft = { id: string; base: string; text: string; baseVisualNote: string; visualNote: string; position: 'inline' | 'details'; field: SegmentTextField };
+type Draft = { id: string; base: string; text: string; baseVisualNote: string; visualNote: string; field: SegmentTextField };
 
-/** 勾选独立于查看和编辑；原位与详情共用一份草稿及修改权交接。 */
+/** 勾选独立于编辑；文案与说明共用一份草稿及修改权交接。 */
 export function useSegmentInteraction({ editing, status, accept, canEdit, failed, navigation, focus, grid }: {
   editing: ProjectEditing; status: ServiceStatus | undefined; accept: (status: ServiceStatus) => void;
   canEdit: () => boolean; grid: () => GridApi<Segment> | null; failed: (error: Error) => void;
   navigation: SegmentNavigation; focus: ReturnType<typeof segmentFocusCoordinator>;
 }) {
-  const [id, setId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const current = useRef(draft);
   const update = (value: Draft | null) => { current.current = value; setDraft(value); };
-  const [focusRequest, setFocusRequest] = useState<{ target: SegmentTextField | 'panel'; intent: FocusIntent } | null>(null);
   const [pending, setPending] = useState(false);
   const promptSource = useRef<HTMLElement | null>(null);
-  const text = useRef<HTMLTextAreaElement>(null);
-  const visualNote = useRef<HTMLTextAreaElement>(null);
-  const panel = useRef<HTMLElement>(null);
   const latest = useRef({ accept }); latest.current = { accept };
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<{ text: string; visualNote: string; message: string } | null>(null);
@@ -92,15 +83,14 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
     if (actionRunning.current || (editing.getState().busy && !flight.current)) { origin?.cancel(); return; }
     const version = ++sequence.current;
     const ticket = navigation.request(origin, { waitForInline: true });
-    const destination: SegmentDestination = intent && { ...intent, mode: intent.inline ? 'inline' : 'details' };
+    const destination: SegmentDestination = intent && { ...intent, mode: 'inline' };
     void (async () => {
       if (!await commit()) { ticket.fail(); return; }
       if (version !== sequence.current || !ticket.valid()) { origin?.cancel(); return; }
       await ticket.arrive(() => {}, destination);
-      if (intent?.edit && version === sequence.current && ticket.valid()) begin(intent.field, intent.id);
     })();
   };
-  const begin = (field: SegmentTextField = 'text', target = id, position: Draft['position'] = 'details', requested = navigation.intent()) => {
+  const begin = (field: SegmentTextField = 'text', target: string | null = null, requested = navigation.intent()) => {
     if (!target || current.current || editing.getState().editing || editing.getState().busy || !canEdit()) return Promise.resolve();
     return editing.begin('segments', next => {
       focus.acceptGridUpdate(() => accept(next));
@@ -108,10 +98,9 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
       const segment = next.snapshot.segments.find(item => item.id === target);
       if (!segment) throw new Error('口播片段已删除，请选择其他片段。');
       setFailure(null);
-      const value: Draft = { id: target, base: segment.text, text: segment.text, baseVisualNote: segment.visualNote ?? '', visualNote: segment.visualNote ?? '', position, field };
+      const value: Draft = { id: target, base: segment.text, text: segment.text, baseVisualNote: segment.visualNote ?? '', visualNote: segment.visualNote ?? '', field };
       // 原位 renderer 必须在修改权就绪时读到草稿；调用方不再处理表格时序。
-      if (position === 'inline') flushSync(() => update(value));
-      else { update(value); setFocusRequest({ target: field, intent: requested }); }
+      flushSync(() => update(value));
     }, disconnected, failed);
   };
   const discard = async () => {
@@ -119,13 +108,12 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
     ++sequence.current; setPending(false);
     const value = current.current;
     const version = lifetime.current;
-    const restore = value?.position === 'inline' ? focus.captureSegment({ id: value.id, column: value.field }) : undefined;
+    const restore = value ? focus.captureSegment(value.field === 'visualNote' ? { id: value.id, note: true } : { id: value.id, column: 'text' }) : undefined;
     await editing.cancel('segments');
     if (version !== lifetime.current || current.current !== value) { restore?.cancel(); return; }
     setFailure(null);
     if (restore) focus.close(restore, () => { update(null); restore(); });
     else { update(null); }
-    if (value?.position === 'details') (value.field === 'text' ? text : visualNote).current?.focus();
   };
   const escape = () => {
     if (flight.current || editing.getState().busy) return;
@@ -156,20 +144,19 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
   const returnToDraft = () => {
     const value = current.current;
     if (!value) return;
-    if (!deleted && value.position === 'inline') {
+    if (!deleted) {
       const row = grid()?.getRowNode(value.id);
-      if (row?.rowIndex != null) { grid()?.ensureColumnVisible(value.field); grid()?.ensureIndexVisible(row.rowIndex, 'middle'); }
+      if (row?.rowIndex != null) { grid()?.ensureColumnVisible('text'); grid()?.ensureIndexVisible(row.rowIndex, 'middle'); }
     }
     const requested = navigation.intent();
     requestAnimationFrame(() => {
       if (!requested.valid() || current.current !== value) return;
       const input = deleted ? document.querySelector<HTMLTextAreaElement>(`[aria-label="已删除片段的${value.field === 'text' ? '文案' : '画面说明'}草稿"]`)
-        : value.position === 'details' ? (value.field === 'text' ? text : visualNote).current
         : document.querySelector<HTMLTextAreaElement>('[data-inline-editor] textarea');
       input?.scrollIntoView({ block: 'nearest' }); input?.focus({ preventScroll: true });
     });
   };
-  return { id, draft, dirty, deleted, saving, draftStatus, draftError: activeFailure?.message ?? '', returnToDraft, pending, text, visualNote, panel, navigate, begin, focusRequest, consumeFocus: () => setFocusRequest(null),
+  return { draft, dirty, deleted, saving, draftStatus, draftError: activeFailure?.message ?? '', returnToDraft, pending, navigate, begin,
     change: (value: string, field: SegmentTextField = 'text') => {
       const previous = current.current;
       if (previous && !flight.current) {
@@ -179,18 +166,17 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
       }
     },
     commit, perform, escape, discard,
-    show: (destination: NonNullable<SegmentDestination>, intent: FocusIntent) => {
-      setId(destination.id);
-      if (destination.mode === 'details') setFocusRequest({ target: destination.field === 'visualNote' ? 'visualNote' : destination.focusText ? 'text' : 'panel', intent });
+    save: async () => {
+      const value = current.current;
+      const restore = value ? focus.captureSegment(value.field === 'visualNote' ? { id: value.id, note: true } : { id: value.id, column: 'text' }) : undefined;
+      const requested = navigation.intent();
+      if (await commit() && requested.valid()) restore?.(); else restore?.cancel();
     },
-    hide: () => setId(null),
     continueEditing: () => {
       setPending(false);
       requestAnimationFrame(() => {
         if (promptSource.current?.isConnected) { promptSource.current.focus(); return; }
-        const value = current.current;
-        if (value?.position === 'details') (value.field === 'text' ? text : visualNote).current?.focus();
-        else document.querySelector<HTMLTextAreaElement>('[data-inline-editor] textarea')?.focus();
+        document.querySelector<HTMLTextAreaElement>('[data-inline-editor] textarea')?.focus();
       });
     },
   };
