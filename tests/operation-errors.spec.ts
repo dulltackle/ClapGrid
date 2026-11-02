@@ -1,0 +1,48 @@
+import { randomUUID } from 'node:crypto';
+import { mergeTests } from '@playwright/test';
+import { test as mediaTest, expect } from './helpers/media-project.js';
+import { test as refreshTest } from './helpers/refresh-project.js';
+const test = mergeTests(mediaTest, refreshTest);
+import { importVideo, querySpeech, submitSpeech } from '../src/shared/client.js';
+
+// HTTP/媒体边界只制造失败；页面、AG Grid、任务与项目仍走真实路径。
+test('配音、声音设置、视频关联、预览与音频错误独立于草稿保存状态', async ({ page, project, mediaFiles }) => {
+  const [id] = await project.seed(['原文']);
+  const { asset } = await importVideo(project.url, mediaFiles.video);
+  await project.modify({ changes: [{ kind: 'video', expected: (await project.status()).snapshot.segments[0]!, assetId: asset.id, start: 0 }] });
+  await submitSpeech(project.url, { requestId: randomUUID(), segmentId: id! });
+  await expect.poll(async () => (await querySpeech(project.url)).audio.length).toBe(1);
+  await page.route('**/api/speech/audio/*', route => route.fulfill({ status: 404, body: 'missing audio' }));
+  await page.route('**/api/media/*/preview', route => route.fulfill({ status: 404, body: 'missing preview' }));
+  await page.goto(project.url);
+  const state = page.locator('[data-save-status]');
+  const refresh = page.getByRole('button', { name: '刷新面板', exact: true });
+  await expect(refresh).toBeEnabled();
+  const problems = page.getByLabel('操作异常', { exact: true });
+  const row = page.locator(`[row-id="${id}"]`);
+  await row.getByRole('button', { name: '试听', exact: true }).click();
+  await expect(problems).toContainText('音频无法播放'); await expect(state).toHaveText('已保存'); await expect(refresh).toBeEnabled();
+  await page.getByRole('button', { name: '播放 实际素材.mp4', exact: true }).click();
+  await expect(problems).toContainText('预览不可用'); await expect(state).toHaveText('已保存');
+  await page.getByRole('button', { name: '关闭预览', exact: true }).click();
+  await expect(refresh).toBeEnabled();
+  await page.route('**/api/speech/submit', route => route.fulfill({ status: 500, json: { error: '配音提交故障' } }));
+  await row.getByRole('button', { name: '片段 1 配音更多操作', exact: true }).click();
+  await page.getByRole('menuitem', { name: '重新生成', exact: true }).click();
+  await expect(problems).toContainText('配音提交故障'); await expect(state).toHaveText('已保存'); await expect(refresh).toBeEnabled();
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('button', { name: '声音设置', exact: true }).click();
+  await page.route('**/api/speech/voice', route => route.fulfill({ status: 500, json: { error: '声音设置故障' } }));
+  await page.getByLabel('统一语速', { exact: true }).selectOption('20');
+  await expect(problems).toContainText('声音设置故障'); await expect(state).toHaveText('已保存');
+  // 后一个职责失败不会清掉前一个职责的异常。
+  await expect(problems).toContainText('音频无法播放');
+  await page.getByRole('button', { name: '关闭声音设置', exact: true }).click();
+  await row.locator('[data-row-details]').click();
+  await page.getByRole('button', { name: '更改', exact: true }).click();
+  await page.route('**/api/segments/modify', route => route.fulfill({ status: 500, json: { error: '视频关联故障' } }));
+  await page.getByRole('button', { name: '保存关联与起点', exact: true }).click();
+  await expect(problems).toContainText('视频关联故障'); await expect(state).toHaveText('已保存');
+  await page.getByRole('button', { name: '关闭详情', exact: true }).click();
+  await expect(refresh).toBeEnabled();
+});

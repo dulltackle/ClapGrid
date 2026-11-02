@@ -74,3 +74,28 @@ test('真实媒体播放、暂停和移除以及任务状态阻止刷新',async(
  await page.locator('#refresh-playback').evaluate(e=>e.remove());await expect(refresh).toBeEnabled();
  locked=true;await expect(refresh).toBeDisabled();
 });
+
+test('声音和导出设置失败结束后不阻止面板刷新，异常不改变草稿页脚', async ({ page, project }) => {
+  await project.seed(['原文']); await page.goto(project.url);
+  const refresh = page.getByRole('button', { name: '刷新面板', exact: true });
+  const state = page.locator('[data-save-status]');
+  await expect(refresh).toBeEnabled();
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('button', { name: '声音设置', exact: true }).click();
+  await page.route('**/api/speech/voice', route => route.fulfill({ status: 500, json: { error: '声音操作故障' } }));
+  await page.getByLabel('统一语速', { exact: true }).selectOption('20');
+  await expect(page.getByLabel('操作异常', { exact: true })).toContainText('声音操作故障');
+  await expect(state).toHaveText('已保存');
+  await page.getByRole('button', { name: '关闭声音设置', exact: true }).click();
+  await expect(refresh).toBeEnabled();
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('button', { name: '导出设置', exact: true }).click();
+  await page.getByRole('button', { name: '编辑设置', exact: true }).click();
+  await page.route('**/api/export-settings', route => route.request().method() === 'POST'
+    ? route.fulfill({ status: 500, json: { error: '导出设置故障' } }) : route.continue());
+  await page.getByLabel('导出帧率', { exact: true }).selectOption('60');
+  await expect(page.getByLabel('操作异常', { exact: true })).toContainText('导出设置故障');
+  await expect(state).toHaveText('已保存');
+  await page.getByRole('button', { name: '关闭设置', exact: true }).click();
+  await expect(refresh).toBeEnabled();
+});

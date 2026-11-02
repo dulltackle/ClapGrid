@@ -110,7 +110,8 @@ for (const unknown of [false, true]) test(`删除${unknown ? '已提交响应未
     else await route.fulfill({ status: 500, json: { error: '本例删除失败' } });
   });
   await dialog(page).getByRole('button', { name: '删除', exact: true }).click();
-  await expect(dialog(page)).toHaveCount(0); await expect(page.locator('[data-save-status]')).toHaveText('保存失败');
+  await expect(dialog(page)).toHaveCount(0); await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+  await expect(page.getByLabel('操作异常', { exact: true })).toContainText(unknown ? 'Failed to fetch' : '本例删除失败');
   await expect.poll(async () => (await project.status()).modification).toBeNull();
   expect((await project.status()).snapshot.segments.map(s => s.id)).toEqual(unknown ? [b] : [a, b]); expect(calls).toBe(1);
 });
@@ -173,8 +174,11 @@ for (const outcome of ['成功', '失败'] as const) test(`迟到删除${outcome
     const viewport = page.locator('.ag-grid-viewport'); await page.mouse.move(150, 350); await page.mouse.wheel(0, 600);
     await expect.poll(() => viewport.evaluate(node => node.scrollTop)).toBeGreaterThan(100);
     scroll = await viewport.evaluate(node => node.scrollTop);
+    await expect(page.getByRole('button', { name: '新增口播片段', exact: true })).toBeDisabled();
   } finally { release(); }
-  await expect(page.locator('[data-save-status]')).toHaveText(outcome === '成功' ? '已保存' : '保存失败');
+  await expect(page.getByRole('button', { name: '新增口播片段', exact: true })).toBeEnabled();
+  if (outcome === '失败') await expect(page.getByLabel('操作异常', { exact: true })).toContainText('本例迟到删除失败');
+  await expect(page.locator('[data-save-status]')).toHaveText('已保存');
   await expect(page.getByLabel('查找文案', { exact: true })).toBeFocused(); await expect(page.getByLabel('查找文案', { exact: true })).toHaveValue('保留');
   expect(await page.locator('.ag-grid-viewport').evaluate(node => node.scrollTop)).toBe(scroll);
   // 勾选所在行可能已经虚拟卸载；通过重新回到行位置读取其稳定身份。

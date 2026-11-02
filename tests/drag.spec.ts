@@ -50,7 +50,8 @@ test('松手立即预览，真实取得修改权与保存等待不覆盖预览�
   const acquire = await holdRequest(page, '/api/edit-session'); const save = await holdResponse(page, '/api/segments/modify');
   try {
     await begin(page, a!); await target(page, b!); await page.mouse.up(); await acquire.received;
-    await expect(page.locator(`[row-id="${a}"]`)).toHaveAttribute('row-index', '1'); await expect(page.locator('[data-save-status]')).toContainText('保存中');
+    await expect(page.locator(`[row-id="${a}"]`)).toHaveAttribute('row-index', '1'); await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+    await expect(page.getByRole('button', { name: '新增口播片段', exact: true })).toBeDisabled();
     expect((await project.status()).snapshot.segments.map(s => s.id)).toEqual([a, b]);
     acquire.release(); await save.received;
     await expect(page.locator(`[row-id="${a}"]`)).toHaveAttribute('row-index', '1');
@@ -60,7 +61,7 @@ test('松手立即预览，真实取得修改权与保存等待不覆盖预览�
   await page.unroute('**/api/segments/modify');
   await page.route('**/api/segments/modify', route => route.fulfill({ status: 500, json: { error: '本例重排保存失败' } }));
   await begin(page, a!); await target(page, b!, false); await page.mouse.up();
-  await expect(page.locator('[data-save-status]')).toHaveText('保存失败'); await expect(page.locator('footer')).toContainText('本例重排保存失败');
+  await expect(page.locator('[data-save-status]')).toHaveText('已保存'); await expect(page.locator('footer')).toContainText('本例重排保存失败');
   await expect(page.locator(`[row-id="${a}"]`)).toHaveAttribute('row-index', '1');
   expect((await project.status()).snapshot.segments.map(s => s.id)).toEqual([b, a]);
 });

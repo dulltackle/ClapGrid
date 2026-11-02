@@ -8,13 +8,12 @@ export type SegmentDestination = { id: string; mode: 'locate' | 'inline' | 'deta
 type Focus = Pick<ReturnType<typeof segmentFocusCoordinator>, 'intent' | 'close' | 'captureSegment' | 'acceptGridUpdate'>;
 
 /** 口播片段导航事务：快照始终接收，只有当前票据可以提交定位与来源。 */
-export function segmentNavigation({ grid, editing, focus, clearSearch, details, inline, prepareInline, failed }: {
+export function segmentNavigation({ grid, editing, focus, clearSearch, details, inline, failed }: {
   grid: () => GridApi<Segment> | null;
   editing: Pick<ProjectEditing, 'getState' | 'subscribe' | 'cancel'>;
   focus: Focus; clearSearch: () => void;
   details: { show: (destination: NonNullable<SegmentDestination>, intent: FocusIntent) => void; hide: () => void };
-  prepareInline: (segment: Segment, field: SegmentTextField) => void;
-  inline: (ready: (applySnapshot: () => void) => void) => Promise<void>;
+  inline: (id: string, field: SegmentTextField, intent: FocusIntent) => Promise<void>;
   failed: (cause: Error) => void;
 }) {
   let sequence = 0;
@@ -67,14 +66,7 @@ export function segmentNavigation({ grid, editing, focus, clearSearch, details, 
           origin?.cancel();
           if (destination.mode === 'inline') {
             details.hide();
-            await inline(applySnapshot => {
-              focus.acceptGridUpdate(applySnapshot);
-              if (!valid()) { void editing.cancel('segments'); return; }
-              const current = grid()?.getRowNode(destination.id);
-              if (current?.rowIndex == null) throw new Error('口播片段已删除，请选择其他片段。');
-              if (current.data) prepareInline(current.data, field);
-              grid()?.ensureColumnVisible(field);
-            });
+            await inline(destination.id, field, { valid });
           }
         }
       },

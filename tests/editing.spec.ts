@@ -61,6 +61,7 @@ for (const [width, height] of [[780, 579], [420, 360]]) test(`原位放大缩小
   const input = page.getByLabel('文案全文', { exact: true });
   const expand = row.getByRole('button', { name: '放大编辑', exact: true });
   await input.fill('原位草稿');
+  await input.press('Home'); await input.press('Shift+ArrowRight'); await input.press('Shift+ArrowRight');
   const box = (await row.locator('[data-inline-text-box]').boundingBox())!;
   const button = (await expand.boundingBox())!;
   expect(button.x + button.width).toBeLessThanOrEqual(box.x + box.width);
@@ -70,6 +71,7 @@ for (const [width, height] of [[780, 579], [420, 360]]) test(`原位放大缩小
   const large = page.getByLabel('放大文案全文', { exact: true });
   await expect(dialog).toBeVisible(); await expect(large).toBeFocused();
   await expect(large).toHaveValue('原位草稿');
+  expect(await large.evaluate(node => [(node as HTMLTextAreaElement).selectionStart, (node as HTMLTextAreaElement).selectionEnd])).toEqual([0, 2]);
   await large.press('Tab');
   await expect(dialog.getByRole('button', { name: '取消修改', exact: true })).toBeFocused();
   await page.keyboard.press('Shift+Tab'); await expect(large).toBeFocused();
@@ -80,9 +82,11 @@ for (const [width, height] of [[780, 579], [420, 360]]) test(`原位放大缩小
   expect(bounds.x + bounds.width).toBeLessThanOrEqual(width! + 1);
   expect(bounds.y + bounds.height).toBeLessThanOrEqual(height! + 1);
   await large.fill('放大后修改\n第二行');
+  await large.press('Home'); await large.press('Shift+ArrowRight'); await large.press('Shift+ArrowRight');
   await dialog.getByRole('button', { name: '缩小编辑', exact: true }).click();
   await expect(dialog).toHaveCount(0); await expect(input).toBeFocused();
   await expect(input).toHaveValue('放大后修改\n第二行');
+  expect(await input.evaluate(node => [(node as HTMLTextAreaElement).selectionStart, (node as HTMLTextAreaElement).selectionEnd])).toEqual([6, 8]);
   expect((await project.status()).snapshot.segments[0]!.text).toBe('原文');
   await expand.click(); await expect(large).toBeFocused();
   await large.press('Escape');

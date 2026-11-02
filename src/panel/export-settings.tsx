@@ -5,8 +5,8 @@ import { queryExportSettings, saveExportSettings } from '../shared/client.js';
 import type { ExportSettings, ExportStatus, ServiceStatus } from '../shared/contracts.js';
 import type { ProjectEditing } from './project-editing.js';
 
-type Props = { onSaveState: (state: 'saved' | 'saving' | 'failed', message?: string) => void; restoreFocus: () => void; editing: ProjectEditing; status: ServiceStatus; onStatus: (status: ServiceStatus) => void; onClose: () => void };
-export function ExportSettingsPanel({ editing, status, onStatus, onClose, restoreFocus, onSaveState }: Props) {
+type Props = { onError: (message: string) => void; restoreFocus: () => void; editing: ProjectEditing; status: ServiceStatus; onStatus: (status: ServiceStatus) => void; onClose: () => void };
+export function ExportSettingsPanel({ editing, status, onStatus, onClose, restoreFocus, onError }: Props) {
   const [details, setDetails] = useState<ExportStatus>();
   const [draft, setDraft] = useState<ExportSettings>(status.snapshot.exportSettings);
   const [size, setSize] = useState(status.snapshot.exportSettings.fontSize?.toString() ?? '');
@@ -15,14 +15,17 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose, restor
   const mode = owns && activity.busy ? 'saving' : owns && activity.editing ? 'editing' : 'view';
   const [message, setMessage] = useState('正在检查媒体组件与字体…');
   const saved = useRef(status.snapshot.exportSettings);
+  const errorVersion = useRef(0);
+  const reportError = (message: string) => { errorVersion.current++; onError(message); };
   const settingsKey = JSON.stringify(status.snapshot.exportSettings);
   useEffect(() => {
     let active = true;
+    const version = errorVersion.current;
     void queryExportSettings(panelServiceUrl()).then(result => {
       if (!active) return;
       setDetails(result);
       setMessage(current => current === '正在检查媒体组件与字体…' ? '设置按项目自动保存' : current);
-    }).catch(error => { if (active) setMessage(current => current === '正在检查媒体组件与字体…' ? error.message : current); });
+    }).catch(error => { if (active) { setMessage(current => current === '正在检查媒体组件与字体…' ? error.message : current); if (version === errorVersion.current) onError(error.message); } });
     return () => { active = false; };
   }, [settingsKey]);
   useEffect(() => () => { void editing.cancel('settings'); }, [editing]);
@@ -34,17 +37,17 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose, restor
     setMessage('修改后自动保存；字号输入完成后离开输入框保存');
   }, () => {
     setSize(saved.current.fontSize?.toString() ?? '');
-    onSaveState('failed', '编辑连接已断开，未提交输入已取消，请重新读取后编辑');
+    reportError('编辑连接已断开，未提交输入已取消，请重新读取后编辑');
     setMessage(current => `${current === '已保存' || current.startsWith('保存失败：') ? current + '；' : ''}编辑连接已断开，未提交输入已取消，请重新读取后编辑`);
-  }, error => setMessage(error.message));
+  }, error => { setMessage(error.message); reportError(error.message); });
   const save = (settings: ExportSettings) => {
     if (JSON.stringify(settings) === JSON.stringify(draft)) { setSize(draft.fontSize?.toString() ?? ''); return; }
     return editing.save('settings', { retain: true }, async (token, action) => {
-      setMessage('保存中…'); onSaveState('saving');
+      setMessage('保存中…'); reportError('');
       const result = await saveExportSettings(panelServiceUrl(), { expected: draft, settings }, token);
-      action.apply(() => { adopt(result.settings); onStatus(result.status); setMessage('已保存'); onSaveState('saved'); });
+      action.apply(() => { adopt(result.settings); onStatus(result.status); setMessage('已保存'); reportError(''); });
     }, error => {
-      setSize(saved.current.fontSize?.toString() ?? ''); setMessage(`保存失败：${error.message}`); onSaveState('failed', `保存失败：${error.message}`);
+      setSize(saved.current.fontSize?.toString() ?? ''); setMessage(`保存失败：${error.message}`); reportError(`保存失败：${error.message}`);
     });
   };
   const close = async () => {

@@ -43,25 +43,30 @@ for (const width of [1600, 780, 420]) test(`勾选与浏览、编辑、菜单和
   await expect.poll(checked).toEqual([]);
 });
 
-test('保存失败保留原位草稿并阻止查看与删除，重试后只导航到最新目标', async ({ page, project }) => {
+for (const entry of ['原位', '详情'] as const) test(`${entry}切换目标保存失败时保留草稿与勾选，重试只导航到最新目标`, async ({ page, project }) => {
   const [a, b, c] = await project.seed(['A', 'B', 'C', 'D']); await page.goto(project.url);
   await page.locator(`[row-id="${a}"] input[type="checkbox"]`).click();
   await page.locator(`[row-id="${c}"] input[type="checkbox"]`).click();
-  await page.locator(`[row-id="${b}"] [data-segment-script]`).dblclick();
-  const input = page.getByLabel('文案全文', { exact: true }); await input.fill('保留草稿');
+  if (entry === '原位') await page.locator(`[row-id="${b}"] [data-segment-script]`).dblclick();
+  else {
+    await page.getByRole('button', { name: '查看片段 2 的详情', exact: true }).press('Enter');
+    await page.getByRole('button', { name: '编辑片段', exact: true }).click();
+  }
+  const input = page.getByLabel(entry === '原位' ? '文案全文' : '详情文案', { exact: true }); await input.fill('保留草稿');
   await page.route('**/api/segments/edit', route => route.fulfill({ status: 500, json: { error: '本例保存失败' } }));
-  await page.getByRole('button', { name: '查看片段 4 的详情', exact: true }).click();
+  await page.getByRole('button', { name: '查看片段 4 的详情', exact: true }).press('Enter');
   await expect(input).toHaveValue('保留草稿');
   await expect(page.locator('footer')).toContainText('本例保存失败');
-  await expect(page.getByLabel('口播片段详情', { exact: true })).toHaveCount(0);
+  if (entry === '原位') await expect(page.getByLabel('口播片段详情', { exact: true })).toHaveCount(0);
+  else await expect(page.getByRole('complementary').getByRole('heading', { name: '片段 2', exact: true })).toBeVisible();
   await expect(page.locator(`[row-id="${a}"] input[type="checkbox"]`)).toBeChecked();
   await expect(page.locator(`[row-id="${c}"] input[type="checkbox"]`)).toBeChecked();
   await page.unroute('**/api/segments/edit');
   const gate = await holdResponse(page, '/api/segments/edit');
   try {
-    await page.getByRole('button', { name: '查看片段 2 的详情', exact: true }).click(); await gate.received;
-    await page.getByRole('button', { name: '查看片段 3 的详情', exact: true }).click();
-    await page.getByRole('button', { name: '查看片段 4 的详情', exact: true }).click();
+    await page.getByRole('button', { name: '查看片段 2 的详情', exact: true }).press('Enter'); await gate.received;
+    await page.getByRole('button', { name: '查看片段 3 的详情', exact: true }).press('Enter');
+    await page.getByRole('button', { name: '查看片段 4 的详情', exact: true }).press('Enter');
   } finally { gate.release(); }
   await gate.delivered;
   await expect(page.getByLabel('详情文案', { exact: true })).toHaveValue('D');
@@ -138,28 +143,6 @@ for (const selection of [0, 1, 2]) for (const details of [false, true]) for (con
   await expect(page.locator('.ag-row[aria-selected="true"]')).toHaveCount(selection);
   if (selection > 0) await expect(page.locator(`[row-id="${a}"] input[type="checkbox"]`)).toBeChecked();
   if (selection > 1) await expect(page.locator(`[row-id="${c}"] input[type="checkbox"]`)).toBeChecked();
-});
-
-test('原位断线保留草稿，外部修改拒绝覆盖，删除后仍能复制并主动放弃', async ({ page, project }) => {
-  const [a] = await project.seed(['A']); await page.goto(project.url);
-  await page.locator(`[row-id="${a}"] [data-segment-script]`).dblclick();
-  const input = page.getByLabel('文案全文', { exact: true }); await input.fill('原位断线草稿');
-  await project.restart(async () => {
-    await expect(page.locator('footer')).toContainText('编辑连接已断开');
-    await expect(input).toHaveValue('原位断线草稿');
-  });
-  const before = (await project.status()).snapshot.segments[0]!;
-  await project.modify({ changes: [{ kind: 'edit', expected: before, text: '外部新文字' }] });
-  await input.press('Control+Enter');
-  await expect(page.locator('footer')).toContainText('不能覆盖新内容');
-  await expect(input).toHaveValue('原位断线草稿');
-  const current = (await project.status()).snapshot.segments[0]!;
-  await project.modify({ changes: [{ kind: 'delete', expected: current }] });
-  await expect(page.getByLabel('已删除片段的草稿')).toBeVisible();
-  await expect(input).toHaveValue('原位断线草稿'); await expect(input).toHaveAttribute('readonly', '');
-  await page.getByRole('button', { name: '放弃草稿', exact: true }).click();
-  await page.getByRole('button', { name: '放弃修改', exact: true }).click();
-  await expect(input).toHaveCount(0);
 });
 
 test('多选保留时对未勾选的草稿片段相对插入，保存后的锚点不会误报冲突', async ({ page, project }) => {

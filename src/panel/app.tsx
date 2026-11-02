@@ -19,7 +19,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 import { AllCommunityModule, themeQuartz, type ColDef, type GridApi } from 'ag-grid-community';
 import { AgGridProvider, AgGridReact } from 'ag-grid-react';
-import { queryStatus, querySpeech, submitSpeech, setVoice, importVideo, saveSegment, beginEdit, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
+import { queryStatus, querySpeech, submitSpeech, setVoice, importVideo, beginEdit, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
 import type { Segment, ServiceStatus, SpeechStatus, Voice, Batch } from '../shared/contracts.js';
 import { projectEditing } from './project-editing.js';
 import { useSegmentInteraction, segmentTargets } from './segment-interaction.js';
@@ -123,11 +123,19 @@ export function App() {
   const [connectionVersion, setConnectionVersion] = useState(0);
   const table = useRef<TableSession | null>(null);
   const selectionVersion = useRef(0);
-  const [saveState, setSaveState] = useState<'saved' | 'saving' | 'failed'>('saved');
-  const [saveError, setSaveError] = useState('');
+  const [operationErrors, setOperationErrors] = useState<Partial<Record<'project' | 'speech' | 'voice' | 'video' | 'audio' | 'preview' | 'settings', string>>>({});
+  const reportOperation = (kind: keyof typeof operationErrors, message = '') => setOperationErrors(previous => ({ ...previous, [kind]: message }));
   const grid = useRef<GridApi<Segment> | null>(null);
   const tableFallback = useRef<HTMLButtonElement>(null);
   const gridElement = useRef<HTMLDivElement>(null);
+  const statusFooter = useRef<HTMLElement>(null);
+  const [footerHeight, setFooterHeight] = useState(0);
+  useEffect(() => {
+    const footer = statusFooter.current;
+    if (!footer) return;
+    const observer = new ResizeObserver(() => setFooterHeight(footer.offsetHeight + 8));
+    observer.observe(footer); return () => observer.disconnect();
+  }, []);
   const [searchRowHeight, setSearchRowHeight] = useState(240);
   const [expandedNote, setExpandedNote] = useState<string | null>(null);
   const [noteHeight, setNoteHeight] = useState(120);
@@ -190,29 +198,19 @@ export function App() {
   };
   const openDetail = (next: typeof detail, trigger: HTMLElement) => { rememberOrigin(trigger, 'detail'); setDetail(next); };
   const closeDetail = () => focusReturns.close(returnFocus.current.detail, () => setDetail(null));
-  const failed = (cause: Error) => { setSaveState('failed'); setSaveError(cause.message); };
+  const failed = (cause: Error) => reportOperation('project', cause.message);
   const disconnected = () => {
     focusReturns.close(returnFocus.current.video, () => { setVideoEditor(null); setImporting(false); });
-    failed(new Error('编辑连接已断开，草稿已保留；请重新保存或放弃。'));
+    reportOperation('video', '编辑连接已断开，请重新打开视频关联后重试。');
   };
-  const startEdit = (ready: (applySnapshot: () => void) => void) => {
-    if (panelRestore || status?.taskLocked || speech?.locked || exports.exports?.locked) return Promise.resolve();
-    return editing.begin('segments', next => {
-      ready(() => { setStatus(next); setError(''); setSaveError(''); setSaveState('saved'); });
-    }, disconnected, cause => {
-      if (cause.message === 'Codex 正在修改' || cause.message === '用户正在编辑') {
-        setSaveState('saved');
-        queueMicrotask(() => { void editing.refresh(() => queryStatus(panelServiceUrl()), setStatus, () => {}); });
-      } else failed(cause);
-    });
-  };
-  const audioError = () => failed(new Error('音频无法播放，请检查项目文件后重试。'));
+  const audioError = () => { setPlaying(null); reportOperation('audio', '音频无法播放，请检查项目文件后重试。'); };
   useEffect(() => {
     if (inlineAudio && speech && !speech.audio.some(audio => audio.taskId === inlineAudio.taskId && audio.segmentId === inlineAudio.segmentId)) {
       audioPlayer.current?.pause(); setInlineAudio(null); setPlaying(null);
     }
   }, [inlineAudio, speech]);
   const toggleAudio = (audio: SpeechStatus['audio'][number]) => {
+    reportOperation('audio');
     if (inlineAudio?.taskId === audio.taskId && audioPlayer.current) {
       if (audioPlayer.current.paused) void audioPlayer.current.play().catch(audioError);
       else audioPlayer.current.pause();
@@ -220,7 +218,7 @@ export function App() {
   };
   const generateSpeech = (segmentId: string) => navigationView.current!.perform(() => editing.run(async action => {
     if (!status) return;
-    setSaveError('');
+    reportOperation('speech');
     // 请求标识在提交前保存；断线或刷新后同一按钮复用，避免重复付费。
     const storageKey = `clapgrid-speech:${status.snapshot.project.id}:${segmentId}`;
     const requestId = localStorage.getItem(storageKey) ?? crypto.randomUUID();
@@ -228,34 +226,24 @@ export function App() {
     await submitSpeech(panelServiceUrl(), { requestId, segmentId });
     localStorage.removeItem(storageKey);
     const next = await querySpeech(panelServiceUrl());
-    action.apply(() => { setSaveError(''); setSaveState('saved'); setSpeech(next); });
-  }, failed));
+    action.apply(() => { reportOperation('speech'); setSpeech(next); });
+  }, cause => reportOperation('speech', cause.message)));
   const changeVoice = (voice: Voice) => navigationView.current!.perform(() => editing.run(async action => {
-    setSaveError('');
+    reportOperation('voice');
     await setVoice(panelServiceUrl(), voice);
     const next = await querySpeech(panelServiceUrl());
-    action.apply(() => { setSpeech(next); setSaveState('saved'); });
-  }, failed));
+    action.apply(() => { setSpeech(next); });
+  }, cause => reportOperation('voice', cause.message)));
   const navigationView = useRef<ReturnType<typeof useSegmentInteraction> | null>(null);
-  const inlineEntry = useRef(startEdit); inlineEntry.current = startEdit;
   const [navigation] = useState(() => segmentNavigation({
     grid: () => grid.current, editing, focus: focusReturns,
-    prepareInline: (segment, field) => flushSync(() => navigationView.current?.beginInline(segment, field)),
     clearSearch: () => flushSync(() => { setQuery(''); setCurrentMatch(null); setSearchOpen(false); }),
     details: { show: (destination, intent) => navigationView.current?.show(destination, intent), hide: () => navigationView.current?.hide() },
-    inline: ready => inlineEntry.current(ready), failed,
+    inline: (id, field, intent) => navigationView.current!.begin(field, id, 'inline', intent), failed,
   }));
   useEffect(() => () => navigation.dispose(), [navigation]);
-  const segmentDetail = useSegmentInteraction({ editing, accept: setStatus, failed, navigation, focus: focusReturns,
-    save: async (id, fields) => {
-      let saved = false;
-      await editing.save('segments', { acquire: true }, async (token, action) => {
-        setSaveState('saving'); setSaveError('');
-        const next = await saveSegment(panelServiceUrl(), { id, ...fields }, token);
-        action.apply(() => { focusReturns.acceptGridUpdate(() => { setStatus(next); setSaveState('saved'); saved = true; }); });
-      }, cause => failed(new Error(`保存失败：${cause.message}`)));
-      return saved;
-    },
+  const segmentDetail = useSegmentInteraction({ editing, status, accept: setStatus, failed, navigation, focus: focusReturns, grid: () => grid.current,
+    canEdit: () => !panelRestore && !!status && !status.taskLocked && !speech?.locked && !exports.exports?.locked,
   });
   navigationView.current = segmentDetail;
   const detailSegment = status?.snapshot.segments.find(item => item.id === segmentDetail.id);
@@ -263,23 +251,21 @@ export function App() {
   const addSegment = () => segmentDetail.perform(async () => {
     const ticket = navigation.request();
     await editing.save('segments', { acquire: true }, async (token, action) => {
-      setSaveState('saving'); setSaveError('');
+      reportOperation('project');
       const result = await modifyUserBatch(panelServiceUrl(), { changes: [{ kind: 'add', text: '' }] }, token, action.signal);
       const added = result.results[0];
       action.apply(() => { void ticket.arrive(() => { setStatus(result.status); },
         added?.outcome === 'applied' && added.id ? { id: added.id, mode: 'details', clearSearch: true, focusText: true } : undefined); });
       if (added?.outcome !== 'applied' || !added.id) throw new Error(added?.message ?? '未能确认新增片段，请重新读取项目。');
-      action.apply(() => { setSaveState('saved'); });
     }, cause => { ticket.fail(); failed(new Error(`新增失败：${cause.message}`)); });
   });
   const organize = (batch: Batch) => editing.save('segments', { acquire: true }, async (token, action) => {
-    setSaveState('saving'); setSaveError('');
+    reportOperation('project');
     const result = await modifyUserBatch(panelServiceUrl(), batch, token);
     action.apply(() => { setStatus(result.status); setError(''); });
     const unsuccessful = result.results.filter(item => item.outcome !== 'applied');
     if (unsuccessful.length) throw new Error(unsuccessful.map(item => item.message).join('；'));
     action.apply(() => {
-      setSaveState('saved');
       if (batch.changes.some(change => change.kind === 'paste')) setPaste('');
     });
   }, failed);
@@ -291,24 +277,24 @@ export function App() {
         focusReturns.acceptGridUpdate(() => setStatus(next));
         void editing.cancel('segments'); return;
       }
-      setStatus(next); setSaveError(''); setSaveState('saved');
+      setStatus(next); reportOperation('video');
       if (id) {
         const segment = next.snapshot.segments.find(segment => segment.id === id);
         if (!segment) throw new Error('口播片段已删除');
         setVideoEditor({ segment, assetId: segment.video?.assetId ?? '', start: String(segment.video?.start ?? 0) });
       } else { setSourcePath(''); setImporting(true); }
     }, disconnected, cause => {
-      failed(cause);
+      reportOperation('video', cause.message);
       if (requested.valid()) focusReturns.close(origin, origin);
     });
   });
   const cancelVideo = () => {
-    focusReturns.close(returnFocus.current.video, () => { setVideoEditor(null); setImporting(false); setSaveState('saved'); });
+    focusReturns.close(returnFocus.current.video, () => { setVideoEditor(null); setImporting(false); });
     void editing.cancel('segments');
   };
   const saveVideo = () => editing.save('segments', {}, async (token, action) => {
     const origin = returnFocus.current.video;
-    setSaveState('saving'); setSaveError('');
+    reportOperation('video');
     try {
       if (importing) {
         const result = await importVideo(panelServiceUrl(), sourcePath, token, action.signal);
@@ -320,9 +306,8 @@ export function App() {
         action.apply(() => setStatus(result.status));
         if (result.summary.applied !== 1) throw new Error(result.results[0]?.message ?? '关联未保存');
       }
-      action.apply(() => setSaveState('saved'));
     } finally { action.apply(() => focusReturns.close(origin, () => { setVideoEditor(null); setImporting(false); })); }
-  }, failed);
+  }, cause => reportOperation('video', cause.message));
   const synchronizeSelection = (ids: string[]) => {
     if (restoringPanelSelection.current) return;
     setSelectedIds(ids);
@@ -392,9 +377,9 @@ export function App() {
     if (!editState.busy && !editState.editing) void editing.refresh(() => Promise.all([queryStatus(panelServiceUrl()), querySpeech(panelServiceUrl())]), ([next, nextSpeech]) => { setStatus(next); setSpeech(nextSpeech); }, () => {});
   }, [editState.busy, editState.editing, editing]);
   const disabled = !status || !speech || speech.locked || status.taskLocked || editState.busy || (editState.editing && !segmentDetail.draft) || (!!status.modification && !(editState.owner === 'segments' && editState.editing && segmentDetail.draft)) || !!panelRestore;
-  const panelBusy = disabled || !!segmentDetail.draft || editState.editing || mediaBusy || !!playing || !!detail || exportSettingsOpen || !!segmentDetail.id || !!audioHistory
+  const panelBusy = disabled || segmentDetail.dirty || segmentDetail.saving || editState.editing || mediaBusy || !!playing || !!detail || exportSettingsOpen || !!segmentDetail.id || !!audioHistory
     || !!videoEditor || importing || !!preview || rowMenuOpen || !!deleteTargets || !!reorderPreview || !!panelRestore
-    || saveState !== 'saved' || selectionState !== '勾选已同步';
+    || selectionState !== '勾选已同步';
   const latestPanel = useRef({ busy: panelBusy, selectedIds });
   latestPanel.current = { busy: panelBusy, selectedIds };
   usePanelActivity(table, status?.activePanelIdentity?.state === 'known' && status.activePanelIdentity.schemaVersion === 2, panelBusy);
@@ -417,7 +402,7 @@ export function App() {
       // 松手立即反馈位置；预览不覆盖服务快照，失败或取消后恢复已确认顺序。
       const segments = new Map(status.snapshot.segments.map(segment => [segment.id, segment]));
       setReorderPreview(ids.map((id, index) => ({ ...segments.get(id)!, order: index + 1 })));
-      setSaveState('saving'); setSaveError('');
+      reportOperation('project');
       void segmentDetail.perform(() => organize({ changes: [{ kind: 'reorder', expectedIds, ids }] })).finally(() => setReorderPreview(null));
     },
     reject: message => failed(new Error(message)),
@@ -435,15 +420,14 @@ export function App() {
     await segmentDetail.perform(async savedTarget => {
       const ticket = navigation.request(menu.origin);
       await editing.save('segments', { acquire: true }, async (token, action) => {
-        setSaveState('saving'); setSaveError('');
+        reportOperation('project');
         const compatible = savedTarget(relative.anchor);
         const result = await modifyUserBatch(panelServiceUrl(), { changes: [{ kind: 'add', text: '', relative: { ...relative, anchor: compatible } }] }, token, action.signal);
         const item = result.results[0];
         action.apply(() => { void ticket.arrive(() => setStatus(result.status),
           item?.outcome === 'applied' && item.id ? { id: item.id, mode: 'inline' } : undefined); });
         if (item?.outcome !== 'applied' || !item.id) throw new Error(item?.message ?? '未能确认新增口播片段');
-        action.apply(() => { setSaveState('saved'); });
-      }, cause => { ticket.fail(); failed(cause); });
+        }, cause => { ticket.fail(); failed(cause); });
     });
   };
 
@@ -480,7 +464,7 @@ export function App() {
         open: (id: string, trigger: HTMLButtonElement) => segmentDetail.navigate({ id }, focusReturns.capture(trigger)) } },
   ];
   const searchStatus = !query ? '输入文案查找' : !matchedIds.length ? '无匹配片段' : activeMatch ? `第 ${matchedIds.indexOf(activeMatch) + 1} / ${matchedIds.length} 个匹配片段` : `${matchedIds.length} 个匹配片段，点击下一个定位`;
-  return <main className="relative mx-auto flex h-dvh min-w-0 max-w-[1600px] flex-col gap-1 px-4 py-3 pb-2 max-[600px]:p-2">
+  return <main style={{ '--project-status-height': `${footerHeight}px` } as import('react').CSSProperties} className="relative mx-auto flex h-dvh min-w-0 max-w-[1600px] flex-col gap-1 px-4 py-3 pb-2 max-[600px]:p-2">
     <header className={`mb-1 flex h-8 min-h-8 flex-none flex-nowrap items-center justify-between max-[600px]:gap-1 ${searchOpen ? 'gap-1' : 'gap-3'}`}>
       <h1 className="m-0 flex-none text-[22px] max-[600px]:text-[18px] leading-normal font-semibold">口播片段</h1>
       {searchOpen && <section id="segment-search" className="search-popover absolute right-4 top-12 z-30 flex min-h-10 w-[560px] max-w-[calc(100%-32px)] items-center gap-1 rounded-lg border border-solid border-input bg-background p-2 shadow-lg" role="dialog" aria-modal="false" aria-label="查找口播片段">
@@ -518,7 +502,7 @@ export function App() {
       <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={closeDetail}>关闭</Button>
     </DetailPanel>}
     {detail === 'voice' && speech && <VoicePanel speech={speech} disabled={disabled} busy={editState.busy}
-      error={saveState === 'failed' ? saveError : undefined} onChange={voice => { void changeVoice(voice); }}
+      error={operationErrors.voice} onChange={voice => { void changeVoice(voice); }}
       onClose={closeDetail} restoreFocus={returnFocus.current.detail} />}
     {detail === 'tasks' && <DetailPanel title="任务记录" onClose={closeDetail} restoreFocus={returnFocus.current.detail}>
       <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={() => setDetail('diagnostics')}>连接诊断</Button>
@@ -550,14 +534,14 @@ export function App() {
       <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={closeDetail}>关闭诊断</Button>
     </DetailPanel>}
     {detail === 'paste' && <PastePanel value={paste} busy={editState.busy} disabled={disabled}
-      error={saveState === 'failed' ? saveError : ''} onChange={setPaste}
+      error={operationErrors.project ?? ''} onChange={setPaste}
       onSubmit={() => { void segmentDetail.perform(() => organize({ changes: [{ kind: 'paste', text: paste }] })); }}
       onClose={closeDetail} restoreFocus={returnFocus.current.detail} />}
-    {exportSettingsOpen && status && <ExportSettingsPanel restoreFocus={returnFocus.current.settings} editing={editing} status={status} onStatus={setStatus} onSaveState={(state, message = '') => { setSaveState(state); setSaveError(message); }} onClose={() => focusReturns.close(returnFocus.current.settings, () => setExportSettingsOpen(false))} />}
+    {exportSettingsOpen && status && <ExportSettingsPanel restoreFocus={returnFocus.current.settings} editing={editing} status={status} onStatus={setStatus} onError={message => reportOperation('settings', message)} onClose={() => focusReturns.close(returnFocus.current.settings, () => setExportSettingsOpen(false))} />}
     {inlineAudio && <audio ref={audioPlayer} key={inlineAudio.url} src={inlineAudio.url} autoPlay onPlay={() => setPlaying(inlineAudio.taskId)} onPause={() => setPlaying(null)} onEnded={() => setPlaying(null)} onError={audioError} />}
     {audioHistory && <AudioHistoryPanel segmentId={audioHistory} speech={speech} onClose={() => focusReturns.close(returnFocus.current.history, () => setAudioHistory(null))} restoreFocus={returnFocus.current.history} />}
-    {segmentDetail.id && <SegmentDetails controller={segmentDetail} segment={detailSegment} segments={status?.snapshot.segments ?? []}
-      busy={editState.busy} disabled={disabled} error={saveError}
+    {segmentDetail.id && !segmentDetail.deleted && <SegmentDetails controller={segmentDetail} segment={detailSegment} segments={status?.snapshot.segments ?? []}
+      busy={editState.busy} disabled={disabled} error={segmentDetail.draftError}
       media={<>
         {detailAsset ? <><p className="m-0 break-all">{detailAsset.name}</p><p className="m-0 text-xs text-muted-foreground">时长 {detailAsset.duration.toFixed(2)} 秒 · 播放起点 {detailSegment?.video?.start} 秒</p><Button variant="ghost" className="h-auto w-full overflow-hidden rounded-lg bg-muted p-0" aria-label="播放预览" onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(detailSegment!.video); }}><img className="aspect-video w-full object-contain" src={`${panelServiceUrl()}/api/media/${detailAsset.id}/thumbnail`} alt="" /><span className="sr-only">播放预览</span></Button></> : <p className="m-0 text-muted-foreground">未关联视频</p>}
         <Button variant="outline" disabled={disabled} onClick={event => { rememberOrigin(event.currentTarget, 'video'); void openVideoEditor(segmentDetail.id!); }}>{detailAsset ? '更改' : '关联'}</Button>
@@ -567,21 +551,21 @@ export function App() {
         history={trigger => { rememberOrigin(trigger, 'history'); setAudioHistory(detailSegment.id); }} onError={audioError} /> }
     </SegmentDetails>}
     {(videoEditor || importing) && <DetailPanel title={importing ? '导入本地视频' : '关联视频'} label={importing ? '导入本地视频' : '关联视频'} restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={cancelVideo} restoreFocus={returnFocus.current.video}>
-      {importing ? <label className="flex min-w-0 flex-col gap-1">视频文件绝对路径<Input aria-label="视频文件绝对路径" value={sourcePath} disabled={saveState === 'saving'} onChange={event => setSourcePath(event.target.value)} placeholder="粘贴要导入的本地视频完整路径" /></label>
+      {importing ? <label className="flex min-w-0 flex-col gap-1">视频文件绝对路径<Input aria-label="视频文件绝对路径" value={sourcePath} disabled={editState.busy} onChange={event => setSourcePath(event.target.value)} placeholder="粘贴要导入的本地视频完整路径" /></label>
         : videoEditor && <>
-          <label className="flex min-w-0 flex-col gap-1">素材<NativeSelect aria-label="关联素材" value={videoEditor.assetId} disabled={saveState === 'saving'} onChange={event => setVideoEditor({ ...videoEditor, assetId: event.target.value, start: '0' })}>
+          <label className="flex min-w-0 flex-col gap-1">素材<NativeSelect aria-label="关联素材" value={videoEditor.assetId} disabled={editState.busy} onChange={event => setVideoEditor({ ...videoEditor, assetId: event.target.value, start: '0' })}>
             <option value="">解除关联</option>
             {status?.snapshot.assets.map(asset => <option key={asset.id} value={asset.id}>{asset.name}（{asset.duration.toFixed(2)} 秒）</option>)}
           </NativeSelect></label>
-          <label className="flex min-w-0 flex-col gap-1">播放起点（秒）<Input aria-label="播放起点（秒）" type="number" min="0" step="any" disabled={!videoEditor.assetId || saveState === 'saving'} value={videoEditor.start} onChange={event => setVideoEditor({ ...videoEditor, start: event.target.value })} /></label>
+          <label className="flex min-w-0 flex-col gap-1">播放起点（秒）<Input aria-label="播放起点（秒）" type="number" min="0" step="any" disabled={!videoEditor.assetId || editState.busy} value={videoEditor.start} onChange={event => setVideoEditor({ ...videoEditor, start: event.target.value })} /></label>
           {!status?.snapshot.assets.length && <p>请先取消并导入本地视频。</p>}
         </>}
       {importing && <p>只读取指定文件，复制到项目并生成静音预览。原文件之后可移动或改名。</p>}
-      <div className="flex flex-wrap items-center gap-2"><Button variant="outline" disabled={saveState === 'saving' || (importing && !sourcePath.trim())} onClick={() => { void saveVideo(); }}>{saveState === 'saving' ? '正在处理…' : importing ? '导入并复制' : '保存关联与起点'}</Button>
+      <div className="flex flex-wrap items-center gap-2"><Button variant="outline" disabled={editState.busy || (importing && !sourcePath.trim())} onClick={() => { void saveVideo(); }}>{editState.busy ? '正在处理…' : importing ? '导入并复制' : '保存关联与起点'}</Button>
         <Button variant="outline" onClick={() => { void cancelVideo(); }}>取消</Button></div>
     </DetailPanel>}
     {preview && <DetailPanel title="视频预览" label="视频预览" restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={() => focusReturns.close(returnFocus.current.preview, () => setPreview(null))} restoreFocus={returnFocus.current.preview}>
-      <video className="block w-full max-h-[60dvh] shrink-0" key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => { setSaveError('预览不可用，请检查项目素材文件'); setSaveState('failed'); }} />
+      <video className="block w-full max-h-[60dvh] shrink-0" key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => reportOperation('preview', '预览不可用，请检查项目素材文件')} />
       <p>从 {preview.start} 秒开始，预览默认静音。</p><Button variant="outline" onClick={() => focusReturns.close(returnFocus.current.preview, () => setPreview(null))}>关闭预览</Button>
     </DetailPanel>}
     {deleteTargets && <DeleteConfirm count={deleteTargets.targets.length} disabled={disabled} lock={lock}
@@ -670,19 +654,21 @@ export function App() {
     </RowMenu>}
     </ContextMenu>
     <div className="flex h-4 shrink-0 items-center justify-center"><Button variant="ghost" size="sm" aria-label="新增口播片段（表格底部）" title="新增口播片段" disabled={disabled} onClick={() => { void addSegment(); }}>＋</Button></div>
-    {segmentDetail.draft?.position === 'inline' && status && !status.snapshot.segments.some(segment => segment.id === segmentDetail.draft!.id) && <section aria-label="已删除片段的草稿" className="flex shrink-0 flex-col gap-2 rounded-md border border-solid border-input p-3">
+    {segmentDetail.draft && segmentDetail.deleted && <section aria-label="已删除片段的草稿" className="flex min-h-0 max-h-[45dvh] flex-col gap-2 overflow-y-auto rounded-md border border-solid border-input p-3 [&>textarea]:shrink-0 [&>button]:shrink-0">
       <p className="m-0 text-sm">片段已删除，草稿仍可选中复制；无法保存到已删除片段。</p>
-      <textarea aria-label="文案全文" readOnly value={segmentDetail.draft.text} className="min-h-20 rounded-md border border-solid border-input p-2" />
+      <textarea aria-label="已删除片段的文案草稿" readOnly value={segmentDetail.draft.text} className="min-h-20 rounded-md border border-solid border-input p-2" />
+      <textarea aria-label="已删除片段的画面说明草稿" readOnly value={segmentDetail.draft.visualNote} className="min-h-20 rounded-md border border-solid border-input p-2" />
       <Button variant="outline" onClick={() => segmentDetail.escape()}>放弃草稿</Button>
     </section>}
     <SegmentDraftPrompt controller={segmentDetail} busy={editState.busy} />
-    <footer className="flex-none border-0 border-t border-solid border-input pt-1 text-[12px] text-muted-foreground [&_p]:m-0 [&_p]:wrap-anywhere" aria-label="项目状态">
-      <div className="flex min-w-0 flex-nowrap items-center gap-1.5" role="status">
+    <footer ref={statusFooter} className="flex-none border-0 border-t border-solid border-input pt-1 text-[12px] text-muted-foreground [&_p]:m-0 [&_p]:wrap-anywhere" aria-label="项目状态">
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5 min-[600px]:flex-nowrap" role="status">
         <span className="flex-none max-[600px]:sr-only">{error ? '服务连接失败' : status ? '本地服务已连接' : '正在连接本地服务…'}</span>
         <span className="flex-none min-[600px]:hidden" aria-hidden="true">{error ? '断线' : status ? '已连接' : '连接中'}</span>
         <span className="flex-none" aria-label="勾选范围">已勾选 {selectedIds.length} 条</span>
         <Button variant="ghost" size="xs" className="h-6 shrink-0 px-1 text-xs" disabled={!selectedIds.length} onClick={() => grid.current?.deselectAll()}>清空勾选</Button>
-        <span data-save-status className={`flex-none ${saveState === 'failed' ? 'text-destructive' : ''}`}>{saveState === 'saving' ? '保存中…' : saveState === 'failed' ? '保存失败' : segmentDetail.dirty ? '未保存' : status ? '已保存' : '等待读取项目'}</span>
+        <span data-save-status className={`flex-none ${segmentDetail.draftError || segmentDetail.deleted ? 'text-destructive' : ''}`}>{status || segmentDetail.draft ? segmentDetail.draftStatus : '等待读取项目'}</span>
+        {(segmentDetail.dirty || segmentDetail.draftError || segmentDetail.deleted) && <Button variant="ghost" size="xs" onClick={segmentDetail.returnToDraft}>回到草稿</Button>}
         <span className="min-w-0 flex-1 truncate">{batchTask && batchTask.summary.pending > 0 ? `配音 ${batchTask.summary.completed}/${batchTask.summary.completed + batchTask.summary.pending}` : speechTask && (speechTask.state === 'running' || speechTask.state === 'accepted') ? '配音生成中' : exportTask && exports.exports?.locked ? `${exportStateLabel[exportTask.state]} ${exportTask.completed}/${exportTask.total}` : ''}</span>
         <Button variant="outline" size="xs" className="border-input text-foreground px-1.5 py-0.5 text-[12px]" onClick={event => openDetail('tasks', event.currentTarget)}>任务详情</Button>
       </div>
@@ -692,9 +678,10 @@ export function App() {
       </p>}
       {panelUpdateError && <p role="alert">{panelUpdateError}</p>}
       {lock && <p className="pt-1" role="status">{lock}</p>}
-      {(error || saveError || exports.connectionError || exports.operationError || speechProblems.length > 0 || exportProblems.length > 0 || selectionState.includes('断开')) && <div className="max-h-[22dvh] overflow-auto bg-[var(--color-error-surface)] text-destructive" aria-label="操作异常">
+      {(error || segmentDetail.draftError || Object.values(operationErrors).some(Boolean) || exports.connectionError || exports.operationError || speechProblems.length > 0 || exportProblems.length > 0 || selectionState.includes('断开')) && <div className="max-h-[22dvh] overflow-auto bg-[var(--color-error-surface)] text-destructive" aria-label="操作异常">
         {error && <p role="alert">{error}</p>}
-        {saveError && <p role={saveState === 'failed' ? 'alert' : 'status'}>{saveError}</p>}
+        {segmentDetail.draftError && <p role="alert">{segmentDetail.draftError}</p>}
+        {Object.entries(operationErrors).filter(([, message]) => message).map(([kind, message]) => <p key={kind} role="alert">{message}</p>)}
         {exports.connectionError && <p role="alert">{exports.connectionError}</p>}
         {exports.operationError && <p role="alert">{exports.operationError}</p>}
         {speechProblems.length > 0 && <p role="alert">配音异常 {speechProblems.length} 项{speechProblems.some(task => task.state === 'unknown') ? ' · 结果未知，可能已计费' : ' · 生成失败'}，请查看任务详情</p>}

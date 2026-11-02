@@ -66,7 +66,8 @@ test('关联保存失败关闭子层保留父来源，可重新关联并解除',
   await page.route('**/api/segments/modify', route => route.fulfill({ status: 500, json: { error: '本例关联失败' } }));
   await page.getByRole('button', { name: '保存关联与起点', exact: true }).click();
   await expect(page.getByRole('dialog', { name: '关联视频', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('complementary').getByRole('alert')).toContainText('本例关联失败');
+  await expect(page.getByLabel('操作异常', { exact: true })).toContainText('本例关联失败');
+  await expect(page.locator('[data-save-status]')).toHaveText('已保存');
   expect((await project.status()).snapshot.segments[0]!.video).toBeNull();
   await expect.poll(async () => (await project.status()).modification).toBeNull();
   await page.unroute('**/api/segments/modify'); await page.getByRole('button', { name: '关联', exact: true }).click();
