@@ -1,3 +1,4 @@
+import { mediaProcess } from './media-process.js';
 import { SERVICE_CLEANUP_MS, beforeServiceDeadline, ServiceCleanupError } from '../service-cleanup.js';
 import { projectAccess } from './project-access.js';
 import { exportTasks } from './export-tasks.js';
@@ -6,13 +7,13 @@ import { defaultExportSettings, exportSettingsSchema, exportOutput, updateExport
 import { speechTasks } from './speech-tasks.js';
 import type { SpeechRuntime } from './speech.js';
 import { setImmediate } from 'node:timers/promises';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
-import { prepareVideo, validateVideo, mediaPath, verifyMedia, discardImport } from './video-media.js';
+import { prepareMaterial, prepareVideo, validateImage, validateVideo, mediaPath, verifyMedia, discardImport } from './video-media.js';
 import { importVideoSchema, type ImportVideo } from '../shared/contracts.js';
 import { projectPaths } from './project-paths.js';
 import { DatabaseSync } from 'node:sqlite';
-import { addSegmentSchema, editSegmentSchema, snapshotSchema, type Snapshot, batchSchema, type Batch, type ChangeResult, scopeSchema, selectionSchema, scopedOperationSchema, type SegmentScope, type ScopedOperation, type SegmentQueryResult } from '../shared/contracts.js';
+import { segmentMaterials, visualPlanSchema, addSegmentSchema, editSegmentSchema, snapshotSchema, type Snapshot, batchSchema, type Batch, type ChangeResult, scopeSchema, selectionSchema, scopedOperationSchema, type SegmentScope, type ScopedOperation, type SegmentQueryResult } from '../shared/contracts.js';
 
 /** HTTP 和未来业务操作的唯一业务入口；数据库不向适配层开放。 */
 export function openBusiness(directory: string, speechRuntime: SpeechRuntime = { key: () => '', configPath: '.env' }, verifyRuntime: () => void = () => {}) {
@@ -47,6 +48,12 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
     CREATE TABLE IF NOT EXISTS segment_video (
       segment_id TEXT PRIMARY KEY, asset_id TEXT NOT NULL, start REAL NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS segment_additional_videos (
+      segment_id TEXT NOT NULL, position INTEGER NOT NULL, asset_id TEXT NOT NULL, start REAL NOT NULL,
+      PRIMARY KEY (segment_id, position)
+    );
+    CREATE TABLE IF NOT EXISTS visual_assets (id TEXT PRIMARY KEY, value TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS segment_visuals (segment_id TEXT PRIMARY KEY, materials TEXT NOT NULL, composition TEXT);
     CREATE TABLE IF NOT EXISTS project_identity (
       singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
       id TEXT NOT NULL,
@@ -67,9 +74,15 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       exportSettings: getExportSettings(),
       segments: db.prepare('SELECT id, ROW_NUMBER() OVER (ORDER BY position) AS "order", text, visual_note AS visualNote FROM segments ORDER BY position').all().map(segment => {
         const video = db.prepare('SELECT asset_id AS assetId, start FROM segment_video WHERE segment_id = ?').get(segment.id!);
-        return { ...segment, video: video ?? null };
+        const additionalVideos = db.prepare('SELECT asset_id AS assetId, start FROM segment_additional_videos WHERE segment_id = ? ORDER BY position').all(segment.id!);
+        const legacy = { ...segment, video: video ?? null, ...(additionalVideos.length ? { additionalVideos } : {}) };
+        const visuals = db.prepare('SELECT materials, composition FROM segment_visuals WHERE segment_id = ?').get(segment.id!);
+        if (!visuals) return legacy;
+        const materials = JSON.parse(String(visuals.materials));
+        const visualVersion = createHash('sha256').update(JSON.stringify([segment.text, segment.visualNote, materials])).digest('hex');
+        return { ...legacy, materials, visualVersion, ...(visuals.composition ? { composition: JSON.parse(String(visuals.composition)) } : {}) };
       }),
-      assets: db.prepare('SELECT id, name, duration FROM video_assets ORDER BY rowid').all(),
+      assets: [...db.prepare('SELECT id, name, duration FROM video_assets ORDER BY rowid').all(), ...db.prepare('SELECT value FROM visual_assets ORDER BY rowid').all().map(row => JSON.parse(String(row.value)))],
     });
   }
   function getExportSettings() {
@@ -173,10 +186,22 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
         return asset;
       } catch (error) { discardImport(mediaDirectory, id); throw error; }
     },
+    async importMaterial(token: string, input: ImportVideo) {
+      const signal = access.editSignal(token);
+      const { sourcePath } = importVideoSchema.parse(input); verify();
+      const id = randomUUID();
+      try {
+        const asset = await prepareMaterial(mediaDirectory, id, sourcePath, signal);
+        await access.verifyEdit(token);
+        commit(() => { db.prepare('INSERT INTO visual_assets VALUES (?, ?)').run(id, JSON.stringify(asset)); }, token);
+        return asset;
+      } catch (error) { discardImport(mediaDirectory, id); throw error; }
+    },
     getMedia(id: string, kind: 'source' | 'preview' | 'thumbnail') {
       verify();
       if (!getSnapshot().assets.some(asset => asset.id === id)) throw new Error('素材不存在');
-      const path = mediaPath(mediaDirectory, id, kind);
+      const asset = getSnapshot().assets.find(asset => asset.id === id)!;
+      const path = mediaPath(mediaDirectory, id, asset.kind === 'image' && kind === 'preview' ? 'source' : kind);
       verifyMedia(path);
       return path;
     },
@@ -214,7 +239,22 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
     submitSpeech: speech.submitSpeech,
     submitSpeechBatch: speech.submitSpeechBatch,
     setVoice: speech.setVoice,
-    submitExport: exports.submitExport,
+    async getVisualContext(segmentId: string, signal?: AbortSignal) {
+      verify();
+      const snapshot = getSnapshot(); const segment = snapshot.segments.find(segment => segment.id === segmentId);
+      if (!segment) throw new Error('口播片段不存在');
+      const audio = speech.getCurrentSpeechAudio(segmentId);
+      const { stdout } = await mediaProcess('ffprobe', ['-v', 'error', '-protocol_whitelist', 'file,pipe', '-format_whitelist', 'mp3,wav', '-select_streams', 'a:0', '-show_frames', '-show_entries', 'stream=sample_rate:frame=nb_samples', '-of', 'json', audio], { signal });
+      const decoded = JSON.parse(stdout); const rate = Number(decoded.streams?.[0]?.sample_rate);
+      const duration = decoded.frames?.reduce((sum: number, frame: { nb_samples: number }) => sum + Number(frame.nb_samples), 0) / rate;
+      if (!(duration > 0 && Number.isFinite(duration))) throw new Error('无法确认配音时长');
+      const latest = getSnapshot().segments.find(item => item.id === segmentId);
+      if (JSON.stringify(latest) !== JSON.stringify(segment) || speech.getCurrentSpeechAudio(segmentId) !== audio) throw new Error('制作输入已变化，请重新查询');
+      return { segment, assets: snapshot.assets.filter(asset => segmentMaterials(segment).includes(asset.id)), duration, compositionCurrent: !!segment.composition && segment.composition.inputVersion === segment.visualVersion };
+    },
+    submitPreview: exports.submitPreview,
+    getVisualPreviews: exports.getVisualPreviews,
+    submitExport: () => exports.submitExport(),
     getExportTasks: exports.getExportTasks,
     cancelExport: exports.cancelExport,
     getExportFile: exports.getExportFile,
@@ -260,19 +300,30 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
         try {
           // 每个目标都在持有修改权的事务内重新读取；比较与提交之间不让出执行权。
           let result: ChangeResult = { index, id, outcome: 'applied', message: '已完成' };
-          if (change.kind === 'video') {
+          if (change.kind === 'video' || change.kind === 'videos') {
             const current = getSnapshot().segments.find(segment => segment.id === id);
             if (!current) { results.push({ index, id, outcome: 'deleted', message: '口播片段已删除，已跳过' }); continue; }
-            if (JSON.stringify(current.video) !== JSON.stringify(change.expected.video) || current.text !== change.expected.text || current.visualNote !== change.expected.visualNote || (submittedOrder.get(current.id) ?? current.order) !== change.expected.order) {
+            if (JSON.stringify([current.materials, current.composition, current.visualVersion]) !== JSON.stringify([change.expected.materials, change.expected.composition, change.expected.visualVersion]) || JSON.stringify(current.video) !== JSON.stringify(change.expected.video) || JSON.stringify(current.additionalVideos ?? []) !== JSON.stringify(change.expected.additionalVideos ?? []) || current.text !== change.expected.text || current.visualNote !== change.expected.visualNote || (submittedOrder.get(current.id) ?? current.order) !== change.expected.order) {
               results.push({ index, id, outcome: 'changed', message: '目标内容已变化，请重新查询', current }); continue;
             }
           }
-          if (change.kind === 'video' && change.assetId) {
-            const asset = getSnapshot().assets.find(asset => asset.id === change.assetId);
+          const references = change.kind === 'videos' ? change.videos : change.kind === 'video' && change.assetId ? [{ assetId: change.assetId, start: change.start }] : [];
+          for (const reference of references) {
+            const asset = getSnapshot().assets.find(asset => asset.id === reference.assetId);
             if (!asset) throw new Error('素材不存在');
             const duration = await validateVideo(business.getMedia(asset.id, 'source'), access.editSignal(token));
-            if (change.start >= duration) throw new Error('视频起点必须大于等于零且严格小于视频时长');
+            if (reference.start >= duration) throw new Error('视频起点必须大于等于零且严格小于视频时长');
             await access.verifyEdit(token);
+          }
+          if (change.kind === 'materials') {
+            for (const assetId of change.assetIds) {
+              const asset = getSnapshot().assets.find(asset => asset.id === assetId);
+              if (!asset) throw new Error('素材不存在');
+              const path = business.getMedia(asset.id, 'source');
+              if (asset.kind === 'image') await validateImage(path, access.editSignal(token));
+              else await validateVideo(path, access.editSignal(token));
+              await access.verifyEdit(token);
+            }
           }
           commit(() => {
             if (change.kind === 'reorder') {
@@ -324,15 +375,35 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
             if (!current) {
               result = { index, id, outcome: 'deleted', message: '口播片段已删除，已跳过' }; return;
             }
-            if (JSON.stringify(current.video) !== JSON.stringify(change.expected.video) || current.text !== change.expected.text || current.visualNote !== change.expected.visualNote || (submittedOrder.get(current.id) ?? current.order) !== change.expected.order) {
+            if (JSON.stringify([current.materials, current.composition, current.visualVersion]) !== JSON.stringify([change.expected.materials, change.expected.composition, change.expected.visualVersion]) || JSON.stringify(current.video) !== JSON.stringify(change.expected.video) || JSON.stringify(current.additionalVideos ?? []) !== JSON.stringify(change.expected.additionalVideos ?? []) || current.text !== change.expected.text || current.visualNote !== change.expected.visualNote || (submittedOrder.get(current.id) ?? current.order) !== change.expected.order) {
               result = { index, id, outcome: 'changed', message: '目标内容已变化，请核对最新内容后重新提交', current }; return;
             }
             if (change.kind === 'edit') db.prepare('UPDATE segments SET text = COALESCE(?, text), visual_note = COALESCE(?, visual_note) WHERE id = ?').run(change.text ?? null, change.visualNote ?? null, id!);
-            else if (change.kind === 'video') {
-              if (change.assetId) db.prepare('INSERT OR REPLACE INTO segment_video VALUES (?, ?, ?)').run(id!, change.assetId, change.start);
-              else db.prepare('DELETE FROM segment_video WHERE segment_id = ?').run(id!);
-            } else {
+            else if (change.kind === 'materials') {
+              if (new Set(change.assetIds).size !== change.assetIds.length || change.assetIds.some(assetId => !getSnapshot().assets.some(asset => asset.id === assetId))) throw new Error('素材不存在或重复');
+              db.prepare('INSERT INTO segment_visuals VALUES (?, ?, NULL) ON CONFLICT(segment_id) DO UPDATE SET materials = excluded.materials').run(id!, JSON.stringify(change.assetIds));
+            } else if (change.kind === 'composition') {
+              if (!current.visualVersion) throw new Error('请先确认本句画面素材');
+              const plan = visualPlanSchema.parse(change.plan);
+              const materials = segmentMaterials(current);
+              if (plan.layers.some(layer => !materials.includes(layer.assetId) || layer.to > plan.duration || layer.from >= layer.to || layer.x + layer.width > 1.000001 || layer.y + layer.height > 1.000001)) throw new Error('编排素材、空间或时间超出范围');
+              const background = plan.layers.filter(layer => layer.role === 'background');
+              if (!background.length || background.some(layer => layer.z !== 0) || plan.layers.some(layer => layer.role === 'overlay' && layer.z === 0)) throw new Error('背景应位于底层，叠加素材须位于背景之上');
+              const intervals = background.sort((a, b) => a.from - b.from); let end = 0;
+              for (const layer of intervals) { if (Math.abs(layer.from - end) > 0.00001) throw new Error('背景必须连续覆盖整句，不能重叠或缺失'); end = layer.to; }
+              if (Math.abs(end - plan.duration) > 0.00001 || materials.some(assetId => !plan.layers.some(layer => layer.assetId === assetId))) throw new Error('编排必须覆盖整句并使用本句全部素材');
+              db.prepare('UPDATE segment_visuals SET composition = ? WHERE segment_id = ?').run(JSON.stringify({ ...plan, inputVersion: current.visualVersion }), id!);
+            } else if (change.kind === 'video' || change.kind === 'videos') {
+              db.prepare('INSERT INTO segment_visuals VALUES (?, ?, NULL) ON CONFLICT(segment_id) DO UPDATE SET materials = excluded.materials, composition = NULL').run(id!, JSON.stringify([...new Set(references.map(reference => reference.assetId))]));
               db.prepare('DELETE FROM segment_video WHERE segment_id = ?').run(id!);
+              db.prepare('DELETE FROM segment_additional_videos WHERE segment_id = ?').run(id!);
+              const [first, ...rest] = references;
+              if (first) db.prepare('INSERT INTO segment_video VALUES (?, ?, ?)').run(id!, first.assetId, first.start);
+              for (const [position, reference] of rest.entries()) db.prepare('INSERT INTO segment_additional_videos VALUES (?, ?, ?, ?)').run(id!, position, reference.assetId, reference.start);
+            } else {
+              db.prepare('DELETE FROM segment_visuals WHERE segment_id = ?').run(id!);
+              db.prepare('DELETE FROM segment_video WHERE segment_id = ?').run(id!);
+              db.prepare('DELETE FROM segment_additional_videos WHERE segment_id = ?').run(id!);
               db.prepare('DELETE FROM segments WHERE id = ?').run(id!);
             }
           }, token);

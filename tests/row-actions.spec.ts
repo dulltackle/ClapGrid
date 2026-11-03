@@ -21,8 +21,9 @@ for (const environment of ['wide', 'compact', 'touch'] as const) test.describe(e
     expect((await project.status()).snapshot.segments[0]!.text).toBe('新的第一句');
     await input.press('Escape');
     await expect(input).toHaveCount(0);
-    await first.getByRole('button', { name: '关联画面', exact: true }).press('Enter');
-    await expect(page.getByRole('dialog', { name: '关联视频', exact: true })).toBeVisible();
+    await first.getByRole('button', { name: /片段 1 画面素材/ }).press('Enter');
+    await first.getByRole('button', { name: '为片段 1 添加画面素材', exact: true }).press('Enter');
+    await expect(page.getByRole('dialog', { name: '添加画面素材', exact: true })).toBeVisible();
     await page.keyboard.press('Escape');
     await first.getByRole('button', { name: '片段 1 本行菜单', exact: true }).press('Enter');
     await page.getByRole('menuitem', { name: '下方添加', exact: true }).press('Enter');
@@ -61,8 +62,8 @@ for (const viewport of [{ width: 1200, height: 800 }, { width: 780, height: 579 
     visited.push(label);
     if (label === '展开片段 2 的画面说明') break;
   }
-  expect(visited).toEqual(expect.arrayContaining(['片段 1 本行菜单', '生成配音', '片段 2 配音更多操作', '关联画面', '展开片段 2 的画面说明']));
-  await page.keyboard.press('Shift+Tab'); await expect(page.locator('[row-index="1"]').getByRole('button', { name: '关联画面', exact: true })).toBeFocused();
+  expect(visited).toEqual(expect.arrayContaining(['片段 1 本行菜单', '生成配音', '片段 2 配音更多操作', '片段 2 画面素材（0）', '展开片段 2 的画面说明']));
+  await page.keyboard.press('Shift+Tab'); await expect(page.locator('[row-index="1"]').getByRole('button', { name: '片段 2 画面素材（0）', exact: true })).toBeFocused();
 });
 
 test.describe('真实触控输入', () => {
@@ -70,14 +71,18 @@ test.describe('真实触控输入', () => {
   test('无需悬停或右键即可关联、打开本行菜单、取消删除并拖动片段', async ({ page, project, context }) => {
     const [a, b] = await project.seed(['A', 'B']); await page.goto(project.url);
     expect(await page.evaluate(() => matchMedia('(hover: none)').matches)).toBe(true);
-    await page.locator(`[row-id="${a}"]`).getByRole('button', { name: '关联画面', exact: true }).tap();
-    await expect(page.getByRole('dialog', { name: '关联视频', exact: true })).toBeVisible();
+    await page.locator(`[row-id="${a}"]`).getByRole('button', { name: /片段 1 画面素材/ }).tap();
+    await page.getByRole('button', { name: '为片段 1 添加画面素材', exact: true }).tap();
+    await expect(page.getByRole('dialog', { name: '添加画面素材', exact: true })).toBeVisible();
     await page.getByRole('button', { name: '取消', exact: true }).tap();
+    await page.getByRole('button', { name: /片段 1 画面素材/ }).tap();
     await page.getByRole('button', { name: '片段 1 本行菜单', exact: true }).tap();
     await page.getByRole('menuitem', { name: '删除本片段', exact: true }).tap();
     await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).tap();
     const handle = page.getByRole('button', { name: '拖动片段 1', exact: true });
     await expect(handle).toBeEnabled();
+    await expect(page.getByRole('alertdialog')).toHaveCount(0);
+    await handle.scrollIntoViewIfNeeded();
     const origin = (await handle.boundingBox())!;
     const destination = (await page.locator(`[row-id="${b}"] [col-id="order"]`).boundingBox())!;
     const touch = await context.newCDPSession(page);

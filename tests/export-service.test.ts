@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createBusinessMcp } from '../src/mcp/server.js';
-import { beginEdit, queryExportSettings, saveExportSettings, queryStatus, submitSpeech } from '../src/shared/client.js';
+import { queryVisualContext, beginEdit, queryExportSettings, saveExportSettings, queryStatus, submitSpeech } from '../src/shared/client.js';
 import type { ExportStatus } from '../src/shared/contracts.js';
 import { randomUUID } from 'node:crypto';
 import { request } from 'node:http';
@@ -52,6 +52,8 @@ test('绑定地址下成片与兼容预览链接带当前绑定前缀，可读�
   await expect.poll(async () => (await querySpeech(url)).locked, { timeout: 15000 }).toBe(false);
   const speech = await querySpeech(url);
   assert.equal(speech.tasks[0]!.state, 'succeeded', JSON.stringify(speech));
+  const context = await queryVisualContext(url, segment.id);
+  await modifyBatch(url, { changes: [{ kind: 'composition', expected: context.segment, plan: { duration: context.duration, layers: [{ assetId: asset.id, role: 'background', from: 0, to: context.duration, start: 0, x: 0, y: 0, width: 1, height: 1, z: 0 }] } }] });
   const accepted = await submitExport(url);
   await expect.poll(async () => (await queryExports(url)).locked, { timeout: 30000 }).toBe(false);
   const task = (await queryExports(url)).tasks.find(task => task.id === accepted.id);

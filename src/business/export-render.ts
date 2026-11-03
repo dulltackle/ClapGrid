@@ -1,10 +1,10 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { ExportSettings, Segment } from '../shared/contracts.js';
+import type { ExportSettings, Segment, VisualPlan } from '../shared/contracts.js';
 import { exportEncodingArguments } from './export-media.js';
 import { mediaProcess } from './media-process.js';
 
-export type RenderSegment = { segment: Segment; video: string; audio: string; duration: number };
+export type RenderSegment = { segment: Segment; videos: { path: string; start: number; assetId?: string; kind?: 'image' | 'video' }[]; plan?: VisualPlan; audio: string; duration: number };
 const localInput = ['-protocol_whitelist', 'file,pipe'];
 
 export async function prepareExportAudio(source: string, directory: string, index: number, signal: AbortSignal) {
@@ -36,12 +36,25 @@ Dialogue: 0,0:00:00.00,999:00:00.00,Default,,0,0,0,,${literal}
 export async function renderExportSegment(input: RenderSegment, settings: ExportSettings, directory: string, index: number, signal: AbortSignal) {
   await writeFile(join(directory, `subtitle-${index}.ass`), subtitle(settings, input.segment.text), { flag: 'wx' });
   signal.throwIfAborted();
-  // 先延展末帧再截取，避免合法起点处于末帧持续区间时准确 seek 丢掉全部画面。
-  // dar 包含输入 SAR，直接算出方形像素画布中的实际显示尺寸。
-  const filter = `setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=${input.duration},trim=start=${input.segment.video!.start},setpts=PTS-STARTPTS,scale=w='max(2,trunc(min(1920,1080*dar)/2)*2)':h='max(2,trunc(min(1080,1920/dar)/2)*2)',setsar=1,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,fps=${settings.fps},tpad=stop_mode=clone:stop_duration=${input.duration},subtitles=subtitle-${index}.ass:wrap_unicode=1`;
-  // 无损中间片段避免重复编码损失；最终全片只做一次所选视频编码和 AAC 编码。
-  await mediaProcess('ffmpeg', ['-v', 'error', '-nostdin', '-xerror', ...localInput, '-i', input.video,
-    ...localInput, '-i', input.audio, '-map', '0:v:0', '-map', '1:a:0', '-vf', filter, '-t', String(input.duration),
+  const plan = input.plan;
+  if (!plan && input.videos.length !== 1) throw new Error('请由 agent 保存明确画面编排，不能自动均分素材时长');
+  const layers = plan?.layers ?? [{ assetId: input.videos[0]!.assetId, role: 'background', from: 0, to: input.duration, start: input.videos[0]!.start, x: 0, y: 0, width: 1, height: 1, z: 0 }];
+  const ordered = layers.map((layer, index) => ({ ...layer, index })).sort((a, b) => a.z - b.z || a.index - b.index);
+  const sources = ordered.map(layer => {
+    const source = input.videos.find(video => video.assetId === layer.assetId);
+    if (!source) throw new Error('编排素材缺失'); return source;
+  });
+  const filters = [`color=c=black:s=1920x1080:r=${settings.fps}:d=${input.duration}[base]`];
+  for (const [index, layer] of ordered.entries()) {
+    const width = Math.max(2, Math.floor(1920 * layer.width / 2) * 2);
+    const height = Math.max(2, Math.floor(1080 * layer.height / 2) * 2);
+    const duration = layer.to - layer.from;
+    filters.push(`[${index}:v:0]setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=${input.duration + layer.start},trim=start=${layer.start},setpts=PTS-STARTPTS,scale=w='max(2,trunc(min(${width},${height}*dar)/2)*2)':h='max(2,trunc(min(${height},${width}/dar)/2)*2)',setsar=1,format=rgba,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black@0,fps=${settings.fps},tpad=stop_mode=clone:stop_duration=${input.duration},trim=duration=${duration},setpts=PTS-STARTPTS+${layer.from}/TB[v${index}]`);
+    filters.push(`[${index ? 'b' + (index - 1) : 'base'}][v${index}]overlay=x=${Math.round(1920 * layer.x)}:y=${Math.round(1080 * layer.y)}:eof_action=pass:repeatlast=0:enable='gte(t,${layer.from})*lt(t,${layer.to})'[b${index}]`);
+  }
+  filters.push(`[b${ordered.length - 1}]subtitles=subtitle-${index}.ass:wrap_unicode=1[out]`);
+  await mediaProcess('ffmpeg', ['-v', 'error', '-nostdin', '-xerror', '-filter_complex_threads', '1', ...sources.flatMap(source => [...localInput, ...(source.kind === 'image' ? ['-loop', '1', '-framerate', String(settings.fps)] : []), '-i', source.path]),
+    ...localInput, '-i', input.audio, '-map', '[out]', '-map', `${sources.length}:a:0`, '-filter_complex', filters.join(';'), '-t', String(input.duration),
     '-c:v', 'ffv1', '-level', '3', '-pix_fmt', 'yuv420p', '-threads', '2', '-c:a', 'pcm_s16le', '-f', 'matroska', `clip-${index}.mkv`], { cwd: directory, signal });
 }
 

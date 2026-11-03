@@ -22,8 +22,9 @@ test('配音、声音设置、视频关联、预览与音频错误独立于草�
   const row = page.locator(`[row-id="${id}"]`);
   await row.getByRole('button', { name: '试听', exact: true }).click();
   await expect(problems).toContainText('音频无法播放'); await expect(state).toHaveText('已保存'); await expect(refresh).toBeEnabled();
-  await page.getByRole('button', { name: '播放 实际素材.mp4', exact: true }).click();
-  await expect(problems).toContainText('预览不可用'); await expect(state).toHaveText('已保存');
+  await row.getByRole('button', { name: /片段 1 画面素材/ }).click();
+  await page.getByRole('button', { name: '播放原件 实际素材.mp4', exact: true }).click();
+  await expect(problems).toContainText('原件预览不可用'); await expect(state).toHaveText('已保存');
   await page.getByRole('button', { name: '关闭预览', exact: true }).click();
   await expect(refresh).toBeEnabled();
   await page.route('**/api/speech/submit', route => route.fulfill({ status: 500, json: { error: '配音提交故障' } }));
@@ -38,10 +39,10 @@ test('配音、声音设置、视频关联、预览与音频错误独立于草�
   // 后一个职责失败不会清掉前一个职责的异常。
   await expect(problems).toContainText('音频无法播放');
   await page.getByRole('button', { name: '关闭声音设置', exact: true }).click();
-  await row.getByRole('button', { name: '片段 1 画面操作', exact: true }).click();
-  await page.getByRole('menuitem', { name: '更改', exact: true }).click();
+  await row.getByRole('button', { name: '为片段 1 添加画面素材', exact: true }).click();
+  await page.getByLabel('本地素材绝对路径', { exact: true }).fill(mediaFiles.video);
   await page.route('**/api/segments/modify', route => route.fulfill({ status: 500, json: { error: '视频关联故障' } }));
-  await page.getByRole('button', { name: '保存关联与起点', exact: true }).click();
+  await page.getByRole('button', { name: '加入本句', exact: true }).click();
   await expect(problems).toContainText('视频关联故障'); await expect(state).toHaveText('已保存');
   await expect(refresh).toBeEnabled();
 });

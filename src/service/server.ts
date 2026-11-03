@@ -289,7 +289,7 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
         finally { clearTimeout(timer); }
         return;
       }
-      if (path === '/api/exports/submit'  || path === '/api/exports/cancel') {
+      if (path === '/api/visual-previews/submit' || path === '/api/exports/submit'  || path === '/api/exports/cancel') {
         if (request.method !== 'POST') { reject(405, '请使用 POST。'); return; }
         if (request.headers['content-type']?.split(';')[0]?.trim() !== 'application/json') { reject(415, '请使用 application/json。'); return; }
         const timeout = setTimeout(() => request.destroy(), 5000);
@@ -302,7 +302,8 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
           }
           const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
           await verifyBinding();
-          if (path.endsWith('/submit')) { submitExportSchema.parse(input); json(business.submitExport()); }
+          if (path === '/api/visual-previews/submit') { json(business.submitPreview(z.object({ segmentId: z.uuid() }).strict().parse(input).segmentId)); }
+          else if (path.endsWith('/submit')) { submitExportSchema.parse(input); json(business.submitExport()); }
           else { json(business.cancelExport(exportTaskRequestSchema.parse(input).taskId)); }
         } catch (error) { if (!response.destroyed) reject(400, error instanceof Error ? error.message : '导出请求未受理'); }
         finally { clearTimeout(timeout); }
@@ -372,7 +373,7 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
         modification.releaseSession(modificationContext);
         return;
       }
-      if ((path === '/api/export-settings' && request.method !== 'GET') || path === '/api/codex/export-settings' || path === '/api/video/import' || path === '/api/codex/import-video' || path === '/api/segments/add' || path === '/api/segments/edit' || path === '/api/codex/modify' || path === '/api/segments/modify' || path === '/api/codex/process') {
+      if ((path === '/api/export-settings' && request.method !== 'GET') || path === '/api/codex/export-settings' || path === '/api/material/import' || path === '/api/codex/import-material' || path === '/api/video/import' || path === '/api/codex/import-video' || path === '/api/segments/add' || path === '/api/segments/edit' || path === '/api/codex/modify' || path === '/api/segments/modify' || path === '/api/codex/process') {
         const codex = path.startsWith('/api/codex/');
         await modification.handle(modificationContext, codex ? 'codex' : 'user', async (token, input) => {
           if (path === '/api/export-settings' || path === '/api/codex/export-settings') {
@@ -380,11 +381,11 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
               const settings = await business.setExportSettings(token, input as import('../shared/contracts.js').UpdateExportSettings);
               return { data: { settings } };
             } catch (error) { return { status: 400, error: (error as Error).message }; }
-          } else if (path === '/api/video/import' || path === '/api/codex/import-video') {
+          } else if (path === '/api/material/import' || path === '/api/codex/import-material' || path === '/api/video/import' || path === '/api/codex/import-video') {
             const parsed = importVideoSchema.safeParse(input);
             if (!parsed.success) return { status: 400, error: '请提供用户明确指定的视频路径' };
             try {
-              const asset = await business.importVideo(token, parsed.data);
+              const asset = await (path.includes('material') ? business.importMaterial(token, parsed.data) : business.importVideo(token, parsed.data));
               return { data: { asset } };
             } catch (error) { return { status: 400, error: (error as Error).message }; }
           } else if (path === '/api/codex/process') {
@@ -413,12 +414,14 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
       }
       const exportFile = /^\/api\/exports\/([a-f0-9-]{36})\/(file|preview)$/.exec(path);
       const speechAudio = /^\/api\/speech\/audio\/([a-f0-9-]{36})$/.exec(path);
-      const media = /^\/api\/media\/([a-f0-9-]{36})\/(preview|thumbnail)$/.exec(path);
+      const media = /^\/api\/media\/([a-f0-9-]{36})\/(preview|thumbnail|original)$/.exec(path);
       if (media || speechAudio || exportFile) {
         let descriptor: number | undefined;
         try {
+          const image = media && business.getSnapshot().assets.find(asset => asset.id === media[1] && asset.kind === 'image');
+          if (media?.[2] === 'original' && !image) throw new Error('仅图片提供原件查看');
           const kind = exportFile ? exportFile[2] === 'preview' ? 'preview' : 'export' : speechAudio ? 'audio' : media![2] as 'preview' | 'thumbnail';
-          descriptor = openSync(exportFile ? business.getExportFile(exportFile[1]!, exportFile[2] as 'file' | 'preview') : speechAudio ? business.getSpeechAudio(speechAudio[1]!) : business.getMedia(media![1]!, kind as 'preview' | 'thumbnail'), constants.O_RDONLY | constants.O_NOFOLLOW);
+          descriptor = openSync(exportFile ? business.getExportFile(exportFile[1]!, exportFile[2] as 'file' | 'preview') : speechAudio ? business.getSpeechAudio(speechAudio[1]!) : business.getMedia(media![1]!, media![2] === 'original' ? 'source' : kind as 'preview' | 'thumbnail'), constants.O_RDONLY | constants.O_NOFOLLOW);
           const stat = fstatSync(descriptor);
           if (!stat.isFile() || stat.nlink !== 1) throw new Error('媒体文件无效');
           const size = stat.size;
@@ -432,7 +435,7 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
             if (start > end || start >= size) { response.setHeader('Content-Range', `bytes */${size}`); reject(416, '范围无效'); return; }
             response.setHeader('Content-Range', `bytes ${start}-${end}/${size}`);
           }
-          response.writeHead(range ? 206 : 200, { 'Content-Type': kind === 'export' ? 'video/mp4' : kind === 'audio' ? 'audio/mpeg' : kind === 'preview' ? 'video/webm' : 'image/png', 'Accept-Ranges': 'bytes', 'Content-Length': end - start + 1 });
+          response.writeHead(range ? 206 : 200, { 'Content-Type': image && kind !== 'thumbnail' ? image.mime ?? 'image/png' : kind === 'export' ? 'video/mp4' : kind === 'audio' ? 'audio/mpeg' : kind === 'preview' ? 'video/webm' : 'image/png', 'Accept-Ranges': 'bytes', 'Content-Length': end - start + 1 });
           const stream = createReadStream('', { fd: descriptor, autoClose: true, start, end });
           descriptor = undefined;
           stream.on('error', () => response.destroy());
@@ -440,6 +443,10 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
           stream.pipe(response);
         } catch { if (!response.headersSent) reject(404, '素材不可读取'); else response.destroy(); }
         finally { if (descriptor !== undefined) closeSync(descriptor); }
+      } else if (/^\/api\/visual-context\/[a-f0-9-]{36}$/.test(path)) {
+        try { json(await business.getVisualContext(path.split('/').at(-1)!)); } catch (error) { reject(400, (error as Error).message); }
+      } else if (path === '/api/visual-previews') {
+        json(business.getVisualPreviews());
       } else if (path === '/api/exports') {
         try { json(business.getExportTasks()); } catch { reject(500, '读取导出任务失败'); }
       } else if (path === '/api/export-settings') {

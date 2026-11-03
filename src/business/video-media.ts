@@ -1,5 +1,5 @@
 import { constants, createReadStream, createWriteStream, fstatSync, lstatSync, openSync, closeSync, realpathSync, unlinkSync } from 'node:fs';
-import { basename, isAbsolute, join, resolve } from 'node:path';
+import { extname, basename, isAbsolute, join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { pipeline } from 'node:stream/promises';
@@ -75,4 +75,31 @@ export function discardImport(directory: string, id: string) {
   for (const kind of ['source', 'preview', 'thumbnail'] as const) {
     try { unlinkSync(mediaPath(directory, id, kind)); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
   }
+}
+
+/** 图片独占复制，限制解码格式并保留原生透明通道。 */
+export async function prepareMaterial(directory: string, id: string, sourcePath: string, signal: AbortSignal): Promise<VideoAsset> {
+  const extension = extname(sourcePath).toLowerCase();
+  if (!['.png', '.jpg', '.jpeg'].includes(extension)) return { ...await prepareVideo(directory, id, sourcePath, signal), kind: 'video' };
+  if (!isAbsolute(sourcePath)) throw new Error('请提供素材绝对路径');
+  verifyMedia(sourcePath);
+  const source = mediaPath(directory, id, 'source');
+  const descriptor = openSync(sourcePath, constants.O_RDONLY | constants.O_NOFOLLOW);
+  try {
+    const stat = fstatSync(descriptor);
+    if (!stat.isFile() || stat.nlink !== 1) throw new Error('导入来源必须是普通文件');
+    await pipeline(createReadStream('', { fd: descriptor, autoClose: false }), createWriteStream(source, { flags: 'wx' }), { signal });
+  } finally { closeSync(descriptor); }
+  const metadata = await validateImage(source, signal);
+  await run('ffmpeg', ['-v', 'error', '-xerror', '-protocol_whitelist', 'file,pipe', '-format_whitelist', 'png_pipe,jpeg_pipe', '-i', source, '-frames:v', '1', '-vf', 'scale=160:90:force_original_aspect_ratio=decrease', '-f', 'image2', mediaPath(directory, id, 'thumbnail')], signal);
+  return { id, name: basename(sourcePath), duration: 0, kind: 'image', ...metadata };
+}
+export async function validateImage(path: string, signal: AbortSignal) {
+  verifyMedia(path);
+  const options = ['-protocol_whitelist', 'file,pipe', '-format_whitelist', 'png_pipe,jpeg_pipe'];
+  const { stdout } = await run('ffprobe', ['-v', 'error', ...options, '-show_entries', 'stream=width,height,pix_fmt,codec_name', '-of', 'json', path], signal);
+  const info = JSON.parse(stdout).streams?.[0];
+  if (!info || !['png', 'mjpeg'].includes(info.codec_name) || !(info.width > 0 && info.height > 0) || info.width * info.height > 40_000_000) throw new Error('图片格式或尺寸无效');
+  await run('ffmpeg', ['-v', 'error', '-xerror', ...options, '-i', path, '-frames:v', '1', '-f', 'null', '-'], signal);
+  return { width: Number(info.width), height: Number(info.height), hasAlpha: /^(rgba|bgra|argb|abgr|yuva|gbrap|ya|pal8)/.test(info.pix_fmt), mime: info.codec_name === 'png' ? 'image/png' : 'image/jpeg' };
 }

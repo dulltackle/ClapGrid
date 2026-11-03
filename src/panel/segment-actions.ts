@@ -1,3 +1,4 @@
+import { segmentMaterials } from '../shared/contracts.js';
 import type { Segment, SpeechStatus } from '../shared/contracts.js';
 import { segmentTargets } from './segment-targets.js';
 import { segmentSpeech } from './speech-state.js';
@@ -17,7 +18,7 @@ export function segmentActions({ segment, segments, checkedIds = [], speech, rea
   return {
     ...state, primaryLabel: pending ? state.state : state.audio ? '试听' : state.latest?.state === 'failed' || state.latest?.state === 'unknown' ? '重试' : '生成配音',
     editText: mutable('script'), editNote: mutable('note'), associate: mutable('visual'), changeVisual: mutable('visual'),
-    unlink: mutable('visual', segment.video ? '' : '尚未关联画面'), preview: action('visual', segment.video ? '' : '尚未关联画面'),
+    unlink: mutable('visual', segmentMaterials(segment).length ? '' : '尚未关联画面'), preview: action('visual', segmentMaterials(segment).length ? '' : '尚未关联画面'),
     generate: mutable('speech', pending ? '配音任务进行中，请等待完成' : !(draftText ?? segment.text).trim() ? '请先填写文案' : ''),
     listen: action('speech', state.audio ? '' : '尚无可试听的配音'), history: action('speech'),
     delete: mutable('row', targets.length ? '' : '没有可操作的口播片段', targets),

@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/index.js';
 import { panelServiceUrl } from './service-url.js';
 import { useEffect, useState } from 'react';
 import { cancelExport, queryExports, queryStatus, submitExport } from '../shared/client.js';
-import type { ExportTasksStatus, ServiceStatus } from '../shared/contracts.js';
+import type { ExportTask, ExportTasksStatus, ServiceStatus } from '../shared/contracts.js';
 
 export function useExportTasks(onStatus: (status: ServiceStatus) => void) {
   const [exports, setExports] = useState<ExportTasksStatus>();
@@ -34,14 +34,14 @@ export function useExportTasks(onStatus: (status: ServiceStatus) => void) {
 
 export const exportStateLabel = { accepted: '已受理', validating: '正在校验', rendering: '正在导出', cleaning: '正在清理', succeeded: '导出成功', failed: '导出失败', cancelled: '已取消', interrupted: '已中断' };
 
-export function ExportTaskDetails({ controller }: { controller: ReturnType<typeof useExportTasks> }) {
+export function ExportTaskDetails({ controller, previews = [] }: { controller: ReturnType<typeof useExportTasks>; previews?: ExportTask[] }) {
   const { exports, busy, operationError, connectionError, run } = controller;
-  return <section className="flex flex-col gap-2 [overflow-wrap:anywhere] [&_p]:m-0" aria-label="全片导出">
+  return <><section className="flex flex-col gap-2 [overflow-wrap:anywhere] [&_p]:m-0" aria-label="全片导出">
     <h3 className="m-0 text-[16px] font-semibold">全片导出</h3>
     <p>按项目顺序导出全部片段，筛选与勾选不改变范围</p>
     {connectionError && <p role="alert" className="text-destructive">{connectionError}</p>}
     {operationError && <p role="alert" className="text-destructive">{operationError}</p>}
-    {exports?.locked && <p role="status">导出进行中，项目已锁定；关闭面板后任务继续，取消清理完成后恢复编辑。</p>}
+    {exports?.locked && <p role="status">制作任务进行中，项目已锁定；关闭面板后任务继续，取消清理完成后恢复编辑。</p>}
     {!exports?.tasks.length && <p>暂无导出任务</p>}
     {exports?.tasks.slice().reverse().map(task => <details className="rounded-md border border-solid border-input p-2 [&_p]:my-2" key={task.id} open={task.state !== 'succeeded'}>
       <summary className="w-fit cursor-pointer rounded-md px-2 py-1 font-medium hover:bg-ui-accent active:bg-input">{exportStateLabel[task.state]} · {task.completed}/{task.total} 个片段 · {new Date(task.createdAt).toLocaleString()}</summary>
@@ -53,5 +53,16 @@ export function ExportTaskDetails({ controller }: { controller: ReturnType<typeo
       {['accepted', 'validating', 'rendering'].includes(task.state) && <Button variant="outline" size="sm" className="border-input text-foreground" disabled={busy} onClick={() => { void run(task.id); }}>取消导出</Button>}
       {task.output && <p>成片位置：<span className="[overflow-wrap:anywhere]">{task.output.path}</span> <a className="text-primary underline underline-offset-2" href={task.output.previewUrl ?? task.output.url} target="_blank" rel="noreferrer">打开成片</a> · <a className="text-primary underline underline-offset-2" href={task.output.url} download>下载 MP4 原片</a><small className="text-[12px] text-muted-foreground">（浏览器播放使用兼容预览）</small></p>}
     </details>)}
-  </section>;
+  </section>
+  <section className="flex flex-col gap-2 [overflow-wrap:anywhere] [&_p]:m-0" aria-label="片段合成任务">
+    <h3 className="m-0 text-[16px] font-semibold">片段合成预览</h3>
+    {!previews.length && <p>暂无片段合成任务</p>}
+    {previews.slice().reverse().map(task => <details key={task.id} className="rounded-md border border-solid border-input p-2 [&_p]:my-2" open={task.state !== 'succeeded'}>
+      <summary className="cursor-pointer">{task.state === 'succeeded' ? task.current ? '合成成功' : '预览待更新' : task.state === 'rendering' ? '正在合成' : exportStateLabel[task.state].replace('导出', '合成')} · {task.preview?.segmentId}</summary>
+      <p role="status">{task.message.replaceAll('导出', '合成')}</p>
+      {task.issues.length > 0 && <ul className="my-2 list-disc pl-5 text-destructive" aria-label="合成错误">{task.issues.map((issue, index) => <li key={index}>{issue.message}</li>)}</ul>}
+      {['accepted', 'validating', 'rendering'].includes(task.state) && <Button variant="outline" disabled={busy} onClick={() => { void run(task.id); }}>取消合成</Button>}
+      {task.output && <p>{task.current ? '当前合成结果' : '历史合成结果，待更新'}：<a className="text-primary underline" href={task.output.previewUrl ?? task.output.url} target="_blank" rel="noreferrer">打开片段预览</a></p>}
+    </details>)}
+  </section></>;
 }

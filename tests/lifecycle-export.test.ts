@@ -33,6 +33,10 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
     business.release(token);
     business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
     await vi.waitFor(async () => { const value = await (async () => business.getSpeechStatus())(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
+    const context = await business.getVisualContext(segment.id);
+    const compositionToken = business.acquire('codex');
+    try { await business.modifyBatch(compositionToken, { changes: [{ kind: 'composition', expected: context.segment, plan: { duration: context.duration, layers: [{ assetId: asset.id, role: 'background', from: 0, to: context.duration, start: 0, x: 0, y: 0, width: 1, height: 1, z: 0 }] } }] }); }
+    finally { business.release(compositionToken); }
   } finally { await business.close(); }
   const dist = join(root, 'dist'); mkdirSync(join(dist, 'panel'), { recursive: true });
   writeFileSync(join(root, 'package.json'), '{"type":"module"}'); writeFileSync(join(dist, 'panel', 'index.html'), 'ClapGrid');

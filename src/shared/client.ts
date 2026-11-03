@@ -33,7 +33,7 @@ export async function saveSegment(baseUrl: string, change: { text?: string; visu
 export async function modifyBatch(baseUrl: string, batch: Batch, signal?: AbortSignal): Promise<BatchResult> {
   const response = await fetch(`${baseUrl}/api/codex/modify`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(batch),
-    signal: signal ?? (batch.changes.some(change => change.kind === 'video') ? undefined : AbortSignal.timeout(30000)), redirect: 'error',
+    signal: signal ?? (batch.changes.some(change => (change.kind === 'video' || change.kind === 'videos' || change.kind === 'materials')) ? undefined : AbortSignal.timeout(30000)), redirect: 'error',
   });
   const body = await response.json();
   if (!response.ok) throw new Error(body.error ?? `修改失败：HTTP ${response.status}`);
@@ -99,7 +99,7 @@ export async function processSegments(baseUrl: string, input: ScopedOperation, s
 }
 export async function modifyUserBatch(baseUrl: string, input: Batch, token: string, signal?: AbortSignal): Promise<BatchResult> {
   // 媒体校验由服务端逐进程限时；不能沿用短文本编辑的 30 秒总超时。
-  const body = await postJson(baseUrl, '/api/segments/modify', input, token, signal ?? (input.changes.some(change => change.kind === 'video') ? null : undefined));
+  const body = await postJson(baseUrl, '/api/segments/modify', input, token, signal ?? (input.changes.some(change => (change.kind === 'video' || change.kind === 'videos' || change.kind === 'materials')) ? null : undefined));
   return { ...body, status: statusSchema.parse(body.status) };
 }
 
@@ -218,4 +218,21 @@ export async function submitExport(baseUrl: string): Promise<import('./contracts
 }
 export async function cancelExport(baseUrl: string, taskId: string): Promise<import('./contracts.js').ExportTask> {
   return postJson(baseUrl, '/api/exports/cancel', { taskId });
+}
+
+export async function importMaterial(baseUrl: string, sourcePath: string, token?: string, signal?: AbortSignal) {
+  const body = await postJson(baseUrl, token ? '/api/material/import' : '/api/codex/import-material', { sourcePath }, token, signal ?? null);
+  return { asset: body.asset as import('./contracts.js').VideoAsset, status: statusSchema.parse(body.status) };
+}
+export async function queryVisualPreviews(baseUrl: string): Promise<import('./contracts.js').ExportTasksStatus> {
+  const response = await fetch(`${baseUrl}/api/visual-previews`, { signal: AbortSignal.timeout(5000), redirect: 'error' });
+  if (!response.ok) throw new Error('读取片段合成预览失败'); return response.json();
+}
+export async function previewSegment(baseUrl: string, segmentId: string): Promise<import('./contracts.js').ExportTask> {
+  return postJson(baseUrl, '/api/visual-previews/submit', { segmentId });
+}
+
+export async function queryVisualContext(baseUrl: string, segmentId: string): Promise<{ segment: import('./contracts.js').Segment; assets: import('./contracts.js').VideoAsset[]; duration: number; compositionCurrent: boolean }> {
+  const response = await fetch(`${baseUrl}/api/visual-context/${segmentId}`, { signal: AbortSignal.timeout(30000), redirect: 'error' });
+  const body = await response.json(); if (!response.ok) throw new Error(body.error ?? '读取制作输入失败'); return body;
 }

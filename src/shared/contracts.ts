@@ -1,18 +1,41 @@
 import { buildIdentitySchema } from '../build-identity.js';
 import { z } from 'zod';
 
+export const videoReferenceSchema = z.object({ assetId: z.uuid(), start: z.number().nonnegative() });
+export const visualLayerSchema = z.object({
+  assetId: z.uuid(), role: z.enum(['background', 'overlay']),
+  from: z.number().nonnegative(), to: z.number().positive(), start: z.number().nonnegative(),
+  x: z.number().min(0).max(1), y: z.number().min(0).max(1),
+  width: z.number().positive().max(1), height: z.number().positive().max(1),
+  z: z.number().int().min(0).max(100),
+}).strict();
+export const visualPlanSchema = z.object({ duration: z.number().positive().max(3600), layers: z.array(visualLayerSchema).min(1).max(32) }).strict();
+export type VisualPlan = z.infer<typeof visualPlanSchema>;
 export const segmentSchema = z.object({
   id: z.uuid(), order: z.number().int().positive(), text: z.string(), visualNote: z.string().default(''),
   video: z.object({ assetId: z.uuid(), start: z.number().nonnegative() }).nullable().default(null),
+  additionalVideos: z.array(videoReferenceSchema).optional(),
+  materials: z.array(z.uuid()).optional(),
+  visualVersion: z.string().optional(),
+  composition: visualPlanSchema.extend({ inputVersion: z.string() }).optional(),
 });
 export type Segment = z.infer<typeof segmentSchema>;
+/** 兼容读取旧视频关联；顺序不构成新的画面编排。 */
+export function segmentVideos(segment: Segment) {
+  return [...(segment.video ? [segment.video] : []), ...(segment.additionalVideos ?? [])];
+}
+export function segmentMaterials(segment: Segment): string[] {
+  return segment.materials ?? [...new Set(segmentVideos(segment).map(reference => reference.assetId))];
+}
 export const addSegmentSchema = z.object({ text: z.string(), visualNote: z.string().optional() }).strict();
 const segmentEditFields = { text: z.string().optional(), visualNote: z.string().optional() };
 const hasSegmentEdit = (input: { text?: string; visualNote?: string }) => input.text !== undefined || input.visualNote !== undefined;
 export const editSegmentSchema = z.object({ id: z.uuid(), ...segmentEditFields }).strict().refine(hasSegmentEdit, '请提供文案或画面说明');
 
 export const videoAssetSchema = z.object({
-  id: z.uuid(), name: z.string(), duration: z.number().positive(),
+  id: z.uuid(), name: z.string(), duration: z.number().nonnegative(),
+  kind: z.enum(['image', 'video']).optional(), width: z.number().positive().optional(), height: z.number().positive().optional(),
+  hasAlpha: z.boolean().optional(), mime: z.string().optional(),
 });
 export type VideoAsset = z.infer<typeof videoAssetSchema>;
 export const importVideoSchema = z.object({ sourcePath: z.string().min(1) }).strict();
@@ -36,6 +59,8 @@ export const exportTaskRequestSchema = z.object({ taskId: z.uuid() }).strict();
 export type ExportIssue = { segmentId?: string; order?: number; field: 'project' | 'video' | 'start' | 'speech' | 'settings'; message: string };
 export type ExportTask = {
   id: string; createdAt: string;
+  preview?: { segmentId: string; input: string };
+  current?: boolean;
   state: 'accepted' | 'validating' | 'rendering' | 'cleaning' | 'succeeded' | 'failed' | 'cancelled' | 'interrupted';
   message: string; completed: number; total: number; segmentId?: string;
   issues: ExportIssue[]; warnings: ExportIssue[];
@@ -76,6 +101,9 @@ export const batchChangeSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('edit'), expected: segmentSchema.strict(), ...segmentEditFields }).strict().refine(hasSegmentEdit, '请提供文案或画面说明'),
   z.object({ kind: z.literal('delete'), expected: segmentSchema.strict() }).strict(),
   z.object({ kind: z.literal('video'), expected: segmentSchema.strict(), assetId: z.uuid().nullable(), start: z.number().nonnegative() }).strict(),
+  z.object({ kind: z.literal('materials'), expected: segmentSchema.strict(), assetIds: z.array(z.uuid()).max(64) }).strict(),
+  z.object({ kind: z.literal('composition'), expected: segmentSchema.strict(), plan: visualPlanSchema }).strict(),
+  z.object({ kind: z.literal('videos'), expected: segmentSchema.strict(), videos: z.array(videoReferenceSchema.strict()) }).strict(),
 ]);
 export const batchSchema = z.object({ changes: z.array(batchChangeSchema).min(1) }).strict();
 export type Batch = z.input<typeof batchSchema>;
