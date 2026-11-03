@@ -19,9 +19,9 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 import { AllCommunityModule, themeQuartz, type ColDef, type GridApi } from 'ag-grid-community';
 import { AgGridProvider, AgGridReact } from 'ag-grid-react';
-import { queryStatus, querySpeech, submitSpeech, setVoice, importMaterial, queryVisualPreviews, beginEdit, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
+import { queryStatus, querySpeech, submitSpeech, setVoice, importMaterial, renameMaterial, queryVisualPreviews, beginEdit, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
 import { segmentMaterials } from '../shared/contracts.js';
-import type { Segment, ServiceStatus, SpeechStatus, Voice, Batch, ExportTask } from '../shared/contracts.js';
+import type { Segment, ServiceStatus, SpeechStatus, Voice, Batch, ExportTask, VideoAsset } from '../shared/contracts.js';
 import { projectEditing } from './project-editing.js';
 import { useSegmentInteraction, segmentTargets } from './segment-interaction.js';
 import { segmentActions, segmentRowMenu } from './segment-actions.js';
@@ -42,7 +42,6 @@ const theme = themeQuartz.withParams({
   borderColor: 'var(--color-border)',
   headerBackgroundColor: 'color-mix(in srgb, var(--color-focus) 5%, white)',
   headerTextColor: 'var(--color-ink-secondary)',
-  rowHoverColor: 'var(--color-hover)',
   selectedRowBackgroundColor: '#f6faff',
   fontFamily: 'var(--font-ui)',
   fontSize: 'var(--font-size-ui)',
@@ -125,6 +124,8 @@ export function App() {
   const [error, setError] = useState('');
   const [deletedDraftOpen, setDeletedDraftOpen] = useState(false);
   const [videoEditor, setVideoEditor] = useState<{ segment: Segment; index: number; assetId: string; start: string } | null>(null);
+  const [assetRename, setAssetRename] = useState<{ asset: VideoAsset; name: string } | null>(null);
+  const [renameError, setRenameError] = useState('');
   const [importing, setImporting] = useState(false);
   const [sourcePath, setSourcePath] = useState('');
   const [trayId, setTrayId] = useState<string | null>(null);
@@ -176,9 +177,12 @@ export function App() {
   const matchingIds = new Set(status?.snapshot.segments.filter(segment => textMatches(segment.text, query).length > 0).map(segment => segment.id));
   const matchedIds = displayOrder.filter(id => matchingIds.has(id));
   const activeMatch = searchOpen && currentMatch && matchedIds.includes(currentMatch) ? currentMatch : null;
-  const searchLayout = useRef({ activeMatch, rowHeight: searchRowHeight, expandedNote, noteHeight, trayId });
-  searchLayout.current = { activeMatch, rowHeight: searchRowHeight, expandedNote, noteHeight, trayId };
-  const mainRowHeight = (id?: string) => (id === searchLayout.current.activeMatch ? Math.max(102, searchLayout.current.rowHeight) : 102) + (id && id === searchLayout.current.trayId ? 176 : 0);
+  const searchLayout = useRef({ activeMatch, rowHeight: searchRowHeight, expandedNote, noteHeight });
+  searchLayout.current = { activeMatch, rowHeight: searchRowHeight, expandedNote, noteHeight };
+  useEffect(() => {
+    if (trayId && !status?.snapshot.segments.some(segment => segment.id === trayId)) setTrayId(null);
+  }, [status, trayId]);
+  const mainRowHeight = (id?: string) => (id === searchLayout.current.activeMatch ? Math.max(102, searchLayout.current.rowHeight) : 102);
   useEffect(() => {
     if (expandedNote && status && !status.snapshot.segments.some(segment => segment.id === expandedNote)) setExpandedNote(null);
   }, [expandedNote, status]);
@@ -220,7 +224,7 @@ export function App() {
     const observer = new ResizeObserver(() => setSearchRowHeight(Math.max(44, Math.min(240, element.clientHeight - 56))));
     observer.observe(element); return () => observer.disconnect();
   }, []);
-  useEffect(() => { grid.current?.resetRowHeights(); }, [activeMatch, searchRowHeight, expandedNote, noteHeight, trayId]);
+  useEffect(() => { grid.current?.resetRowHeights(); }, [activeMatch, searchRowHeight, expandedNote, noteHeight]);
   const returnFocus = useRef({ draft: () => {}, settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, detail: () => {} });
   const [focusReturns] = useState(() => segmentFocusCoordinator(() => grid.current, {
     search: () => searchInput.current, table: () => tableFallback.current, more: () => moreButton.current,
@@ -351,6 +355,28 @@ export function App() {
       }
     } finally { action.apply(() => focusReturns.close(origin, () => { setVideoEditor(null); setImporting(false); })); }
   }, cause => reportOperation('video', cause.message));
+  const openAssetRename = (asset: VideoAsset, trigger: HTMLElement) => {
+    rememberOrigin(trigger, 'video');
+    void segmentDetail.perform(() => editing.begin('segments', next => {
+      const current = next.snapshot.assets.find(item => item.id === asset.id);
+      if (!current) throw new Error('素材已不存在');
+      setStatus(next); setRenameError(''); setAssetRename({ asset: current, name: current.name });
+    }, () => setRenameError('编辑连接已断开，请取消后重新打开重命名'), failed));
+  };
+  const cancelAssetRename = () => {
+    if (editing.getState().busy) return;
+    focusReturns.close(returnFocus.current.video, () => setAssetRename(null));
+    void editing.cancel('segments');
+  };
+  const saveAssetRename = () => {
+    if (!assetRename || !assetRename.name.trim()) return;
+    const draft = assetRename;
+    setRenameError('');
+    void editing.save('segments', { acquire: true }, async (token, action) => {
+      const result = await renameMaterial(panelServiceUrl(), { assetId: draft.asset.id, expectedName: draft.asset.name, name: draft.name }, token, action.signal);
+      action.apply(() => { setStatus(result.status); focusReturns.close(returnFocus.current.video, () => setAssetRename(null)); });
+    }, cause => setRenameError(cause.message));
+  };
   const synchronizeSelection = (ids: string[]) => {
     if (restoringPanelSelection.current) return;
     setSelectedIds(ids);
@@ -421,7 +447,7 @@ export function App() {
   }, [editState.busy, editState.editing, editing]);
   const disabled = !status || !speech || speech.locked || status.taskLocked || editState.busy || (editState.editing && !segmentDetail.draft) || (!!status.modification && !(editState.owner === 'segments' && editState.editing && segmentDetail.draft)) || !!panelRestore;
   const panelBusy = disabled || segmentDetail.dirty || segmentDetail.saving || editState.editing || mediaBusy || !!playing || !!detail || exportSettingsOpen || !!audioHistory || !!speechRetryId
-    || !!videoEditor || importing || !!preview || !!composedPreview || rowMenuOpen || rowActionMenuOpen || !!deleteTargets || !!reorderPreview || !!panelRestore
+    || !!videoEditor || !!assetRename || !!trayId || importing || !!preview || !!composedPreview || rowMenuOpen || rowActionMenuOpen || !!deleteTargets || !!reorderPreview || !!panelRestore
     || selectionState !== '勾选已同步';
   const latestPanel = useRef({ busy: panelBusy, selectedIds });
   latestPanel.current = { busy: panelBusy, selectedIds };
@@ -480,7 +506,7 @@ export function App() {
   const exportTask = exports.exports?.tasks.at(-1);
   const exportProblems = exports.exports?.tasks.filter(task => task.state === 'failed' || task.state === 'interrupted') ?? [];
   const lock = speech?.locked ? '配音进行中，项目已锁定；可查询和试听' : status?.taskLocked || exports.exports?.locked ? '导出进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : '';
-  const orderWidth = Math.max(64, 48 + String(status?.snapshot.segments.length ?? 0).length * 8);
+  const orderWidth = Math.max(36, 20 + String(status?.snapshot.segments.length ?? 0).length * 8);
   const actionReason = disabled ? lock || (!status || !speech ? '正在连接项目' : '请先结束编辑或等待项目解除占用') : '';
   const actionsFor = (segment: Segment) => segmentActions({ segment, segments: status?.snapshot.segments ?? [], checkedIds: selectedIds, speech, reason: actionReason, draftText: segmentDetail.draft?.id === segment.id ? segmentDetail.draft.text : undefined });
   const checkedAction = status?.snapshot.segments[0] ? actionsFor(status.snapshot.segments[0]).deleteChecked : undefined;
@@ -490,6 +516,7 @@ export function App() {
     trayId, toggleTray: (id: string) => setTrayId(current => current === id ? null : id), previews: visualPreviews,
     composed: (task: ExportTask, trigger: HTMLButtonElement) => { rememberOrigin(trigger, 'preview'); setComposedPreview(task); },
     preview: (segment: Segment, trigger: HTMLButtonElement, index = 0) => { rememberOrigin(trigger, 'preview'); const assetId = segmentMaterials(segment)[index]; setPreview(assetId ? { assetId, start: 0 } : null); },
+    rename: openAssetRename,
     associate: (id: string, trigger: HTMLElement, index = 0) => { rememberOrigin(trigger, 'video'); void openVideoEditor(id, index); },
     unlink: (segment: Segment, index = 0) => { void segmentDetail.perform(savedTarget => { const expected = savedTarget(segment); const assetIds = segmentMaterials(expected).filter((_, i) => i !== index); return organize({ changes: [{ kind: 'materials', expected, assetIds }] }); }); },
   };
@@ -503,7 +530,7 @@ export function App() {
     setRowMenu({ anchor: structuredClone(segment), targets: structuredClone(targets), expectedIds: status?.snapshot.segments.map(item => item.id) ?? [], origin: focusReturns.capture(trigger, { fallback: 'menu' }) });
   };
   const columns: ColDef<Segment>[] = [
-    { headerName: '序号', field: 'order', width: orderWidth, minWidth: orderWidth, maxWidth: orderWidth, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="relative flex h-full items-center pl-7"><button className="rounded-md border border-solid border-input bg-background text-foreground hover:bg-ui-accent absolute left-0 top-1/2 -translate-y-1/2 shrink-0 cursor-grab touch-none flex size-6 items-center justify-center p-[3px] leading-5 opacity-50 group-[:hover]/segment:opacity-100 focus-visible:opacity-100 active:cursor-grabbing disabled:opacity-30" aria-label={`拖动片段 ${data.order}`} disabled={!actionsFor(data).drag.enabled} title={actionsFor(data).drag.reason} onKeyDown={event => drag.keyboard(event, data.id)} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}><DragHandleDots2Icon aria-hidden className="size-3" /></button><span className="group-aria-selected/segment:font-medium group-aria-selected/segment:text-primary">{data.order}</span></span> },
+    { headerName: '序号', field: 'order', width: orderWidth, minWidth: orderWidth, maxWidth: orderWidth, cellClass: 'px-1!', headerClass: 'px-1!', suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="flex h-full items-center justify-center"><button className="group/order relative flex h-7 w-full min-w-7 cursor-grab touch-none items-center justify-center rounded-md border-0 bg-transparent p-0 text-foreground hover:bg-ui-accent active:cursor-grabbing disabled:cursor-default disabled:opacity-30" aria-label={`拖动片段 ${data.order}`} disabled={!actionsFor(data).drag.enabled} title={actionsFor(data).drag.reason || '拖动序号调整片段顺序'} onKeyDown={event => drag.keyboard(event, data.id)} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}><span data-segment-order className="tabular-nums group-hover/order:invisible group-focus-visible/order:invisible group-aria-selected/segment:font-medium group-aria-selected/segment:text-primary">{data.order}</span><DragHandleDots2Icon aria-hidden className="absolute size-4 opacity-0 group-hover/order:opacity-100 group-focus-visible/order:opacity-100" /></button></span> },
     { headerName: '口播片段', field: 'text', flex: 1, minWidth: 360, resizable: false, editable: false,
       cellRenderer: SegmentRowCell, cellStyle: params => ({ height: mainRowHeight(params.data?.id), paddingRight: 0 }),
       cellRendererParams: { ...rowControls, ...visualControls, query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: Math.max(102, searchRowHeight), toggleNote, expandedId: expandedNote, assets: status?.snapshot.assets ?? [],
@@ -608,6 +635,12 @@ export function App() {
       </AlertDialogContent>
     </AlertDialog>
     {audioHistory && <AudioHistoryPanel segmentId={audioHistory} speech={speech} onClose={() => focusReturns.close(returnFocus.current.history, () => setAudioHistory(null))} restoreFocus={returnFocus.current.history} />}
+    {assetRename && <DetailPanel title="重命名素材" label="重命名素材" restoreWithinLayer onClose={cancelAssetRename} restoreFocus={returnFocus.current.video}>
+      <label className="flex min-w-0 flex-col gap-1">素材名称<Input autoFocus aria-label="素材名称" maxLength={255} value={assetRename.name} disabled={editState.busy} onChange={event => setAssetRename(current => current && { ...current, name: event.target.value })} onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) { event.preventDefault(); saveAssetRename(); } }} /></label>
+      <p className="m-0 text-xs text-muted-foreground">修改项目中的素材名称，所有引用此素材的片段同步更新。</p>
+      {renameError && <p role="alert" className="m-0 text-xs text-destructive">{renameError}</p>}
+      <div className="flex justify-end gap-2"><Button variant="outline" disabled={editState.busy} onClick={cancelAssetRename}>取消</Button><Button disabled={editState.busy || !assetRename.name.trim()} onClick={saveAssetRename}>{editState.busy ? '正在保存…' : '保存名称'}</Button></div>
+    </DetailPanel>}
     {(videoEditor || importing) && <DetailPanel title={importing ? '导入项目素材' : '添加画面素材'} label={importing ? '导入项目素材' : '添加画面素材'} restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={cancelVideo} restoreFocus={returnFocus.current.video}>
       {videoEditor && <label className="flex min-w-0 flex-col gap-1">从项目素材选取<NativeSelect aria-label="项目素材" value={videoEditor.assetId} disabled={editState.busy} onChange={event => { setVideoEditor({ ...videoEditor, assetId: event.target.value }); setSourcePath(''); }}>
         <option value="">请选择素材</option>
@@ -666,7 +699,7 @@ export function App() {
     }}>{drag.indicator}<AgGridProvider modules={[AllCommunityModule]}><AgGridReact
       animateRows={false}
       readOnlyEdit suppressClickEdit popupParent={document.body}
-      selectionColumnDef={{ width: 34, minWidth: 34, maxWidth: 34, cellStyle: params => ({ height: mainRowHeight(params.data?.id) }) }}
+      selectionColumnDef={{ width: 34, minWidth: 34, maxWidth: 34, cellClass: '[&_.ag-cell-wrapper]:h-full', cellStyle: params => ({ height: mainRowHeight(params.data?.id) }) }}
       rowSelection={{ mode: 'multiRow', selectAll: 'all', enableClickSelection: false, enableSelectionWithoutKeys: false }}
       onSelectionChanged={event => {
         if (panelRestore && ['checkboxSelected', 'rowClicked', 'spaceKey', 'keyboardSelectAll', 'uiSelectAll', 'uiSelectAllFiltered', 'uiSelectAllCurrentPage'].includes(event.source)) {
@@ -681,7 +714,8 @@ export function App() {
         if (currentMatch) { const index = event.api.getRowNode(currentMatch)?.rowIndex; if (index != null) searchAnchor.current = index; }
       }}
       getRowHeight={params => mainRowHeight(params.data?.id) + (params.data?.id === searchLayout.current.expandedNote ? searchLayout.current.noteHeight : 0)}
-      onCellDoubleClicked={event => { if ((event.colDef.field === 'text' || event.colDef.field === 'visualNote') && event.data && !(event.event?.target as HTMLElement)?.closest('textarea, button, [data-segment-support], [data-segment-speech]')) { segmentDetail.navigate({ id: event.data.id, inline: true, field: event.colDef.field as 'text' | 'visualNote' }); } }}
+      onCellClicked={event => { if (event.colDef.field === 'text' && event.data && (event.event?.target as HTMLElement)?.closest('[data-segment-script]')) { segmentDetail.navigate({ id: event.data.id, inline: true, field: 'text' }); } }}
+      onCellDoubleClicked={event => { if (event.colDef.field === 'visualNote' && event.data && !(event.event?.target as HTMLElement)?.closest('textarea, button, [data-segment-support], [data-segment-speech]')) { segmentDetail.navigate({ id: event.data.id, inline: true, field: 'visualNote' }); } }}
       onCellKeyDown={event => {
         if ((event.event?.target as HTMLElement)?.closest('button, input, textarea, [data-segment-support]')) return;
         const key = (event.event as KeyboardEvent).key;

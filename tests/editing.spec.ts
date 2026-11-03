@@ -1,9 +1,9 @@
 import { test, expect } from './helpers/project.js';
 
-test('文案通过真实服务保存并在重载后保留', async ({ page, project }) => {
+test('单击文案进入编辑，通过真实服务保存并在重载后保留', async ({ page, project }) => {
   const [id] = await project.seed(['原文']);
   await page.goto(project.url);
-  await page.locator(`[row-id="${id}"] [data-segment-script]`).dblclick();
+  await page.locator(`[row-id="${id}"] [data-segment-script]`).click();
   await page.getByLabel('文案全文', { exact: true }).fill('已保存的新文案');
   await page.getByLabel('文案全文', { exact: true }).press('Control+Enter');
   await expect(page.locator('[data-save-status]')).toHaveText('已保存');

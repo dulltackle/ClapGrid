@@ -1,14 +1,14 @@
 import { test, expect } from './helpers/project.js';
 
-test('单击文案不进入编辑，双击才进入编辑', async ({ page, project }) => {
-  const [id] = await project.seed(['双击编辑的文案']);
+test('单击文案直接进入编辑并取得修改权', async ({ page, project }) => {
+  const [id] = await project.seed(['单击编辑的文案']);
   await page.goto(project.url);
   const row = page.locator(`[row-id="${id}"]`);
   const script = row.locator('[data-segment-script]');
   await script.click();
-  await expect(row.locator('[data-inline-editor]')).toHaveCount(0);
-  await script.dblclick();
+  await expect(row.locator('[data-inline-editor]')).toHaveCount(1);
   await expect(page.getByLabel('文案全文', { exact: true })).toBeFocused();
+  expect((await project.status()).modification?.owner).toBe('user');
 });
 
 test('编辑与保存不改变已有勾选，编辑器空格也不切换勾选', async ({ page, project }) => {

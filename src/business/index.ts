@@ -10,7 +10,7 @@ import { setImmediate } from 'node:timers/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { prepareMaterial, prepareVideo, validateImage, validateVideo, mediaPath, verifyMedia, discardImport } from './video-media.js';
-import { importVideoSchema, type ImportVideo } from '../shared/contracts.js';
+import { importVideoSchema, renameMaterialSchema, type RenameMaterial, type ImportVideo } from '../shared/contracts.js';
 import { projectPaths } from './project-paths.js';
 import { DatabaseSync } from 'node:sqlite';
 import { segmentMaterials, visualPlanSchema, addSegmentSchema, editSegmentSchema, snapshotSchema, type Snapshot, batchSchema, type Batch, type ChangeResult, scopeSchema, selectionSchema, scopedOperationSchema, type SegmentScope, type ScopedOperation, type SegmentQueryResult } from '../shared/contracts.js';
@@ -196,6 +196,19 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
         commit(() => { db.prepare('INSERT INTO visual_assets VALUES (?, ?)').run(id, JSON.stringify(asset)); }, token);
         return asset;
       } catch (error) { discardImport(mediaDirectory, id); throw error; }
+    },
+    async renameMaterial(token: string, input: RenameMaterial) {
+      const { assetId, expectedName, name } = renameMaterialSchema.parse(input);
+      await access.verifyEdit(token);
+      const snapshot = commit(() => {
+        const asset = getSnapshot().assets.find(asset => asset.id === assetId);
+        if (!asset) throw new Error('素材不存在，请重新读取项目');
+        if (asset.name !== expectedName) throw new Error('素材名称已变化，请重新读取后修改');
+        const native = db.prepare('SELECT id FROM visual_assets WHERE id = ?').get(assetId);
+        if (native) db.prepare('UPDATE visual_assets SET value = ? WHERE id = ?').run(JSON.stringify({ ...asset, name }), assetId);
+        else db.prepare('UPDATE video_assets SET name = ? WHERE id = ?').run(name, assetId);
+      }, token);
+      return snapshot.assets.find(asset => asset.id === assetId)!;
     },
     getMedia(id: string, kind: 'source' | 'preview' | 'thumbnail') {
       verify();

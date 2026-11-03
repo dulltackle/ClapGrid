@@ -9,7 +9,7 @@
 ### 必要例外与原因
 
 - `.ag-cell[col-id="text"]` 是唯一无层单元格适配：AG Grid 注入的无层 display 规则优先于 utilities 层，直接使用 cellClass 工具类会使正文失去垂直居中，不能通过扩大样式冲突例外规避。
-- AG Grid 36.2.0 的行悬浮监听只处理 `mouse`，而实际宿主可能先发送 `pointerType=pen`，导致高亮延迟。因此表格设置 `suppressRowHoverHighlight`，由原生 `:hover` 驱动高亮，并以限定于 `.segment-grid` 的适配复用 Quartz 覆盖层；浏览器测试须分别发送 `pen` 和 `mouse`。
+- 表格设置 `suppressRowHoverHighlight`，不显示整行悬浮底色；勾选高亮独立保留。按钮与拖动手柄继续提供自身反馈，浏览器测试分别核对 `pen` 和 `mouse` 输入。
 - 表格容器使用 `.segment-grid` 而非 `.grid`，Alert Dialog、Dialog 改用 flex，均为避免与标准 `.grid` 工具类冲突；扩大工具类扫描范围前先核对命名冲突。
 - 原生 audio/video 的播放控件、NativeSelect 的箭头与选项由浏览器拥有；文案编辑器、缩略图与拖动手柄保留专用尺寸与输入规则，不强制套普通组件尺寸。
 - 查找展开行高、拖动指示线位置等来自真实测量的值保留动态 style；这些例外不豁免静态样式重写。

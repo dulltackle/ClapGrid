@@ -53,7 +53,7 @@ test('原位编辑保留勾选，历史及编辑键盘保留表格上下文', as
   await expect(page.getByRole('dialog')).toBeVisible(); await expect.poll(() => selected(page)).toEqual([a]);
   await page.keyboard.press('Escape'); await expect(page.getByRole('dialog')).toHaveCount(0); await expect.poll(() => selected(page)).toEqual([a]);
   await page.locator(`[row-id="${b}"] [role="status"]`).click(); await expect.poll(() => selected(page)).toEqual([a]);
-  await page.locator(`[row-id="${b}"] [col-id="order"]`).click(); await page.keyboard.press('ArrowUp');
+  await page.locator(`[row-id="${b}"] [col-id="order"]`).focus(); await page.keyboard.press('ArrowUp');
   await expect(page.locator(`[row-id="${a}"] [col-id="order"]`)).toBeFocused(); await expect.poll(() => selected(page)).toEqual([a]);
   const text = page.locator(`[row-id="${a}"] [col-id="text"]`);
   for (const key of ['F2', 'Enter']) {

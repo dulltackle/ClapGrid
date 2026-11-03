@@ -34,7 +34,7 @@ for (const viewport of [{ width: 1600, height: 1000 }, { width: 420, height: 360
   }
   await close.focus();
   await page.keyboard.press('Escape'); await expect(video).toHaveCount(0);
-  await expect(page.locator(`[row-id="${id}"] :focus`)).toHaveCount(1);
+  await expect(page.getByRole('button', { name: '播放原件 实际素材.mp4', exact: true })).toBeFocused();
 });
 
 test('关联保存失败关闭弹窗保留行来源，可重新关联并解除', async ({ page, project, mediaFiles }) => {
@@ -143,12 +143,18 @@ test('离开面板期间断线关闭关联子层，返回不补执行旧恢复',
   await page.evaluate(() => window.dispatchEvent(new Event('focus'))); await page.clock.runFor(100);
   expect(await page.evaluate(node => document.activeElement === node, before)).toBe(true);
   await page.clock.resume();
-  // 离线轮询会清空表格；先等真实重连恢复来源，再验证主动关闭的返回焦点。
+  // 重连不自动重开旧浮层或抢焦点；用户再次打开后才恢复其中的添加入口。
+  const tray = page.getByRole('button', { name: /片段 1 画面素材/ });
+  await expect(tray).toBeVisible();
+  await expect(page.getByRole('dialog', { name: '片段 1 素材面板', exact: true })).toHaveCount(0);
+  expect(await page.evaluate(node => document.activeElement === node, before)).toBe(true); await before.dispose();
+  await tray.press('Enter');
   const trigger = page.getByRole('button', { name: '为片段 1 添加画面素材', exact: true });
   await expect(trigger).toBeVisible();
-  expect(await page.evaluate(node => document.activeElement === node, before)).toBe(true); await before.dispose();
-  await trigger.click(); await page.keyboard.press('Escape');
-  await expect(page.locator(`[row-id="${id}"] [col-id="text"]`)).toBeFocused();
+  await trigger.click();
+  await expect(page.getByRole('dialog', { name: '添加画面素材', exact: true })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(trigger).toBeFocused();
 });
 
 test('预览期间目标删除后预览关闭，空表采用页面后备', async ({ page, project, mediaFiles }) => {

@@ -1,0 +1,36 @@
+import { test } from './helpers/resource-test.js';
+import { expect } from 'vitest';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { importMaterial, importVideo, modifyBatch, queryStatus, renameMaterial } from '../src/shared/client.js';
+
+test('素材重命名持久化且保留共享归属、原件和编排版本，拒绝旧名称与空名称', async ({ createDirectory, execBytes, startService }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-rename-'));
+  const source = join(root, 'original.png');
+  const video = join(root, 'legacy.mp4');
+  await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=red:s=32x32', '-frames:v', '1', source]);
+  await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=blue:s=32x32:d=0.2', '-c:v', 'libx264', video]);
+  const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'panel');
+  const options = { projectDirectory: join(root, 'project'), panelDirectory, port: 0 };
+  const service = await startService(options);
+  const { asset } = await importMaterial(service.url, source);
+  const legacy = (await importVideo(service.url, video)).asset;
+  await modifyBatch(service.url, { changes: [{ kind: 'add', text: '第一句' }, { kind: 'add', text: '第二句' }] });
+  const before = (await queryStatus(service.url)).snapshot;
+  await modifyBatch(service.url, { changes: before.segments.map(expected => ({ kind: 'materials' as const, expected, assetIds: [asset.id] })) });
+  const members = (await queryStatus(service.url)).snapshot.segments;
+  const original = new Uint8Array(await (await fetch(service.url + `/api/media/${asset.id}/original`)).arrayBuffer());
+  await renameMaterial(service.url, { assetId: asset.id, expectedName: asset.name, name: '  清晨书桌.png  ' });
+  await renameMaterial(service.url, { assetId: legacy.id, expectedName: legacy.name, name: '街景.mp4' });
+  await expect(renameMaterial(service.url, { assetId: asset.id, expectedName: asset.name, name: '覆盖.png' })).rejects.toThrow('名称已变化');
+  await expect(renameMaterial(service.url, { assetId: asset.id, expectedName: '清晨书桌.png', name: '   ' })).rejects.toThrow();
+  expect((await queryStatus(service.url)).snapshot.segments).toEqual(members);
+  expect(new Uint8Array(await (await fetch(service.url + `/api/media/${asset.id}/original`)).arrayBuffer())).toEqual(original);
+  await service.close();
+  const reopened = await startService(options);
+  const restored = (await queryStatus(reopened.url)).snapshot;
+  expect(restored.assets.find(item => item.id === asset.id)).toEqual({ ...asset, name: '清晨书桌.png' });
+  expect(restored.assets.find(item => item.id === legacy.id)?.name).toBe('街景.mp4');
+  expect(restored.segments).toEqual(members);
+});

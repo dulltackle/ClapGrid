@@ -6,7 +6,7 @@ for (const environment of ['wide', 'compact', 'touch'] as const) test.describe(e
     const [a, b] = await project.seed(['第一句', '第二句']); await page.goto(project.url);
     const first = page.locator(`[row-id="${a}"]`);
     await expect(first.getByRole('button', { name: '片段 1 本行菜单', exact: true })).toBeVisible();
-    await expect(first.getByRole('button', { name: '拖动片段 1', exact: true })).toHaveCSS('opacity', '0.5');
+    await expect(first.getByRole('button', { name: '拖动片段 1', exact: true })).toHaveCSS('opacity', '1');
     await expect(page.getByLabel('口播片段详情', { exact: true })).toHaveCount(0);
     await first.getByRole('button', { name: '展开片段 1 的画面说明', exact: true }).press('Enter');
     const note = page.getByRole('region', { name: '片段 1 画面说明', exact: true });
@@ -22,7 +22,7 @@ for (const environment of ['wide', 'compact', 'touch'] as const) test.describe(e
     await input.press('Escape');
     await expect(input).toHaveCount(0);
     await first.getByRole('button', { name: /片段 1 画面素材/ }).press('Enter');
-    await first.getByRole('button', { name: '为片段 1 添加画面素材', exact: true }).press('Enter');
+    await page.getByRole('dialog', { name: '片段 1 素材面板', exact: true }).getByRole('button', { name: '为片段 1 添加画面素材', exact: true }).press('Enter');
     await expect(page.getByRole('dialog', { name: '添加画面素材', exact: true })).toBeVisible();
     await page.keyboard.press('Escape');
     await first.getByRole('button', { name: '片段 1 本行菜单', exact: true }).press('Enter');

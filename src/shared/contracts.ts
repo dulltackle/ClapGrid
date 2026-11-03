@@ -40,6 +40,8 @@ export const videoAssetSchema = z.object({
 export type VideoAsset = z.infer<typeof videoAssetSchema>;
 export const importVideoSchema = z.object({ sourcePath: z.string().min(1) }).strict();
 export type ImportVideo = z.infer<typeof importVideoSchema>;
+export const renameMaterialSchema = z.object({ assetId: z.uuid(), expectedName: z.string(), name: z.string().trim().min(1, '素材名称不能为空').max(255, '素材名称不能超过 255 个字符') }).strict();
+export type RenameMaterial = z.infer<typeof renameMaterialSchema>;
 
 export const exportSettingsSchema = z.object({
   codec: z.enum(['libx264', 'mpeg4'], { error: '编码仅支持 H.264（libx264）或 MPEG-4 Part 2（mpeg4）' }),
