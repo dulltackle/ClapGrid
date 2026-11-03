@@ -4,7 +4,7 @@ import { holdRequest, holdResponse } from './helpers/response-gate.js';
 
 
 
-test('受控兼容面板提示保护编辑草稿、保存中、详情、菜单与连接未确认',async ({page,project})=>{
+test('受控兼容面板提示保护编辑草稿、保存中、本行菜单、弹窗与连接未确认',async ({page,project})=>{
  const activity: boolean[]=[];
  // 只验证App活动上报接线；未绑定服务实际拒绝该接口，200是此例HTTP边界响应。
  await page.route('**/api/panel-activity',async route=>{const body=route.request().postDataJSON();expect(body.tableId).toMatch(/^[a-f0-9-]{36}$/);expect(typeof body.busy).toBe('boolean');await route.fulfill({status:200,json:{accepted:true}});activity.push(body.busy);});
@@ -23,8 +23,8 @@ test('受控兼容面板提示保护编辑草稿、保存中、详情、菜单�
  try { await editor.press('Control+Enter');await gate.received;await expect(refresh).toBeDisabled(); } finally {gate.release();}
  await gate.delivered;await expect(refresh).toBeEnabled();
  await expect.poll(()=>activity.at(-1)).toBe(false);
- await page.locator(`[row-id="${id}"] [data-row-details]`).click();await expect(refresh).toBeDisabled();
- await page.getByRole('button',{name:'关闭详情',exact:true}).click();await expect(refresh).toBeEnabled();
+ await page.getByRole('button',{name:'片段 1 本行菜单',exact:true}).click();await expect(refresh).toBeDisabled();
+ await page.keyboard.press('Escape');await expect(refresh).toBeEnabled();
  await page.getByRole('button',{name:'更多',exact:true}).click();await expect(refresh).toBeDisabled();
  await page.keyboard.press('Escape');await expect(refresh).toBeEnabled();
  await page.locator(`[row-id="${id}"] input[type="checkbox"]`).uncheck();await expect(refresh).toBeEnabled();

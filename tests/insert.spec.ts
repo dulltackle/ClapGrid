@@ -1,7 +1,7 @@
 import { test, expect } from './helpers/project.js';
 import { holdRequest, holdResponse } from './helpers/response-gate.js';
 
-for (const entry of ['顶部', '底部', '更多'] as const) test(`${entry}普通新增清除查找并只读定位，关闭回新片段`, async ({ page, project }) => {
+for (const entry of ['顶部', '底部', '更多'] as const) test(`${entry}普通新增清除查找并原位编辑，退出回新片段`, async ({ page, project }) => {
   await project.seed(['A', 'B']); await page.goto(project.url);
   await page.getByRole('button', { name: '查找', exact: true }).click();
   await page.getByLabel('查找文案', { exact: true }).fill('A');
@@ -9,8 +9,8 @@ for (const entry of ['顶部', '底部', '更多'] as const) test(`${entry}普�
     await page.getByRole('button', { name: '更多', exact: true }).click();
     await page.getByRole('dialog').getByRole('button', { name: '新增口播片段', exact: true }).click();
   } else await page.getByRole('button', { name: entry === '底部' ? '新增口播片段（表格底部）' : '新增口播片段', exact: true }).click();
-  const draft = page.getByLabel('详情文案', { exact: true });
-  await expect(draft).toHaveAttribute('readonly', ''); await expect(draft).toBeFocused();
+  const draft = page.getByLabel('文案全文', { exact: true });
+  await expect(draft).toBeEditable(); await expect(draft).toBeFocused();
   await expect(page.getByLabel('查找文案', { exact: true })).toHaveCount(0);
   const segments = (await project.status()).snapshot.segments;
   expect(segments.map(segment => segment.text)).toEqual(['A', 'B', '']);
@@ -60,7 +60,7 @@ for (const kind of ['普通', '相对'] as const) test(`${kind}新增迟到成�
   await expect(page.getByLabel('查找文案', { exact: true })).toHaveValue('B');
   await expect(page.locator(`[row-id="${a}"]`)).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByLabel('文案全文', { exact: true })).toHaveCount(0);
-  await expect(page.getByLabel('详情文案', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('文案全文', { exact: true })).toHaveCount(0);
   expect((await project.status()).snapshot.segments).toHaveLength(3); expect(gate.calls).toBe(1);
 });
 
@@ -85,7 +85,7 @@ for (const kind of ['相对'] as const) test(`${kind}新增第二次修改权迟
   expect((await project.status()).snapshot.segments).toHaveLength(3);
 });
 
-test('新增响应后释放修改权等待期间的新操作取消详情导航', async ({ page, project }) => {
+test('新增响应后释放修改权等待期间的新操作取消原位导航', async ({ page, project }) => {
   await project.seed(['A']); await page.goto(project.url);
   const gate = await holdResponse(page, '/api/edit-session/release');
   try {
@@ -97,7 +97,7 @@ test('新增响应后释放修改权等待期间的新操作取消详情导航',
   await gate.delivered;
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
   await expect(page.getByLabel('查找文案', { exact: true })).toBeFocused();
-  await expect(page.getByLabel('详情文案', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('文案全文', { exact: true })).toHaveCount(0);
 });
 
 for (const kind of ['普通', '相对'] as const) test(`${kind}新增明确失败保留新查找且不制造片段`, async ({ page, project }) => {
@@ -163,11 +163,11 @@ test('已提交但响应未知的新增不自动重试，真实数据仍只有�
   await expect(page.locator('[data-save-status]')).toHaveText('已保存');
   await expect.poll(async () => (await project.status()).modification).toBeNull();
   expect((await project.status()).snapshot.segments.map(segment => segment.text)).toEqual(['A', '']);
-  await expect(page.getByLabel('详情文案', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('文案全文', { exact: true })).toHaveCount(0);
   expect(calls).toBe(1);
 });
 
-for (const outcome of ['成功', '失败'] as const) test(`离页后旧新增${outcome}不覆盖新的详情、租约与保存状态`, async ({ page, project }) => {
+for (const outcome of ['成功', '失败'] as const) test(`离页后旧新增${outcome}不覆盖新的编辑、租约与保存状态`, async ({ page, project }) => {
   await project.seed(['A']); await page.goto(project.url);
   let release!: () => void; let arrived!: () => void; let calls = 0; let finish!: () => void;
   const completed = new Promise<void>(resolve => { finish = resolve; });
@@ -187,14 +187,14 @@ for (const outcome of ['成功', '失败'] as const) test(`离页后旧新增${o
     await page.evaluate(() => { window.dispatchEvent(new Event('pagehide')); window.dispatchEvent(new Event('pageshow')); });
     await expect.poll(async () => (await project.status()).modification).toBeNull();
     await page.getByRole('button', { name: '新增口播片段', exact: true }).click();
-    await expect(page.getByLabel('详情文案', { exact: true })).toHaveAttribute('readonly', '');
-    await expect(page.getByLabel('详情文案', { exact: true })).toBeFocused();
+    await expect(page.getByLabel('文案全文', { exact: true })).toBeEditable();
+    await expect(page.getByLabel('文案全文', { exact: true })).toBeFocused();
   } finally { release(); }
   await completed;
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
   await expect(page.locator('[data-save-status]')).toHaveText('已保存');
-  await expect(page.getByLabel('详情文案', { exact: true })).toBeFocused();
-  expect((await project.status()).modification).toBeNull();
+  await expect(page.getByLabel('文案全文', { exact: true })).toBeFocused();
+  expect((await project.status()).modification?.owner).toBe('user');
   expect((await project.status()).snapshot.segments).toHaveLength(outcome === '成功' ? 3 : 2);
   await expect(page.getByText('失效旧新增失败', { exact: false })).toHaveCount(0);
 });
@@ -207,7 +207,7 @@ test('新增第二次修改权等待期间真实滚轮取消旧定位和编辑',
   let afterWheel = 0;
   try {
     await page.getByRole('button', { name: '新增口播片段', exact: true }).click();
-    await page.getByRole('button', { name: '编辑片段', exact: true }).click(); await gate.received;
+    await gate.received;
     const positioned = await scroll.evaluate(element => element.scrollTop);
     expect(positioned).toBeGreaterThan(1000);
     await page.mouse.move(200, 250); await page.mouse.wheel(0, -600);
@@ -217,5 +217,5 @@ test('新增第二次修改权等待期间真实滚轮取消旧定位和编辑',
   await gate.answered;
   await expect.poll(async () => (await project.status()).modification).toBeNull();
   expect(await scroll.evaluate(element => element.scrollTop)).toBe(afterWheel);
-  await expect(page.getByLabel('详情文案', { exact: true })).toHaveAttribute('readonly', '');
+  await expect(page.getByLabel('文案全文', { exact: true })).toHaveCount(0);
 });

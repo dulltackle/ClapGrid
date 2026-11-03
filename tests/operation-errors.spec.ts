@@ -38,11 +38,10 @@ test('配音、声音设置、视频关联、预览与音频错误独立于草�
   // 后一个职责失败不会清掉前一个职责的异常。
   await expect(problems).toContainText('音频无法播放');
   await page.getByRole('button', { name: '关闭声音设置', exact: true }).click();
-  await row.locator('[data-row-details]').click();
-  await page.getByRole('button', { name: '更改', exact: true }).click();
+  await row.getByRole('button', { name: '片段 1 画面操作', exact: true }).click();
+  await page.getByRole('menuitem', { name: '更改', exact: true }).click();
   await page.route('**/api/segments/modify', route => route.fulfill({ status: 500, json: { error: '视频关联故障' } }));
   await page.getByRole('button', { name: '保存关联与起点', exact: true }).click();
   await expect(problems).toContainText('视频关联故障'); await expect(state).toHaveText('已保存');
-  await page.getByRole('button', { name: '关闭详情', exact: true }).click();
   await expect(refresh).toBeEnabled();
 });

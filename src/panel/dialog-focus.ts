@@ -4,7 +4,7 @@ import type { Segment } from '../shared/contracts.js';
 
 type Grid = () => GridApi<Segment> | null;
 type ElementRef = () => HTMLElement | null;
-type Destination = { id: string; column?: string; details?: boolean; note?: boolean };
+type Destination = { id: string; column?: string; note?: boolean };
 type Origin = Partial<Destination> & { index: number; trigger?: HTMLElement; parent?: HTMLElement };
 export type FocusIntent = { valid: () => boolean };
 export type FocusReturn = (() => void) & { cancel: () => void };
@@ -111,12 +111,12 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
         }
         if (!origin.id && focus(origin.trigger)) { finish(); return; }
         const api = grid();
-        if (origin.id && (origin.column || origin.details || origin.note) && api && !api.isDestroyed()) {
+        if (origin.id && (origin.column || origin.note) && api && !api.isDestroyed()) {
           const original = api.getRowNode(origin.id);
           const index = original?.rowIndex ?? Math.min(origin.index, api.getDisplayedRowCount() - 1);
           const row = index >= 0 ? api.getDisplayedRowAtIndex(index) : undefined;
           if (row?.id) {
-            const selector = `[row-id="${CSS.escape(row.id)}"] ${origin.note ? '[data-note-original]' : origin.details ? '[data-row-details]' : `[col-id="${CSS.escape(origin.column!)}"]`}`;
+            const selector = `[row-id="${CSS.escape(row.id)}"] ${origin.note ? '[data-note-original]' : `[col-id="${CSS.escape(origin.column!)}"]`}`;
             const range = api.getVerticalPixelRange();
             const top = row.rowTop ?? 0;
             if (!document.querySelector(selector) || top < range.top || top + (row.rowHeight ?? 0) > range.bottom) {
@@ -127,26 +127,6 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
             if (origin.column && !document.querySelector(selector)) api.ensureColumnVisible(origin.column);
             if (focus(document.querySelector<HTMLElement>(selector))) {
               if (origin.column) api.setFocusedCell(index, origin.column);
-              else if (origin.details) {
-                // 行尾入口位于 AG Grid 单元格之外；第一次方向键交回真实表格导航。
-                const entry = document.querySelector<HTMLElement>(selector)!;
-                const leave = () => { entry.removeEventListener('keydown', resume); entry.removeEventListener('blur', leave); };
-                const resume = (event: KeyboardEvent) => {
-                  if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
-                  leave();
-                  if (api.isDestroyed()) return;
-                  const current = api.getRowNode(row.id!);
-                  if (current?.rowIndex == null) return;
-                  const next = Math.max(0, Math.min(api.getDisplayedRowCount() - 1, current.rowIndex + (event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0)));
-                  const column = api.getAllDisplayedVirtualColumns()[0]?.getColId();
-                  if (!column) return;
-                  event.preventDefault(); event.stopPropagation();
-                  flushSync(() => api.ensureIndexVisible(next));
-                  api.setFocusedCell(next, column);
-                };
-                entry.addEventListener('keydown', resume);
-                entry.addEventListener('blur', leave, { once: true });
-              }
               finish(); return;
             }
             if (remaining) { frame = requestAnimationFrame(() => attempt(remaining - 1)); return; }
@@ -169,9 +149,9 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
   const capture = (trigger: HTMLElement, options: ReturnOptions = {}): FocusReturn => {
     cancelPending();
     const row = trigger.closest('[row-id]');
-    return source({ trigger, parent: trigger.closest<HTMLElement>('[aria-label="口播片段详情"], [role="dialog"], [role="alertdialog"]') ?? undefined,
+    return source({ trigger, parent: trigger.closest<HTMLElement>('[role="dialog"], [role="alertdialog"]') ?? undefined,
       id: row?.getAttribute('row-id') ?? undefined, index: Number(row?.getAttribute('row-index') ?? 0),
-      column: trigger.hasAttribute('data-row-details') ? undefined : trigger.closest('[col-id]')?.getAttribute('col-id') ?? undefined, details: trigger.hasAttribute('data-row-details'), note: trigger.hasAttribute('data-note-original') }, options);
+      column: trigger.closest('[col-id]')?.getAttribute('col-id') ?? undefined, note: trigger.hasAttribute('data-note-original') }, options);
   };
   const captureSegment = (destination: Destination, options: ReturnOptions = {}): FocusReturn => {
     const api = grid();
@@ -184,17 +164,16 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
     const api = grid();
     const row = active instanceof HTMLElement ? active.closest('[row-id]') : null;
     const id = row?.getAttribute('row-id');
-    const details = active instanceof HTMLElement && active.hasAttribute('data-row-details');
     const column = active instanceof HTMLElement && active.matches('[role="gridcell"][col-id]') ? active.getAttribute('col-id') : null;
     const current = intent();
     // AG Grid 默认在刷新后按旧 rowIndex 重新聚焦；先清除该缓存，稳定身份由此处维护。
-    const preserve = id && (details || column) && api && !api.isDestroyed() && api.getRowNode(id)?.rowIndex != null;
+    const preserve = id && column && api && !api.isDestroyed() && api.getRowNode(id)?.rowIndex != null;
     if (preserve) api.clearFocusedCell();
     flushSync(apply);
     if (!preserve || !current.valid() || api.isDestroyed() || layers().length) return;
     const node = api.getRowNode(id);
     if (node?.rowIndex == null) return;
-    const selector = `[row-id="${CSS.escape(id)}"] ${details ? '[data-row-details]' : `[col-id="${CSS.escape(column!)}"]`}`;
+    const selector = `[row-id="${CSS.escape(id)}"] [col-id="${CSS.escape(column!)}"]`;
     const target = document.querySelector<HTMLElement>(selector);
     if (!focus(target)) return;
     if (column) api.setFocusedCell(node.rowIndex, column);

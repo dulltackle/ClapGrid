@@ -1,10 +1,10 @@
 import { SegmentSpeech } from './segment-speech.js';
 import { SegmentRowCell, SegmentRowActions, SegmentRowSupport } from './segment-row.js';
-import { SegmentDetails, SegmentDraftPrompt } from './segment-details.js';
+import { SegmentDraftPrompt } from './segment-details.js';
 import { DragHandleDots2Icon } from '@radix-ui/react-icons';
 import { SegmentRowDetails } from './segment-row-details.js';
 import { PastePanel } from './paste-panel.js';
-import { Button, Input, NativeSelect, ContextMenu, ContextMenuTrigger, ContextMenuItem } from '@/components/ui/index.js';
+import { Button, Input, NativeSelect, ContextMenu, ContextMenuTrigger, ContextMenuItem, AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel } from '@/components/ui/index.js';
 import { buildIdentity } from '../build-identity.js';
 import { panelServiceUrl } from './service-url.js';
 import { RowMenu } from './row-menu.js';
@@ -23,6 +23,8 @@ import { queryStatus, querySpeech, submitSpeech, setVoice, importVideo, beginEdi
 import type { Segment, ServiceStatus, SpeechStatus, Voice, Batch } from '../shared/contracts.js';
 import { projectEditing } from './project-editing.js';
 import { useSegmentInteraction, segmentTargets } from './segment-interaction.js';
+import { segmentActions, segmentRowMenu } from './segment-actions.js';
+import { segmentSpeech } from './speech-state.js';
 import { segmentNavigation } from './segment-navigation.js';
 import { textMatches } from './text-search.js';
 import { TextEditor } from './text-editor.js';
@@ -62,12 +64,35 @@ const cellControlKeyboard: NonNullable<ColDef<Segment>['suppressKeyboardEvent']>
   if (event.key === ' ' && !target.closest('input[type="checkbox"]')) return true;
   if (event.key !== 'Tab') return false;
   const cell = target.closest('[role="gridcell"]');
-  const buttons = [...(cell?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? [])];
+  const buttons = [...(cell?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled)') ?? [])];
   const current = buttons.indexOf(target as HTMLButtonElement);
   const next = current + (event.shiftKey ? -1 : 1);
   if (next < 0 || next >= buttons.length) return false;
   event.preventDefault(); buttons[next]!.focus(); return true;
 };
+
+/** AG Grid 管理行间导航；行内按阅读顺序遍历，包括挂在虚拟行上的说明。 */
+function rowControlTab(event: import('react').KeyboardEvent<HTMLDivElement>) {
+  if (event.key !== 'Tab' || event.nativeEvent.isComposing) return;
+  const target = event.target as HTMLElement;
+  const row = target.closest<HTMLElement>('.ag-row[row-id]');
+  if (!row) return;
+  const controls = (root: Element) => [...root.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea, [data-note-original]')]
+    .filter(element => element.getClientRects().length && !element.closest('[hidden], [inert]'));
+  const stops: HTMLElement[] = [];
+  for (const cell of row.querySelectorAll<HTMLElement>('[role="gridcell"]')) {
+    stops.push(cell, ...controls(cell));
+    if (cell.getAttribute('col-id') === 'text') {
+      const note = row.querySelector('[role="region"][id^="segment-note-"]');
+      if (note) stops.push(...controls(note));
+    }
+  }
+  const index = stops.indexOf(target);
+  if (index < 0) return;
+  const next = stops[index + (event.shiftKey ? -1 : 1)];
+  if (!next) return;
+  event.preventDefault(); event.stopPropagation(); next.focus();
+}
 
 function EmptyProject({ message }: { message: string }) { return <span>{message}</span>; }
 
@@ -93,8 +118,10 @@ export function App() {
     document.addEventListener('play', coordinate, true);
     return () => document.removeEventListener('play', coordinate, true);
   }, []);
+  const [speechRetryId, setSpeechRetryId] = useState<string | null>(null);
   const [audioHistory, setAudioHistory] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [deletedDraftOpen, setDeletedDraftOpen] = useState(false);
   const [videoEditor, setVideoEditor] = useState<{ segment: Segment; assetId: string; start: string } | null>(null);
   const [importing, setImporting] = useState(false);
   const [sourcePath, setSourcePath] = useState('');
@@ -117,6 +144,7 @@ export function App() {
   const [panelReadyVersion, setPanelReadyVersion] = useState(0);
   const [rowMenu, setRowMenu] = useState<{ anchor: Segment; targets: Segment[]; expectedIds: string[]; origin: FocusReturn } | null>(null);
   const [rowMenuOpen, setRowMenuOpen] = useState(false);
+  const [rowActionMenuOpen, setRowActionMenuOpen] = useState(false);
   const menuRestore = useRef(true);
   const [deleteTargets, setDeleteTargets] = useState<{ targets: Segment[]; origin: FocusReturn } | null>(null);
   const [selectionState, setSelectionState] = useState('正在连接勾选…');
@@ -188,7 +216,7 @@ export function App() {
     observer.observe(element); return () => observer.disconnect();
   }, []);
   useEffect(() => { grid.current?.resetRowHeights(); }, [activeMatch, searchRowHeight, expandedNote, noteHeight]);
-  const returnFocus = useRef({ settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, detail: () => {} });
+  const returnFocus = useRef({ draft: () => {}, settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, detail: () => {} });
   const [focusReturns] = useState(() => segmentFocusCoordinator(() => grid.current, {
     search: () => searchInput.current, table: () => tableFallback.current, more: () => moreButton.current,
   }));
@@ -203,7 +231,7 @@ export function App() {
     focusReturns.close(returnFocus.current.video, () => { setVideoEditor(null); setImporting(false); });
     reportOperation('video', '编辑连接已断开，请重新打开视频关联后重试。');
   };
-  const audioError = () => { setPlaying(null); reportOperation('audio', '音频无法播放，请检查项目文件后重试。'); };
+  const audioError = () => { setInlineAudio(null); setPlaying(null); reportOperation('audio', '音频无法播放，请检查项目文件后重试。'); };
   useEffect(() => {
     if (inlineAudio && speech && !speech.audio.some(audio => audio.taskId === inlineAudio.taskId && audio.segmentId === inlineAudio.segmentId)) {
       audioPlayer.current?.pause(); setInlineAudio(null); setPlaying(null);
@@ -216,7 +244,9 @@ export function App() {
       else audioPlayer.current.pause();
     } else setInlineAudio(audio);
   };
-  const generateSpeech = (segmentId: string) => navigationView.current!.perform(() => editing.run(async action => {
+  const generateSpeech = (segmentId: string, confirmed = false) => {
+    if (!confirmed && segmentSpeech(segmentId, speech).latest?.state === 'unknown') { setSpeechRetryId(segmentId); return Promise.resolve(); }
+    return navigationView.current!.perform(() => editing.run(async action => {
     if (!status) return;
     reportOperation('speech');
     // 请求标识在提交前保存；断线或刷新后同一按钮复用，避免重复付费。
@@ -228,6 +258,7 @@ export function App() {
     const next = await querySpeech(panelServiceUrl());
     action.apply(() => { reportOperation('speech'); setSpeech(next); });
   }, cause => reportOperation('speech', cause.message)));
+  };
   const changeVoice = (voice: Voice) => navigationView.current!.perform(() => editing.run(async action => {
     reportOperation('voice');
     await setVoice(panelServiceUrl(), voice);
@@ -238,16 +269,13 @@ export function App() {
   const [navigation] = useState(() => segmentNavigation({
     grid: () => grid.current, editing, focus: focusReturns,
     clearSearch: () => flushSync(() => { setQuery(''); setCurrentMatch(null); setSearchOpen(false); }),
-    details: { show: (destination, intent) => navigationView.current?.show(destination, intent), hide: () => navigationView.current?.hide() },
-    inline: (id, field, intent) => navigationView.current!.begin(field, id, 'inline', intent), failed,
+    inline: (id, field, intent) => navigationView.current!.begin(field, id, intent), failed,
   }));
   useEffect(() => () => navigation.dispose(), [navigation]);
   const segmentDetail = useSegmentInteraction({ editing, status, accept: setStatus, failed, navigation, focus: focusReturns, grid: () => grid.current,
     canEdit: () => !panelRestore && !!status && !status.taskLocked && !speech?.locked && !exports.exports?.locked,
   });
   navigationView.current = segmentDetail;
-  const detailSegment = status?.snapshot.segments.find(item => item.id === segmentDetail.id);
-  const detailAsset = status?.snapshot.assets.find(item => item.id === detailSegment?.video?.assetId);
   const addSegment = () => segmentDetail.perform(async () => {
     const ticket = navigation.request();
     await editing.save('segments', { acquire: true }, async (token, action) => {
@@ -255,7 +283,7 @@ export function App() {
       const result = await modifyUserBatch(panelServiceUrl(), { changes: [{ kind: 'add', text: '' }] }, token, action.signal);
       const added = result.results[0];
       action.apply(() => { void ticket.arrive(() => { setStatus(result.status); },
-        added?.outcome === 'applied' && added.id ? { id: added.id, mode: 'details', clearSearch: true, focusText: true } : undefined); });
+        added?.outcome === 'applied' && added.id ? { id: added.id, mode: 'inline', clearSearch: true } : undefined); });
       if (added?.outcome !== 'applied' || !added.id) throw new Error(added?.message ?? '未能确认新增片段，请重新读取项目。');
     }, cause => { ticket.fail(); failed(new Error(`新增失败：${cause.message}`)); });
   });
@@ -377,8 +405,8 @@ export function App() {
     if (!editState.busy && !editState.editing) void editing.refresh(() => Promise.all([queryStatus(panelServiceUrl()), querySpeech(panelServiceUrl())]), ([next, nextSpeech]) => { setStatus(next); setSpeech(nextSpeech); }, () => {});
   }, [editState.busy, editState.editing, editing]);
   const disabled = !status || !speech || speech.locked || status.taskLocked || editState.busy || (editState.editing && !segmentDetail.draft) || (!!status.modification && !(editState.owner === 'segments' && editState.editing && segmentDetail.draft)) || !!panelRestore;
-  const panelBusy = disabled || segmentDetail.dirty || segmentDetail.saving || editState.editing || mediaBusy || !!playing || !!detail || exportSettingsOpen || !!segmentDetail.id || !!audioHistory
-    || !!videoEditor || importing || !!preview || rowMenuOpen || !!deleteTargets || !!reorderPreview || !!panelRestore
+  const panelBusy = disabled || segmentDetail.dirty || segmentDetail.saving || editState.editing || mediaBusy || !!playing || !!detail || exportSettingsOpen || !!audioHistory || !!speechRetryId
+    || !!videoEditor || importing || !!preview || rowMenuOpen || rowActionMenuOpen || !!deleteTargets || !!reorderPreview || !!panelRestore
     || selectionState !== '勾选已同步';
   const latestPanel = useRef({ busy: panelBusy, selectedIds });
   latestPanel.current = { busy: panelBusy, selectedIds };
@@ -438,21 +466,37 @@ export function App() {
   const exportProblems = exports.exports?.tasks.filter(task => task.state === 'failed' || task.state === 'interrupted') ?? [];
   const lock = speech?.locked ? '配音进行中，项目已锁定；可查询和试听' : status?.taskLocked || exports.exports?.locked ? '导出进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : '';
   const orderWidth = Math.max(64, 48 + String(status?.snapshot.segments.length ?? 0).length * 8);
-  const rowControls = { draft: segmentDetail.draft, viewedId: segmentDetail.id, speech, disabled, reason: disabled ? '请先结束编辑或等待项目解除占用' : '', playing,
+  const actionReason = disabled ? lock || (!status || !speech ? '正在连接项目' : '请先结束编辑或等待项目解除占用') : '';
+  const actionsFor = (segment: Segment) => segmentActions({ segment, segments: status?.snapshot.segments ?? [], checkedIds: selectedIds, speech, reason: actionReason, draftText: segmentDetail.draft?.id === segment.id ? segmentDetail.draft.text : undefined });
+  const checkedAction = status?.snapshot.segments[0] ? actionsFor(status.snapshot.segments[0]).deleteChecked : undefined;
+  const stopAudio = () => { audioPlayer.current?.pause(); setPlaying(null); setInlineAudio(null); };
+  const visualControls = {
+    assets: status?.snapshot.assets ?? [], expandedId: expandedNote, toggleNote,
+    preview: (segment: Segment, trigger: HTMLButtonElement) => { rememberOrigin(trigger, 'preview'); setPreview(segment.video); },
+    associate: (id: string, trigger: HTMLElement) => { rememberOrigin(trigger, 'video'); void openVideoEditor(id); },
+    unlink: (segment: Segment) => { void segmentDetail.perform(savedTarget => organize({ changes: [{ kind: 'video', expected: savedTarget(segment), assetId: null, start: 0 }] })); },
+  };
+  const rowControls = { draft: segmentDetail.draft, speech, disabled, actionsFor, playing, listening: inlineAudio?.taskId ?? null, player: audioPlayer, stop: stopAudio,
     generate: (id: string) => { void generateSpeech(id); }, listen: toggleAudio,
     history: (id: string, trigger: HTMLElement) => { rememberOrigin(trigger, 'history'); setAudioHistory(id); }, onError: audioError };
+  const openRowMenu = (segment: Segment, trigger: HTMLElement) => {
+    menuRestore.current = true;
+    const targets = segmentTargets(status?.snapshot.segments ?? [], selectedIds, segment.id);
+    rowMenu?.origin.cancel();
+    setRowMenu({ anchor: structuredClone(segment), targets: structuredClone(targets), expectedIds: status?.snapshot.segments.map(item => item.id) ?? [], origin: focusReturns.capture(trigger, { fallback: 'menu' }) });
+  };
   const columns: ColDef<Segment>[] = [
-    { headerName: '序号', field: 'order', width: orderWidth, minWidth: orderWidth, maxWidth: orderWidth, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="relative flex h-full items-center pl-7"><button className="rounded-md border border-solid border-input bg-background text-foreground hover:bg-ui-accent absolute left-0 top-1/2 -translate-y-1/2 shrink-0 cursor-grab touch-none flex size-6 items-center justify-center p-[3px] leading-5 opacity-0 group-[:hover]/segment:opacity-100 focus-visible:opacity-100 active:cursor-grabbing disabled:opacity-0 group-[:hover]/segment:disabled:opacity-50" aria-label={`拖动片段 ${data.order}`} disabled={disabled} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}><DragHandleDots2Icon aria-hidden className="size-3" /></button><span>{data.order}</span></span> },
+    { headerName: '序号', field: 'order', width: orderWidth, minWidth: orderWidth, maxWidth: orderWidth, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="relative flex h-full items-center pl-7"><button className="rounded-md border border-solid border-input bg-background text-foreground hover:bg-ui-accent absolute left-0 top-1/2 -translate-y-1/2 shrink-0 cursor-grab touch-none flex size-6 items-center justify-center p-[3px] leading-5 opacity-50 group-[:hover]/segment:opacity-100 focus-visible:opacity-100 active:cursor-grabbing disabled:opacity-30" aria-label={`拖动片段 ${data.order}`} disabled={!actionsFor(data).drag.enabled} title={actionsFor(data).drag.reason} onKeyDown={event => drag.keyboard(event, data.id)} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}><DragHandleDots2Icon aria-hidden className="size-3" /></button><span>{data.order}</span></span> },
     { headerName: '口播片段', field: 'text', flex: 1, minWidth: 360, resizable: false, editable: false,
       cellRenderer: SegmentRowCell, cellStyle: params => ({ height: mainRowHeight(params.data?.id), paddingRight: 0 }),
-      cellRendererParams: { ...rowControls, query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: Math.max(102, searchRowHeight), toggleNote, expandedId: expandedNote, assets: status?.snapshot.assets ?? [],
-        editorFor: (data: Segment) => segmentDetail.draft?.id === data.id && segmentDetail.draft.position === 'inline' ? <TextEditor key={data.id} value={segmentDetail.draft.text} field="text" data={data} busy={editState.busy}
-          change={value => navigationView.current?.change(value)} commit={() => { void navigationView.current?.commit(); }} cancel={() => navigationView.current?.escape()}
-          speech={<SegmentSpeech {...rowControls} draftText={segmentDetail.draft?.text} segment={data} generate={() => { void generateSpeech(data.id); }} history={trigger => rowControls.history(data.id, trigger)} />}
-          support={<SegmentRowSupport data={data} assets={status?.snapshot.assets ?? []} expandedId={expandedNote} toggleNote={toggleNote} preview={(segment, trigger) => { rememberOrigin(trigger, 'preview'); setPreview(segment.video); }} />} /> : null,
-        preview: (segment: Segment, trigger: HTMLButtonElement) => { rememberOrigin(trigger, 'preview'); setPreview(segment.video); }, suppressMouseEventHandling: cellControlMouse },
+      cellRendererParams: { ...rowControls, ...visualControls, query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: Math.max(102, searchRowHeight), toggleNote, expandedId: expandedNote, assets: status?.snapshot.assets ?? [],
+        editorFor: (data: Segment) => segmentDetail.draft?.id === data.id && segmentDetail.draft.field === 'text' ? <TextEditor key={data.id} value={segmentDetail.draft.text} field="text" data={data} busy={editState.busy}
+          change={value => navigationView.current?.change(value)} commit={() => { void navigationView.current?.save(); }} cancel={() => navigationView.current?.escape()}
+          speech={<SegmentSpeech {...rowControls} actions={actionsFor(data)} draftText={segmentDetail.draft?.text} segment={data} generate={() => { void generateSpeech(data.id); }} history={trigger => rowControls.history(data.id, trigger)} />}
+          support={<SegmentRowSupport {...visualControls} data={data} actions={actionsFor(data)} />} /> : null,
+        suppressMouseEventHandling: cellControlMouse },
       suppressKeyboardEvent: params => {
-        if ((params.event.target as HTMLElement).closest('textarea')) return true;
+        if ((params.event.target as HTMLElement).closest('textarea, input')) return true;
         if ((params.event.target as HTMLElement).closest('button')) return cellControlKeyboard(params);
         if (params.editing) return true;
         return !params.editing && (['Enter', 'F2', 'Backspace', 'Delete'].includes(params.event.key) || params.event.key.length === 1);
@@ -461,7 +505,7 @@ export function App() {
       suppressKeyboardEvent: cellControlKeyboard, cellStyle: params => ({ height: mainRowHeight(params.data?.id), paddingLeft: 0, paddingRight: 0 }),
       cellRenderer: SegmentRowActions,
       cellRendererParams: { ...rowControls, suppressMouseEventHandling: cellControlMouse, expandedId: expandedNote, toggleNote,
-        open: (id: string, trigger: HTMLButtonElement) => segmentDetail.navigate({ id }, focusReturns.capture(trigger)) } },
+        open: openRowMenu, remove: requestDelete, insert: (placement: 'before' | 'after') => { void insertRelative(placement); }, changed: setRowActionMenuOpen, restore: () => menuRestore.current, menuActions: rowMenu ? segmentActions({ segment: rowMenu.anchor, segments: rowMenu.targets, checkedIds: rowMenu.targets.map(item => item.id), reason: actionReason }) : undefined } },
   ];
   const searchStatus = !query ? '输入文案查找' : !matchedIds.length ? '无匹配片段' : activeMatch ? `第 ${matchedIds.indexOf(activeMatch) + 1} / ${matchedIds.length} 个匹配片段` : `${matchedIds.length} 个匹配片段，点击下一个定位`;
   return <main style={{ '--project-status-height': `${footerHeight}px` } as import('react').CSSProperties} className="relative mx-auto flex h-dvh min-w-0 max-w-[1600px] flex-col gap-1 px-4 py-3 pb-2 max-[600px]:p-2">
@@ -538,18 +582,15 @@ export function App() {
       onSubmit={() => { void segmentDetail.perform(() => organize({ changes: [{ kind: 'paste', text: paste }] })); }}
       onClose={closeDetail} restoreFocus={returnFocus.current.detail} />}
     {exportSettingsOpen && status && <ExportSettingsPanel restoreFocus={returnFocus.current.settings} editing={editing} status={status} onStatus={setStatus} onError={message => reportOperation('settings', message)} onClose={() => focusReturns.close(returnFocus.current.settings, () => setExportSettingsOpen(false))} />}
-    {inlineAudio && <audio ref={audioPlayer} key={inlineAudio.url} src={inlineAudio.url} autoPlay onPlay={() => setPlaying(inlineAudio.taskId)} onPause={() => setPlaying(null)} onEnded={() => setPlaying(null)} onError={audioError} />}
+    {inlineAudio && <audio ref={audioPlayer} key={inlineAudio.url} src={inlineAudio.url} autoPlay onPlay={() => setPlaying(inlineAudio.taskId)} onPause={() => setPlaying(null)} onEnded={() => { setPlaying(null); setInlineAudio(null); }} onError={audioError} />}
+    <AlertDialog open={!!speechRetryId} onOpenChange={open => { if (!open) setSpeechRetryId(null); }}>
+      <AlertDialogContent>
+        <AlertDialogTitle>重试配音？</AlertDialogTitle>
+        <AlertDialogDescription>上次配音结果未知，可能已计费。请核对任务记录后决定是否重新提交。</AlertDialogDescription>
+        <div className="flex justify-end gap-2"><AlertDialogCancel onClick={() => setSpeechRetryId(null)}>取消</AlertDialogCancel><Button disabled={disabled} onClick={() => { const id = speechRetryId; setSpeechRetryId(null); if (id) void generateSpeech(id, true); }}>确认重试</Button></div>
+      </AlertDialogContent>
+    </AlertDialog>
     {audioHistory && <AudioHistoryPanel segmentId={audioHistory} speech={speech} onClose={() => focusReturns.close(returnFocus.current.history, () => setAudioHistory(null))} restoreFocus={returnFocus.current.history} />}
-    {segmentDetail.id && !segmentDetail.deleted && <SegmentDetails controller={segmentDetail} segment={detailSegment} segments={status?.snapshot.segments ?? []}
-      busy={editState.busy} disabled={disabled} error={segmentDetail.draftError}
-      media={<>
-        {detailAsset ? <><p className="m-0 break-all">{detailAsset.name}</p><p className="m-0 text-xs text-muted-foreground">时长 {detailAsset.duration.toFixed(2)} 秒 · 播放起点 {detailSegment?.video?.start} 秒</p><Button variant="ghost" className="h-auto w-full overflow-hidden rounded-lg bg-muted p-0" aria-label="播放预览" onClick={event => { rememberOrigin(event.currentTarget, 'preview'); setPreview(detailSegment!.video); }}><img className="aspect-video w-full object-contain" src={`${panelServiceUrl()}/api/media/${detailAsset.id}/thumbnail`} alt="" /><span className="sr-only">播放预览</span></Button></> : <p className="m-0 text-muted-foreground">未关联视频</p>}
-        <Button variant="outline" disabled={disabled} onClick={event => { rememberOrigin(event.currentTarget, 'video'); void openVideoEditor(segmentDetail.id!); }}>{detailAsset ? '更改' : '关联'}</Button>
-      </>}>
-      {detailSegment && <SegmentSpeech detail draftText={segmentDetail.draft?.text} segment={detailSegment} speech={speech} disabled={disabled} reason={disabled ? lock || '项目暂不可修改' : ''} playing={playing}
-        generate={() => { void generateSpeech(detailSegment.id); }} listen={toggleAudio}
-        history={trigger => { rememberOrigin(trigger, 'history'); setAudioHistory(detailSegment.id); }} onError={audioError} /> }
-    </SegmentDetails>}
     {(videoEditor || importing) && <DetailPanel title={importing ? '导入本地视频' : '关联视频'} label={importing ? '导入本地视频' : '关联视频'} restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={cancelVideo} restoreFocus={returnFocus.current.video}>
       {importing ? <label className="flex min-w-0 flex-col gap-1">视频文件绝对路径<Input aria-label="视频文件绝对路径" value={sourcePath} disabled={editState.busy} onChange={event => setSourcePath(event.target.value)} placeholder="粘贴要导入的本地视频完整路径" /></label>
         : videoEditor && <>
@@ -583,14 +624,11 @@ export function App() {
       else setRowMenuOpen(open);
     }}>
     <ContextMenuTrigger asChild>
-    <div className="segment-grid w-full min-w-0 flex-1 min-h-0" ref={gridElement} onContextMenuCapture={event => {
+    <div className="segment-grid w-full min-w-0 flex-1 min-h-0" ref={gridElement} onKeyDownCapture={rowControlTab} onContextMenuCapture={event => {
       // 编辑器的复制粘贴属于系统菜单：只阻止 Trigger 收到事件，不取消浏览器默认行为。
       if ((event.target as HTMLElement).closest('input:not([type="checkbox"]), textarea, .ag-popup-editor')) {
         event.stopPropagation(); setRowMenuOpen(false);
       }
-    }} onPointerDown={event => {
-      // 长按不能绕过行身份检查；当前行菜单仅从真实 contextmenu 事件打开。
-      if (event.pointerType !== 'mouse') event.preventDefault();
     }} onContextMenu={event => {
       const target = event.target as HTMLElement;
       const row = target.closest<HTMLElement>('[row-id]');
@@ -640,26 +678,28 @@ export function App() {
       overlayLoadingTemplate="<span>正在连接本地服务…</span>"
       noRowsOverlayComponent={EmptyProject}
       noRowsOverlayComponentParams={{ message: error ? '暂时无法读取口播片段' : '暂无口播片段' }} /></AgGridProvider>
-      <SegmentRowDetails expandedId={expandedNote} mainHeight={mainRowHeight(expandedNote ?? undefined)} onHeight={setNoteHeight} onCollapse={() => setExpandedNote(null)} element={gridElement} segments={reorderPreview ?? status?.snapshot.segments ?? []} onOpen={(id, trigger, field) => { segmentDetail.navigate({ id, field, edit: !!field }, focusReturns.capture(trigger)); }} />
+      <SegmentRowDetails expandedId={expandedNote} mainHeight={mainRowHeight(expandedNote ?? undefined)} onHeight={setNoteHeight} onCollapse={() => setExpandedNote(null)} element={gridElement} segments={reorderPreview ?? status?.snapshot.segments ?? []} onOpen={(id, trigger) => { segmentDetail.navigate({ id, inline: true, field: 'visualNote' }, focusReturns.capture(trigger)); }} editReason={actionReason} editor={segmentDetail.draft?.field === 'visualNote' && segmentDetail.draft.id === expandedNote ? <div className="h-32"><TextEditor key={segmentDetail.draft.id} data={status!.snapshot.segments.find(item => item.id === expandedNote)!} field="visualNote" value={segmentDetail.draft.visualNote} busy={editState.busy} change={value => segmentDetail.change(value, 'visualNote')} commit={() => { void segmentDetail.save(); }} cancel={segmentDetail.escape} /></div> : undefined} />
     </div>
     </ContextMenuTrigger>
     {rowMenu && <RowMenu onCloseAutoFocus={event => {
       event.preventDefault();
       if (menuRestore.current) rowMenu.origin();
     }} onInteractOutside={() => { if (menuRestore.current) rowMenu.origin.cancel(); menuRestore.current = false; }}>
-      <div className="px-2 py-1 text-xs text-muted-foreground">{rowMenu.targets.length === 1 ? `片段 ${rowMenu.anchor.order}` : `已勾选 ${rowMenu.targets.length} 条`}</div>
-      <ContextMenuItem disabled={disabled || !rowMenu.targets.length} onSelect={requestDelete}>{rowMenu.targets.length === 1 ? '删除本片段' : `删除已勾选的 ${rowMenu.targets.length} 条`}</ContextMenuItem>
-      <ContextMenuItem disabled={disabled || rowMenu.targets.length !== 1} onSelect={() => { void insertRelative('before'); }}>上方添加</ContextMenuItem>
-      <ContextMenuItem disabled={disabled || rowMenu.targets.length !== 1} onSelect={() => { void insertRelative('after'); }}>下方添加</ContextMenuItem>
+      {(() => {
+        const menu = segmentRowMenu(segmentActions({ segment: rowMenu.anchor, segments: rowMenu.targets, checkedIds: rowMenu.targets.map(item => item.id), reason: actionReason }), rowMenu.anchor.order);
+        return <><div className="px-2 py-1 text-xs text-muted-foreground">{menu.scope}</div>
+          {menu.items.map(item => <ContextMenuItem key={item.key} aria-label={item.label} aria-description={item.reason || undefined} disabled={!item.enabled} title={item.reason} onSelect={() => { if (item.key === 'delete') requestDelete(); else void insertRelative(item.key); }}>{item.label}{item.reason && <span className="text-xs text-muted-foreground"> · {item.reason}</span>}</ContextMenuItem>)}</>;
+      })()}
     </RowMenu>}
     </ContextMenu>
     <div className="flex h-4 shrink-0 items-center justify-center"><Button variant="ghost" size="sm" aria-label="新增口播片段（表格底部）" title="新增口播片段" disabled={disabled} onClick={() => { void addSegment(); }}>＋</Button></div>
-    {segmentDetail.draft && segmentDetail.deleted && <section aria-label="已删除片段的草稿" className="flex min-h-0 max-h-[45dvh] flex-col gap-2 overflow-y-auto rounded-md border border-solid border-input p-3 [&>textarea]:shrink-0 [&>button]:shrink-0">
+    {segmentDetail.draft && segmentDetail.deleted && deletedDraftOpen && <DetailPanel title="已删除片段的草稿" onClose={() => focusReturns.close(returnFocus.current.draft, () => setDeletedDraftOpen(false))} restoreFocus={returnFocus.current.draft}><section aria-label="已删除片段的草稿" className="flex min-h-0 max-h-[45dvh] flex-col gap-2 overflow-y-auto rounded-md border border-solid border-input p-3 [&>textarea]:shrink-0 [&>button]:shrink-0">
       <p className="m-0 text-sm">片段已删除，草稿仍可选中复制；无法保存到已删除片段。</p>
       <textarea aria-label="已删除片段的文案草稿" readOnly value={segmentDetail.draft.text} className="min-h-20 rounded-md border border-solid border-input p-2" />
       <textarea aria-label="已删除片段的画面说明草稿" readOnly value={segmentDetail.draft.visualNote} className="min-h-20 rounded-md border border-solid border-input p-2" />
-      <Button variant="outline" onClick={() => segmentDetail.escape()}>放弃草稿</Button>
-    </section>}
+      <Button variant="outline" onClick={() => { void navigator.clipboard.writeText(`${segmentDetail.draft!.text}\n\n${segmentDetail.draft!.visualNote}`).catch(cause => failed(cause)); }}>复制草稿</Button>
+      <Button variant="outline" onClick={() => { void segmentDetail.discard(); setDeletedDraftOpen(false); }}>放弃草稿</Button>
+    </section></DetailPanel>}
     <SegmentDraftPrompt controller={segmentDetail} busy={editState.busy} />
     <footer ref={statusFooter} className="flex-none border-0 border-t border-solid border-input pt-1 text-[12px] text-muted-foreground [&_p]:m-0 [&_p]:wrap-anywhere" aria-label="项目状态">
       <div className="flex min-w-0 flex-wrap items-center gap-1.5 min-[600px]:flex-nowrap" role="status">
@@ -667,8 +707,12 @@ export function App() {
         <span className="flex-none min-[600px]:hidden" aria-hidden="true">{error ? '断线' : status ? '已连接' : '连接中'}</span>
         <span className="flex-none" aria-label="勾选范围">已勾选 {selectedIds.length} 条</span>
         <Button variant="ghost" size="xs" className="h-6 shrink-0 px-1 text-xs" disabled={!selectedIds.length} onClick={() => grid.current?.deselectAll()}>清空勾选</Button>
+        {selectedIds.length > 0 && <Button variant="ghost" size="xs" disabled={!checkedAction?.enabled} title={checkedAction?.reason} onClick={event => {
+          if (!status) return;
+          setDeleteTargets({ targets: structuredClone(status.snapshot.segments.filter(item => checkedAction?.ids.includes(item.id))), origin: focusReturns.capture(event.currentTarget) });
+        }}>删除已勾选</Button>}
         <span data-save-status className={`flex-none ${segmentDetail.draftError || segmentDetail.deleted ? 'text-destructive' : ''}`}>{status || segmentDetail.draft ? segmentDetail.draftStatus : '等待读取项目'}</span>
-        {(segmentDetail.dirty || segmentDetail.draftError || segmentDetail.deleted) && <Button variant="ghost" size="xs" onClick={segmentDetail.returnToDraft}>回到草稿</Button>}
+        {(segmentDetail.dirty || segmentDetail.draftError || segmentDetail.deleted) && <Button variant="ghost" size="xs" onClick={event => { if (segmentDetail.deleted) { rememberOrigin(event.currentTarget, 'draft'); setDeletedDraftOpen(true); } else { if (segmentDetail.draft?.field === 'visualNote') setExpandedNote(segmentDetail.draft.id); segmentDetail.returnToDraft(); } }}>回到草稿</Button>}
         <span className="min-w-0 flex-1 truncate">{batchTask && batchTask.summary.pending > 0 ? `配音 ${batchTask.summary.completed}/${batchTask.summary.completed + batchTask.summary.pending}` : speechTask && (speechTask.state === 'running' || speechTask.state === 'accepted') ? '配音生成中' : exportTask && exports.exports?.locked ? `${exportStateLabel[exportTask.state]} ${exportTask.completed}/${exportTask.total}` : ''}</span>
         <Button variant="outline" size="xs" className="border-input text-foreground px-1.5 py-0.5 text-[12px]" onClick={event => openDetail('tasks', event.currentTarget)}>任务详情</Button>
       </div>

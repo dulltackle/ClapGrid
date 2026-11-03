@@ -4,20 +4,18 @@ import type { FocusIntent, FocusReturn, segmentFocusCoordinator } from './dialog
 import type { ProjectEditing } from './project-editing.js';
 
 export type SegmentTextField = 'text' | 'visualNote';
-export type SegmentDestination = { id: string; mode: 'locate' | 'inline' | 'details'; field?: SegmentTextField; clearSearch?: boolean; focusText?: boolean } | null;
+export type SegmentDestination = { id: string; mode: 'locate' | 'inline'; field?: SegmentTextField; clearSearch?: boolean } | null;
 type Focus = Pick<ReturnType<typeof segmentFocusCoordinator>, 'intent' | 'close' | 'captureSegment' | 'acceptGridUpdate'>;
 
 /** 口播片段导航事务：快照始终接收，只有当前票据可以提交定位与来源。 */
-export function segmentNavigation({ grid, editing, focus, clearSearch, details, inline, failed }: {
+export function segmentNavigation({ grid, editing, focus, clearSearch, inline, failed }: {
   grid: () => GridApi<Segment> | null;
   editing: Pick<ProjectEditing, 'getState' | 'subscribe' | 'cancel'>;
   focus: Focus; clearSearch: () => void;
-  details: { show: (destination: NonNullable<SegmentDestination>, intent: FocusIntent) => void; hide: () => void };
   inline: (id: string, field: SegmentTextField, intent: FocusIntent) => Promise<void>;
   failed: (cause: Error) => void;
 }) {
   let sequence = 0;
-  let source: FocusReturn | undefined;
   let pending: FocusReturn | undefined;
   const intent = (): FocusIntent => {
     const version = sequence; const requested = focus.intent();
@@ -47,28 +45,16 @@ export function segmentNavigation({ grid, editing, focus, clearSearch, details, 
         if (!valid()) { cancel(); return; }
         if (!destination) {
           ended = true; pending = undefined;
-          const restore = source; source = undefined;
-          if (restore) focus.close(restore, () => { details.hide(); restore(); });
-          else details.hide();
           origin?.cancel(); return;
         }
         if (destination.clearSearch) { clearSearch(); grid()?.setFilterModel(null); }
         const row = grid()?.getRowNode(destination.id);
         if (row?.rowIndex == null) { cancel(); failed(new Error('口播片段已删除，请选择其他片段。')); return; }
         const field = destination.field ?? 'text';
-        grid()?.ensureColumnVisible(field); grid()?.ensureIndexVisible(row.rowIndex, 'middle');
+        grid()?.ensureColumnVisible('text'); grid()?.ensureIndexVisible(row.rowIndex, 'middle');
         ended = true; pending = undefined;
-        if (destination.mode === 'details') {
-          const nextSource = origin ?? (destination.focusText ? focus.captureSegment({ id: destination.id, column: field }) : undefined);
-          if (nextSource) { source?.cancel(); source = nextSource; }
-          details.show(destination, { valid });
-        } else {
-          origin?.cancel();
-          if (destination.mode === 'inline') {
-            details.hide();
-            await inline(destination.id, field, { valid });
-          }
-        }
+        origin?.cancel();
+        if (destination.mode === 'inline') await inline(destination.id, field, { valid });
       },
       fail() {
         if (ended) return;
@@ -77,6 +63,6 @@ export function segmentNavigation({ grid, editing, focus, clearSearch, details, 
       },
     };
   };
-  return { request, intent, dispose() { sequence++; pending?.cancel(); pending = undefined; source?.cancel(); source = undefined; waiting.forEach(check => check()); } };
+  return { request, intent, dispose() { sequence++; pending?.cancel(); pending = undefined; waiting.forEach(check => check()); } };
 }
 export type SegmentNavigation = ReturnType<typeof segmentNavigation>;

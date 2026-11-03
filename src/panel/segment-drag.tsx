@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent, type RefObject } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent, type RefObject } from 'react';
 import type { GridApi } from 'ag-grid-community';
 import type { Segment } from '../shared/contracts.js';
 import { segmentTargets } from './segment-interaction.js';
@@ -16,6 +16,30 @@ export function useSegmentDrag(options: Options) {
   const latest = useRef(options); latest.current = options;
   const [line, setLine] = useState<Target | null>(null);
   const [count, setCount] = useState(0);
+  const keyboardMove = useRef<{ id: string; expected: string[]; moving: string[]; remaining: string[]; index: number } | null>(null);
+  const [keyboardHint, setKeyboardHint] = useState('');
+  const keyboard = (event: ReactKeyboardEvent<HTMLButtonElement>, id: string) => {
+    if (event.nativeEvent.isComposing || latest.current.disabled || !['Enter', ' ', 'Escape', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+    event.preventDefault(); event.stopPropagation();
+    if (event.key === 'Escape') { keyboardMove.current = null; setKeyboardHint(''); return; }
+    let move = keyboardMove.current;
+    if (!move || move.id !== id) {
+      if (!['Enter', ' '].includes(event.key)) return;
+      const { segments, grid } = latest.current;
+      const moving = segmentTargets(segments, grid.current?.getSelectedRows().map(item => item.id) ?? [], id).map(item => item.id);
+      const expected = segments.map(item => item.id);
+      const remaining = expected.filter(value => !moving.includes(value));
+      move = { id, moving, expected, remaining, index: expected.slice(0, expected.indexOf(moving[0]!)).filter(value => !moving.includes(value)).length };
+      keyboardMove.current = move;
+    } else if (['Enter', ' '].includes(event.key)) {
+      keyboardMove.current = null; setKeyboardHint('');
+      if (latest.current.segments.map(item => item.id).join('\0') !== move.expected.join('\0')) { latest.current.reject('项目顺序已变化，请重新移动。'); return; }
+      const ids = [...move.remaining]; ids.splice(move.index, 0, ...move.moving);
+      if (ids.join('\0') !== move.expected.join('\0')) latest.current.submit(move.expected, ids);
+      return;
+    } else move.index = Math.max(0, Math.min(move.remaining.length, move.index + (event.key === 'ArrowDown' ? 1 : -1)));
+    setKeyboardHint(`移动 ${move.moving.length} 条到第 ${move.index + 1} 位；方向键定位，Enter 确认，Esc 取消`);
+  };
   const cancel = useRef<(() => void) | null>(null);
   useEffect(() => () => cancel.current?.(), []);
   const start = (event: PointerEvent<HTMLButtonElement>, id: string) => {
@@ -95,5 +119,5 @@ export function useSegmentDrag(options: Options) {
     window.addEventListener('pointercancel', cleanup); window.addEventListener('keydown', escape, true);
     window.addEventListener('scroll', update, true); window.addEventListener('blur', cleanup); frame = requestAnimationFrame(scroll);
   };
-  return { start, indicator: line && <div className="pointer-events-none fixed z-100 h-[3px] bg-[var(--color-accent)]" aria-label="口播片段插入位置" data-target-id={line.id} data-placement={line.after ? 'after' : 'before'} style={{ top: line.top, left: line.left, width: line.width }}><span className="absolute bottom-1 left-2 rounded bg-background px-2 py-1 text-xs text-foreground shadow" role="status">移动 {count} 条</span></div> };
+  return { start, keyboard, indicator: <>{keyboardHint && <div role="status" className="pointer-events-none absolute bottom-16 left-4 z-50 rounded-md bg-background p-2 text-xs shadow">{keyboardHint}</div>}{line && <div className="pointer-events-none fixed z-100 h-[3px] bg-[var(--color-accent)]" aria-label="口播片段插入位置" data-target-id={line.id} data-placement={line.after ? 'after' : 'before'} style={{ top: line.top, left: line.left, width: line.width }}><span className="absolute bottom-1 left-2 rounded bg-background px-2 py-1 text-xs text-foreground shadow" role="status">移动 {count} 条</span></div>}</> };
 }
