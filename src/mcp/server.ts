@@ -3,10 +3,11 @@ import { preparePanel } from '../prepare-panel.js';
 import { buildIdentity, compatibleRuntime } from '../build-identity.js';
 import { readHostWorkspace, hostThreadId } from '../host-workspace.js';
 import { bindWorkspace } from '../workspace-service.js';
+import { z } from 'zod';
 import { exportTaskRequestSchema, submitExportSchema, speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { RootsListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
-import { submitExport, queryExports, cancelExport, submitSpeechBatch, queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
+import { queryVisualContext, importMaterial, previewSegment, queryVisualPreviews, submitExport, queryExports, cancelExport, submitSpeechBatch, queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
 
 export function createBusinessMcp(url?: string) {
   const baseUrl = url === undefined ? undefined : localServiceUrl(url);
@@ -84,7 +85,7 @@ export function createBusinessMcp(url?: string) {
     }
   });
   server.registerTool('clapgrid_modify', {
-    description: '批量新增、粘贴、修改、删除或重排口播片段，或设置视频关联。edit 可提供 text（文案）、visualNote（画面说明）或两者，省略的字段保持原值，空字符串清空；画面说明供参考，不改变配音或导出。video 操作携带完整 expected、assetId 和 start（秒）；assetId 为 null 解除关联，否则关联/替换已导入素材并设置起点，使用同一 assetId 可只调整起点。paste 按非空行创建片段；reorder 必须提供查询时项目顺序 expectedIds 及包含全部身份的新顺序 ids。修改/删除必须携带 clapgrid_status 查询得到的完整 expected 片段快照。用户编辑时立即拒绝；目标变化或删除逐项跳过。仅最终结果代表已提交，不自动重试。',
+    description: '批量新增、粘贴、修改、删除或重排口播片段，以及素材归属与 agent 画面编排。materials: {expected,assetIds} 确认本句素材，不指定时间；composition: {expected,plan:{duration,layers}} 保存本句明确编排，每层含 assetId、role(background/overlay)、from/to(秒)、start(源起点秒)、x/y/width/height(0到1相对1920×1080画布)、z(背景0、叠加正数)。背景连续覆盖配音时长，全部本句素材须被使用；透明角色用原生透明 PNG，叠加区间由本句内容明确决定，不默认均分、贯穿或跨句。查询最新快照后提交，普通制作请求须继续生成合成预览，先准备素材时停在归属阶段。edit 可提供 text（文案）、visualNote（画面说明）或两者，省略的字段保持原值，空字符串清空；画面说明供编排参考，不改变配音；已保存的新编排及预览在说明变化后需要更新。videos 操作携带完整 expected 和按顺序排列的 videos: [{ assetId, start }]，空数组解除全部关联；此兼容写入口保留关联与起点信息，同时确认素材归属并清空旧编排，须继续显式 composition 后才能制作。快照 additionalVideos 保存第二份及后续素材，video 为第一份；旧 video 操作替换全部关联。video 操作携带完整 expected、assetId 和 start（秒）；assetId 为 null 解除关联，否则关联/替换已导入素材并设置起点，使用同一 assetId 可只调整起点。paste 按非空行创建片段；reorder 必须提供查询时项目顺序 expectedIds 及包含全部身份的新顺序 ids。修改/删除必须携带 clapgrid_status 查询得到的完整 expected 片段快照。用户编辑时立即拒绝；目标变化或删除逐项跳过。仅最终结果代表已提交，不自动重试。',
     inputSchema: batchSchema,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
   }, async (input, extra) => {
@@ -118,6 +119,35 @@ export function createBusinessMcp(url?: string) {
     } catch (error) {
       return { isError: true, content: [{ type: 'text', text: error instanceof Error ? error.message : '修改失败，请查询项目确认结果' }] };
     }
+  });
+  server.registerTool('clapgrid_import_material', {
+    description: '导入用户指定的原生 PNG（含透明）、JPEG 或视频，复制原件到项目，返回稳定素材身份；不自动关联或编排。',
+    inputSchema: importVideoSchema,
+  }, async (input, extra) => {
+    try { const result = await importMaterial(await connection(extra._meta), input.sourcePath, undefined, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+  });
+  server.registerTool('clapgrid_visual_context', {
+    description: '查询指定片段当前文案、说明、素材、已保存编排及有效配音的精确解码时长（秒）。先完成配音，再据此 duration 提交编排；缺失或待更新的配音会明确拒绝。',
+    inputSchema: z.object({ segmentId: z.uuid() }).strict(),
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async (input, extra) => {
+    try { const result = await queryVisualContext(await connection(extra._meta), input.segmentId); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+  });
+  server.registerTool('clapgrid_preview_segment', {
+    description: '请求本句真实合成，返回任务标识不代表成功。先用 clapgrid_visual_context 查询本句素材及精确配音时长，再提交 materials 归属及 composition 编排；需要有效配音、导出设置和与配音匹配的明确时长。通过 clapgrid_visual_previews 查询终态，仅 succeeded 且 current 才可审阅。普通素材制作请求默认完成准备、编排和预览；明确先准备素材时不调用本工具。取消使用 clapgrid_cancel_export。',
+    inputSchema: z.object({ segmentId: z.uuid() }).strict(),
+  }, async (input, extra) => {
+    try { const result = await previewSegment(await connection(extra._meta), input.segmentId); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+  });
+  server.registerTool('clapgrid_visual_previews', {
+    description: '查询片段合成任务、错误和可播放结果。current 为 false 的旧结果不能当作当前编排；修改文案、说明、素材、编排、声音或设置后须重新制作。', inputSchema: {},
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async (_input, extra) => {
+    try { const result = await queryVisualPreviews(await connection(extra._meta)); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   server.registerTool('clapgrid_import_video', {
     description: '导入用户明确指定的单个本地视频绝对路径（可在项目外），复制原件到项目并生成静音预览与缩略图。只能传入用户已授权的具体来源，不扫描或猜测路径。持有普通修改权直至完成；返回素材身份供多个片段复用。失败不自动重试。',

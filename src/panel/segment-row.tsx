@@ -1,7 +1,8 @@
 import { ChevronDownIcon, DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { useRef, type ComponentProps, type ReactNode } from 'react';
 import { Button, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/index.js';
-import type { Segment, ServiceStatus } from '../shared/contracts.js';
+import { segmentMaterials } from '../shared/contracts.js';
+import type { ExportTask, Segment, ServiceStatus } from '../shared/contracts.js';
 import { segmentRowMenu, type SegmentActions } from './segment-actions.js';
 import { panelServiceUrl } from './service-url.js';
 import { SegmentSpeech } from './segment-speech.js';
@@ -12,8 +13,10 @@ type SpeechProps = Omit<ComponentProps<typeof SegmentSpeech>, 'segment' | 'gener
   generate: (id: string) => void; history: (id: string, trigger: HTMLElement) => void;
 };
 type VisualProps = {
-  assets: ServiceStatus['snapshot']['assets']; preview: (segment: Segment, trigger: HTMLButtonElement) => void;
-  associate: (id: string, trigger: HTMLElement) => void; unlink: (segment: Segment) => void;
+  assets: ServiceStatus['snapshot']['assets']; preview: (segment: Segment, trigger: HTMLButtonElement, index?: number) => void;
+  trayId: string | null; toggleTray: (id: string) => void;
+  previews: ExportTask[]; composed: (task: ExportTask, trigger: HTMLButtonElement) => void;
+  associate: (id: string, trigger: HTMLElement, index?: number) => void; unlink: (segment: Segment, index?: number) => void;
 };
 type NoteProps = { expandedId: string | null; toggleNote: (id: string) => void };
 
@@ -35,26 +38,38 @@ export function SegmentRowCell({ data, draft, query, activeId, visit, rowHeight,
   </div>;
 }
 
-export function SegmentRowSupport({ data, assets, preview, expandedId, toggleNote, associate, unlink, actions }: VisualProps & NoteProps & {
+export function SegmentRowSupport({ data, assets, preview, expandedId, toggleNote, associate, unlink, actions, trayId, toggleTray, previews, composed }: VisualProps & NoteProps & {
   data: Segment; actions: SegmentActions;
 }) {
-  const visualTrigger = useRef<HTMLButtonElement>(null);
-  const handoff = useRef(false);
-  const asset = assets.find(asset => asset.id === data.video?.assetId);
-  return <div data-segment-support className="flex h-[54px] min-w-0 shrink-0 items-center gap-2">
-    {asset ? <>
-      <button className="h-11 w-[84px] shrink-0 cursor-pointer overflow-hidden rounded-md border border-solid border-input bg-background p-0 text-foreground hover:bg-ui-accent" aria-label={`播放 ${asset.name}`} onClick={event => preview(data, event.currentTarget)}>
-        <img src={`${panelServiceUrl()}/api/media/${asset.id}/thumbnail`} alt="" className="h-full w-full object-contain" />
-      </button>
-      <DropdownMenu modal={false} onOpenChange={open => { if (open) handoff.current = false; }}>
-        <DropdownMenuTrigger asChild><Button ref={visualTrigger} variant="ghost" size="xs" aria-label={`片段 ${data.order} 画面操作`}><ChevronDownIcon aria-hidden /></Button></DropdownMenuTrigger>
-        <DropdownMenuContent onCloseAutoFocus={event => { if (handoff.current) event.preventDefault(); }} onClick={event => event.stopPropagation()}>
-          <DropdownMenuItem disabled={!actions.changeVisual.enabled} title={actions.changeVisual.reason} onSelect={() => { if (visualTrigger.current) { handoff.current = true; associate(data.id, visualTrigger.current); } }}>更改</DropdownMenuItem>
-          <DropdownMenuItem disabled={!actions.unlink.enabled} title={actions.unlink.reason} onSelect={() => unlink(data)}>解除关联{actions.unlink.reason && <span className="text-xs"> · {actions.unlink.reason}</span>}</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </> : <Button variant="outline" size="xs" disabled={!actions.associate.enabled} title={actions.associate.reason} onClick={event => associate(data.id, event.currentTarget)}>关联画面</Button>}
-    <Button variant="ghost" size="xs" className="flex h-7 min-w-0 flex-1 justify-start gap-1 overflow-hidden rounded-sm p-0 text-left text-[12px] font-normal text-muted-foreground hover:bg-transparent hover:text-primary" data-note-summary aria-label={`${data.id === expandedId ? '收起' : '展开'}片段 ${data.order} 的画面说明`} aria-expanded={data.id === expandedId} aria-controls={data.id === expandedId ? `segment-note-${data.id}` : undefined} onClick={() => toggleNote(data.id)}><ChevronDownIcon aria-hidden className={`shrink-0 ${data.id === expandedId ? 'rotate-180' : ''}`} /><span className="truncate">{data.visualNote || '暂无画面说明'}</span></Button>
+  const trayTrigger = useRef<HTMLButtonElement>(null);
+  const materials = segmentMaterials(data);
+  const expanded = trayId === data.id;
+  const task = previews.filter(task => task.preview?.segmentId === data.id).at(-1);
+  const message = task ? task.state === 'succeeded' ? task.current ? '预览已就绪' : '预览待更新' : task.message : data.composition ? '尚未生成合成预览' : '等待 agent 编排';
+  return <div data-segment-support className="flex min-w-0 shrink-0 flex-col">
+    <div className="flex h-[54px] min-w-0 items-center gap-2">
+      <Button ref={trayTrigger} variant="outline" size="xs" aria-label={`片段 ${data.order} 画面素材（${materials.length}）`} aria-expanded={expanded} aria-controls={expanded ? `materials-${data.id}` : undefined} onClick={() => toggleTray(data.id)}><ChevronDownIcon aria-hidden className={expanded ? 'rotate-180' : ''} />画面素材 · {materials.length}</Button>
+      <Button variant="ghost" size="xs" className="min-w-0 flex-1 justify-start overflow-hidden p-0 text-left text-[12px] font-normal text-muted-foreground" data-note-summary aria-label={`${data.id === expandedId ? '收起' : '展开'}片段 ${data.order} 的画面说明`} aria-expanded={data.id === expandedId} aria-controls={data.id === expandedId ? `segment-note-${data.id}` : undefined} onClick={() => toggleNote(data.id)}><ChevronDownIcon aria-hidden className={`shrink-0 ${data.id === expandedId ? 'rotate-180' : ''}`} /><span className="truncate">{data.visualNote || '暂无画面说明'}</span></Button>
+    </div>
+    {expanded && <section id={`materials-${data.id}`} aria-label={`片段 ${data.order} 的画面素材`} className="flex h-[176px] min-w-0 flex-col gap-2 rounded-md border border-solid border-input bg-muted/30 p-2">
+      <div className="flex min-w-0 items-center gap-2">
+        <Button variant="outline" size="xs" disabled={!actions.associate.enabled} title={actions.associate.reason} aria-label={`为片段 ${data.order} 添加画面素材`} onClick={event => associate(data.id, event.currentTarget, materials.length)}>添加素材</Button>
+        <Button variant="outline" size="xs" disabled={!task?.current || !task.output} onClick={event => task && composed(task, event.currentTarget)}>片段合成预览</Button>
+        <span role="status" className="min-w-0 truncate text-xs text-muted-foreground" title={message}>{message}</span>
+      </div>
+      <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto" tabIndex={0} aria-label="本句素材列表">
+        {!materials.length && <span className="self-center text-xs text-muted-foreground">添加本句需要的图片或视频，编排交给 agent。</span>}
+        {materials.map((assetId, index) => {
+          const asset = assets.find(asset => asset.id === assetId);
+          const image = asset?.kind === 'image'; const name = asset?.name ?? '缺失素材';
+          return <div key={`${index}-${assetId}`} className="flex w-[150px] shrink-0 flex-col gap-1 rounded-md border border-solid border-input bg-background p-1">
+            <button className="h-12 w-full cursor-pointer rounded border-0 bg-muted p-0" aria-label={`${image ? '查看' : '播放'}原件 ${name}`} onClick={event => preview(data, event.currentTarget, index)}><img src={`${panelServiceUrl()}/api/media/${assetId}/thumbnail`} alt="" className="h-full w-full object-contain" /></button>
+            <span className="truncate text-xs" title={name}>{image ? '图片' : '视频'} · {name}</span>
+            <Button variant="ghost" size="xs" className="h-6" disabled={!actions.associate.enabled} aria-label={`移出本句 ${name}`} onClick={() => { trayTrigger.current?.focus(); unlink(data, index); }}>移出本句</Button>
+          </div>;
+        })}
+      </div>
+    </section>}
   </div>;
 }
 

@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
 import { test, expect } from './helpers/media-project.js';
-import { importVideo, queryExports, queryExportSettings, querySpeech, saveExportSettings, submitSpeech } from '../src/shared/client.js';
+import { queryVisualContext, importVideo, queryExports, queryExportSettings, querySpeech, saveExportSettings, submitSpeech } from '../src/shared/client.js';
 
 for (const viewport of [{ width: 1600, height: 1000 }, { width: 420, height: 360 }]) test(`全片导出错误跨任务详情及连接恢复持续可见 ${viewport.width}`, async ({ page, project }) => {
   const [a] = await project.seed(['A', '未匹配片段']); await page.setViewportSize(viewport); await page.goto(project.url);
@@ -39,6 +39,8 @@ test('真实成片的兼容预览在 Chrome 播放，下载原片一致，任务
   await expect.poll(async () => (await querySpeech(project.url)).locked).toBe(false);
   const details = await queryExportSettings(project.url); expect(details.fonts.length).toBeGreaterThan(0);
   await saveExportSettings(project.url, { expected: details.settings, settings: { ...details.settings, codec: 'libx264', fps: 24, fontFamily: details.fonts[0]!, fontSize: 32 } });
+  const context = await queryVisualContext(project.url, id!);
+  await project.modify({ changes: [{ kind: 'composition', expected: context.segment, plan: { duration: context.duration, layers: [{ assetId: asset.id, role: 'background', from: 0, to: context.duration, start: 1, x: 0, y: 0, width: 1, height: 1, z: 0 }] } }] });
   await page.goto(project.url); await page.getByRole('button', { name: '导出全片', exact: true }).click();
   await expect.poll(async () => (await queryExports(project.url)).tasks[0]?.state, { timeout: 30000 }).toBe('succeeded');
   const task = (await queryExports(project.url)).tasks[0]!; expect(task.output).toBeTruthy();

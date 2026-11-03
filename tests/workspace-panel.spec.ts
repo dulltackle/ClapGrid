@@ -77,28 +77,29 @@ test('工作空间绑定面板完成文案保存、刷新和本地视频播放',
     expect(status.snapshot.segments[0]!.text).toBe('工作空间项目中已保存的文案');
   });
 
-  await test.step('通过面板导入本地视频并关联到口播片段', async () => {
+  await test.step('通过面板导入项目素材并关联到口播片段', async () => {
     await page.getByRole('button', { name: '更多', exact: true }).click();
-    await page.getByRole('button', { name: '导入本地视频', exact: true }).click();
-    await page.getByLabel('视频文件绝对路径', { exact: true }).fill(mediaFiles.video);
+    await page.getByRole('button', { name: '导入项目素材', exact: true }).click();
+    await page.getByLabel('本地素材绝对路径', { exact: true }).fill(mediaFiles.video);
     await page.getByRole('button', { name: '导入并复制', exact: true }).click();
-    await expect(page.getByRole('dialog', { name: '导入本地视频', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: '导入项目素材', exact: true })).toHaveCount(0);
     const asset = (await queryStatus(url)).snapshot.assets[0]!;
-    await page.getByRole('button', { name: '关联画面', exact: true }).click();
-    await page.getByLabel('关联素材', { exact: true }).selectOption(asset.id);
-    await page.getByRole('button', { name: '保存关联与起点', exact: true }).click();
-    await expect(page.getByRole('dialog', { name: '关联视频', exact: true })).toHaveCount(0);
-    expect((await queryStatus(url)).snapshot.segments[0]!.video).toEqual({ assetId: asset.id, start: 0 });
+    await page.getByRole('button', { name: /片段 1 画面素材/ }).click();
+    await page.getByRole('button', { name: '为片段 1 添加画面素材', exact: true }).click();
+    await page.getByLabel('项目素材', { exact: true }).selectOption(asset.id);
+    await page.getByRole('button', { name: '加入本句', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: '添加画面素材', exact: true })).toHaveCount(0);
+    expect((await queryStatus(url)).snapshot.segments[0]!.materials).toEqual([asset.id]);
   });
 
   await test.step('绑定地址下的缩略图可解码，真实视频播放时间持续前进', async () => {
-    const preview = page.getByRole('button', { name: '播放 实际素材.mp4', exact: true });
+    const preview = page.getByRole('button', { name: '播放原件 实际素材.mp4', exact: true });
     const thumbnail = preview.locator('img');
     await expect.poll(() => thumbnail.evaluate(node => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
     const thumbnailUrl = await thumbnail.evaluate(node => (node as HTMLImageElement).src);
     expect(thumbnailUrl.startsWith(`${url}/`)).toBe(true);
     await preview.click();
-    const video = page.getByRole('dialog', { name: '视频预览', exact: true }).locator('video');
+    const video = page.getByRole('dialog', { name: '视频原件', exact: true }).locator('video');
     await expect.poll(() => video.evaluate(node => {
       const media = node as HTMLVideoElement;
       return media.readyState >= 2 && !media.paused;

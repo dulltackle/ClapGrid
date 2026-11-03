@@ -19,8 +19,9 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 import { AllCommunityModule, themeQuartz, type ColDef, type GridApi } from 'ag-grid-community';
 import { AgGridProvider, AgGridReact } from 'ag-grid-react';
-import { queryStatus, querySpeech, submitSpeech, setVoice, importVideo, beginEdit, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
-import type { Segment, ServiceStatus, SpeechStatus, Voice, Batch } from '../shared/contracts.js';
+import { queryStatus, querySpeech, submitSpeech, setVoice, importMaterial, queryVisualPreviews, beginEdit, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
+import { segmentMaterials } from '../shared/contracts.js';
+import type { Segment, ServiceStatus, SpeechStatus, Voice, Batch, ExportTask } from '../shared/contracts.js';
 import { projectEditing } from './project-editing.js';
 import { useSegmentInteraction, segmentTargets } from './segment-interaction.js';
 import { segmentActions, segmentRowMenu } from './segment-actions.js';
@@ -122,9 +123,12 @@ export function App() {
   const [audioHistory, setAudioHistory] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [deletedDraftOpen, setDeletedDraftOpen] = useState(false);
-  const [videoEditor, setVideoEditor] = useState<{ segment: Segment; assetId: string; start: string } | null>(null);
+  const [videoEditor, setVideoEditor] = useState<{ segment: Segment; index: number; assetId: string; start: string } | null>(null);
   const [importing, setImporting] = useState(false);
   const [sourcePath, setSourcePath] = useState('');
+  const [trayId, setTrayId] = useState<string | null>(null);
+  const [visualPreviews, setVisualPreviews] = useState<ExportTask[]>([]);
+  const [composedPreview, setComposedPreview] = useState<ExportTask | null>(null);
   const [preview, setPreview] = useState<{ assetId: string; start: number } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -171,9 +175,9 @@ export function App() {
   const matchingIds = new Set(status?.snapshot.segments.filter(segment => textMatches(segment.text, query).length > 0).map(segment => segment.id));
   const matchedIds = displayOrder.filter(id => matchingIds.has(id));
   const activeMatch = searchOpen && currentMatch && matchedIds.includes(currentMatch) ? currentMatch : null;
-  const searchLayout = useRef({ activeMatch, rowHeight: searchRowHeight, expandedNote, noteHeight });
-  searchLayout.current = { activeMatch, rowHeight: searchRowHeight, expandedNote, noteHeight };
-  const mainRowHeight = (id?: string) => id === searchLayout.current.activeMatch ? Math.max(102, searchLayout.current.rowHeight) : 102;
+  const searchLayout = useRef({ activeMatch, rowHeight: searchRowHeight, expandedNote, noteHeight, trayId });
+  searchLayout.current = { activeMatch, rowHeight: searchRowHeight, expandedNote, noteHeight, trayId };
+  const mainRowHeight = (id?: string) => (id === searchLayout.current.activeMatch ? Math.max(102, searchLayout.current.rowHeight) : 102) + (id && id === searchLayout.current.trayId ? 176 : 0);
   useEffect(() => {
     if (expandedNote && status && !status.snapshot.segments.some(segment => segment.id === expandedNote)) setExpandedNote(null);
   }, [expandedNote, status]);
@@ -215,7 +219,7 @@ export function App() {
     const observer = new ResizeObserver(() => setSearchRowHeight(Math.max(44, Math.min(240, element.clientHeight - 56))));
     observer.observe(element); return () => observer.disconnect();
   }, []);
-  useEffect(() => { grid.current?.resetRowHeights(); }, [activeMatch, searchRowHeight, expandedNote, noteHeight]);
+  useEffect(() => { grid.current?.resetRowHeights(); }, [activeMatch, searchRowHeight, expandedNote, noteHeight, trayId]);
   const returnFocus = useRef({ draft: () => {}, settings: () => {}, history: () => {}, audio: () => {}, video: () => {}, preview: () => {}, detail: () => {} });
   const [focusReturns] = useState(() => segmentFocusCoordinator(() => grid.current, {
     search: () => searchInput.current, table: () => tableFallback.current, more: () => moreButton.current,
@@ -297,7 +301,7 @@ export function App() {
       if (batch.changes.some(change => change.kind === 'paste')) setPaste('');
     });
   }, failed);
-  const openVideoEditor = (id?: string) => segmentDetail.perform(async () => {
+  const openVideoEditor = (id?: string, index = 0) => segmentDetail.perform(async () => {
     const origin = returnFocus.current.video;
     const requested = focusReturns.intent(origin);
     return editing.begin('segments', next => {
@@ -309,7 +313,9 @@ export function App() {
       if (id) {
         const segment = next.snapshot.segments.find(segment => segment.id === id);
         if (!segment) throw new Error('口播片段已删除');
-        setVideoEditor({ segment, assetId: segment.video?.assetId ?? '', start: String(segment.video?.start ?? 0) });
+        const reference = segmentMaterials(segment)[index];
+        setSourcePath('');
+        setVideoEditor({ segment, index, assetId: '', start: '0' });
       } else { setSourcePath(''); setImporting(true); }
     }, disconnected, cause => {
       reportOperation('video', cause.message);
@@ -325,12 +331,20 @@ export function App() {
     reportOperation('video');
     try {
       if (importing) {
-        const result = await importVideo(panelServiceUrl(), sourcePath, token, action.signal);
+        const result = await importMaterial(panelServiceUrl(), sourcePath, token, action.signal);
         action.apply(() => setStatus(result.status));
       } else if (videoEditor) {
-        if (!videoEditor.start.trim()) throw new Error('请填写视频起点');
-        const result = await modifyUserBatch(panelServiceUrl(), { changes: [{ kind: 'video', expected: videoEditor.segment,
-          assetId: videoEditor.assetId || null, start: Number(videoEditor.start) }] }, token, action.signal);
+        let expected = videoEditor.segment;
+        let assetId = videoEditor.assetId;
+        if (sourcePath.trim()) {
+          const imported = await importMaterial(panelServiceUrl(), sourcePath.trim(), token, action.signal);
+          action.apply(() => setStatus(imported.status));
+          expected = imported.status.snapshot.segments.find(segment => segment.id === expected.id)!;
+          assetId = imported.asset.id;
+        }
+        if (!assetId) throw new Error('请选择项目素材或填写本地素材路径');
+        const assetIds = [...new Set([...segmentMaterials(expected), assetId])];
+        const result = await modifyUserBatch(panelServiceUrl(), { changes: [{ kind: 'materials', expected, assetIds }] }, token, action.signal);
         action.apply(() => setStatus(result.status));
         if (result.summary.applied !== 1) throw new Error(result.results[0]?.message ?? '关联未保存');
       }
@@ -389,8 +403,8 @@ export function App() {
   useEffect(() => {
     editing.activate();
     const refresh = () => editing.refresh(
-      () => Promise.all([queryStatus(panelServiceUrl()), querySpeech(panelServiceUrl())]),
-      ([next, nextSpeech]) => { setStatus(next); setSpeech(nextSpeech); setError(''); },
+      () => Promise.all([queryStatus(panelServiceUrl()), querySpeech(panelServiceUrl()), queryVisualPreviews(panelServiceUrl())]),
+      ([next, nextSpeech, previews]) => { setStatus(next); setSpeech(nextSpeech); setVisualPreviews(previews.tasks); setError(''); },
       cause => { setStatus(previous => navigationView.current?.draft ? previous : undefined); setError(`服务连接失败：${cause.message}。请关闭重开 ClapGrid 并核对当前工作空间。`); },
     );
     void refresh();
@@ -406,7 +420,7 @@ export function App() {
   }, [editState.busy, editState.editing, editing]);
   const disabled = !status || !speech || speech.locked || status.taskLocked || editState.busy || (editState.editing && !segmentDetail.draft) || (!!status.modification && !(editState.owner === 'segments' && editState.editing && segmentDetail.draft)) || !!panelRestore;
   const panelBusy = disabled || segmentDetail.dirty || segmentDetail.saving || editState.editing || mediaBusy || !!playing || !!detail || exportSettingsOpen || !!audioHistory || !!speechRetryId
-    || !!videoEditor || importing || !!preview || rowMenuOpen || rowActionMenuOpen || !!deleteTargets || !!reorderPreview || !!panelRestore
+    || !!videoEditor || importing || !!preview || !!composedPreview || rowMenuOpen || rowActionMenuOpen || !!deleteTargets || !!reorderPreview || !!panelRestore
     || selectionState !== '勾选已同步';
   const latestPanel = useRef({ busy: panelBusy, selectedIds });
   latestPanel.current = { busy: panelBusy, selectedIds };
@@ -472,9 +486,11 @@ export function App() {
   const stopAudio = () => { audioPlayer.current?.pause(); setPlaying(null); setInlineAudio(null); };
   const visualControls = {
     assets: status?.snapshot.assets ?? [], expandedId: expandedNote, toggleNote,
-    preview: (segment: Segment, trigger: HTMLButtonElement) => { rememberOrigin(trigger, 'preview'); setPreview(segment.video); },
-    associate: (id: string, trigger: HTMLElement) => { rememberOrigin(trigger, 'video'); void openVideoEditor(id); },
-    unlink: (segment: Segment) => { void segmentDetail.perform(savedTarget => organize({ changes: [{ kind: 'video', expected: savedTarget(segment), assetId: null, start: 0 }] })); },
+    trayId, toggleTray: (id: string) => setTrayId(current => current === id ? null : id), previews: visualPreviews,
+    composed: (task: ExportTask, trigger: HTMLButtonElement) => { rememberOrigin(trigger, 'preview'); setComposedPreview(task); },
+    preview: (segment: Segment, trigger: HTMLButtonElement, index = 0) => { rememberOrigin(trigger, 'preview'); const assetId = segmentMaterials(segment)[index]; setPreview(assetId ? { assetId, start: 0 } : null); },
+    associate: (id: string, trigger: HTMLElement, index = 0) => { rememberOrigin(trigger, 'video'); void openVideoEditor(id, index); },
+    unlink: (segment: Segment, index = 0) => { void segmentDetail.perform(savedTarget => { const expected = savedTarget(segment); const assetIds = segmentMaterials(expected).filter((_, i) => i !== index); return organize({ changes: [{ kind: 'materials', expected, assetIds }] }); }); },
   };
   const rowControls = { draft: segmentDetail.draft, speech, disabled, actionsFor, playing, listening: inlineAudio?.taskId ?? null, player: audioPlayer, stop: stopAudio,
     generate: (id: string) => { void generateSpeech(id); }, listen: toggleAudio,
@@ -537,7 +553,7 @@ export function App() {
           <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { closeDetail(); void exports.run(); }}>导出全片</Button>
         </>}
         <p className="m-0 text-[12px] text-muted-foreground">全片导出：查找与勾选不改变范围</p>
-        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => { rememberOrigin(moreButton.current!, 'video'); closeDetail(); void openVideoEditor(); }}>导入本地视频</Button>
+        <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => { rememberOrigin(moreButton.current!, 'video'); closeDetail(); void openVideoEditor(); }}>导入项目素材</Button>
         <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => setDetail('paste')}>粘贴多行文案</Button>
         <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!speech} onClick={() => setDetail('voice')}>声音设置</Button>
         <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!status} onClick={() => { rememberOrigin(moreButton.current!, 'settings'); closeDetail(); setExportSettingsOpen(true); }}>导出设置</Button>
@@ -561,7 +577,7 @@ export function App() {
       {speech.tasks.length > 0 && <details open><summary className="w-fit cursor-pointer rounded-md px-2 py-1 hover:bg-ui-accent active:bg-input">配音任务与请求标识</summary>{speech.tasks.map(task => <p key={task.id}>任务 {task.id} · 请求 {task.requestId}：{task.message}</p>)}</details>}
         {!speech.tasks.length && <p>暂无配音任务</p>}
       </section>}
-      <ExportTaskDetails controller={exports} />
+      <ExportTaskDetails controller={exports} previews={visualPreviews} />
       <Button variant="outline" size="sm" className="border-input text-foreground shrink-0 self-start" onClick={closeDetail}>关闭任务记录</Button>
     </DetailPanel>}
     {detail === 'diagnostics' && <DetailPanel title="连接诊断" onClose={closeDetail} restoreFocus={returnFocus.current.detail}>
@@ -591,23 +607,25 @@ export function App() {
       </AlertDialogContent>
     </AlertDialog>
     {audioHistory && <AudioHistoryPanel segmentId={audioHistory} speech={speech} onClose={() => focusReturns.close(returnFocus.current.history, () => setAudioHistory(null))} restoreFocus={returnFocus.current.history} />}
-    {(videoEditor || importing) && <DetailPanel title={importing ? '导入本地视频' : '关联视频'} label={importing ? '导入本地视频' : '关联视频'} restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={cancelVideo} restoreFocus={returnFocus.current.video}>
-      {importing ? <label className="flex min-w-0 flex-col gap-1">视频文件绝对路径<Input aria-label="视频文件绝对路径" value={sourcePath} disabled={editState.busy} onChange={event => setSourcePath(event.target.value)} placeholder="粘贴要导入的本地视频完整路径" /></label>
-        : videoEditor && <>
-          <label className="flex min-w-0 flex-col gap-1">素材<NativeSelect aria-label="关联素材" value={videoEditor.assetId} disabled={editState.busy} onChange={event => setVideoEditor({ ...videoEditor, assetId: event.target.value, start: '0' })}>
-            <option value="">解除关联</option>
-            {status?.snapshot.assets.map(asset => <option key={asset.id} value={asset.id}>{asset.name}（{asset.duration.toFixed(2)} 秒）</option>)}
-          </NativeSelect></label>
-          <label className="flex min-w-0 flex-col gap-1">播放起点（秒）<Input aria-label="播放起点（秒）" type="number" min="0" step="any" disabled={!videoEditor.assetId || editState.busy} value={videoEditor.start} onChange={event => setVideoEditor({ ...videoEditor, start: event.target.value })} /></label>
-          {!status?.snapshot.assets.length && <p>请先取消并导入本地视频。</p>}
-        </>}
-      {importing && <p>只读取指定文件，复制到项目并生成静音预览。原文件之后可移动或改名。</p>}
-      <div className="flex flex-wrap items-center gap-2"><Button variant="outline" disabled={editState.busy || (importing && !sourcePath.trim())} onClick={() => { void saveVideo(); }}>{editState.busy ? '正在处理…' : importing ? '导入并复制' : '保存关联与起点'}</Button>
-        <Button variant="outline" onClick={() => { void cancelVideo(); }}>取消</Button></div>
+    {(videoEditor || importing) && <DetailPanel title={importing ? '导入项目素材' : '添加画面素材'} label={importing ? '导入项目素材' : '添加画面素材'} restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={cancelVideo} restoreFocus={returnFocus.current.video}>
+      {videoEditor && <label className="flex min-w-0 flex-col gap-1">从项目素材选取<NativeSelect aria-label="项目素材" value={videoEditor.assetId} disabled={editState.busy} onChange={event => { setVideoEditor({ ...videoEditor, assetId: event.target.value }); setSourcePath(''); }}>
+        <option value="">请选择素材</option>
+        {status?.snapshot.assets.filter(asset => !segmentMaterials(videoEditor.segment).includes(asset.id)).map(asset => <option key={asset.id} value={asset.id}>{asset.kind === 'image' ? '图片' : '视频'} · {asset.name}</option>)}
+      </NativeSelect></label>}
+      <label className="flex min-w-0 flex-col gap-1">{videoEditor ? '或从本地添加图片／视频' : '图片／视频文件'}<Input aria-label="本地素材绝对路径" value={sourcePath} disabled={editState.busy} onChange={event => setSourcePath(event.target.value)} placeholder="粘贴本地 PNG、JPEG 或视频完整路径" /></label>
+      <p>只复制指定文件，保留项目原件。素材的出现时间和位置由 agent 编排。</p>
+      <div className="flex flex-wrap items-center gap-2"><Button variant="outline" disabled={editState.busy || (!sourcePath.trim() && !videoEditor?.assetId)} onClick={() => { void saveVideo(); }}>{editState.busy ? '正在处理…' : importing ? '导入并复制' : '加入本句'}</Button><Button variant="outline" onClick={cancelVideo}>取消</Button></div>
     </DetailPanel>}
-    {preview && <DetailPanel title="视频预览" label="视频预览" restoreWithinLayer className="[&_p]:m-0 [&_button]:self-start" onClose={() => focusReturns.close(returnFocus.current.preview, () => setPreview(null))} restoreFocus={returnFocus.current.preview}>
-      <video className="block w-full max-h-[60dvh] shrink-0" key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onLoadedMetadata={event => { event.currentTarget.currentTime = preview.start; }} onError={() => reportOperation('preview', '预览不可用，请检查项目素材文件')} />
-      <p>从 {preview.start} 秒开始，预览默认静音。</p><Button variant="outline" onClick={() => focusReturns.close(returnFocus.current.preview, () => setPreview(null))}>关闭预览</Button>
+    {preview && <DetailPanel title={status?.snapshot.assets.find(asset => asset.id === preview.assetId)?.kind === 'image' ? '图片原件' : '视频原件'} label={status?.snapshot.assets.find(asset => asset.id === preview.assetId)?.kind === 'image' ? '图片原件' : '视频原件'} restoreWithinLayer onClose={() => focusReturns.close(returnFocus.current.preview, () => setPreview(null))} restoreFocus={returnFocus.current.preview}>
+      {status?.snapshot.assets.find(asset => asset.id === preview.assetId)?.kind === 'image'
+        ? <img className="block max-h-[60dvh] w-full object-contain" onError={() => reportOperation('preview', '图片原件不可读取，请检查项目素材文件')} alt={status?.snapshot.assets.find(asset => asset.id === preview.assetId)?.name ?? '图片原件'} src={`${panelServiceUrl()}/api/media/${preview.assetId}/original`} />
+        : <video className="block max-h-[60dvh] w-full shrink-0" key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onError={() => reportOperation('preview', '原件预览不可用，请检查项目素材文件')} />}
+      <Button variant="outline" onClick={() => focusReturns.close(returnFocus.current.preview, () => setPreview(null))}>关闭预览</Button>
+    </DetailPanel>}
+    {composedPreview && <DetailPanel title="片段合成预览" label="片段合成预览" restoreWithinLayer onClose={() => focusReturns.close(returnFocus.current.preview, () => setComposedPreview(null))} restoreFocus={returnFocus.current.preview}>
+      {!visualPreviews.find(task => task.id === composedPreview.id)?.current && <p role="status">相关输入已变化，此预览待更新，请让 agent 重新制作。</p>}
+      <video className="block max-h-[60dvh] w-full shrink-0" controls autoPlay src={`${panelServiceUrl()}${composedPreview.output?.previewUrl ?? composedPreview.output?.url}`} onError={() => reportOperation('preview', '片段合成预览不可播放，请检查任务结果')} />
+      <Button variant="outline" onClick={() => focusReturns.close(returnFocus.current.preview, () => setComposedPreview(null))}>关闭预览</Button>
     </DetailPanel>}
     {deleteTargets && <DeleteConfirm count={deleteTargets.targets.length} disabled={disabled} lock={lock}
       onClose={() => focusReturns.close(deleteTargets.origin, () => setDeleteTargets(null))} restoreFocus={deleteTargets.origin}

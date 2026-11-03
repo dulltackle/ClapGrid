@@ -129,3 +129,35 @@ test('多视频轨道素材的缩略图与预览使用同一画面', async ({ cr
     assert.ok(pixel[0]! > 200 && pixel[2]! < 30, `${kind} 应显示首视频轨道的红色画面`);
   }
 });
+
+test('多份素材保留顺序和各自起点，重开恢复；过时快照与非法追加不覆盖原关联', async ({ createDirectory, execBytes, openBusiness }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-multiple-videos-'));
+  const source = join(root, 'source.mp4');
+  await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=64x48:d=1', '-c:v', 'libx264', source]);
+  const directory = join(root, 'project');
+  const business = openBusiness(directory);
+  const token = business.acquire('codex');
+  const asset = await business.importVideo(token, { sourcePath: source });
+  const old = business.addSegment('多素材', token).segments[0]!;
+  const videos = [{ assetId: asset.id, start: 0 }, { assetId: asset.id, start: 0.5 }];
+  const apply = (references: typeof videos, expected = business.getSnapshot().segments[0]!) => business.modifyBatch(token, { changes: [{ kind: 'videos', expected, videos: references }] });
+  assert.equal((await apply(videos)).summary.applied, 1);
+  const saved = business.getSnapshot().segments[0]!;
+  assert.deepEqual(saved.video, videos[0]);
+  assert.deepEqual(saved.additionalVideos, [videos[1]]);
+  assert.equal((await apply([], old)).summary.changed, 1);
+  // 只改变第二份素材也必须使旧快照失效。
+  assert.equal((await apply([videos[0]!, { ...videos[1]!, start: 0.25 }])).summary.applied, 1);
+  assert.equal((await apply([], saved)).summary.changed, 1);
+  const beforeInvalid = business.getSnapshot();
+  assert.equal((await apply([videos[0]!, { ...videos[1]!, start: 1 }])).summary.failed, 1);
+  assert.deepEqual(business.getSnapshot(), beforeInvalid);
+  business.release(token); await business.close();
+  const reopened = openBusiness(directory);
+  assert.deepEqual(reopened.getSnapshot(), beforeInvalid);
+  const nextToken = reopened.acquire('codex');
+  const expected = reopened.getSnapshot().segments[0]!;
+  assert.equal((await reopened.modifyBatch(nextToken, { changes: [{ kind: 'videos', expected, videos: [videos[1]!] }] })).summary.applied, 1);
+  assert.deepEqual(reopened.getSnapshot().segments[0]!.video, videos[1]);
+  assert.equal(reopened.getSnapshot().segments[0]!.additionalVideos, undefined);
+});

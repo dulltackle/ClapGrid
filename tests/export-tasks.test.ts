@@ -104,7 +104,18 @@ async function ready(t: Pick<Resources, 'createDirectory' | 'execBytes' | 'openB
     assert.equal(business.getSpeechStatus().locked, false);
   };
   for (const segment of [first, second]) { business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id }); await waitSpeech(); }
-  return { root, directory, business, close, asset, first, second, waitSpeech, failNextSpeech: () => { failSpeech = true; } };
+  const compose = async () => {
+    const editing = business.acquire('codex');
+    try {
+      for (const segment of business.getSnapshot().segments) {
+        const context = await business.getVisualContext(segment.id);
+        const reference = context.segment.video!;
+        await business.modifyBatch(editing, { changes: [{ kind: 'composition', expected: context.segment, plan: { duration: context.duration, layers: [{ assetId: reference.assetId, role: 'background', from: 0, to: context.duration, start: reference.start, x: 0, y: 0, width: 1, height: 1, z: 0 }] } }] });
+      }
+    } finally { business.release(editing); }
+  };
+  await compose();
+  return { root, directory, business, close, asset, first, second, waitSpeech, compose, failNextSpeech: () => { failSpeech = true; } };
 }
 
 async function probe(t: Pick<Resources, 'execText'>, path: string) { return JSON.parse((await t.execText('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', path], { encoding: 'utf8' }))); }
@@ -311,20 +322,21 @@ test('损坏视频、真实时长变化导致起点失效、待更新或损坏�
   assert.equal(result.completed, 0);
   writeFileSync(source, '不是视频');
   result = await finished(business, business.submitExport().id);
-  assert.equal(result.issues.filter(issue => issue.field === 'video').length, 2);
+  assert.equal(result.issues.filter(issue => issue.field === 'video' && issue.message.includes('不可读或不可解码')).length, 2);
   assert.equal(business.getSpeechStatus().tasks.length, 2);
   assert.deepEqual(readdirSync(join(directory, 'exports')), []);
 });
 
-test('再次导出使用新内容和设置，生成唯一文件且保留原成片，长文案多行烧录不阻止导出', async ({ createDirectory, execBytes, execText, openBusiness }) => {
+test('再次导出使用新内容和设置，生成唯一文件且保留原成片，长文案多行烧录不阻止导出', { timeout: 60000 }, async ({ createDirectory, execBytes, execText, openBusiness }) => {
   const t = { createDirectory, execBytes, execText, openBusiness };
-  const { business, first, waitSpeech } = await ready(t);
+  const { business, first, waitSpeech, compose } = await ready(t);
   const original = await finished(business, business.submitExport().id);
   assert.equal(original.state, 'succeeded');
   const before = readFileSync(original.output!.path);
   const long = '这是一句完整显示的长文案，用于验证字幕能够自动换行而不被拆成多个片段。'.repeat(5);
   business.editSegment(first.id, long);
   business.submitSpeech({ requestId: randomUUID(), segmentId: first.id }); await waitSpeech();
+  await compose();
   const token = business.acquire('user'); const expected = business.getSnapshot().exportSettings;
   await business.setExportSettings(token, { expected, settings: { ...expected, codec: 'mpeg4', fps: 30, fontSize: 64 } }); business.release(token);
   const result = await finished(business, business.submitExport().id);
@@ -401,9 +413,10 @@ test('非方形像素视频按显示宽高比缩放，不能压成方形', async
 
 test('合法起点落在视频末帧持续区间内时，使用末帧冻结而不是丢失画面', async ({ createDirectory, execBytes, openBusiness }) => {
   const t = { createDirectory, execBytes, openBusiness };
-  const { business, asset } = await ready(t);
+  const { business, asset, compose } = await ready(t);
   const token = business.acquire('user');
   await business.modifyBatch(token, { changes: [{ kind: 'video', expected: business.getSnapshot().segments[0]!, assetId: asset.id, start: 0.99 }] }); business.release(token);
+  await compose();
   const task = await finished(business, business.submitExport().id);
   assert.equal(task.state, 'succeeded', JSON.stringify(task));
   assert.ok(pixel((await frame(t, task.output!.path, 0.1)), 960, 100)[2]! > 200);
@@ -420,4 +433,15 @@ test('成片提供含字幕和声音的浏览器兼容预览，MP4 原文件仍�
   assert.equal(media.streams.find((stream: any) => stream.codec_type === 'video').codec_name, 'vp8');
   assert.equal(media.streams.find((stream: any) => stream.codec_type === 'audio').codec_name, 'vorbis');
   assert.equal(business.getExportFile(task.id), task.output!.path);
+});
+
+test('兼容视频写入口保留关联和起点，未保存编排时拒绝自动均分或贯穿导出', async ({ createDirectory, execBytes, openBusiness }) => {
+  const { business, asset } = await ready({ createDirectory, execBytes, openBusiness });
+  const token = business.acquire('codex');
+  await business.modifyBatch(token, { changes: [{ kind: 'videos', expected: business.getSnapshot().segments[0]!, videos: [{ assetId: asset.id, start: 0 }, { assetId: asset.id, start: 0.6 }] }] });
+  business.release(token);
+  const result = await finished(business, business.submitExport().id);
+  assert.equal(result.state, 'failed');
+  assert.ok(result.issues.some(issue => issue.message.includes('编排缺失')));
+  assert.equal(business.getSnapshot().segments[0]!.additionalVideos?.[0]?.start, 0.6);
 });

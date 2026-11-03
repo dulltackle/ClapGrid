@@ -17,6 +17,7 @@ for (const entry of ['顶部', '底部', '更多'] as const) test(`${entry}普�
   const id = segments.at(-1)!.id;
   await expect(page.locator(`[row-id="${id}"]`)).toHaveAttribute('aria-selected', 'false');
   await page.keyboard.press('Escape');
+  await expect(draft).toHaveCount(0);
   await expect(page.locator(`[row-id="${id}"] :focus`)).toHaveCount(1);
   await page.keyboard.press('ArrowUp');
   await expect(page.locator(`[row-id="${segments[1]!.id}"] [col-id="text"]`)).toBeFocused();

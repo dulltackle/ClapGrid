@@ -1,0 +1,55 @@
+import { test, expect } from './helpers/media-project.js';
+import { importMaterial } from '../src/shared/client.js';
+import { execCommand } from './helpers/command.js';
+import { join } from 'node:path';
+
+for (const viewport of [{ width: 780, height: 579 }, { width: 420, height: 360 }]) test(`片段素材托盘只编辑本句归属并查看图片原件 ${viewport.width}`, async ({ page, project, mediaFiles }) => {
+  await page.setViewportSize(viewport);
+  await project.seed(['第一句', '第二句']);
+  const image = join(project.directory, '透明角色.png');
+  await execCommand('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=red@0.5:s=64x64,format=rgba', '-frames:v', '1', image]);
+  await importMaterial(project.url, mediaFiles.video);
+  await page.goto(project.url);
+  const tray = page.getByRole('button', { name: '片段 1 画面素材（0）', exact: true });
+  await tray.press('Enter');
+  await page.getByRole('button', { name: '为片段 1 添加画面素材', exact: true }).click();
+  await page.getByLabel('本地素材绝对路径', { exact: true }).fill(image);
+  await page.getByRole('button', { name: '加入本句', exact: true }).click();
+  await expect(page.getByText('图片 · 透明角色.png', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '查看原件 透明角色.png', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '图片原件', exact: true });
+  await expect(dialog.getByRole('img')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: '移出本句 透明角色.png', exact: true }).click();
+  await expect(page.getByRole('button', { name: '片段 1 画面素材（0）', exact: true })).toBeVisible();
+  expect((await project.status()).snapshot.assets).toHaveLength(2);
+  expect((await project.status()).snapshot.segments[1]?.materials ?? []).toEqual([]);
+  await expect(page.getByLabel('播放起点（秒）')).toHaveCount(0);
+});
+
+test('片段合成预览真实播放，内容变化后显示待更新且不能冒充当前结果', async ({ page, project, mediaFiles }) => {
+  const { querySpeech, submitSpeech, queryVisualContext, previewSegment, queryVisualPreviews, saveExportSettings } = await import('../src/shared/client.js');
+  const [id] = await project.seed(['本句合成效果']);
+  const { asset } = await importMaterial(project.url, mediaFiles.video);
+  await submitSpeech(project.url, { requestId: crypto.randomUUID(), segmentId: id! });
+  await expect.poll(async () => (await querySpeech(project.url)).locked).toBe(false);
+  await project.modify({ changes: [{ kind: 'materials', expected: (await project.status()).snapshot.segments[0]!, assetIds: [asset.id] }] });
+  const context = await queryVisualContext(project.url, id!);
+  await project.modify({ changes: [{ kind: 'composition', expected: context.segment, plan: { duration: context.duration, layers: [{ assetId: asset.id, role: 'background', from: 0, to: context.duration, start: 0, x: 0, y: 0, width: 1, height: 1, z: 0 }] } }] });
+  await saveExportSettings(project.url, { expected: (await project.status()).snapshot.exportSettings, settings: { codec: 'libx264', fps: 25, fontFamily: 'DejaVu Sans', fontSize: 32 } });
+  await previewSegment(project.url, id!);
+  await expect.poll(async () => (await queryVisualPreviews(project.url)).tasks[0]?.state, { timeout: 30000 }).toBe('succeeded');
+  await page.goto(project.url);
+  await page.getByRole('button', { name: '任务详情', exact: true }).click();
+  await expect(page.getByRole('region', { name: '全片导出', exact: true })).toContainText('暂无导出任务');
+  await expect(page.getByRole('region', { name: '片段合成任务', exact: true })).toContainText('合成成功');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: /片段 1 画面素材/ }).click();
+  await page.getByRole('button', { name: '片段合成预览', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '片段合成预览', exact: true });
+  await expect.poll(() => dialog.locator('video').evaluate(node => (node as HTMLVideoElement).currentTime)).toBeGreaterThan(0);
+  await project.modify({ changes: [{ kind: 'edit', expected: (await project.status()).snapshot.segments[0]!, visualNote: '改为特写' }] });
+  await expect(dialog).toContainText('此预览待更新');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: '片段合成预览', exact: true })).toBeDisabled();
+});

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { test, expect } from '../helpers/acceptance.js';
-import { importVideo, queryExports, queryExportSettings, querySpeech, saveExportSettings, submitExport, submitSpeech } from '../../src/shared/client.js';
+import { queryVisualContext, importVideo, queryExports, queryExportSettings, querySpeech, saveExportSettings, submitExport, submitSpeech } from '../../src/shared/client.js';
 
 test('空项目', async ({ acceptance, project }) => {
   await acceptance.hold('空项目', project);
@@ -15,6 +15,8 @@ test('真实成片已导出', async ({ acceptance, project, mediaFiles }) => {
   const details = await queryExportSettings(project.url);
   expect(details.fonts.length).toBeGreaterThan(0);
   await saveExportSettings(project.url, { expected: details.settings, settings: { ...details.settings, codec: 'libx264', fps: 24, fontFamily: details.fonts[0]!, fontSize: 32 } });
+  const context = await queryVisualContext(project.url, id!);
+  await project.modify({ changes: [{ kind: 'composition', expected: context.segment, plan: { duration: context.duration, layers: [{ assetId: asset.id, role: 'background', from: 0, to: context.duration, start: 1, x: 0, y: 0, width: 1, height: 1, z: 0 }] } }] });
   const task = await submitExport(project.url);
   await expect.poll(async () => (await queryExports(project.url)).tasks.find(value => value.id === task.id)?.state, { timeout: 60000 }).toMatch(/^(succeeded|failed|cancelled|interrupted)$/);
   const exported = (await queryExports(project.url)).tasks.find(value => value.id === task.id)!;
