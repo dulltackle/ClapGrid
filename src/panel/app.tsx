@@ -43,6 +43,7 @@ const theme = themeQuartz.withParams({
   headerBackgroundColor: 'color-mix(in srgb, var(--color-focus) 5%, white)',
   headerTextColor: 'var(--color-ink-secondary)',
   rowHoverColor: 'var(--color-hover)',
+  selectedRowBackgroundColor: '#f6faff',
   fontFamily: 'var(--font-ui)',
   fontSize: 'var(--font-size-ui)',
   spacing: 'var(--space-1)',
@@ -502,7 +503,7 @@ export function App() {
     setRowMenu({ anchor: structuredClone(segment), targets: structuredClone(targets), expectedIds: status?.snapshot.segments.map(item => item.id) ?? [], origin: focusReturns.capture(trigger, { fallback: 'menu' }) });
   };
   const columns: ColDef<Segment>[] = [
-    { headerName: '序号', field: 'order', width: orderWidth, minWidth: orderWidth, maxWidth: orderWidth, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="relative flex h-full items-center pl-7"><button className="rounded-md border border-solid border-input bg-background text-foreground hover:bg-ui-accent absolute left-0 top-1/2 -translate-y-1/2 shrink-0 cursor-grab touch-none flex size-6 items-center justify-center p-[3px] leading-5 opacity-50 group-[:hover]/segment:opacity-100 focus-visible:opacity-100 active:cursor-grabbing disabled:opacity-30" aria-label={`拖动片段 ${data.order}`} disabled={!actionsFor(data).drag.enabled} title={actionsFor(data).drag.reason} onKeyDown={event => drag.keyboard(event, data.id)} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}><DragHandleDots2Icon aria-hidden className="size-3" /></button><span>{data.order}</span></span> },
+    { headerName: '序号', field: 'order', width: orderWidth, minWidth: orderWidth, maxWidth: orderWidth, suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="relative flex h-full items-center pl-7"><button className="rounded-md border border-solid border-input bg-background text-foreground hover:bg-ui-accent absolute left-0 top-1/2 -translate-y-1/2 shrink-0 cursor-grab touch-none flex size-6 items-center justify-center p-[3px] leading-5 opacity-50 group-[:hover]/segment:opacity-100 focus-visible:opacity-100 active:cursor-grabbing disabled:opacity-30" aria-label={`拖动片段 ${data.order}`} disabled={!actionsFor(data).drag.enabled} title={actionsFor(data).drag.reason} onKeyDown={event => drag.keyboard(event, data.id)} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}><DragHandleDots2Icon aria-hidden className="size-3" /></button><span className="group-aria-selected/segment:font-medium group-aria-selected/segment:text-primary">{data.order}</span></span> },
     { headerName: '口播片段', field: 'text', flex: 1, minWidth: 360, resizable: false, editable: false,
       cellRenderer: SegmentRowCell, cellStyle: params => ({ height: mainRowHeight(params.data?.id), paddingRight: 0 }),
       cellRendererParams: { ...rowControls, ...visualControls, query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: Math.max(102, searchRowHeight), toggleNote, expandedId: expandedNote, assets: status?.snapshot.assets ?? [],
@@ -688,10 +689,7 @@ export function App() {
       }}
       getRowId={params => params.data.id}
 
-      rowClass="group/segment" rowClassRules={{
-        '[--ag-data-background-color:color-mix(in_srgb,var(--color-focus)_5%,white)]': params => params.data?.id === expandedNote,
-        '[--ag-odd-row-background-color:color-mix(in_srgb,var(--color-focus)_5%,white)]': params => params.data?.id === expandedNote,
-      }} suppressRowHoverHighlight theme={theme} loading={!status && !error} columnDefs={columns} rowData={reorderPreview ?? status?.snapshot.segments ?? []}
+      rowClass="group/segment" suppressRowHoverHighlight theme={theme} loading={!status && !error} columnDefs={columns} rowData={reorderPreview ?? status?.snapshot.segments ?? []}
       defaultColDef={{ editable: false, sortable: false, resizable: true, cellStyle: params => ({ height: mainRowHeight(params.data?.id) }) }}
       overlayLoadingTemplate="<span>正在连接本地服务…</span>"
       noRowsOverlayComponent={EmptyProject}

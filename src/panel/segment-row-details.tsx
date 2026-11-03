@@ -23,7 +23,7 @@ function ExpandedNote({ segment, mainHeight, width, left, onHeight, onCollapse, 
   return <div ref={content} id={`segment-note-${segment.id}`} role="region" aria-label={`片段 ${segment.order} 画面说明`} className="pointer-events-auto absolute z-10 bg-background px-3 pb-3" style={{ top: mainHeight, width, left }} onClick={event => event.stopPropagation()} onKeyDown={event => {
     if (event.key === 'Escape' && !event.nativeEvent.isComposing) { event.preventDefault(); event.stopPropagation(); onCollapse(); }
   }}>
-    <div className="rounded-md bg-primary/5 px-3 py-2">
+    <div className="rounded-md bg-muted px-3 py-2">
       <div className="mb-1 flex items-center gap-2 text-xs font-medium">
         <span className="mr-auto">画面说明</span>
         <Button variant="ghost" size="xs" className="h-6 text-xs text-muted-foreground" disabled={!!editReason} title={editReason} onClick={event => onOpen(segment.id, event.currentTarget, 'visualNote')}>编辑说明</Button>
