@@ -63,7 +63,7 @@ for (const [width, height] of [[1600, 1000], [780, 579], [541, 579], [420, 800],
     await page.keyboard.press('Enter');
     const region = page.getByRole('region', { name: '片段 1 画面说明', exact: true });
     await expect(region).toContainText(original.trim());
-    expect(await first.evaluate(e=>getComputedStyle(e).getPropertyValue('--ag-data-background-color'))).not.toBe(normalBackground);
+    expect(await first.evaluate(e=>getComputedStyle(e).getPropertyValue('--ag-data-background-color'))).toBe(normalBackground);
     const viewport=page.locator('.ag-body-horizontal-scroll-viewport');
     for(const right of [true,false]){
       await viewport.evaluate((e,right)=>{e.scrollLeft=right?e.scrollWidth:0;},right);
@@ -219,12 +219,24 @@ test('鼠标取消勾选后恢复普通行背景且保留键盘焦点可见性',
   await expect(first).toBeVisible();
   await page.mouse.move(1, 1);
   const baseline = await overlay();
+  const marker = () => first.evaluate(e => {
+    const s = getComputedStyle(e, '::after');
+    return { width: s.width, background: s.backgroundColor };
+  });
+  const baselineMarker = await marker();
   await checkbox.click();
   await expect(checkbox).toBeChecked();
   await expect(first).toHaveClass(/ag-row-selected/);
+  await expect.poll(() => first.evaluate(e => {
+    const marker = getComputedStyle(e, '::after');
+    return { width: marker.width, color: marker.backgroundColor, pointerEvents: marker.pointerEvents };
+  })).toEqual({ width: '3px', color: 'rgb(8, 117, 209)', pointerEvents: 'none' });
+  await page.mouse.move(1, 1);
+  expect(await first.evaluate(e => getComputedStyle(e.querySelector('.ag-grid-scrolling-cells')!, '::before').backgroundColor)).toBe('rgb(246, 250, 255)');
   await checkbox.click();
   await expect(checkbox).not.toBeChecked();
   await expect(first).not.toHaveClass(/ag-row-selected/);
+  await expect.poll(marker).toEqual(baselineMarker);
   await page.mouse.move(1, 1);
   await expect.poll(overlay).toEqual(baseline);
   await expect(first.locator('.ag-checkbox-input-wrapper')).toHaveCSS('box-shadow', 'none');

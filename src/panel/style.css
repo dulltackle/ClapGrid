@@ -64,7 +64,19 @@ html, body, #root { height: 100%; overflow: hidden; }
 /* 原位编辑使用自有输入边框，移除 Quartz 叠加的编辑单元格装饰。 */
 .segment-grid .ag-row .ag-cell.ag-cell-inline-editing:is([col-id="text"], [col-id="visualNote"]) { border: 0 !important; border-radius: 0; box-shadow: none; padding: 0; }
 .segment-grid [data-inline-editor] textarea:focus { outline: none; box-shadow: none; }
-.segment-grid .ag-row:has([data-inline-editor]) { --ag-selected-row-background-color: color-mix(in srgb, var(--color-focus) 3%, white); }
+
+/* 勾选以左侧细条标记整句，独立于展开说明和原位编辑；不占用单元格宽度。 */
+.segment-grid .ag-row.ag-row-selected::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--color-focus);
+  pointer-events: none;
+  z-index: 20;
+}
 
 /* Quartz 的 focus-within 会在鼠标取消勾选后保留蓝环；仅键盘焦点保留该提示。 */
 .segment-grid .ag-checkbox-input-wrapper:focus-within:not(:has(:focus-visible)) { box-shadow: none; }
