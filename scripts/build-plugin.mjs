@@ -25,11 +25,12 @@ if (process.platform === 'linux') {
 await writeFile(`${destination}/package.json`, JSON.stringify({ name: 'clapgrid', version, private: true, type: 'module' }));
 await cp('dist/panel', `${destination}/dist/panel`, { recursive: true });
 await build({
-  entryPoints: ['src/business/media-worker.ts', 'src/runtime.ts', 'src/service/main.ts', 'src/mcp/main.ts'],
+  entryPoints: ['src/business/media-worker.ts', 'src/business/page-render-worker.ts', 'src/runtime.ts', 'src/service/main.ts', 'src/mcp/main.ts'],
   outbase: 'src', outdir: `${destination}/dist`, bundle: true, platform: 'node',
-  format: 'esm', target: 'node22', external: ['vite'],
+  format: 'esm', target: 'node22', external: ['vite', 'playwright-core'],
   banner: { js: "import { createRequire as clapgridCreateRequire } from 'node:module'; const require = clapgridCreateRequire(import.meta.url);" },
 });
+await cp('node_modules/playwright-core', `${destination}/node_modules/playwright-core`, { recursive: true, dereference: true });
 const manifestPath = `${destination}/.codex-plugin/plugin.json`;
 const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
 manifest.version = version;

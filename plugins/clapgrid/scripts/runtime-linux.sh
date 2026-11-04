@@ -8,6 +8,22 @@ runtime_home=${CLAPGRID_RUNTIME_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/clapg
 action=${1:-check}
 if (( $# )); then shift; fi
 node_bin=''
+headless_shell_version=156.0.8078.4
+headless_shell_bin=''
+
+headless_ready() {
+  local candidate version
+  for candidate in "${CLAPGRID_HEADLESS_SHELL:-}" "$runtime_home/browser/chrome-headless-shell" "$(command -v chrome-headless-shell 2>/dev/null || true)"; do
+    [[ -n $candidate ]] || continue
+    version=$("$candidate" --version 2>/dev/null) || continue
+    if [[ $version == *" $headless_shell_version" ]]; then
+      headless_shell_bin=$candidate
+      export CLAPGRID_HEADLESS_SHELL="$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
 
 node_ready() {
   local candidate
@@ -56,6 +72,7 @@ configure_environment() {
   export PATH
 }
 configure_environment
+headless_ready || true
 
 media_ready() {
   fonts_ready && ffprobe -version >/dev/null 2>&1 && ffmpeg_ready ffmpeg
@@ -88,7 +105,7 @@ xml_text() {
 }
 
 missing() {
-  echo '运行组件缺失或不兼容：需要 Node.js >=22.13（含 SQLite）、FFmpeg/ffprobe（含视频编码与字幕自动换行）、Fontconfig 及中文字体。本次未启动服务；由 Codex 经宿主许可执行 install 后重试。' >&2
+  echo '运行组件缺失或不兼容：需要 Chrome Headless Shell 156.0.8078.4、Node.js >=22.13（含 SQLite）、FFmpeg/ffprobe（含视频编码与字幕自动换行）、Fontconfig 及中文字体。本次未启动服务；由 Codex 经宿主许可执行 install 后重试。' >&2
   exit 10
 }
 
@@ -100,7 +117,7 @@ install_failed() {
 case "$action" in
   install)
     (( $# == 0 )) || exit 2
-    if node_ready && media_ready; then
+    if node_ready && media_ready && headless_ready; then
       echo '运行组件已就绪，跳过安装。'
       exit 0
     fi
@@ -115,7 +132,7 @@ case "$action" in
     [[ $libc == glibc\ * ]] || {
       echo '自动安装仅支持 glibc Linux，不支持 musl 或无法识别的 libc；请自行提供兼容组件后执行 check。' >&2; exit 11;
     }
-    for tool in curl tar xz sha256sum mktemp mkdir mv rm flock fc-list cat; do
+    for tool in curl tar xz sha256sum mktemp mkdir mv rm flock fc-list cat unzip; do
       command -v "$tool" >/dev/null || install_failed "缺少基础工具 $tool，请先准备该工具"
     done
     mkdir -p -- "$runtime_home" || install_failed '无法创建组件目录'
@@ -147,6 +164,19 @@ case "$action" in
       done
       configure_environment
     fi
+    if ! headless_ready; then
+      case "$arch" in
+        x64) browser_platform=linux64; browser_digest=c3e50596aef52c58f8fda3c6b3411c33d34c88b177b3ed1c2243359fd3b8ba20 ;;
+        arm64) browser_platform=linux-arm64; browser_digest=81ab9d4d3c301dc5fdfb6c541b9e6632b16fc819a6a854460f40a76fe2b2c476 ;;
+      esac
+      archive="chrome-headless-shell-$browser_platform.zip"
+      download "$archive" "https://storage.googleapis.com/chrome-for-testing-public/$headless_shell_version/$browser_platform/$archive" "$browser_digest"
+      unzip -q "$temporary/$archive" -d "$temporary" || install_failed 'Headless Shell 解压失败'
+      candidate="$temporary/chrome-headless-shell-$browser_platform"
+      version=$("$candidate/chrome-headless-shell" --version 2>/dev/null) || install_failed 'Headless Shell 无法运行，请准备浏览器所需的系统共享库后重试'
+      [[ $version == *" $headless_shell_version" ]] || install_failed 'Headless Shell 版本不匹配'
+      publish "$candidate" "$runtime_home/browser"
+    fi
     if ! fonts_ready; then
       # Sans2.004 Release 对应的单个字重，避免下载全部字重的 ZIP。
       download NotoSansCJKsc-Regular.otf \
@@ -177,18 +207,19 @@ EOF
       publish "$temporary/fonts.conf" "$runtime_home/fonts.conf"
       configure_environment
     fi
-    node_ready && media_ready || install_failed '安装后组件检查未通过'
+    node_ready && media_ready && headless_ready || install_failed '安装后组件检查未通过'
     echo '组件安装完成；请另行经宿主执行审批启动，并在独立调用中查询状态。'
     ;;
   check)
     (( $# == 0 )) || exit 2
-    node_ready && media_ready || missing
+    node_ready && media_ready && headless_ready || missing
     "$node_bin" --version
     ffmpeg -version
     ffprobe -version
+    "$headless_shell_bin" --version
     ;;
   start|open)
-    node_ready && media_ready || missing
+    node_ready && media_ready && headless_ready || missing
     exec "$node_bin" "$plugin_dir/dist/runtime.js" "$action" "$@"
     ;;
   status|stop|workspace-status|workspace-stop|import-project)

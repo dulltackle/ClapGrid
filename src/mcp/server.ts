@@ -4,10 +4,10 @@ import { buildIdentity, compatibleRuntime } from '../build-identity.js';
 import { readHostWorkspace, hostThreadId } from '../host-workspace.js';
 import { bindWorkspace } from '../workspace-service.js';
 import { z } from 'zod';
-import { exportTaskRequestSchema, submitExportSchema, speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
+import { exportTaskRequestSchema, submitExportSchema, speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importPageSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { RootsListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
-import { queryVisualContext, importMaterial, previewSegment, queryVisualPreviews, submitExport, queryExports, cancelExport, submitSpeechBatch, queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
+import { importPage, queryVisualContext, importMaterial, previewSegment, queryVisualPreviews, submitExport, queryExports, cancelExport, submitSpeechBatch, queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
 
 export function createBusinessMcp(url?: string) {
   const baseUrl = url === undefined ? undefined : localServiceUrl(url);
@@ -120,6 +120,13 @@ export function createBusinessMcp(url?: string) {
       return { isError: true, content: [{ type: 'text', text: error instanceof Error ? error.message : '修改失败，请查询项目确认结果' }] };
     }
   });
+  server.registerTool('clapgrid_import_page', {
+    description: '从当前用户工作空间内的绝对目录导入页面，包含 index.html；按内容摘要保存不可变副本，重复内容返回相同 pageId。页面暴露 DUR、render(t)、READY；仅能读取页面自身文件及页面图层 assetIds 声明的本句素材。',
+    inputSchema: importPageSchema,
+  }, async (input, extra) => {
+    try { const result = await importPage(await connection(extra._meta), input.sourceDirectory, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+  });
   server.registerTool('clapgrid_import_material', {
     description: '导入用户指定的原生 PNG（含透明）、JPEG 或视频，复制原件到项目，返回稳定素材身份；不自动关联或编排。',
     inputSchema: importVideoSchema,
@@ -128,7 +135,7 @@ export function createBusinessMcp(url?: string) {
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   server.registerTool('clapgrid_visual_context', {
-    description: '查询指定片段当前文案、说明、素材、已保存编排及有效配音的精确解码时长（秒）。先完成配音，再据此 duration 提交编排；缺失或待更新的配音会明确拒绝。',
+    description: '返回页面画布 1920×1080、导出帧率、/assets/<assetId> 原件地址及导入上限；页面视口按图层尺寸取偶数，render(t) 使用图层局部时间，DUR 等于 to-from。查询指定片段当前文案、说明、素材、已保存编排及有效配音的精确解码时长（秒）。先完成配音，再据此 duration 提交编排；缺失或待更新的配音会明确拒绝。',
     inputSchema: z.object({ segmentId: z.uuid() }).strict(),
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async (input, extra) => {

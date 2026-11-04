@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 
 type Result = { stdout: string; stderr: string };
-type Options = { signal?: AbortSignal; cwd?: string; timeout?: number };
+type Options = { signal?: AbortSignal; cwd?: string; timeout?: number; processGroup?: boolean };
 type Runner = (command: string, args: string[], options: Options) => Promise<Result>;
 export const mediaScope = new AsyncLocalStorage<Runner>();
 
@@ -60,7 +60,7 @@ export async function startMediaGuardian(directory: string) {
       const abort = () => { if (worker.connected) worker.send({ abort: id }); };
       pending.set(id, { resolve, reject, cleanup: () => options.signal?.removeEventListener('abort', abort) });
       options.signal?.addEventListener('abort', abort, { once: true });
-      worker.send({ id, command, args, options: { cwd: options.cwd, timeout: options.timeout } });
+      worker.send({ id, command, args, options: { cwd: options.cwd, timeout: options.timeout, processGroup: options.processGroup } });
     });
   };
   return { run, verify() { if (closed && !stopping) throw new Error('媒体守护进程异常退出，项目仍锁定；需确认旧进程终止后恢复'); },

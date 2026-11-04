@@ -119,7 +119,7 @@ for (const [machine, libc] of [['riscv64', 'glibc 2.42'], ['x86_64', 'musl']] as
   });
 }
 
-const baseTools = ['uname', 'getconf', 'curl', 'tar', 'xz', 'sha256sum', 'mktemp', 'mkdir', 'mv', 'rm', 'flock', 'fc-list', 'cat'];
+const baseTools = ['uname', 'getconf', 'curl', 'tar', 'xz', 'sha256sum', 'mktemp', 'mkdir', 'mv', 'rm', 'flock', 'fc-list', 'cat', 'unzip'];
 function installTools(root: string) {
   for (const tool of baseTools) symlinkSync(`/usr/bin/${tool}`, join(root, tool));
 }
@@ -200,4 +200,26 @@ test('check 使用用户目录的媒体组件，系统已有的可用组件仍�
   });
   assert.equal(system.status, 0, system.stderr);
   assert.match(system.stdout, /跳过安装/);
+});
+
+test('缺少固定版本 Headless Shell 时 check 返回 10，错误版本不能复用', async ({ command, createDirectory }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-headless-'));
+  const wrong = join(root, 'chrome-headless-shell');
+  writeFileSync(wrong, '#!/bin/bash\necho "Google Chrome for Testing 1.0.0.0"\n', { mode: 0o755 });
+  for (const executable of [join(root, 'missing'), wrong]) {
+    const result = await command('/bin/bash', [script, 'check'], { env: { ...process.env, CLAPGRID_RUNTIME_HOME: root, CLAPGRID_HEADLESS_SHELL: executable }, encoding: 'utf8' });
+    assert.equal(result.status, 10); assert.match(result.stderr, /Chrome Headless Shell 156.0.8078.4/);
+  }
+});
+
+installTest('Headless Shell 摘要不匹配时不发布，保留旧组件并允许重试', async ({ command, createDirectory, skip }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-headless-digest-'));
+  if (!(await ready({ command }, root))) skip('需要真实媒体与固定浏览器组件');
+  const bin = join(root, 'bin'); mkdirSync(bin);
+  writeFileSync(join(bin, 'curl'), '#!/bin/bash\nwhile (( $# )); do if [[ $1 == -o ]]; then printf corrupt > "$2"; exit; fi; shift; done\n', { mode: 0o755 });
+  mkdirSync(join(root, 'browser')); writeFileSync(join(root, 'browser', 'incomplete'), '旧组件');
+  const result = await command('/bin/bash', [script, 'install'], { env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, CLAPGRID_RUNTIME_HOME: root, CLAPGRID_HEADLESS_SHELL: join(root, 'missing') }, encoding: 'utf8' });
+  assert.equal(result.status, 13, result.stderr); assert.match(result.stderr, /chrome-headless-shell.*SHA-256.*校验失败/);
+  assert.equal(readFileSync(join(root, 'browser', 'incomplete'), 'utf8'), '旧组件');
+  assert.equal(readdirSync(root).some(name => name.startsWith('.install-')), false);
 });

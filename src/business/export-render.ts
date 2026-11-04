@@ -1,10 +1,11 @@
+import { fileURLToPath } from 'node:url';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { ExportSettings, Segment, VisualPlan } from '../shared/contracts.js';
 import { exportEncodingArguments } from './export-media.js';
 import { mediaProcess } from './media-process.js';
 
-export type RenderSegment = { segment: Segment; videos: { path: string; start: number; assetId?: string; kind?: 'image' | 'video' }[]; plan?: VisualPlan; audio: string; duration: number };
+export type RenderSegment = { segment: Segment; projectDirectory?: string; assetMimes?: Record<string, string>; videos: { path: string; start: number; assetId?: string; kind?: 'image' | 'video' }[]; plan?: VisualPlan; audio: string; duration: number };
 const localInput = ['-protocol_whitelist', 'file,pipe'];
 
 export async function prepareExportAudio(source: string, directory: string, index: number, signal: AbortSignal) {
@@ -38,18 +39,34 @@ export async function renderExportSegment(input: RenderSegment, settings: Export
   signal.throwIfAborted();
   const plan = input.plan;
   if (!plan && input.videos.length !== 1) throw new Error('请由 agent 保存明确画面编排，不能自动均分素材时长');
-  const layers = plan?.layers ?? [{ assetId: input.videos[0]!.assetId, role: 'background', from: 0, to: input.duration, start: input.videos[0]!.start, x: 0, y: 0, width: 1, height: 1, z: 0 }];
+  const layers = plan?.layers ?? [{ kind: 'asset' as const, assetId: input.videos[0]!.assetId, role: 'background', from: 0, to: input.duration, start: input.videos[0]!.start, x: 0, y: 0, width: 1, height: 1, z: 0 }];
   const ordered = layers.map((layer, index) => ({ ...layer, index })).sort((a, b) => a.z - b.z || a.index - b.index);
-  const sources = ordered.map(layer => {
+  const sources = [];
+  for (const layer of ordered) {
+    if (layer.kind === 'page') {
+      if (!input.projectDirectory) throw new Error('页面项目路径缺失');
+      const output = join(directory, `page-${index}-${layer.index}.mkv`);
+      const config = join(directory, `page-${index}-${layer.index}.json`);
+      const assets = Object.fromEntries(layer.assetIds.map(id => {
+        const source = input.videos.find(video => video.assetId === id);
+        if (!source) throw new Error('页面声明的素材缺失');
+        return [id, { path: source.path, mime: input.assetMimes?.[id] ?? 'application/octet-stream' }];
+      }));
+      await writeFile(config, JSON.stringify({ projectDirectory: input.projectDirectory, pageId: layer.pageId, assets, width: Math.max(2, Math.round(1920 * layer.width / 2) * 2), height: Math.max(2, Math.round(1080 * layer.height / 2) * 2), duration: layer.to - layer.from, fps: settings.fps, transparent: layer.role === 'overlay', output }), { flag: 'wx' });
+      const sourceMode = import.meta.url.endsWith('.ts');
+      await mediaProcess(process.execPath, [...(sourceMode ? ['--import', 'tsx'] : []), fileURLToPath(new URL(`./page-render-worker.${sourceMode ? 'ts' : 'js'}`, import.meta.url)), config], { signal, processGroup: true });
+      sources.push({ path: output, start: 0, kind: 'video' }); continue;
+    }
     const source = input.videos.find(video => video.assetId === layer.assetId);
-    if (!source) throw new Error('编排素材缺失'); return source;
-  });
+    if (!source) throw new Error('编排素材缺失'); sources.push(source);
+  }
   const filters = [`color=c=black:s=1920x1080:r=${settings.fps}:d=${input.duration}[base]`];
   for (const [index, layer] of ordered.entries()) {
-    const width = Math.max(2, Math.floor(1920 * layer.width / 2) * 2);
-    const height = Math.max(2, Math.floor(1080 * layer.height / 2) * 2);
+    const width = Math.max(2, (layer.kind === 'page' ? Math.round : Math.floor)(1920 * layer.width / 2) * 2);
+    const height = Math.max(2, (layer.kind === 'page' ? Math.round : Math.floor)(1080 * layer.height / 2) * 2);
     const duration = layer.to - layer.from;
-    filters.push(`[${index}:v:0]setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=${input.duration + layer.start},trim=start=${layer.start},setpts=PTS-STARTPTS,scale=w='max(2,trunc(min(${width},${height}*dar)/2)*2)':h='max(2,trunc(min(${height},${width}/dar)/2)*2)',setsar=1,format=rgba,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black@0,fps=${settings.fps},tpad=stop_mode=clone:stop_duration=${input.duration},trim=duration=${duration},setpts=PTS-STARTPTS+${layer.from}/TB[v${index}]`);
+    const start = layer.kind === 'page' ? 0 : layer.start;
+    filters.push(`[${index}:v:0]setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=${input.duration + start},trim=start=${start},setpts=PTS-STARTPTS,scale=w='max(2,trunc(min(${width},${height}*dar)/2)*2)':h='max(2,trunc(min(${height},${width}/dar)/2)*2)',setsar=1,format=rgba,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black@0,fps=${settings.fps},tpad=stop_mode=clone:stop_duration=${input.duration},trim=duration=${duration},setpts=PTS-STARTPTS+${layer.from}/TB[v${index}]`);
     filters.push(`[${index ? 'b' + (index - 1) : 'base'}][v${index}]overlay=x=${Math.round(1920 * layer.x)}:y=${Math.round(1080 * layer.y)}:eof_action=pass:repeatlast=0:enable='gte(t,${layer.from})*lt(t,${layer.to})'[b${index}]`);
   }
   filters.push(`[b${ordered.length - 1}]subtitles=subtitle-${index}.ass:wrap_unicode=1[out]`);
