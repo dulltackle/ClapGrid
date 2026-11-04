@@ -14,6 +14,7 @@ type SpeechProps = Omit<ComponentProps<typeof SegmentSpeech>, 'segment' | 'gener
   generate: (id: string) => void; history: (id: string, trigger: HTMLElement) => void;
 };
 type VisualProps = {
+  segmentEditingBusy?: boolean;
   assets: ServiceStatus['snapshot']['assets']; preview: (segment: Segment, trigger: HTMLButtonElement, index?: number) => void;
   trayId: string | null; toggleTray: (id: string) => void;
   previews: ExportTask[]; composed: (task: ExportTask, trigger: HTMLButtonElement) => void;
@@ -22,25 +23,26 @@ type VisualProps = {
 };
 type NoteProps = { expandedId: string | null; toggleNote: (id: string) => void };
 
-export function SegmentRowCell({ data, draft, query, activeId, visit, rowHeight, editorFor, generate, history, actionsFor, ...rest }: SpeechProps & VisualProps & NoteProps & {
+export function SegmentRowCell({ data, draft, query, activeId, visit, rowHeight, editorFor, cancelEdit, generate, history, actionsFor, ...rest }: SpeechProps & VisualProps & NoteProps & {
   data?: Segment; draft?: { id: string; text: string } | null; editorFor?: (segment: Segment) => ReactNode;
-  query: string; activeId: string | null; visit: number; rowHeight: number;
+  query: string; activeId: string | null; visit: number; rowHeight: number; cancelEdit?: () => void;
 }) {
   if (!data) return null;
   const editor = editorFor?.(data);
-  if (editor) return editor;
-  return <div className="flex h-full w-full min-w-0 flex-col pb-1">
+  return <div data-inline-editor={editor ? '' : undefined} onKeyDown={event => {
+    if (editor && event.key === 'Escape' && !event.defaultPrevented && !event.nativeEvent.isComposing) { event.preventDefault(); event.stopPropagation(); cancelEdit?.(); }
+  }} className="flex h-full w-full min-w-0 flex-col pb-1">
     <div className="flex min-h-0 flex-1 items-center gap-4 border-0 border-b border-solid border-input/60 text-[15px]">
-      <div data-segment-script title="单击编辑口播文案" className="flex h-full min-w-0 flex-1 cursor-text items-center rounded-md transition-colors hover:bg-muted hover:inset-ring hover:inset-ring-input motion-reduce:transition-none">
+      {editor || <div data-segment-script title="单击编辑口播文案" onMouseDown={event => event.preventDefault()} className="flex h-full min-w-0 flex-1 cursor-text items-start rounded-md border border-solid border-transparent pl-2 pr-[88px] transition-colors hover:bg-muted hover:inset-ring hover:inset-ring-input motion-reduce:transition-none">
         <SearchText text={data.text} query={query} current={data.id === activeId} visit={visit} rowHeight={rowHeight - 44} />
-      </div>
+      </div>}
       <SegmentSpeech {...rest} actions={actionsFor(data)} segment={data} draftText={draft?.id === data.id ? draft.text : undefined} generate={() => generate(data.id)} history={trigger => history(data.id, trigger)} />
     </div>
     <SegmentRowSupport {...rest} data={data} actions={actionsFor(data)} />
   </div>;
 }
 
-export function SegmentRowSupport({ data, assets, preview, expandedId, toggleNote, associate, rename, unlink, actions, trayId, toggleTray, previews, composed }: VisualProps & NoteProps & {
+export function SegmentRowSupport({ data, assets, preview, expandedId, toggleNote, associate, rename, unlink, actions, trayId, toggleTray, previews, composed, segmentEditingBusy }: VisualProps & NoteProps & {
   data: Segment; actions: SegmentActions;
 }) {
   const trayTrigger = useRef<HTMLButtonElement>(null);
@@ -62,7 +64,7 @@ export function SegmentRowSupport({ data, assets, preview, expandedId, toggleNot
     <PopoverContent aria-label={`片段 ${data.order} 素材面板`} className="w-[min(452px,calc(100vw-24px))] rounded-xl p-0"><section id={`materials-${data.id}`} aria-label={`片段 ${data.order} 的画面素材`} className="flex min-w-0 flex-col">
       <div className="flex min-w-0 items-center gap-2 px-4 pb-3 pt-3">
         <span className="mr-auto text-sm font-medium">画面素材 <span className="ml-1 text-xs font-normal text-muted-foreground">{materials.length}</span></span>
-        <Button variant="ghost" size="xs" className="text-primary" disabled={!actions.associate.enabled} title={actions.associate.reason} aria-label={`为片段 ${data.order} 添加画面素材`} onClick={event => associate(data.id, event.currentTarget, materials.length)}><PlusIcon aria-hidden />添加</Button>
+        <Button variant="ghost" size="xs" className={`text-primary ${segmentEditingBusy ? 'disabled:opacity-100' : ''}`} disabled={!actions.associate.enabled} title={actions.associate.reason} aria-label={`为片段 ${data.order} 添加画面素材`} onClick={event => associate(data.id, event.currentTarget, materials.length)}><PlusIcon aria-hidden />添加</Button>
         <Button variant="ghost" size="xs" className="size-6 p-0 text-muted-foreground" aria-label="关闭素材面板" onClick={() => toggleTray(data.id)}><Cross2Icon aria-hidden /></Button>
       </div>
       <div className="grid min-w-0 grid-cols-2 gap-3 px-4 pb-4" tabIndex={0} aria-label="本句素材列表">
@@ -73,8 +75,8 @@ export function SegmentRowSupport({ data, assets, preview, expandedId, toggleNot
           return <div key={`${index}-${assetId}`} className="min-w-0">
             <button className="relative block aspect-video w-full cursor-pointer overflow-hidden rounded-md border-0 bg-muted p-0" aria-label={`${image ? '查看' : '播放'}原件 ${name}`} onClick={event => preview(data, event.currentTarget, index)}><img src={`${panelServiceUrl()}/api/media/${assetId}/thumbnail`} alt="" className="h-full w-full object-cover" /><span className="absolute bottom-1 right-1 flex items-center gap-1 rounded bg-background px-1 py-0.5 text-[10px] text-foreground"><EnterFullScreenIcon aria-hidden className="size-3" />原件</span></button>
             <div className="mt-1 flex min-w-0 items-center gap-1">
-              <button type="button" className="flex min-w-0 flex-1 cursor-pointer items-center gap-1 rounded border-0 bg-transparent p-0 text-left text-xs hover:bg-ui-accent disabled:cursor-default disabled:opacity-50" disabled={!asset || !actions.associate.enabled} aria-label={`重命名素材 ${name}`} title={`重命名：${name}`} onClick={event => asset && rename(asset, event.currentTarget)}><span className="min-w-0 flex-1 truncate">{name}</span><Pencil1Icon aria-hidden className="size-3 shrink-0 text-muted-foreground" /></button>
-              <Button variant="ghost" size="xs" className="size-6 shrink-0 p-0 text-muted-foreground" disabled={!actions.associate.enabled} aria-label={`移出本句 ${name}`} title="移出本句" onClick={() => { trayTrigger.current?.focus(); unlink(data, index); }}><MinusIcon aria-hidden /></Button>
+              <button type="button" className={`flex min-w-0 flex-1 cursor-pointer items-center gap-1 rounded border-0 bg-transparent p-0 text-left text-xs hover:bg-ui-accent disabled:cursor-default ${segmentEditingBusy && asset ? 'disabled:opacity-100' : 'disabled:opacity-50'}`} disabled={!asset || !actions.associate.enabled} aria-label={`重命名素材 ${name}`} title={`重命名：${name}`} onClick={event => asset && rename(asset, event.currentTarget)}><span className="min-w-0 flex-1 truncate">{name}</span><Pencil1Icon aria-hidden className="size-3 shrink-0 text-muted-foreground" /></button>
+              <Button variant="ghost" size="xs" className={`size-6 shrink-0 p-0 text-muted-foreground ${segmentEditingBusy ? 'disabled:opacity-100' : ''}`} disabled={!actions.associate.enabled} aria-label={`移出本句 ${name}`} title="移出本句" onClick={() => { trayTrigger.current?.focus(); unlink(data, index); }}><MinusIcon aria-hidden /></Button>
             </div>
             <div className="text-[11px] text-muted-foreground">{image ? '图片' : '视频'}{asset?.width && asset.height ? ` · ${asset.width} × ${asset.height}` : ''}</div>
           </div>;
@@ -108,10 +110,10 @@ export function SegmentRowActions({ data, actionsFor, open, remove, insert, chan
 }
 
 /** 稳定的渲染组件让状态刷新保留序号入口的 DOM 与键盘焦点。 */
-export function SegmentOrderCell({ data, actionsFor, drag }: {
-  data?: Segment; actionsFor: (segment: Segment) => SegmentActions;
+export function SegmentOrderCell({ data, actionsFor, drag, segmentEditingBusy }: {
+  data?: Segment; actionsFor: (segment: Segment) => SegmentActions; segmentEditingBusy?: boolean;
   drag: Pick<ReturnType<typeof useSegmentDrag>, 'keyboard' | 'start'>;
 }) {
   if (!data) return null;
-  return <span className="flex h-full items-center justify-center"><button className="group/order relative flex h-7 w-full min-w-7 cursor-grab touch-none items-center justify-center rounded-md border-0 bg-transparent p-0 text-foreground hover:bg-ui-accent active:cursor-grabbing disabled:cursor-default disabled:opacity-30" aria-label={`拖动片段 ${data.order}`} disabled={!actionsFor(data).drag.enabled} title={actionsFor(data).drag.reason || '拖动序号调整片段顺序'} onKeyDown={event => drag.keyboard(event, data.id)} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}><span data-segment-order className="tabular-nums group-hover/order:invisible group-focus-visible/order:invisible group-aria-selected/segment:font-medium group-aria-selected/segment:text-primary">{data.order}</span><DragHandleDots2Icon aria-hidden className="absolute size-4 opacity-0 group-hover/order:opacity-100 group-focus-visible/order:opacity-100" /></button></span>;
+  return <span className="flex h-full items-center justify-center"><button className={`group/order relative flex h-7 w-full min-w-7 cursor-grab touch-none items-center justify-center rounded-md border-0 bg-transparent p-0 text-foreground hover:bg-ui-accent active:cursor-grabbing disabled:cursor-default ${segmentEditingBusy ? 'disabled:opacity-100' : 'disabled:opacity-30'}`} aria-label={`拖动片段 ${data.order}`} disabled={!actionsFor(data).drag.enabled} title={actionsFor(data).drag.reason || '拖动序号调整片段顺序'} onKeyDown={event => drag.keyboard(event, data.id)} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}><span data-segment-order className="tabular-nums group-hover/order:invisible group-focus-visible/order:invisible group-aria-selected/segment:font-medium group-aria-selected/segment:text-primary">{data.order}</span><DragHandleDots2Icon aria-hidden className="absolute size-4 opacity-0 group-hover/order:opacity-100 group-focus-visible/order:opacity-100" /></button></span>;
 }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { GridApi } from 'ag-grid-community';
-import { saveSegment } from '../shared/client.js';
+import { queryStatus, saveSegment } from '../shared/client.js';
 import { panelServiceUrl } from './service-url.js';
 import type { Segment, ServiceStatus } from '../shared/contracts.js';
 import type { FocusReturn, segmentFocusCoordinator } from './dialog-focus.js';
@@ -10,7 +10,7 @@ import type { SegmentDestination, SegmentNavigation, SegmentTextField } from './
 
 export { segmentTargets } from './segment-targets.js';
 
-export type SegmentIntent = { id: string; inline?: boolean; field?: SegmentTextField } | null;
+export type SegmentIntent = { id: string; inline?: boolean; field?: SegmentTextField; preventScroll?: boolean } | null;
 
 type Draft = { id: string; base: string; text: string; baseVisualNote: string; visualNote: string; field: SegmentTextField };
 
@@ -27,6 +27,9 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
   const promptSource = useRef<HTMLElement | null>(null);
   const latest = useRef({ accept }); latest.current = { accept };
   const [saving, setSaving] = useState(false);
+  const [navigating, setNavigating] = useState(false);
+  // 释放修改权后仍需确认服务状态，避免旧的“用户正在编辑”造成控件再禁用一帧。
+  const [finishing, setFinishing] = useState(false);
   const [failure, setFailure] = useState<{ text: string; visualNote: string; message: string } | null>(null);
   const draftFailed = (cause: Error) => {
     const value = current.current;
@@ -37,8 +40,9 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
   const lifetime = useRef(0);
   const flight = useRef<Promise<boolean> | null>(null);
   const actionRunning = useRef<object | null>(null);
+  const navigationFlight = useRef<{ done: Promise<void> } | null>(null);
   useEffect(() => {
-    const leave = () => { ++lifetime.current; ++sequence.current; actionRunning.current = null; flight.current = null; setSaving(false); };
+    const leave = () => { ++lifetime.current; ++sequence.current; actionRunning.current = null; flight.current = null; navigationFlight.current = null; setSaving(false); setNavigating(false); setFinishing(false); };
     window.addEventListener('pagehide', leave);
     return () => { leave(); window.removeEventListener('pagehide', leave); };
   }, []);
@@ -47,11 +51,13 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
   const disconnected = () => draftFailed(new Error('编辑连接已断开，草稿已保留；请重新保存或放弃。'));
   const commit = (): Promise<boolean> => {
     if (flight.current) return flight.current;
+    if (finishing) return Promise.resolve(false);
     const value = current.current;
     if (!value) return Promise.resolve(!editing.getState().busy);
     if (editing.getState().busy) return Promise.resolve(false);
     const version = lifetime.current;
     const valid = () => version === lifetime.current && current.current === value;
+    setFinishing(true);
     const run = async () => {
       if (dirtyDraft(value)) {
         setSaving(true);
@@ -72,29 +78,45 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
         }, cause => draftFailed(new Error(`保存失败：${cause.message}`)));
         if (!saved) return false;
       } else await editing.cancel('segments');
+      const released = await queryStatus(panelServiceUrl());
       if (!valid()) return false;
+      focus.acceptGridUpdate(() => latest.current.accept(released));
       setFailure(null); update(null); return true;
     };
-    const operation = run().finally(() => { if (flight.current === operation) { flight.current = null; setSaving(false); } });
+    const operation = run().catch(cause => { if (valid()) draftFailed(cause instanceof Error ? cause : new Error('读取项目状态失败')); return false; }).finally(() => { if (flight.current === operation) { flight.current = null; setSaving(false); setFinishing(false); } });
     flight.current = operation;
     return operation;
   };
   const navigate = (intent: SegmentIntent, origin?: FocusReturn) => {
-    if (actionRunning.current || (editing.getState().busy && !flight.current)) { origin?.cancel(); return; }
+    if (actionRunning.current || ((finishing || editing.getState().busy) && !flight.current && !navigationFlight.current)) { origin?.cancel(); return; }
     const version = ++sequence.current;
     const ticket = navigation.request(origin, { waitForInline: true });
     const destination: SegmentDestination = intent && { ...intent, mode: 'inline' };
-    void (async () => {
-      if (!await commit()) { ticket.fail(); return; }
-      if (version !== sequence.current || !ticket.valid()) { origin?.cancel(); return; }
-      await ticket.arrive(() => {}, destination);
+    // 保存中的新目标共用原提交结果，不能用交接期间捕获的忙态再次提交。
+    const pendingCommit = flight.current;
+    const previous = navigationFlight.current?.done;
+    const transition = { done: Promise.resolve() };
+    navigationFlight.current = transition;
+    setNavigating(true);
+    transition.done = (async () => {
+      try {
+        // 连续点击可替换目标，但要等上次申请或释放修改权结束，不能在忙态丢弃新目标。
+        await previous;
+        if (version !== sequence.current || !ticket.valid()) { origin?.cancel(); return; }
+        if (!await (pendingCommit ?? commit())) { ticket.fail(); return; }
+        if (version !== sequence.current || !ticket.valid()) { origin?.cancel(); return; }
+        await ticket.arrive(() => {}, destination);
+      } finally {
+        if (navigationFlight.current === transition) { navigationFlight.current = null; setNavigating(false); }
+      }
     })();
   };
-  const begin = (field: SegmentTextField = 'text', target: string | null = null, requested = navigation.intent()) => {
+  const begin = async (field: SegmentTextField = 'text', target: string | null = null, requested = navigation.intent()) => {
     if (!target || current.current || editing.getState().editing || editing.getState().busy || !canEdit()) return Promise.resolve();
-    return editing.begin('segments', next => {
+    let cancelled: Promise<boolean> | undefined;
+    await editing.begin('segments', next => {
       focus.acceptGridUpdate(() => accept(next));
-      if (!requested.valid()) { void editing.cancel('segments'); return; }
+      if (!requested.valid()) { cancelled = editing.cancel('segments'); return; }
       const segment = next.snapshot.segments.find(item => item.id === target);
       if (!segment) throw new Error('口播片段已删除，请选择其他片段。');
       setFailure(null);
@@ -102,28 +124,36 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
       // 原位 renderer 必须在修改权就绪时读到草稿；调用方不再处理表格时序。
       flushSync(() => update(value));
     }, disconnected, failed);
+    // 过期目标释放完成后，下一次导航才可重新申请。
+    await cancelled;
   };
   const discard = async () => {
-    if (flight.current || editing.getState().busy) return;
+    if (finishing || flight.current || editing.getState().busy) return;
     ++sequence.current; setPending(false);
     const value = current.current;
     const version = lifetime.current;
-    const restore = value ? focus.captureSegment(value.field === 'visualNote' ? { id: value.id, note: true } : { id: value.id, column: 'text' }) : undefined;
-    await editing.cancel('segments');
-    if (version !== lifetime.current || current.current !== value) { restore?.cancel(); return; }
-    setFailure(null);
-    if (restore) focus.close(restore, () => { update(null); restore(); });
-    else { update(null); }
+    const restore = value ? focus.captureSegment(value.field === 'visualNote' ? { id: value.id, note: true } : { id: value.id, column: 'text' }, { preventScroll: true }) : undefined;
+    setFinishing(true);
+    try {
+      await editing.cancel('segments');
+      const released = await queryStatus(panelServiceUrl());
+      if (version !== lifetime.current || current.current !== value) { restore?.cancel(); return; }
+      focus.acceptGridUpdate(() => latest.current.accept(released));
+      setFailure(null);
+      if (restore) focus.close(restore, () => { update(null); restore(); });
+      else { update(null); }
+    } catch (cause) { restore?.cancel(); if (version === lifetime.current) draftFailed(cause instanceof Error ? cause : new Error('读取项目状态失败')); }
+    finally { if (version === lifetime.current) setFinishing(false); }
   };
   const escape = () => {
-    if (flight.current || editing.getState().busy) return;
+    if (finishing || flight.current || editing.getState().busy) return;
     if (dirtyDraft(current.current)) { promptSource.current = document.activeElement as HTMLElement; setPending(true); }
     else if (current.current) void discard();
     else navigate(null);
   };
   const perform = async (work: (savedTarget: (target: Segment) => Segment) => Promise<void>) => {
     // 有副作用的动作只接受一次；导航才使用最新目标替换策略。
-    if (actionRunning.current || flight.current || editing.getState().busy) return;
+    if (finishing || actionRunning.current || flight.current || editing.getState().busy) return;
     const action = {}; actionRunning.current = action; ++sequence.current;
     const version = lifetime.current;
     const value = current.current;
@@ -156,10 +186,10 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
       input?.scrollIntoView({ block: 'nearest' }); input?.focus({ preventScroll: true });
     });
   };
-  return { draft, dirty, deleted, saving, draftStatus, draftError: activeFailure?.message ?? '', returnToDraft, pending, navigate, begin,
+  return { draft, dirty, deleted, saving, navigating, finishing, draftStatus, draftError: activeFailure?.message ?? '', returnToDraft, pending, navigate, begin,
     change: (value: string, field: SegmentTextField = 'text') => {
       const previous = current.current;
-      if (previous && !flight.current) {
+      if (previous && !finishing && !flight.current) {
         const next = { ...previous, [field]: value, field };
         if (!dirtyDraft(next)) setFailure(null);
         update(next);
@@ -168,7 +198,7 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
     commit, perform, escape, discard,
     save: async () => {
       const value = current.current;
-      const restore = value ? focus.captureSegment(value.field === 'visualNote' ? { id: value.id, note: true } : { id: value.id, column: 'text' }) : undefined;
+      const restore = value ? focus.captureSegment(value.field === 'visualNote' ? { id: value.id, note: true } : { id: value.id, column: 'text' }, { preventScroll: true }) : undefined;
       const requested = navigation.intent();
       if (await commit() && requested.valid()) restore?.(); else restore?.cancel();
     },

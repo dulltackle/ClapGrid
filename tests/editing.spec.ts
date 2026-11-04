@@ -1,5 +1,49 @@
 import { test, expect } from './helpers/project.js';
 
+for (const text of ['短句。', '欢迎来到 ClapGrid！今天用一分钟，体验从文案到口播视频的制作流程。']) test(`切换文案编辑时文字区域和周边布局保持稳定：${text}`, async ({ page, project }) => {
+  const [id] = await project.seed([text]);
+  await page.setViewportSize({ width: 780, height: 579 });
+  await page.goto(project.url);
+  const row = page.locator(`[row-id="${id}"]`);
+  const script = row.locator('[data-segment-script]');
+  const before = await script.evaluate(element => {
+    const summary = element.querySelector('.text-summary')!;
+    const rect = summary.getBoundingClientRect();
+    const style = getComputedStyle(summary);
+    return { x: rect.x, y: rect.y, width: rect.width, fontSize: style.fontSize, lineHeight: style.lineHeight };
+  });
+  const support = await row.locator('[data-segment-support]').boundingBox();
+  const speech = await row.locator('[data-segment-speech]').boundingBox();
+  await script.click();
+  const input = page.getByLabel('文案全文', { exact: true });
+  await expect(input).toBeFocused();
+  const after = await input.evaluate(element => {
+    const rect = element.getBoundingClientRect(), style = getComputedStyle(element);
+    const left = parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft);
+    const right = parseFloat(style.borderRightWidth) + parseFloat(style.paddingRight);
+    return { x: rect.x + left, y: rect.y + parseFloat(style.borderTopWidth) + parseFloat(style.paddingTop), width: rect.width - left - right, fontSize: style.fontSize, lineHeight: style.lineHeight };
+  });
+  expect(after).toEqual(before);
+  expect(await row.locator('[data-segment-support]').boundingBox()).toEqual(support);
+  expect(await row.locator('[data-segment-speech]').boundingBox()).toEqual(speech);
+});
+
+test('单击进入文案编辑后光标位于末尾，不显示滚动条且输入保留原文', async ({ page, project }) => {
+  const [id] = await project.seed(['保留这段原文']);
+  await page.goto(project.url);
+  await page.locator(`[row-id="${id}"] [data-segment-script]`).click();
+  const input = page.getByLabel('文案全文', { exact: true });
+  await expect(input).toBeFocused();
+  expect(await input.evaluate(node => {
+    const textarea = node as HTMLTextAreaElement;
+    return textarea.selectionStart === textarea.value.length && textarea.selectionEnd === textarea.value.length;
+  })).toBe(true);
+  await expect(input).toHaveCSS('overflow-x', 'hidden');
+  await expect(input).toHaveCSS('overflow-y', 'hidden');
+  await input.pressSequentially('!');
+  await expect(input).toHaveValue('保留这段原文!');
+});
+
 test('单击文案进入编辑，通过真实服务保存并在重载后保留', async ({ page, project }) => {
   const [id] = await project.seed(['原文']);
   await page.goto(project.url);
@@ -12,7 +56,40 @@ test('单击文案进入编辑，通过真实服务保存并在重载后保留',
   expect((await project.status()).snapshot.segments[0]!.text).toBe('已保存的新文案');
 });
 
-import { holdResponse } from './helpers/response-gate.js';
+import { holdRequest, holdResponse } from './helpers/response-gate.js';
+
+for (const same of [true, false]) test(`申请修改权期间连续点击${same ? '同一' : '其他'}文案仍进入最后点击的编辑目标`, async ({ page, project }) => {
+  const [id, next] = await project.seed(['原文', '下一条']);
+  await page.goto(project.url);
+  const gate = await holdRequest(page, '/api/edit-session');
+  try {
+    await page.locator(`[row-id="${id}"] [data-segment-script]`).click();
+    await gate.received;
+    await page.locator(`[row-id="${same ? id : next}"] [data-segment-script]`).click();
+  } finally { gate.release(); }
+  const input = page.getByLabel('文案全文', { exact: true });
+  await expect(input).toHaveValue(same ? '原文' : '下一条');
+  await expect(input).toBeFocused();
+  expect((await project.status()).modification?.owner).toBe('user');
+});
+
+test('保存草稿期间连续点击文案只提交一次并进入最后点击的目标', async ({ page, project }) => {
+  const [a, b, c] = await project.seed(['A', 'B', 'C']);
+  await page.goto(project.url);
+  await page.locator(`[row-id="${a}"] [data-segment-script]`).click();
+  const input = page.getByLabel('文案全文', { exact: true });
+  await input.fill('A 草稿');
+  const gate = await holdResponse(page, '/api/segments/edit');
+  try {
+    await page.locator(`[row-id="${b}"] [data-segment-script]`).click();
+    await gate.received;
+    await page.locator(`[row-id="${c}"] [data-segment-script]`).click();
+  } finally { gate.release(); }
+  await expect(input).toHaveValue('C');
+  await expect(input).toBeFocused();
+  expect(gate.calls).toBe(1);
+  expect((await project.status()).snapshot.segments.map(segment => segment.text)).toEqual(['A 草稿', 'B', 'C']);
+});
 
 for (const width of [780, 420]) test(`原位编辑保留行高、画面上下文和内嵌操作 ${width}`, async ({ page, project }) => {
   const [id, next] = await project.seed(['原文', '下一条']);

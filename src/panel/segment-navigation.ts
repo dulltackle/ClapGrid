@@ -4,7 +4,7 @@ import type { FocusIntent, FocusReturn, segmentFocusCoordinator } from './dialog
 import type { ProjectEditing } from './project-editing.js';
 
 export type SegmentTextField = 'text' | 'visualNote';
-export type SegmentDestination = { id: string; mode: 'locate' | 'inline'; field?: SegmentTextField; clearSearch?: boolean } | null;
+export type SegmentDestination = { id: string; mode: 'locate' | 'inline'; field?: SegmentTextField; clearSearch?: boolean; preventScroll?: boolean } | null;
 type Focus = Pick<ReturnType<typeof segmentFocusCoordinator>, 'intent' | 'close' | 'captureSegment' | 'acceptGridUpdate'>;
 
 /** 口播片段导航事务：快照始终接收，只有当前票据可以提交定位与来源。 */
@@ -51,7 +51,9 @@ export function segmentNavigation({ grid, editing, focus, clearSearch, inline, f
         const row = grid()?.getRowNode(destination.id);
         if (row?.rowIndex == null) { cancel(); failed(new Error('口播片段已删除，请选择其他片段。')); return; }
         const field = destination.field ?? 'text';
-        grid()?.ensureColumnVisible('text'); grid()?.ensureIndexVisible(row.rowIndex, 'middle');
+        if (!destination.preventScroll) {
+          grid()?.ensureColumnVisible('text'); grid()?.ensureIndexVisible(row.rowIndex, 'middle');
+        }
         ended = true; pending = undefined;
         origin?.cancel();
         if (destination.mode === 'inline') await inline(destination.id, field, { valid });
