@@ -40,7 +40,7 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
   const lifetime = useRef(0);
   const flight = useRef<Promise<boolean> | null>(null);
   const actionRunning = useRef<object | null>(null);
-  const navigationFlight = useRef<object | null>(null);
+  const navigationFlight = useRef<{ done: Promise<void> } | null>(null);
   useEffect(() => {
     const leave = () => { ++lifetime.current; ++sequence.current; actionRunning.current = null; flight.current = null; navigationFlight.current = null; setSaving(false); setNavigating(false); setFinishing(false); };
     window.addEventListener('pagehide', leave);
@@ -88,16 +88,22 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
     return operation;
   };
   const navigate = (intent: SegmentIntent, origin?: FocusReturn) => {
-    if (actionRunning.current || ((finishing || editing.getState().busy) && !flight.current)) { origin?.cancel(); return; }
+    if (actionRunning.current || ((finishing || editing.getState().busy) && !flight.current && !navigationFlight.current)) { origin?.cancel(); return; }
     const version = ++sequence.current;
     const ticket = navigation.request(origin, { waitForInline: true });
     const destination: SegmentDestination = intent && { ...intent, mode: 'inline' };
-    const transition = {};
+    // 保存中的新目标共用原提交结果，不能用交接期间捕获的忙态再次提交。
+    const pendingCommit = flight.current;
+    const previous = navigationFlight.current?.done;
+    const transition = { done: Promise.resolve() };
     navigationFlight.current = transition;
     setNavigating(true);
-    void (async () => {
+    transition.done = (async () => {
       try {
-        if (!await commit()) { ticket.fail(); return; }
+        // 连续点击可替换目标，但要等上次申请或释放修改权结束，不能在忙态丢弃新目标。
+        await previous;
+        if (version !== sequence.current || !ticket.valid()) { origin?.cancel(); return; }
+        if (!await (pendingCommit ?? commit())) { ticket.fail(); return; }
         if (version !== sequence.current || !ticket.valid()) { origin?.cancel(); return; }
         await ticket.arrive(() => {}, destination);
       } finally {
@@ -105,11 +111,12 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
       }
     })();
   };
-  const begin = (field: SegmentTextField = 'text', target: string | null = null, requested = navigation.intent()) => {
+  const begin = async (field: SegmentTextField = 'text', target: string | null = null, requested = navigation.intent()) => {
     if (!target || current.current || editing.getState().editing || editing.getState().busy || !canEdit()) return Promise.resolve();
-    return editing.begin('segments', next => {
+    let cancelled: Promise<boolean> | undefined;
+    await editing.begin('segments', next => {
       focus.acceptGridUpdate(() => accept(next));
-      if (!requested.valid()) { void editing.cancel('segments'); return; }
+      if (!requested.valid()) { cancelled = editing.cancel('segments'); return; }
       const segment = next.snapshot.segments.find(item => item.id === target);
       if (!segment) throw new Error('口播片段已删除，请选择其他片段。');
       setFailure(null);
@@ -117,6 +124,8 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
       // 原位 renderer 必须在修改权就绪时读到草稿；调用方不再处理表格时序。
       flushSync(() => update(value));
     }, disconnected, failed);
+    // 过期目标释放完成后，下一次导航才可重新申请。
+    await cancelled;
   };
   const discard = async () => {
     if (finishing || flight.current || editing.getState().busy) return;

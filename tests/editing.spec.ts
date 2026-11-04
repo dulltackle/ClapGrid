@@ -56,7 +56,40 @@ test('单击文案进入编辑，通过真实服务保存并在重载后保留',
   expect((await project.status()).snapshot.segments[0]!.text).toBe('已保存的新文案');
 });
 
-import { holdResponse } from './helpers/response-gate.js';
+import { holdRequest, holdResponse } from './helpers/response-gate.js';
+
+for (const same of [true, false]) test(`申请修改权期间连续点击${same ? '同一' : '其他'}文案仍进入最后点击的编辑目标`, async ({ page, project }) => {
+  const [id, next] = await project.seed(['原文', '下一条']);
+  await page.goto(project.url);
+  const gate = await holdRequest(page, '/api/edit-session');
+  try {
+    await page.locator(`[row-id="${id}"] [data-segment-script]`).click();
+    await gate.received;
+    await page.locator(`[row-id="${same ? id : next}"] [data-segment-script]`).click();
+  } finally { gate.release(); }
+  const input = page.getByLabel('文案全文', { exact: true });
+  await expect(input).toHaveValue(same ? '原文' : '下一条');
+  await expect(input).toBeFocused();
+  expect((await project.status()).modification?.owner).toBe('user');
+});
+
+test('保存草稿期间连续点击文案只提交一次并进入最后点击的目标', async ({ page, project }) => {
+  const [a, b, c] = await project.seed(['A', 'B', 'C']);
+  await page.goto(project.url);
+  await page.locator(`[row-id="${a}"] [data-segment-script]`).click();
+  const input = page.getByLabel('文案全文', { exact: true });
+  await input.fill('A 草稿');
+  const gate = await holdResponse(page, '/api/segments/edit');
+  try {
+    await page.locator(`[row-id="${b}"] [data-segment-script]`).click();
+    await gate.received;
+    await page.locator(`[row-id="${c}"] [data-segment-script]`).click();
+  } finally { gate.release(); }
+  await expect(input).toHaveValue('C');
+  await expect(input).toBeFocused();
+  expect(gate.calls).toBe(1);
+  expect((await project.status()).snapshot.segments.map(segment => segment.text)).toEqual(['A 草稿', 'B', 'C']);
+});
 
 for (const width of [780, 420]) test(`原位编辑保留行高、画面上下文和内嵌操作 ${width}`, async ({ page, project }) => {
   const [id, next] = await project.seed(['原文', '下一条']);
