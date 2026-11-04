@@ -2,13 +2,22 @@ import { buildIdentitySchema } from '../build-identity.js';
 import { z } from 'zod';
 
 export const videoReferenceSchema = z.object({ assetId: z.uuid(), start: z.number().nonnegative() });
-export const visualLayerSchema = z.object({
-  assetId: z.uuid(), role: z.enum(['background', 'overlay']),
-  from: z.number().nonnegative(), to: z.number().positive(), start: z.number().nonnegative(),
+const visualGeometry = {
+  role: z.enum(['background', 'overlay']),
+  from: z.number().nonnegative(), to: z.number().positive(),
   x: z.number().min(0).max(1), y: z.number().min(0).max(1),
   width: z.number().positive().max(1), height: z.number().positive().max(1),
   z: z.number().int().min(0).max(100),
-}).strict();
+};
+export const visualLayerSchema = z.discriminatedUnion('kind', [
+  z.object({ ...visualGeometry, kind: z.literal('asset').optional(), assetId: z.uuid(), start: z.number().nonnegative() }).strict(),
+  z.object({ ...visualGeometry, kind: z.literal('page'), pageId: z.string().regex(/^[a-f0-9]{64}$/), assetIds: z.array(z.uuid()).max(64) }).strict(),
+]);
+export const importPageSchema = z.object({ sourceDirectory: z.string().min(1) }).strict();
+export type ImportedPage = { pageId: string; fileCount: number; bytes: number };
+export function layerAssets(layer: z.infer<typeof visualLayerSchema>) {
+  return layer.kind === 'page' ? layer.assetIds : [layer.assetId];
+}
 export const visualPlanSchema = z.object({ duration: z.number().positive().max(3600), layers: z.array(visualLayerSchema).min(1).max(32) }).strict();
 export type VisualPlan = z.infer<typeof visualPlanSchema>;
 export const segmentSchema = z.object({

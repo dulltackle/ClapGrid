@@ -93,7 +93,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
             if (previewSegmentId && !plan) task.issues.push({ ...location, field: 'video', message: '片段合成预览需要已保存的画面编排' });
             const references = native ? segmentMaterials(segment).map(assetId => ({ assetId, start: 0 })) : segmentVideos(segment);
             const visualInputs: { path: string; duration: number; start: number; assetId: string; kind?: 'image' | 'video' }[] = [];
-            if (!references.length) task.issues.push({ ...location, field: 'video', message: '视频缺失' });
+            if (!references.length && !plan?.layers.some(layer => layer.kind === 'page')) task.issues.push({ ...location, field: 'video', message: '视频缺失' });
             for (const [visualIndex, reference] of references.entries()) {
               let video: { path: string; duration: number; kind?: 'image' | 'video' } | undefined;
               try {
@@ -108,7 +108,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
                   videos.set(reference.assetId, video);
                 }
                 visualInputs.push({ ...video, start: reference.start, assetId: reference.assetId });
-                if (plan?.layers.some(layer => layer.assetId === reference.assetId && layer.start >= video!.duration)) task.issues.push({ ...location, field: 'start', message: '编排的视频起点超出真实时长' });
+                if (plan?.layers.some(layer => layer.kind !== 'page' && layer.assetId === reference.assetId && layer.start >= video!.duration)) task.issues.push({ ...location, field: 'start', message: '编排的视频起点超出真实时长' });
               } catch (error) { task.issues.push({ ...location, field: 'video', message: `素材 ${visualIndex + 1} 不可读或不可解码：${(error as Error).message}` }); }
               if (!Number.isFinite(reference.start) || reference.start < 0 || reference.start >= (video?.duration ?? snapshot.assets.find(asset => asset.id === reference.assetId)?.duration ?? Infinity)) {
                 task.issues.push({ ...location, field: 'start', message: '视频起点必须大于等于零且严格小于视频时长' });
@@ -122,10 +122,10 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
                 const source = inputs.audio(current.taskId);
                 const copied = await outputFiles.copy('speech', index, source);
                 const audio = await prepareExportAudio(copied, workspace, index, signal);
-                if (visualInputs.length === references.length && visualInputs.length) {
+                if (visualInputs.length === references.length && (visualInputs.length || plan?.layers.some(layer => layer.kind === 'page'))) {
                   if (plan && Math.abs(plan.duration - audio.duration) > 0.001) task.issues.push({ ...location, field: 'video', message: `编排时长 ${plan.duration} 秒与配音 ${audio.duration} 秒不一致，请更新编排` });
-                  render.push({ segment, videos: visualInputs, plan, ...audio });
-                  if (visualInputs.some(video => video.duration - video.start < (plan ? Math.max(0, ...plan.layers.filter(layer => layer.assetId === video.assetId).map(layer => layer.to - layer.from + layer.start)) : audio.duration))) task.warnings.push({ ...location, field: 'video', message: '视频剩余时长不足，末帧将冻结补足配音时长' });
+                  render.push({ segment, videos: visualInputs, plan, projectDirectory: snapshot.project.directory, assetMimes: Object.fromEntries(snapshot.assets.map(asset => [asset.id, asset.mime ?? (asset.kind === 'image' ? 'image/png' : 'video/mp4')])), ...audio });
+                  if (visualInputs.some(video => video.duration - video.start < (plan ? Math.max(0, ...plan.layers.filter(layer => layer.kind !== 'page' && layer.assetId === video.assetId).map(layer => layer.to - layer.from + (layer.kind === 'page' ? 0 : layer.start))) : audio.duration))) task.warnings.push({ ...location, field: 'video', message: '视频剩余时长不足，末帧将冻结补足配音时长' });
                 }
               } catch (error) { task.issues.push({ ...location, field: 'speech', message: `配音不可读或不可解码：${(error as Error).message}` }); }
             }

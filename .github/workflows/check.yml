@@ -60,6 +60,8 @@ jobs:
         run: git rev-parse HEAD | tee logs/source-commit.log
       - name: 安装锁定依赖
         run: /usr/bin/time -v -o logs/npm-ci-resources.txt npm ci 2>&1 | tee logs/npm-ci.log
+      - name: 安装固定版本页面渲染浏览器
+        run: node_modules/.bin/playwright install --with-deps chromium-headless-shell
       - name: 类型检查
         run: /usr/bin/time -v -o logs/typecheck-resources.txt npm run typecheck 2>&1 | tee logs/typecheck.log
       - name: 全套 Vitest 逻辑与服务测试

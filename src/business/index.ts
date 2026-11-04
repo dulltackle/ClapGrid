@@ -1,3 +1,5 @@
+import { pageStore } from './pages.js';
+import { layerAssets } from '../shared/contracts.js';
 import { mediaProcess } from './media-process.js';
 import { SERVICE_CLEANUP_MS, beforeServiceDeadline, ServiceCleanupError } from '../service-cleanup.js';
 import { projectAccess } from './project-access.js';
@@ -174,6 +176,10 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       if (!changes.length) return { results: [], summary: { applied: 0, changed: 0, deleted: 0, failed: 0 } };
       return business.modifyBatch(token, { changes });
     },
+    async importPage(token: string, sourceDirectory: string, workspaceDirectory: string) {
+      await access.verifyEdit(token); verify();
+      return pageStore(projectDirectory).import(sourceDirectory, workspaceDirectory);
+    },
     async importVideo(token: string, input: ImportVideo) {
       const signal = access.editSignal(token);
       const { sourcePath } = importVideoSchema.parse(input);
@@ -263,7 +269,7 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       if (!(duration > 0 && Number.isFinite(duration))) throw new Error('无法确认配音时长');
       const latest = getSnapshot().segments.find(item => item.id === segmentId);
       if (JSON.stringify(latest) !== JSON.stringify(segment) || speech.getCurrentSpeechAudio(segmentId) !== audio) throw new Error('制作输入已变化，请重新查询');
-      return { segment, assets: snapshot.assets.filter(asset => segmentMaterials(segment).includes(asset.id)), duration, compositionCurrent: !!segment.composition && segment.composition.inputVersion === segment.visualVersion };
+      return { page: { canvas: { width: 1920, height: 1080 }, fps: snapshot.exportSettings.fps, assetUrls: Object.fromEntries(segmentMaterials(segment).map(id => [id, `/assets/${id}`])), limits: { files: 256, bytes: 33554432 }, readyTimeoutSeconds: 120 }, segment, assets: snapshot.assets.filter(asset => segmentMaterials(segment).includes(asset.id)), duration, compositionCurrent: !!segment.composition && segment.composition.inputVersion === segment.visualVersion };
     },
     submitPreview: exports.submitPreview,
     getVisualPreviews: exports.getVisualPreviews,
@@ -399,12 +405,13 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
               if (!current.visualVersion) throw new Error('请先确认本句画面素材');
               const plan = visualPlanSchema.parse(change.plan);
               const materials = segmentMaterials(current);
-              if (plan.layers.some(layer => !materials.includes(layer.assetId) || layer.to > plan.duration || layer.from >= layer.to || layer.x + layer.width > 1.000001 || layer.y + layer.height > 1.000001)) throw new Error('编排素材、空间或时间超出范围');
+              if (plan.layers.some(layer => layerAssets(layer).some(id => !materials.includes(id)) || layer.to > plan.duration || layer.from >= layer.to || layer.x + layer.width > 1.000001 || layer.y + layer.height > 1.000001)) throw new Error('编排素材、空间或时间超出范围');
+              for (const layer of plan.layers) if (layer.kind === 'page') pageStore(projectDirectory).read(layer.pageId);
               const background = plan.layers.filter(layer => layer.role === 'background');
               if (!background.length || background.some(layer => layer.z !== 0) || plan.layers.some(layer => layer.role === 'overlay' && layer.z === 0)) throw new Error('背景应位于底层，叠加素材须位于背景之上');
               const intervals = background.sort((a, b) => a.from - b.from); let end = 0;
               for (const layer of intervals) { if (Math.abs(layer.from - end) > 0.00001) throw new Error('背景必须连续覆盖整句，不能重叠或缺失'); end = layer.to; }
-              if (Math.abs(end - plan.duration) > 0.00001 || materials.some(assetId => !plan.layers.some(layer => layer.assetId === assetId))) throw new Error('编排必须覆盖整句并使用本句全部素材');
+              if (Math.abs(end - plan.duration) > 0.00001 || materials.some(assetId => !plan.layers.some(layer => layerAssets(layer).includes(assetId)))) throw new Error('编排必须覆盖整句并使用本句全部素材');
               db.prepare('UPDATE segment_visuals SET composition = ? WHERE segment_id = ?').run(JSON.stringify({ ...plan, inputVersion: current.visualVersion }), id!);
             } else if (change.kind === 'video' || change.kind === 'videos') {
               db.prepare('INSERT INTO segment_visuals VALUES (?, ?, NULL) ON CONFLICT(segment_id) DO UPDATE SET materials = excluded.materials, composition = NULL').run(id!, JSON.stringify([...new Set(references.map(reference => reference.assetId))]));

@@ -21,8 +21,9 @@ description: 打开当前本地工作空间固定项目的 ClapGrid 口播片段
 
 1. 查询当前片段快照；使用 `clapgrid_import_material` 导入原生 PNG／JPEG／视频，以 `clapgrid_modify` 的 `materials` 操作确认本句使用的素材。透明角色使用保留 alpha 的原生 PNG。
 2. 准备有效配音，调用 `clapgrid_visual_context` 取得精确时长、文案、说明与素材。以最新 `expected` 提交 `composition`，明确背景和多份叠加素材的空间、层级、源起点及出现区间。添加素材不决定展示时间，不默认均分、贯穿整句或跨句套用；不要求用户操作剪辑器。
-3. 调用 `clapgrid_preview_segment`，再用 `clapgrid_visual_previews` 查询终态。只有 `succeeded` 且 `current: true` 才提供本句可播放的合成结果；受理、缩略图或原件查看不代表合成成功。失败报告原因，未知结果先查询，不自动重发写操作；取消沿用 `clapgrid_cancel_export`。
-4. 用户通过对话要求移动角色、调整出现时机等修改时，重读该句输入、提交新编排并重新生成预览，保留无关片段和项目原件。全片导出读取同一已保存编排。
+3. 需要动画背景、镜头推拉或透明标注时，在当前工作空间内编写含 `index.html` 的页面目录，用 `clapgrid_import_page({ sourceDirectory })` 导入，取得不可变 `pageId`。页面暴露 `DUR`、独立确定的 `render(t)` 和加载完成后的 `READY=true`；`t` 从图层 from 开始，DUR 等于 to-from（误差不超过 1 ms）。按 visual_context 返回的画布、fps 和素材地址编写；视口为图层尺寸的最近偶数像素，DPR=1，READY 上限 120 秒。页面仅引用自身文件及 assetIds 声明的本句素材，外部依赖存到页面目录中。导入上限 256 个白名单文件、32 MiB；图片和字体须在 READY 前加载。提交 `{ kind: "page", pageId, assetIds, role, from, to, x, y, width, height, z }`，页面层没有 start；背景连续覆盖整句，页面声明的素材计入本句覆盖。字幕由导出统一烧录。修改页面后重新导入并提交新身份；详见 [页面编排约定](../../../../README.md#画面素材与编排)。
+4. 调用 `clapgrid_preview_segment`，再用 `clapgrid_visual_previews` 查询终态。只有 `succeeded` 且 `current: true` 才提供本句可播放的合成结果；受理、缩略图或原件查看不代表合成成功。失败报告原因，未知结果先查询，不自动重发写操作；取消沿用 `clapgrid_cancel_export`。
+5. 用户通过对话要求移动角色、调整出现时机等修改时，重读该句输入、提交新编排并重新生成预览，保留无关片段和项目原件。全片导出读取同一已保存编排。
 
 ## 日常快速重开
 
