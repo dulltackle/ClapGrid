@@ -1,4 +1,4 @@
-import { ChevronDownIcon, DotsHorizontalIcon, ImageIcon, PlusIcon, Cross2Icon, MinusIcon, EnterFullScreenIcon, PlayIcon, Pencil1Icon } from '@radix-ui/react-icons';
+import { DragHandleDots2Icon, ChevronDownIcon, DotsHorizontalIcon, ImageIcon, PlusIcon, Cross2Icon, MinusIcon, EnterFullScreenIcon, PlayIcon, Pencil1Icon } from '@radix-ui/react-icons';
 import { useRef, type ComponentProps, type ReactNode } from 'react';
 import { Button, Popover, PopoverTrigger, PopoverContent, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/index.js';
 import { segmentMaterials } from '../shared/contracts.js';
@@ -6,6 +6,7 @@ import type { ExportTask, Segment, ServiceStatus } from '../shared/contracts.js'
 import { segmentRowMenu, type SegmentActions } from './segment-actions.js';
 import { panelServiceUrl } from './service-url.js';
 import { SegmentSpeech } from './segment-speech.js';
+import type { useSegmentDrag } from './segment-drag.js';
 import { SearchText } from './text-search.js';
 
 type SpeechProps = Omit<ComponentProps<typeof SegmentSpeech>, 'segment' | 'generate' | 'history' | 'draftText' | 'actions'> & {
@@ -104,4 +105,13 @@ export function SegmentRowActions({ data, actionsFor, open, remove, insert, chan
       </DropdownMenuContent>
     </DropdownMenu>
   </div>;
+}
+
+/** 稳定的渲染组件让状态刷新保留序号入口的 DOM 与键盘焦点。 */
+export function SegmentOrderCell({ data, actionsFor, drag }: {
+  data?: Segment; actionsFor: (segment: Segment) => SegmentActions;
+  drag: Pick<ReturnType<typeof useSegmentDrag>, 'keyboard' | 'start'>;
+}) {
+  if (!data) return null;
+  return <span className="flex h-full items-center justify-center"><button className="group/order relative flex h-7 w-full min-w-7 cursor-grab touch-none items-center justify-center rounded-md border-0 bg-transparent p-0 text-foreground hover:bg-ui-accent active:cursor-grabbing disabled:cursor-default disabled:opacity-30" aria-label={`拖动片段 ${data.order}`} disabled={!actionsFor(data).drag.enabled} title={actionsFor(data).drag.reason || '拖动序号调整片段顺序'} onKeyDown={event => drag.keyboard(event, data.id)} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}><span data-segment-order className="tabular-nums group-hover/order:invisible group-focus-visible/order:invisible group-aria-selected/segment:font-medium group-aria-selected/segment:text-primary">{data.order}</span><DragHandleDots2Icon aria-hidden className="absolute size-4 opacity-0 group-hover/order:opacity-100 group-focus-visible/order:opacity-100" /></button></span>;
 }

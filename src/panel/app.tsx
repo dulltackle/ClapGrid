@@ -1,7 +1,6 @@
 import { SegmentSpeech } from './segment-speech.js';
-import { SegmentRowCell, SegmentRowActions, SegmentRowSupport } from './segment-row.js';
+import { SegmentRowCell, SegmentRowActions, SegmentRowSupport, SegmentOrderCell } from './segment-row.js';
 import { SegmentDraftPrompt } from './segment-details.js';
-import { DragHandleDots2Icon } from '@radix-ui/react-icons';
 import { SegmentRowDetails } from './segment-row-details.js';
 import { PastePanel } from './paste-panel.js';
 import { Button, Input, NativeSelect, ContextMenu, ContextMenuTrigger, ContextMenuItem, AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel } from '@/components/ui/index.js';
@@ -530,7 +529,7 @@ export function App() {
     setRowMenu({ anchor: structuredClone(segment), targets: structuredClone(targets), expectedIds: status?.snapshot.segments.map(item => item.id) ?? [], origin: focusReturns.capture(trigger, { fallback: 'menu' }) });
   };
   const columns: ColDef<Segment>[] = [
-    { headerName: '序号', field: 'order', width: orderWidth, minWidth: orderWidth, maxWidth: orderWidth, cellClass: 'px-1!', headerClass: 'px-1!', suppressKeyboardEvent: cellControlKeyboard, cellRendererParams: { suppressMouseEventHandling: cellControlMouse }, cellRenderer: ({ data }: { data?: Segment }) => data && <span className="flex h-full items-center justify-center"><button className="group/order relative flex h-7 w-full min-w-7 cursor-grab touch-none items-center justify-center rounded-md border-0 bg-transparent p-0 text-foreground hover:bg-ui-accent active:cursor-grabbing disabled:cursor-default disabled:opacity-30" aria-label={`拖动片段 ${data.order}`} disabled={!actionsFor(data).drag.enabled} title={actionsFor(data).drag.reason || '拖动序号调整片段顺序'} onKeyDown={event => drag.keyboard(event, data.id)} onPointerDownCapture={event => drag.start(event, data.id)} onClick={event => event.stopPropagation()}><span data-segment-order className="tabular-nums group-hover/order:invisible group-focus-visible/order:invisible group-aria-selected/segment:font-medium group-aria-selected/segment:text-primary">{data.order}</span><DragHandleDots2Icon aria-hidden className="absolute size-4 opacity-0 group-hover/order:opacity-100 group-focus-visible/order:opacity-100" /></button></span> },
+    { headerName: '序号', field: 'order', width: orderWidth, minWidth: orderWidth, maxWidth: orderWidth, cellClass: 'px-1!', headerClass: 'px-1!', suppressKeyboardEvent: cellControlKeyboard, cellRenderer: SegmentOrderCell, cellRendererParams: { suppressMouseEventHandling: cellControlMouse, actionsFor, drag } },
     { headerName: '口播片段', field: 'text', flex: 1, minWidth: 360, resizable: false, editable: false,
       cellRenderer: SegmentRowCell, cellStyle: params => ({ height: mainRowHeight(params.data?.id), paddingRight: 0 }),
       cellRendererParams: { ...rowControls, ...visualControls, query: searchOpen ? query : '', activeId: activeMatch, visit, rowHeight: Math.max(102, searchRowHeight), toggleNote, expandedId: expandedNote, assets: status?.snapshot.assets ?? [],

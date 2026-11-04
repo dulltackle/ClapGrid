@@ -131,3 +131,18 @@ for (const edge of ['下', '上'] as const) test(`拖拽${edge}边缘自动滚�
   await expect.poll(async () => { const order = (await project.status()).snapshot.segments.map(s => s.id); return order.indexOf(visible) - order.indexOf(id); }).toBe(after ? 1 : -1);
   expect((await project.status()).snapshot.segments).toHaveLength(ids.length);
 });
+
+test('序号入口在真实状态刷新后保留键盘焦点与拖动提示', async ({ page, project }) => {
+  await project.seed(['A', 'B']); await page.goto(project.url);
+  const entry = page.getByRole('button', { name: '拖动片段 1', exact: true });
+  await expect(entry).toBeEnabled();
+  await entry.focus(); await page.keyboard.press('Tab'); await page.keyboard.press('Shift+Tab');
+  await expect(entry).toBeFocused();
+  for (let i = 0; i < 2; i++) {
+    await page.waitForResponse(response => response.url() === `${project.url}/api/status` && response.ok());
+  }
+  await expect(entry).toBeFocused();
+  await expect(entry.locator('svg')).toHaveCSS('opacity', '1');
+  await entry.press('Enter'); await entry.press('ArrowDown'); await entry.press('Enter');
+  await expect.poll(async () => (await project.status()).snapshot.segments.map(segment => segment.text)).toEqual(['B', 'A']);
+});
