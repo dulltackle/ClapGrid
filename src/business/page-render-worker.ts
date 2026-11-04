@@ -5,7 +5,8 @@ import { readFile, mkdtemp, rm } from 'node:fs/promises';
 import { constants, openSync, fstatSync, closeSync, createReadStream } from 'node:fs';
 import { join } from 'node:path';
 import { pageBrowserExecutable, pageBrowserVersion } from './page-browser.js';
-import { pageStore } from './pages.js';
+import { styleStore } from './styles.mjs';
+import { pageStyle, pageStore } from './pages.js';
 
 // Chrome 由本进程直接启动并继承进程组；守护进程的强制回收也覆盖浏览器后代。
 const input = JSON.parse(await readFile(process.argv[2]!, 'utf8')) as {
@@ -37,6 +38,8 @@ async function stop() {
 process.on('SIGTERM', () => { void stop(); });
 process.on('SIGINT', () => { void stop(); });
 const page = pageStore(input.projectDirectory).read(input.pageId);
+const styleId = pageStyle(page.files);
+const style = styleId ? styleStore(input.projectDirectory).read(styleId) : undefined;
 const profile = await mkdtemp(join(input.output + '.browser-'));
 const mime: Record<string, string> = { html: 'text/html', js: 'text/javascript', mjs: 'text/javascript', css: 'text/css', json: 'application/json', svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', woff2: 'font/woff2', ttf: 'font/ttf', otf: 'font/otf' };
 let origin = '';
@@ -57,7 +60,9 @@ const server = createServer((request, response) => {
       const stream = createReadStream('', { fd, autoClose: true }); stream.on('error', () => response.destroy()); response.on('close', () => stream.destroy()); stream.pipe(response); return;
     }
     const prefix = `/pages/${input.pageId}/`;
-    const file = path.startsWith(prefix) ? page.files.get(path.slice(prefix.length) || 'index.html') : undefined;
+    const stylePrefix = `/styles/${styleId}/`;
+    const file = path.startsWith(prefix) ? page.files.get(path.slice(prefix.length) || 'index.html')
+      : style && path.startsWith(stylePrefix) ? style.files.get(path.slice(stylePrefix.length)) : undefined;
     if (!file) { fail(`页面文件或素材未声明：${path}`); response.writeHead(404).end(); return; }
     response.writeHead(200, { 'Content-Type': (mime[path.split('.').at(-1)!.toLowerCase()] ?? 'application/octet-stream') + (['html', 'js', 'mjs', 'css', 'json', 'svg'].includes(path.split('.').at(-1)!.toLowerCase()) ? '; charset=utf-8' : '') }); response.end(file);
   } catch (error) { fail((error as Error).message); if (!response.headersSent) response.writeHead(404); response.end(); }

@@ -5,5 +5,5 @@
     "checkJs": true,
     "noEmit": true
   },
-  "include": ["scripts/production.mjs", "scripts/production/**/*.mjs"]
+  "include": ["scripts/production.mjs", "scripts/production/**/*.mjs", "src/business/directory-store.mjs", "src/business/styles.mjs"]
 }

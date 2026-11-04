@@ -1,4 +1,7 @@
 import { createReadStream } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import { extname, join } from 'node:path';
+import { styleStore } from '../../src/business/styles.mjs';
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -40,6 +43,17 @@ export default async function sample(options) {
     const video = await resolveProjectFile(options.project, input.video.path);
     const plan = await resolveProjectFile(options.project, input.plan.path);
     if (await digest(video) !== input.video.sha256 || await digest(plan) !== input.plan.sha256) throw new Error('样片或采用方案内容已变化；更新身份并重新判断受影响确认。');
+    let adopted;
+    try { adopted = JSON.parse(await readFile(plan, 'utf8')); }
+    catch (error) { if (extname(input.plan.path).toLowerCase() === '.json') throw error; }
+    if (adopted) {
+      if (adopted && typeof adopted === 'object' && 'style' in adopted) {
+        const style = z.object({ id: z.string().regex(/^[a-f0-9]{64}$/), source: z.object({ id: identity, version: identity }) }).strict().parse(adopted.style);
+        styleStore(join(options.project, 'clapgrid')).read(style.id);
+        details.style = style;
+        checks.push({ id: 'sample-style', status: 'passed', message: '采用方案的风格不可变副本与内容身份已核对。' });
+      }
+    }
     Object.assign(details, { video: input.video, plan: input.plan });
     checks.push({ id: 'sample-identities', status: 'passed', path: video, message: '样片与视觉方案的实际内容身份已核对。' });
     const probe = await exec('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-count_frames', '-show_entries', 'stream=nb_read_frames', '-of', 'json', video], { maxBuffer: 1024 * 1024 });

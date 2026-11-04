@@ -373,10 +373,15 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
         modification.releaseSession(modificationContext);
         return;
       }
-      if (path === '/api/codex/import-page' || path === '/api/page/import' || (path === '/api/export-settings' && request.method !== 'GET') || path === '/api/codex/export-settings' || path === '/api/material/rename' || path === '/api/codex/rename-material' || path === '/api/material/import' || path === '/api/codex/import-material' || path === '/api/video/import' || path === '/api/codex/import-video' || path === '/api/segments/add' || path === '/api/segments/edit' || path === '/api/codex/modify' || path === '/api/segments/modify' || path === '/api/codex/process') {
+      if (path === '/api/codex/import-style' || path === '/api/style/import' || path === '/api/codex/import-page' || path === '/api/page/import' || (path === '/api/export-settings' && request.method !== 'GET') || path === '/api/codex/export-settings' || path === '/api/material/rename' || path === '/api/codex/rename-material' || path === '/api/material/import' || path === '/api/codex/import-material' || path === '/api/video/import' || path === '/api/codex/import-video' || path === '/api/segments/add' || path === '/api/segments/edit' || path === '/api/codex/modify' || path === '/api/segments/modify' || path === '/api/codex/process') {
         const codex = path.startsWith('/api/codex/');
         await modification.handle(modificationContext, codex ? 'codex' : 'user', async (token, input) => {
-          if (path === '/api/codex/import-page' || path === '/api/page/import') {
+          if (path === '/api/codex/import-style' || path === '/api/style/import') {
+            const parsed = importPageSchema.safeParse(input);
+            if (!parsed.success) return { status: 400, error: '请提供风格源目录绝对路径' };
+            try { return { data: { style: await business.importStyle(token, parsed.data.sourceDirectory, options.workspaceDirectory ?? dirname(options.projectDirectory)) } }; }
+            catch (error) { return { status: 400, error: (error as Error).message }; }
+          } else if (path === '/api/codex/import-page' || path === '/api/page/import') {
             const parsed = importPageSchema.safeParse(input);
             if (!parsed.success) return { status: 400, error: '请提供页面源目录绝对路径' };
             try { return { data: { page: await business.importPage(token, parsed.data.sourceDirectory, options.workspaceDirectory ?? dirname(options.projectDirectory)) } }; }

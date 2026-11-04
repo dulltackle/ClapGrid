@@ -88,13 +88,15 @@ npm run runtime -- status --project /绝对路径/验证项目
 
 制作入口：`clapgrid_import_material({ sourcePath })` 导入原生素材；`clapgrid_modify` 的 `{ kind: "materials", expected, assetIds }` 确认本句归属。先生成有效配音，再调用 `clapgrid_visual_context({ segmentId })` 取得当前输入及精确解码时长；提交 `{ kind: "composition", expected, plan: { duration, layers } }`。每层明确 `assetId`、`role`（background／overlay）、`from`、`to`、`start`（秒）、`x`、`y`、`width`、`height`（相对 1920 × 1080 画布）、`z`（背景为 0，叠加为正数）。背景须连续覆盖整句，本句全部素材须进入编排；同一素材可在多个区间重复引用。编排时长须与查询得到的有效配音时长一致。
 
-页面图层支持逐帧动画背景和透明叠加。agent 在用户工作空间中编写含 `index.html` 的目录，通过 `clapgrid_import_page({ sourceDirectory })` 导入为 `pages/<SHA-256>/` 内的不可变副本，返回 `pageId`；同一内容重复导入复用身份。源路径须为工作空间内绝对路径；显式项目入口以项目父目录作为工作空间边界。页面只接受 html/js/mjs/css/json/svg/png/jpg/jpeg/webp/woff2/ttf/otf，最多 256 个文件、32 MiB，拒绝符号链接、多硬链接和目录外引用。修改后重新导入并保存新编排，旧预览自动待更新。
+页面图层支持逐帧动画背景和透明叠加。agent 在用户工作空间中编写含 `index.html` 的目录，通过 `clapgrid_import_page({ sourceDirectory })` 导入为 `pages/<SHA-256>/` 内的不可变副本，返回 `pageId`；同一内容重复导入复用身份。源路径须为工作空间内绝对路径；显式项目入口以项目父目录作为工作空间边界。页面只接受 html/js/mjs/css/json/svg/png/jpg/jpeg/webp/woff2/ttf/otf/md，最多 256 个文件、32 MiB，拒绝符号链接、多硬链接和目录外引用。修改后重新导入并保存新编排，旧预览自动待更新。
 
 `clapgrid_visual_context` 还返回 `page.canvas`（1920×1080）、`page.fps`、`page.assetUrls`（`/assets/<assetId>`）及上限。页面暴露 `window.DUR`（秒）、`window.render(t)` 和 `window.READY = true`，可选 `TEXTS(t)`；字体、图片及素材应在 READY 前加载完毕（最多等待 120 秒）。`render(t)` 以图层 from 为零点，必须独立确定，不依赖上一帧、当前时间或无种子随机数；DUR 与 to-from 的误差不超过 1 ms。视口按 1920×width、1080×height 四舍五入到最近偶数（至少 2 px），设备像素比 1，以 innerWidth/innerHeight 布局。帧数为 round(DUR×fps)，不足一帧会明确失败。
 
-页面图层为 `{ kind: "page", pageId, assetIds, role, from, to, x, y, width, height, z }`，没有 start。assetIds 只声明本句素材，并计入“本句全部素材进入编排”的校验；页面只能读取自身文件和声明的素材。页面背景同样连续覆盖整句。素材图层的 kind 可为 asset，省略仍兼容旧编排。页面渲染失败会在任务问题中指明片段与原因，不产生成片。页面应将所有依赖保存在目录内，外网、任意本地路径、WebSocket、WebRTC、Worker 和嵌入框架均被拒绝；仅输出画面，字幕继续按导出设置统一烧录。固定浏览器、软件渲染和双页面实例产生 FFV1 中间视频，共用预览及导出滤镜链。组件来源见 [Linux 组件](docs/linux-components.md)，决策见 [ADR0015](docs/adr/0015-page-rendering.md)。
+页面图层为 `{ kind: "page", pageId, assetIds, role, from, to, x, y, width, height, z }`，没有 start。assetIds 只声明本句素材，并计入“本句全部素材进入编排”的校验；页面只能读取自身文件、page.json 声明的风格和声明的素材。页面背景同样连续覆盖整句。素材图层的 kind 可为 asset，省略仍兼容旧编排。页面渲染失败会在任务问题中指明片段与原因，不产生成片。页面应将依赖保存在页面或声明的风格目录内，外网、任意本地路径、WebSocket、WebRTC、Worker 和嵌入框架均被拒绝；仅输出画面，字幕继续按导出设置统一烧录。固定浏览器、软件渲染和双页面实例产生 FFV1 中间视频，共用预览及导出滤镜链。组件来源见 [Linux 组件](docs/linux-components.md)，决策见 [ADR0015](docs/adr/0015-page-rendering.md)。
 
 `clapgrid_preview_segment({ segmentId })` 受理真实合成，使用 `clapgrid_visual_previews` 查询终态；只有 `succeeded` 且 `current: true` 表示当前输入的可审阅结果。任务期间沿用项目占用、取消、清理与中断恢复规则，取消使用 `clapgrid_cancel_export`。片段预览和全片导出共用渲染器执行已保存编排，真实混合透明通道，短视频冻结末帧；缺失或过期编排明确失败。普通制作请求包含素材准备、agent 编排和合成预览，明确“先准备素材”时停在准备阶段。
+
+风格由 `STYLE.md`、纯函数 ES module `lib/` 和 `example/` 组成；选用时整份复制到工作空间 `styles/<id>/`，由 `clapgrid_import_style` 导入为项目不可变副本。页面 `page.json` 声明 `{ "style": "<styleId>" }`，以 `/styles/<styleId>/lib/` 导入模块。项目副本独立于插件更新；修改后重新导入、更新页面和编排使旧预览待更新，并重新取得动态样片确认。先写项目方案再看示例，交付前按六个维度自检至少四项不同；详见[风格指南](docs/styles.md)。
 
 HTTP 对应 `POST /api/page/import`、`POST /api/codex/import-page`、`/api/material/rename`、`/api/codex/rename-material`、`/api/material/import`、`/api/codex/import-material`、`/api/segments/modify`、`/api/codex/modify`、`GET /api/visual-context/:segmentId`、`POST /api/visual-previews/submit` 和 `GET /api/visual-previews`。图片仅通过已登记身份的 `/api/media/:id/original` 查看，保留原始 MIME 与透明通道；视频不开放任意源文件路径。
 
