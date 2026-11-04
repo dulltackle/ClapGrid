@@ -54,7 +54,8 @@ export async function renderExportSegment(input: RenderSegment, settings: Export
       }));
       await writeFile(config, JSON.stringify({ projectDirectory: input.projectDirectory, pageId: layer.pageId, assets, width: Math.max(2, Math.round(1920 * layer.width / 2) * 2), height: Math.max(2, Math.round(1080 * layer.height / 2) * 2), duration: layer.to - layer.from, fps: settings.fps, transparent: layer.role === 'overlay', output }), { flag: 'wx' });
       const sourceMode = import.meta.url.endsWith('.ts');
-      await mediaProcess(process.execPath, [...(sourceMode ? ['--import', 'tsx'] : []), fileURLToPath(new URL(`./page-render-worker.${sourceMode ? 'ts' : 'js'}`, import.meta.url)), config], { signal, processGroup: true });
+      // 打包后的模块位于 service/main.js，worker 仍在固定的 business 目录。
+      await mediaProcess(process.execPath, [...(sourceMode ? ['--import', 'tsx'] : []), fileURLToPath(new URL(`../business/page-render-worker.${sourceMode ? 'ts' : 'js'}`, import.meta.url)), config], { signal, processGroup: true });
       sources.push({ path: output, start: 0, kind: 'video' }); continue;
     }
     const source = input.videos.find(video => video.assetId === layer.assetId);
