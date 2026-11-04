@@ -1,4 +1,5 @@
 export { Button, buttonVariants } from './button.js';
+export { Popover, PopoverTrigger, PopoverContent } from './popover.js';
 
 export { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem } from "./context-menu.js";
 

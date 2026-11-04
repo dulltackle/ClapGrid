@@ -224,6 +224,10 @@ export async function importMaterial(baseUrl: string, sourcePath: string, token?
   const body = await postJson(baseUrl, token ? '/api/material/import' : '/api/codex/import-material', { sourcePath }, token, signal ?? null);
   return { asset: body.asset as import('./contracts.js').VideoAsset, status: statusSchema.parse(body.status) };
 }
+export async function renameMaterial(baseUrl: string, input: import('./contracts.js').RenameMaterial, token?: string, signal?: AbortSignal) {
+  const body = await postJson(baseUrl, token ? '/api/material/rename' : '/api/codex/rename-material', input, token, signal);
+  return { asset: body.asset as import('./contracts.js').VideoAsset, status: statusSchema.parse(body.status) };
+}
 export async function queryVisualPreviews(baseUrl: string): Promise<import('./contracts.js').ExportTasksStatus> {
   const response = await fetch(`${baseUrl}/api/visual-previews`, { signal: AbortSignal.timeout(5000), redirect: 'error' });
   if (!response.ok) throw new Error('读取片段合成预览失败'); return response.json();

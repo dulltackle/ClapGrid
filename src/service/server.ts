@@ -14,7 +14,7 @@ import { readFileSync, readdirSync, openSync, fstatSync, createReadStream, const
 import { extname, join } from 'node:path';
 import { claimProjectService } from '../business/service-ownership.js';
 import { openBusiness } from '../business/index.js';
-import { submitExportSchema, exportTaskRequestSchema, importVideoSchema, addSegmentSchema, editSegmentSchema, batchSchema, segmentQuerySchema, selectionSchema, scopedOperationSchema, type ServiceStatus } from '../shared/contracts.js';
+import { submitExportSchema, exportTaskRequestSchema, renameMaterialSchema, importVideoSchema, addSegmentSchema, editSegmentSchema, batchSchema, segmentQuerySchema, selectionSchema, scopedOperationSchema, type ServiceStatus } from '../shared/contracts.js';
 
 /** 心跳复用宿主工作空间核对结果的最长时间。 */
 const HEARTBEAT_HOST_CHECK_MS = 5000;
@@ -373,7 +373,7 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
         modification.releaseSession(modificationContext);
         return;
       }
-      if ((path === '/api/export-settings' && request.method !== 'GET') || path === '/api/codex/export-settings' || path === '/api/material/import' || path === '/api/codex/import-material' || path === '/api/video/import' || path === '/api/codex/import-video' || path === '/api/segments/add' || path === '/api/segments/edit' || path === '/api/codex/modify' || path === '/api/segments/modify' || path === '/api/codex/process') {
+      if ((path === '/api/export-settings' && request.method !== 'GET') || path === '/api/codex/export-settings' || path === '/api/material/rename' || path === '/api/codex/rename-material' || path === '/api/material/import' || path === '/api/codex/import-material' || path === '/api/video/import' || path === '/api/codex/import-video' || path === '/api/segments/add' || path === '/api/segments/edit' || path === '/api/codex/modify' || path === '/api/segments/modify' || path === '/api/codex/process') {
         const codex = path.startsWith('/api/codex/');
         await modification.handle(modificationContext, codex ? 'codex' : 'user', async (token, input) => {
           if (path === '/api/export-settings' || path === '/api/codex/export-settings') {
@@ -381,6 +381,11 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
               const settings = await business.setExportSettings(token, input as import('../shared/contracts.js').UpdateExportSettings);
               return { data: { settings } };
             } catch (error) { return { status: 400, error: (error as Error).message }; }
+          } else if (path === '/api/material/rename' || path === '/api/codex/rename-material') {
+            const parsed = renameMaterialSchema.safeParse(input);
+            if (!parsed.success) return { status: 400, error: '请提供素材身份、原名称及 1 至 255 个字符的新名称' };
+            try { return { data: { asset: await business.renameMaterial(token, parsed.data) } }; }
+            catch (error) { return { status: 409, error: (error as Error).message }; }
           } else if (path === '/api/material/import' || path === '/api/codex/import-material' || path === '/api/video/import' || path === '/api/codex/import-video') {
             const parsed = importVideoSchema.safeParse(input);
             if (!parsed.success) return { status: 400, error: '请提供用户明确指定的视频路径' };

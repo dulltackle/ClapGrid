@@ -119,12 +119,13 @@ test('阅读字符与 Space 不启动编辑或勾选，编辑 Esc 提示、输�
   await expect(checkbox).toBeChecked();
 });
 
-for (const selection of [0, 1, 2]) for (const entry of ['双击', 'Enter', 'F2']) test(`${selection} 条勾选、${entry}编辑互不干扰`, async ({ page, project }) => {
+for (const selection of [0, 1, 2]) for (const entry of ['单击', '双击', 'Enter', 'F2']) test(`${selection} 条勾选、${entry}编辑互不干扰`, async ({ page, project }) => {
   const [a, b, c] = await project.seed(['A', 'B', 'C']); await page.goto(project.url);
   if (selection > 0) await page.locator(`[row-id="${a}"] input[type="checkbox"]`).click();
   if (selection > 1) await page.locator(`[row-id="${c}"] input[type="checkbox"]`).click();
   const cell = page.locator(`[row-id="${b}"] [col-id="text"]`);
-  if (entry === '双击') await cell.locator('[data-segment-script]').dblclick();
+  if (entry === '单击') await cell.locator('[data-segment-script]').click();
+  else if (entry === '双击') await cell.locator('[data-segment-script]').dblclick();
   else { await cell.focus(); await page.keyboard.press(entry); }
   await expect(page.getByLabel('文案全文', { exact: true })).toHaveValue('B');
   await expect(page.getByLabel('文案全文', { exact: true })).toBeFocused();

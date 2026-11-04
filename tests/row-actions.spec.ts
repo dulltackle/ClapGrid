@@ -6,7 +6,7 @@ for (const environment of ['wide', 'compact', 'touch'] as const) test.describe(e
     const [a, b] = await project.seed(['第一句', '第二句']); await page.goto(project.url);
     const first = page.locator(`[row-id="${a}"]`);
     await expect(first.getByRole('button', { name: '片段 1 本行菜单', exact: true })).toBeVisible();
-    await expect(first.getByRole('button', { name: '拖动片段 1', exact: true })).toHaveCSS('opacity', '0.5');
+    await expect(first.getByRole('button', { name: '拖动片段 1', exact: true })).toHaveCSS('opacity', '1');
     await expect(page.getByLabel('口播片段详情', { exact: true })).toHaveCount(0);
     await first.getByRole('button', { name: '展开片段 1 的画面说明', exact: true }).press('Enter');
     const note = page.getByRole('region', { name: '片段 1 画面说明', exact: true });
@@ -22,7 +22,7 @@ for (const environment of ['wide', 'compact', 'touch'] as const) test.describe(e
     await input.press('Escape');
     await expect(input).toHaveCount(0);
     await first.getByRole('button', { name: /片段 1 画面素材/ }).press('Enter');
-    await first.getByRole('button', { name: '为片段 1 添加画面素材', exact: true }).press('Enter');
+    await page.getByRole('dialog', { name: '片段 1 素材面板', exact: true }).getByRole('button', { name: '为片段 1 添加画面素材', exact: true }).press('Enter');
     await expect(page.getByRole('dialog', { name: '添加画面素材', exact: true })).toBeVisible();
     await page.keyboard.press('Escape');
     await first.getByRole('button', { name: '片段 1 本行菜单', exact: true }).press('Enter');
@@ -82,13 +82,21 @@ test.describe('真实触控输入', () => {
     const handle = page.getByRole('button', { name: '拖动片段 1', exact: true });
     await expect(handle).toBeEnabled();
     await expect(page.getByRole('alertdialog')).toHaveCount(0);
-    await handle.scrollIntoViewIfNeeded();
-    const origin = (await handle.boundingBox())!;
-    const destination = (await page.locator(`[row-id="${b}"] [col-id="order"]`).boundingBox())!;
+    // 表格刷新会替换序号入口；在同一个浏览器任务中读取当前节点，避免跨协议调用持有旧节点。
+    const pointsHandle = await page.waitForFunction(({ a, b }) => {
+      const origin = document.querySelector(`[row-id="${a}"] button[aria-label="拖动片段 1"]`)?.getBoundingClientRect();
+      const destination = document.querySelector(`[row-id="${b}"] [col-id="order"]`)?.getBoundingClientRect();
+      if (!origin?.width || !origin.height || !destination?.width || !destination.height) return null;
+      return { origin: { x: origin.x + origin.width / 2, y: origin.y + origin.height / 2 },
+        destination: { x: destination.x + 15, y: destination.y + destination.height - 5 } };
+    }, { a, b });
+    const points = await pointsHandle.jsonValue();
+    await pointsHandle.dispose();
+    if (!points) throw new Error('触控拖动入口和目标必须可见');
     const touch = await context.newCDPSession(page);
     // Playwright 没有连续触控拖动 API；CDP 只负责设备输入，项目与表格保持真实。
-    await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: origin.x + origin.width / 2, y: origin.y + origin.height / 2 }] });
-    await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: destination.x + 15, y: destination.y + destination.height - 5 }] });
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [points.origin] });
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [points.destination] });
     await expect(page.getByText('移动 1 条', { exact: true })).toBeVisible();
     await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await expect.poll(async () => (await project.status()).snapshot.segments.map(item => item.id)).toEqual([b, a]);

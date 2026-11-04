@@ -81,20 +81,5 @@ html, body, #root { height: 100%; overflow: hidden; }
 /* Quartz 的 focus-within 会在鼠标取消勾选后保留蓝环；仅键盘焦点保留该提示。 */
 .segment-grid .ag-checkbox-input-wrapper:focus-within:not(:has(:focus-visible)) { box-shadow: none; }
 
-/* 宿主可能先发送 pen 悬浮、稍后发送 mouse；使用原生悬浮避免等待 AG Grid 的 mouse 筛选。
-   复用 Quartz 的覆盖层，保留勾选背景叠加以及固定列的一致高亮。 */
-.segment-grid .ag-row:hover:not(.ag-full-width-row) {
-  --ag-internal-row-overlay-color: var(--ag-row-hover-color);
-  > :is(.ag-grid-pinned-left-cells, .ag-grid-pinned-right-cells, .ag-grid-scrolling-cells)::before {
-    content: "";
-    display: block;
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-color: var(--ag-internal-row-overlay-color);
-    background-image: var(--ag-internal-row-overlay-image);
-  }
-}
-.segment-grid .ag-row:hover.ag-row-selected {
-  --ag-internal-row-overlay-image: linear-gradient(var(--ag-selected-row-background-color), var(--ag-selected-row-background-color));
-}
+/* 鼠标定位单元格不画焦点框；键盘焦点及内部控件的可见焦点继续保留。 */
+.segment-grid .ag-cell-focus:not(:focus-visible):not(:has(:focus-visible)) { border-color: transparent !important; }

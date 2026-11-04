@@ -22,6 +22,19 @@ for (const width of [1600, 420]) test(`真实指针拖动多选范围且保留�
   const ids = await project.seed(Array.from({ length: 6 }, (_, i) => `片段 ${i + 1}`)); await page.goto(project.url);
   await page.locator('[col-id="order"] .ag-header-cell-label').click(); await page.locator('[col-id="order"] .ag-header-cell-label').click();
   await expect(page.locator(`[row-id="${ids[0]}"]`)).toHaveAttribute('row-index', '0');
+  const entry = page.getByRole('button', { name: '拖动片段 1', exact: true });
+  await page.mouse.move(1, 1);
+  await expect(entry.locator('[data-segment-order]')).toBeVisible();
+  await expect(entry.locator('svg')).toHaveCSS('opacity', '0');
+  await entry.hover();
+  await expect(entry.locator('[data-segment-order]')).toBeHidden();
+  await expect(entry.locator('svg')).toHaveCSS('opacity', '1');
+  await page.mouse.move(1, 1);
+  await entry.focus();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Shift+Tab');
+  await expect(entry).toBeFocused();
+  await expect(entry.locator('svg')).toHaveCSS('opacity', '1');
   await page.locator(`[row-id="${ids[1]}"] input[type="checkbox"]`).click(); await page.locator(`[row-id="${ids[3]}"] input[type="checkbox"]`).click();
   await begin(page, ids[3]!); await target(page, ids[4]!); await page.mouse.up();
   await expect.poll(async () => (await project.status()).snapshot.segments.map(s => s.id)).toEqual([ids[0], ids[2], ids[4], ids[1], ids[3], ids[5]]);
@@ -117,4 +130,19 @@ for (const edge of ['下', '上'] as const) test(`拖拽${edge}边缘自动滚�
   const after = await line.getAttribute('data-placement') === 'after'; await page.mouse.up();
   await expect.poll(async () => { const order = (await project.status()).snapshot.segments.map(s => s.id); return order.indexOf(visible) - order.indexOf(id); }).toBe(after ? 1 : -1);
   expect((await project.status()).snapshot.segments).toHaveLength(ids.length);
+});
+
+test('序号入口在真实状态刷新后保留键盘焦点与拖动提示', async ({ page, project }) => {
+  await project.seed(['A', 'B']); await page.goto(project.url);
+  const entry = page.getByRole('button', { name: '拖动片段 1', exact: true });
+  await expect(entry).toBeEnabled();
+  await entry.focus(); await page.keyboard.press('Tab'); await page.keyboard.press('Shift+Tab');
+  await expect(entry).toBeFocused();
+  for (let i = 0; i < 2; i++) {
+    await page.waitForResponse(response => response.url() === `${project.url}/api/status` && response.ok());
+  }
+  await expect(entry).toBeFocused();
+  await expect(entry.locator('svg')).toHaveCSS('opacity', '1');
+  await entry.press('Enter'); await entry.press('ArrowDown'); await entry.press('Enter');
+  await expect.poll(async () => (await project.status()).snapshot.segments.map(segment => segment.text)).toEqual(['B', 'A']);
 });

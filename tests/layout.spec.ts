@@ -179,6 +179,42 @@ for (const width of [1600, 420]) test(`页头主题、查找键盘与模态边�
   expect((await project.status()).modification).toBeNull();
 });
 
+test('选框与序号在普通行及展开素材、说明后保持垂直居中', async ({ page, project }) => {
+  const [id] = await project.seed(['选框居中']);
+  await page.setViewportSize({ width: 780, height: 579 });
+  await page.goto(project.url);
+  const first = row(page, id!);
+  const aligned = () => first.evaluate(e => {
+    const checkbox = e.querySelector('.ag-checkbox-input-wrapper')!.getBoundingClientRect();
+    const order = e.querySelector('[col-id="order"]')!.getBoundingClientRect();
+    return Math.abs(checkbox.y + checkbox.height / 2 - order.y - order.height / 2);
+  });
+  await expect(first).toBeVisible();
+  await expect.poll(aligned).toBeLessThanOrEqual(0.5);
+  await first.getByRole('button', { name: '片段 1 画面素材（0）', exact: true }).click();
+  await expect(page.getByRole('region', { name: '片段 1 的画面素材', exact: true })).toBeVisible();
+  expect(await first.evaluate(e => e.getBoundingClientRect().height)).toBe(102);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('region', { name: '片段 1 的画面素材', exact: true })).toHaveCount(0);
+  await expect.poll(aligned).toBeLessThanOrEqual(0.5);
+  await first.locator('[data-note-summary]').click();
+  await expect(page.getByRole('region', { name: '片段 1 画面说明', exact: true })).toBeVisible();
+  await expect.poll(aligned).toBeLessThanOrEqual(0.5);
+});
+
+test('鼠标定位单元格不显示蓝框，键盘导航仍显示焦点', async ({ page, project }) => {
+  const ids = await project.seed(['鼠标点击', '键盘导航']);
+  await page.goto(project.url);
+  const first = row(page, ids[0]!).locator('[col-id="text"]');
+  await first.click({ position: { x: 1, y: 1 } });
+  await expect(first).toHaveClass(/ag-cell-focus/);
+  await expect(first).toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)');
+  await page.keyboard.press('ArrowDown');
+  const next = row(page, ids[1]!).locator('[col-id="text"]');
+  await expect(next).toBeFocused();
+  await expect(next).not.toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)');
+});
+
 test('三位序号与虚拟末行不裁切', async ({ page, project }) => {
   const ids = await project.seed(Array.from({ length: 600 }, () => '文案'));
   await page.setViewportSize({ width: 420, height: 360 }); await page.goto(project.url);
@@ -186,24 +222,28 @@ test('三位序号与虚拟末行不裁切', async ({ page, project }) => {
   await page.locator('.ag-grid-viewport').evaluate(e => { e.scrollTop = e.scrollHeight; });
   const order = row(page, ids[599]!).locator('[col-id="order"]');
   await expect(order).toContainText('600');
-  expect(await order.evaluate(e => { const n = e.querySelector('span > span')!; return n.getBoundingClientRect().right <= e.getBoundingClientRect().right; })).toBe(true);
+  expect(await order.evaluate(e => { const n = e.querySelector('[data-segment-order]')!; return n.getBoundingClientRect().right <= e.getBoundingClientRect().right; })).toBe(true);
 });
 
-for (const count of [2,7]) test(`笔和鼠标的真实悬浮及时更新且保留勾选 ${count}行`,async({page,context,project})=>{
+for (const count of [2,7]) test(`笔和鼠标悬浮不改变行底色且保留勾选 ${count}行`,async({page,context,project})=>{
  const ids=await project.seed(Array.from({length:count},(_,i)=>`片段${i+1}`));await page.goto(project.url);
  await expect(row(page,ids[0]!)).toBeVisible();
  // Playwright没有pen高层输入API；仅设备输入使用CDP，生命周期仍由原生fixture管理。
  const pen=await context.newCDPSession(page);
  const move=async(id:string,type:'pen'|'mouse')=>{const r=(await row(page,id).boundingBox())!;const x=r.x+r.width/2,y=r.y+r.height/2;if(type==='pen')await pen.send('Input.dispatchMouseEvent',{type:'mouseMoved',pointerType:'pen',x,y});else await page.mouse.move(x,y);};
- const hovered=(id:string)=>row(page,id).evaluate(e=>{const s=getComputedStyle(e.querySelector('.ag-grid-scrolling-cells')!,'::before');return s.content!=='none'&&s.backgroundColor==='rgb(240, 241, 243)';});
- for(const type of ['pen','mouse'] as const){for(const id of [ids[0]!,ids[1]!]){await move(id,type);await expect.poll(()=>hovered(id)).toBe(true);await expect(row(page,id).getByLabel(`拖动片段 ${id===ids[0]?1:2}`,{exact:true})).toHaveCSS('opacity','1');}}
+ const background=(id:string)=>row(page,id).evaluate(e=>{const s=getComputedStyle(e.querySelector('.ag-grid-scrolling-cells')!,'::before');return {color:s.backgroundColor,image:s.backgroundImage};});
+ await page.mouse.move(1,1);
+ const baseline=await background(ids[0]!);
+ for(const type of ['pen','mouse'] as const){for(const id of [ids[0]!,ids[1]!]){await move(id,type);await expect.poll(()=>background(id)).toEqual(baseline);await expect(row(page,id).getByLabel(`拖动片段 ${id===ids[0]?1:2}`,{exact:true})).toHaveCSS('opacity','1');}}
  await row(page,ids[0]!).locator('input[type="checkbox"]').check();await move(ids[0]!,'pen');
  await expect(row(page,ids[0]!)).toHaveClass(/ag-row-selected/);
- expect(await row(page,ids[0]!).evaluate(e=>getComputedStyle(e.querySelector('.ag-grid-scrolling-cells')!,'::before').backgroundImage)).not.toBe('none');
- await page.mouse.move(1,1);await expect.poll(()=>hovered(ids[0]!)).toBe(false);
+ const selectedBackground=await background(ids[0]!);
+ expect(selectedBackground.color).toBe('rgb(246, 250, 255)');
+ for(const type of ['pen','mouse'] as const){await move(ids[0]!,type);await expect.poll(()=>background(ids[0]!)).toEqual(selectedBackground);}
+ await page.mouse.move(1,1);await expect.poll(()=>background(ids[0]!)).toEqual(selectedBackground);
  expect(await row(page,ids[0]!).evaluate(e=>getComputedStyle(e.querySelector('.ag-grid-scrolling-cells')!,'::before').backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
  await expect(row(page,ids[0]!)).toHaveClass(/ag-row-selected/);
- await expect(row(page,ids[0]!).getByLabel('拖动片段 1',{exact:true})).toHaveCSS('opacity','0.5');
+ await expect(row(page,ids[0]!).getByLabel('拖动片段 1',{exact:true})).toHaveCSS('opacity','1');
  await pen.detach();
 });
 
