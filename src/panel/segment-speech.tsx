@@ -24,8 +24,8 @@ function Listening({ player, playing, toggle, stop }: { player: RefObject<HTMLAu
 }
 
 /** 行内配音入口全部使用统一的操作呈现；试听与生成互不占用范围。 */
-export function SegmentSpeech({ segment, actions, playing, listening, player, stop, generate, listen, history }: {
-  segment: Segment; speech?: SpeechStatus; actions: SegmentActions; draftText?: string; disabled?: boolean; reason?: string;
+export function SegmentSpeech({ segment, actions, draftText, segmentEditingBusy, playing, listening, player, stop, generate, listen, history }: {
+  segment: Segment; speech?: SpeechStatus; actions: SegmentActions; draftText?: string; disabled?: boolean; reason?: string; segmentEditingBusy?: boolean;
   playing: string | null; listening: string | null; player: RefObject<HTMLAudioElement | null>; stop: () => void;
   generate: () => void; listen: (audio: SpeechStatus['audio'][number]) => void; history: (trigger: HTMLElement) => void; onError?: () => void;
 }) {
@@ -34,9 +34,11 @@ export function SegmentSpeech({ segment, actions, playing, listening, player, st
   const handoff = useRef(false);
   const pending = latest?.state === 'accepted' || latest?.state === 'running';
   const problem = latest?.state === 'failed' || latest?.state === 'unknown';
+  // 文案修改权的短暂切换仍禁用操作，但不让原本可生成的按钮忽明忽暗。
+  const keepGenerateAppearance = segmentEditingBusy && !pending && !audio && !!(draftText ?? segment.text).trim();
   return <section data-segment-speech aria-label={`片段 ${segment.order} 配音`} className="flex shrink-0 items-center gap-1 text-[12px] leading-5">
     {audio && listening === audio.taskId ? <Listening key={audio.taskId} player={player} playing={playing === audio.taskId} toggle={() => listen(audio)} stop={stop} /> : <>
-      <Button variant={audio || pending || problem ? 'outline' : 'default'} size="xs" className="h-7 gap-1 px-2" aria-label={primaryLabel} title={audio ? actions.listen.reason || '试听配音' : actions.generate.reason || primaryLabel} disabled={pending || (!audio && !actions.generate.enabled)} onClick={() => audio ? listen(audio) : generate()}>
+      <Button variant={audio || pending || problem ? 'outline' : 'default'} size="xs" className={`h-7 gap-1 px-2 ${keepGenerateAppearance ? 'disabled:opacity-100' : ''}`} aria-label={primaryLabel} title={audio ? actions.listen.reason || '试听配音' : actions.generate.reason || primaryLabel} disabled={pending || (!audio && !actions.generate.enabled)} onClick={() => audio ? listen(audio) : generate()}>
         {audio ? <TriangleRightIcon aria-hidden /> : <ReloadIcon aria-hidden className={pending ? 'animate-spin motion-reduce:animate-none' : ''} />}{primaryLabel}
       </Button>
       <div className="relative min-w-0">

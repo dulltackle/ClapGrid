@@ -8,7 +8,7 @@ type Destination = { id: string; column?: string; note?: boolean };
 type Origin = Partial<Destination> & { index: number; trigger?: HTMLElement; parent?: HTMLElement };
 export type FocusIntent = { valid: () => boolean };
 export type FocusReturn = (() => void) & { cancel: () => void };
-type ReturnOptions = { fallback?: 'segment' | 'menu' };
+type ReturnOptions = { fallback?: 'segment' | 'menu'; preventScroll?: boolean };
 
 const layers = () => [...document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"], [role="alertdialog"][aria-modal="true"]')]
   .filter(layer => layer.dataset.state !== 'closed' && available(layer));
@@ -119,12 +119,12 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
             const selector = `[row-id="${CSS.escape(row.id)}"] ${origin.note ? '[data-note-original]' : `[col-id="${CSS.escape(origin.column!)}"]`}`;
             const range = api.getVerticalPixelRange();
             const top = row.rowTop ?? 0;
-            if (!document.querySelector(selector) || top < range.top || top + (row.rowHeight ?? 0) > range.bottom) {
+            if (!options.preventScroll && (!document.querySelector(selector) || top < range.top || top + (row.rowHeight ?? 0) > range.bottom)) {
               // 滚动也是恢复的一部分，必须在执行时重新核对意图及当前显示位置。
               if (!valid()) { finish(); return; }
               flushSync(() => api.ensureIndexVisible(index));
             }
-            if (origin.column && !document.querySelector(selector)) api.ensureColumnVisible(origin.column);
+            if (!options.preventScroll && origin.column && !document.querySelector(selector)) api.ensureColumnVisible(origin.column);
             if (focus(document.querySelector<HTMLElement>(selector))) {
               if (origin.column) api.setFocusedCell(index, origin.column);
               finish(); return;

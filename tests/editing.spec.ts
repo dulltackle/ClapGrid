@@ -1,5 +1,49 @@
 import { test, expect } from './helpers/project.js';
 
+for (const text of ['短句。', '欢迎来到 ClapGrid！今天用一分钟，体验从文案到口播视频的制作流程。']) test(`切换文案编辑时文字区域和周边布局保持稳定：${text}`, async ({ page, project }) => {
+  const [id] = await project.seed([text]);
+  await page.setViewportSize({ width: 780, height: 579 });
+  await page.goto(project.url);
+  const row = page.locator(`[row-id="${id}"]`);
+  const script = row.locator('[data-segment-script]');
+  const before = await script.evaluate(element => {
+    const summary = element.querySelector('.text-summary')!;
+    const rect = summary.getBoundingClientRect();
+    const style = getComputedStyle(summary);
+    return { x: rect.x, y: rect.y, width: rect.width, fontSize: style.fontSize, lineHeight: style.lineHeight };
+  });
+  const support = await row.locator('[data-segment-support]').boundingBox();
+  const speech = await row.locator('[data-segment-speech]').boundingBox();
+  await script.click();
+  const input = page.getByLabel('文案全文', { exact: true });
+  await expect(input).toBeFocused();
+  const after = await input.evaluate(element => {
+    const rect = element.getBoundingClientRect(), style = getComputedStyle(element);
+    const left = parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft);
+    const right = parseFloat(style.borderRightWidth) + parseFloat(style.paddingRight);
+    return { x: rect.x + left, y: rect.y + parseFloat(style.borderTopWidth) + parseFloat(style.paddingTop), width: rect.width - left - right, fontSize: style.fontSize, lineHeight: style.lineHeight };
+  });
+  expect(after).toEqual(before);
+  expect(await row.locator('[data-segment-support]').boundingBox()).toEqual(support);
+  expect(await row.locator('[data-segment-speech]').boundingBox()).toEqual(speech);
+});
+
+test('单击进入文案编辑后光标位于末尾，不显示滚动条且输入保留原文', async ({ page, project }) => {
+  const [id] = await project.seed(['保留这段原文']);
+  await page.goto(project.url);
+  await page.locator(`[row-id="${id}"] [data-segment-script]`).click();
+  const input = page.getByLabel('文案全文', { exact: true });
+  await expect(input).toBeFocused();
+  expect(await input.evaluate(node => {
+    const textarea = node as HTMLTextAreaElement;
+    return textarea.selectionStart === textarea.value.length && textarea.selectionEnd === textarea.value.length;
+  })).toBe(true);
+  await expect(input).toHaveCSS('overflow-x', 'hidden');
+  await expect(input).toHaveCSS('overflow-y', 'hidden');
+  await input.pressSequentially('!');
+  await expect(input).toHaveValue('保留这段原文!');
+});
+
 test('单击文案进入编辑，通过真实服务保存并在重载后保留', async ({ page, project }) => {
   const [id] = await project.seed(['原文']);
   await page.goto(project.url);

@@ -81,5 +81,6 @@ html, body, #root { height: 100%; overflow: hidden; }
 /* Quartz 的 focus-within 会在鼠标取消勾选后保留蓝环；仅键盘焦点保留该提示。 */
 .segment-grid .ag-checkbox-input-wrapper:focus-within:not(:has(:focus-visible)) { box-shadow: none; }
 
-/* 鼠标定位单元格不画焦点框；键盘焦点及内部控件的可见焦点继续保留。 */
+/* 原位编辑由输入框呈现边界，不叠加单元格焦点框。 */
+.segment-grid .ag-cell-focus:has([data-inline-editor]),
 .segment-grid .ag-cell-focus:not(:focus-visible):not(:has(:focus-visible)) { border-color: transparent !important; }

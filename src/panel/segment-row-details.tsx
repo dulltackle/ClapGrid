@@ -6,9 +6,9 @@ import type { Segment } from '../shared/contracts.js';
 
 type Row = { element: HTMLElement; id: string };
 
-function ExpandedNote({ segment, mainHeight, width, left, onHeight, onCollapse, onOpen, editor, editReason }: {
+function ExpandedNote({ segment, mainHeight, width, left, onHeight, onCollapse, onOpen, editor, editReason, segmentEditingBusy }: {
   segment: Segment; mainHeight: number; width: number; left: number; onHeight: (height: number) => void;
-  editor?: ReactNode; editReason?: string; onCollapse: () => void; onOpen: (id: string, trigger: HTMLElement, field?: 'visualNote') => void;
+  editor?: ReactNode; editReason?: string; segmentEditingBusy?: boolean; onCollapse: () => void; onOpen: (id: string, trigger: HTMLElement, field?: 'visualNote') => void;
 }) {
   const content = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -26,19 +26,19 @@ function ExpandedNote({ segment, mainHeight, width, left, onHeight, onCollapse, 
     <div className="rounded-md bg-muted px-3 py-2">
       <div className="mb-1 flex items-center gap-2 text-xs font-medium">
         <span className="mr-auto">画面说明</span>
-        <Button variant="ghost" size="xs" className="h-6 text-xs text-muted-foreground" disabled={!!editReason} title={editReason} onClick={event => onOpen(segment.id, event.currentTarget, 'visualNote')}>编辑说明</Button>
+        <Button variant="ghost" size="xs" className={`h-6 text-xs text-muted-foreground ${segmentEditingBusy ? 'disabled:opacity-100' : ''}`} disabled={!!editReason} title={editReason} onClick={event => onOpen(segment.id, event.currentTarget, 'visualNote')}>编辑说明</Button>
         <Button variant="ghost" size="xs" className="h-6 gap-1 text-xs text-primary" onClick={onCollapse}>收起<ChevronUpIcon aria-hidden /></Button>
       </div>
-      {editor || <p data-note-original tabIndex={0} aria-label="画面说明原文" title="双击编辑画面说明，或按 Enter / F2" onDoubleClick={event => { event.stopPropagation(); onOpen(segment.id, event.currentTarget, 'visualNote'); }} onKeyDown={event => {
+      {editor || <div className="h-32 pb-1"><p data-note-original tabIndex={0} aria-label="画面说明原文" title="双击编辑画面说明，或按 Enter / F2" onDoubleClick={event => { event.stopPropagation(); onOpen(segment.id, event.currentTarget, 'visualNote'); }} onKeyDown={event => {
         if (['Enter', 'F2'].includes(event.key) && !event.nativeEvent.isComposing) { event.preventDefault(); event.stopPropagation(); onOpen(segment.id, event.currentTarget, 'visualNote'); }
-      }} className="m-0 max-h-[88px] cursor-text overflow-y-auto whitespace-pre-wrap wrap-anywhere text-[13px] leading-[22px] text-muted-foreground">{segment.visualNote || '暂无画面说明'}</p>}
+      }} className="m-0 h-full cursor-text overflow-hidden whitespace-pre-wrap wrap-anywhere rounded-md border border-solid border-transparent py-0 pl-2 pr-[88px] text-[15px] leading-[22px] text-foreground">{segment.visualNote || '暂无画面说明'}</p></div>}
     </div>
   </div>;
 }
 
 /** 仅把展开内容挂在真实虚拟行上；选择、顺序和行位置仍由 AG Grid 管理。 */
-export function SegmentRowDetails({ element, segments, expandedId, mainHeight, onHeight, onCollapse, onOpen, editor, editReason }: {
-  editor?: ReactNode; editReason?: string; element: RefObject<HTMLDivElement | null>; segments: Segment[]; expandedId: string | null; mainHeight: number;
+export function SegmentRowDetails({ element, segments, expandedId, mainHeight, onHeight, onCollapse, onOpen, editor, editReason, segmentEditingBusy }: {
+  editor?: ReactNode; editReason?: string; segmentEditingBusy?: boolean; element: RefObject<HTMLDivElement | null>; segments: Segment[]; expandedId: string | null; mainHeight: number;
   onHeight: (height: number) => void; onCollapse: () => void;
   onOpen: (id: string, trigger: HTMLElement, field?: 'visualNote') => void;
 }) {
@@ -73,5 +73,5 @@ export function SegmentRowDetails({ element, segments, expandedId, mainHeight, o
     const toggle = row?.element.querySelector<HTMLButtonElement>('[data-note-summary]');
     onCollapse(); toggle?.focus({ preventScroll: true });
   };
-  return row && segment ? createPortal(<ExpandedNote segment={segment} width={width} left={left} mainHeight={mainHeight} onHeight={onHeight} onCollapse={collapse} onOpen={onOpen} editor={editor} editReason={editReason} />, row.element, row.id) : null;
+  return row && segment ? createPortal(<ExpandedNote segment={segment} width={width} left={left} mainHeight={mainHeight} onHeight={onHeight} onCollapse={collapse} onOpen={onOpen} editor={editor} editReason={editReason} segmentEditingBusy={segmentEditingBusy} />, row.element, row.id) : null;
 }
