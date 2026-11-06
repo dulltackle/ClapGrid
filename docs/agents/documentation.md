@@ -13,6 +13,7 @@
 按修改范围查阅对应指南：
 
 - 事项与领域：[事项追踪](issue-tracker.md)、[分类标签](triage-labels.md)、[领域文档](domain.md)。
+- 产品规则：[产品契约](../product-contract.md)。
 - 面板与配置：[统一组件维护](../ui-components.md)、[面板规范](../panel-style.md)、[导出设置](../export-settings.md)。
 - 构建与交付：[构建身份](../build-identity.md)、[本机插件交付](plugin-delivery.md)、[Linux 组件](../linux-components.md)。
 - 视频制作：[制作命令](../production.md)、[制作模板](../templates/video.md)、[依赖与局部重制](../production-impact.md)、[证据核对](../production-evidence.md)、[制作交付包](../production-package.md)、[抽检](../production-sample.md)。
