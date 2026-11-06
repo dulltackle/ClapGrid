@@ -220,8 +220,9 @@ export async function cancelExport(baseUrl: string, taskId: string): Promise<imp
   return postJson(baseUrl, '/api/exports/cancel', { taskId });
 }
 
-export async function importMaterial(baseUrl: string, sourcePath: string, token?: string, signal?: AbortSignal) {
-  const body = await postJson(baseUrl, token ? '/api/material/import' : '/api/codex/import-material', { sourcePath }, token, signal ?? null);
+export async function importMaterial(baseUrl: string, input: string | import('./contracts.js').ImportMaterial, token?: string, signal?: AbortSignal) {
+  const request = typeof input === 'string' ? { sourcePath: input } : input;
+  const body = await postJson(baseUrl, token ? '/api/material/import' : '/api/codex/import-material', request, token, signal ?? null);
   return { asset: body.asset as import('./contracts.js').VideoAsset, status: statusSchema.parse(body.status) };
 }
 export async function renameMaterial(baseUrl: string, input: import('./contracts.js').RenameMaterial, token?: string, signal?: AbortSignal) {

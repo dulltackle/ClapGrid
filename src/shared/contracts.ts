@@ -41,14 +41,27 @@ const segmentEditFields = { text: z.string().optional(), visualNote: z.string().
 const hasSegmentEdit = (input: { text?: string; visualNote?: string }) => input.text !== undefined || input.visualNote !== undefined;
 export const editSegmentSchema = z.object({ id: z.uuid(), ...segmentEditFields }).strict().refine(hasSegmentEdit, '请提供文案或画面说明');
 
+const derivationSchema = z.object({
+  inputs: z.array(z.uuid()),
+  method: z.enum(['generate', 'edit', 'matte']),
+  executor: z.string().trim().min(1).max(128),
+  model: z.string().trim().min(1).max(128),
+  prompt: z.string().max(10000),
+}).strict();
+const recordedDerivationSchema = derivationSchema.extend({ createdAt: z.iso.datetime() });
+export type MaterialDerivation = z.infer<typeof recordedDerivationSchema>;
+
 export const videoAssetSchema = z.object({
   id: z.uuid(), name: z.string(), duration: z.number().nonnegative(),
   kind: z.enum(['image', 'video']).optional(), width: z.number().positive().optional(), height: z.number().positive().optional(),
   hasAlpha: z.boolean().optional(), mime: z.string().optional(),
+  derivation: recordedDerivationSchema.optional(),
 });
 export type VideoAsset = z.infer<typeof videoAssetSchema>;
 export const importVideoSchema = z.object({ sourcePath: z.string().min(1) }).strict();
 export type ImportVideo = z.infer<typeof importVideoSchema>;
+export const importMaterialSchema = importVideoSchema.extend({ derivation: derivationSchema.optional() });
+export type ImportMaterial = z.infer<typeof importMaterialSchema>;
 export const renameMaterialSchema = z.object({ assetId: z.uuid(), expectedName: z.string(), name: z.string().trim().min(1, '素材名称不能为空').max(255, '素材名称不能超过 255 个字符') }).strict();
 export type RenameMaterial = z.infer<typeof renameMaterialSchema>;
 

@@ -7,6 +7,7 @@ import { segmentRowMenu, type SegmentActions } from './segment-actions.js';
 import { panelServiceUrl } from './service-url.js';
 import { SegmentSpeech } from './segment-speech.js';
 import type { useSegmentDrag } from './segment-drag.js';
+import { MaterialDerivationDetails } from './material-derivation.js';
 import { SearchText } from './text-search.js';
 
 type SpeechProps = Omit<ComponentProps<typeof SegmentSpeech>, 'segment' | 'generate' | 'history' | 'draftText' | 'actions'> & {
@@ -15,7 +16,7 @@ type SpeechProps = Omit<ComponentProps<typeof SegmentSpeech>, 'segment' | 'gener
 };
 type VisualProps = {
   segmentEditingBusy?: boolean;
-  assets: ServiceStatus['snapshot']['assets']; preview: (segment: Segment, trigger: HTMLButtonElement, index?: number) => void;
+  assets: ServiceStatus['snapshot']['assets']; preview: (assetId: string, trigger: HTMLButtonElement) => void;
   trayId: string | null; toggleTray: (id: string) => void;
   previews: ExportTask[]; composed: (task: ExportTask, trigger: HTMLButtonElement) => void;
   rename: (asset: ServiceStatus['snapshot']['assets'][number], trigger: HTMLElement) => void;
@@ -73,12 +74,13 @@ export function SegmentRowSupport({ data, assets, preview, expandedId, toggleNot
           const asset = assets.find(asset => asset.id === assetId);
           const image = asset?.kind === 'image'; const name = asset?.name ?? '缺失素材';
           return <div key={`${index}-${assetId}`} className="min-w-0">
-            <button className="relative block aspect-video w-full cursor-pointer overflow-hidden rounded-md border-0 bg-muted p-0" aria-label={`${image ? '查看' : '播放'}原件 ${name}`} onClick={event => preview(data, event.currentTarget, index)}><img src={`${panelServiceUrl()}/api/media/${assetId}/thumbnail`} alt="" className="h-full w-full object-cover" /><span className="absolute bottom-1 right-1 flex items-center gap-1 rounded bg-background px-1 py-0.5 text-[10px] text-foreground"><EnterFullScreenIcon aria-hidden className="size-3" />原件</span></button>
+            <button className="relative block aspect-video w-full cursor-pointer overflow-hidden rounded-md border-0 bg-muted p-0" aria-label={`${image ? '查看' : '播放'}原件 ${name}`} onClick={event => preview(assetId, event.currentTarget)}><img src={`${panelServiceUrl()}/api/media/${assetId}/thumbnail`} alt="" className="h-full w-full object-cover" /><span className="absolute bottom-1 right-1 flex items-center gap-1 rounded bg-background px-1 py-0.5 text-[10px] text-foreground"><EnterFullScreenIcon aria-hidden className="size-3" />原件</span></button>
             <div className="mt-1 flex min-w-0 items-center gap-1">
               <button type="button" className={`flex min-w-0 flex-1 cursor-pointer items-center gap-1 rounded border-0 bg-transparent p-0 text-left text-xs hover:bg-ui-accent disabled:cursor-default ${segmentEditingBusy && asset ? 'disabled:opacity-100' : 'disabled:opacity-50'}`} disabled={!asset || !actions.associate.enabled} aria-label={`重命名素材 ${name}`} title={`重命名：${name}`} onClick={event => asset && rename(asset, event.currentTarget)}><span className="min-w-0 flex-1 truncate">{name}</span><Pencil1Icon aria-hidden className="size-3 shrink-0 text-muted-foreground" /></button>
               <Button variant="ghost" size="xs" className={`size-6 shrink-0 p-0 text-muted-foreground ${segmentEditingBusy ? 'disabled:opacity-100' : ''}`} disabled={!actions.associate.enabled} aria-label={`移出本句 ${name}`} title="移出本句" onClick={() => { trayTrigger.current?.focus(); unlink(data, index); }}><MinusIcon aria-hidden /></Button>
             </div>
             <div className="text-[11px] text-muted-foreground">{image ? '图片' : '视频'}{asset?.width && asset.height ? ` · ${asset.width} × ${asset.height}` : ''}</div>
+            {asset?.derivation && <MaterialDerivationDetails derivation={asset.derivation} assets={assets} onOpen={preview} />}
           </div>;
         })}
       </div>

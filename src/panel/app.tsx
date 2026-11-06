@@ -18,6 +18,7 @@ import { flushSync } from 'react-dom';
 import { AllCommunityModule, themeQuartz, type ColDef, type GridApi } from 'ag-grid-community';
 import { AgGridProvider, AgGridReact } from 'ag-grid-react';
 import { queryStatus, querySpeech, submitSpeech, setVoice, importMaterial, renameMaterial, queryVisualPreviews, beginEdit, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
+import { MaterialDerivationDetails } from './material-derivation.js';
 import { segmentMaterials } from '../shared/contracts.js';
 import type { Segment, ServiceStatus, SpeechStatus, Voice, Batch, ExportTask, VideoAsset } from '../shared/contracts.js';
 import { projectEditing } from './project-editing.js';
@@ -129,7 +130,9 @@ export function App() {
   const [trayId, setTrayId] = useState<string | null>(null);
   const [visualPreviews, setVisualPreviews] = useState<ExportTask[]>([]);
   const [composedPreview, setComposedPreview] = useState<ExportTask | null>(null);
-  const [preview, setPreview] = useState<{ assetId: string; start: number } | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const previewAsset = status?.snapshot.assets.find(asset => asset.id === preview);
+  const previewClose = useRef<HTMLButtonElement>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [currentMatch, setCurrentMatch] = useState<string | null>(null);
@@ -514,7 +517,7 @@ export function App() {
     assets: status?.snapshot.assets ?? [], expandedId: expandedNote, toggleNote,
     trayId, toggleTray: (id: string) => setTrayId(current => current === id ? null : id), previews: visualPreviews,
     composed: (task: ExportTask, trigger: HTMLButtonElement) => { rememberOrigin(trigger, 'preview'); setComposedPreview(task); },
-    preview: (segment: Segment, trigger: HTMLButtonElement, index = 0) => { rememberOrigin(trigger, 'preview'); const assetId = segmentMaterials(segment)[index]; setPreview(assetId ? { assetId, start: 0 } : null); },
+    preview: (assetId: string, trigger: HTMLButtonElement) => { rememberOrigin(trigger, 'preview'); setPreview(assetId); },
     rename: openAssetRename,
     associate: (id: string, trigger: HTMLElement, index = 0) => { rememberOrigin(trigger, 'video'); void openVideoEditor(id, index); },
     unlink: (segment: Segment, index = 0) => { void segmentDetail.perform(savedTarget => { const expected = savedTarget(segment); const assetIds = segmentMaterials(expected).filter((_, i) => i !== index); return organize({ changes: [{ kind: 'materials', expected, assetIds }] }); }); },
@@ -647,11 +650,15 @@ export function App() {
       <p>只复制指定文件，保留项目原件。素材的出现时间和位置由 agent 编排。</p>
       <div className="flex flex-wrap items-center gap-2"><Button variant="outline" disabled={editState.busy || (!sourcePath.trim() && !videoEditor?.assetId)} onClick={() => { void saveVideo(); }}>{editState.busy ? '正在处理…' : importing ? '导入并复制' : '加入本句'}</Button><Button variant="outline" onClick={cancelVideo}>取消</Button></div>
     </DetailPanel>}
-    {preview && <DetailPanel title={status?.snapshot.assets.find(asset => asset.id === preview.assetId)?.kind === 'image' ? '图片原件' : '视频原件'} label={status?.snapshot.assets.find(asset => asset.id === preview.assetId)?.kind === 'image' ? '图片原件' : '视频原件'} restoreWithinLayer onClose={() => focusReturns.close(returnFocus.current.preview, () => setPreview(null))} restoreFocus={returnFocus.current.preview}>
-      {status?.snapshot.assets.find(asset => asset.id === preview.assetId)?.kind === 'image'
-        ? <img className="block max-h-[60dvh] w-full object-contain" onError={() => reportOperation('preview', '图片原件不可读取，请检查项目素材文件')} alt={status?.snapshot.assets.find(asset => asset.id === preview.assetId)?.name ?? '图片原件'} src={`${panelServiceUrl()}/api/media/${preview.assetId}/original`} />
-        : <video className="block max-h-[60dvh] w-full shrink-0" key={preview.assetId} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview.assetId}/preview`} onError={() => reportOperation('preview', '原件预览不可用，请检查项目素材文件')} />}
-      <Button variant="outline" onClick={() => focusReturns.close(returnFocus.current.preview, () => setPreview(null))}>关闭预览</Button>
+    {preview && <DetailPanel title={previewAsset?.kind === 'image' ? '图片原件' : '视频原件'} label={previewAsset?.kind === 'image' ? '图片原件' : '视频原件'} restoreWithinLayer className="max-h-[90dvh] overflow-y-auto" onClose={() => focusReturns.close(returnFocus.current.preview, () => setPreview(null))} restoreFocus={returnFocus.current.preview}>
+      {previewAsset?.kind === 'image'
+        ? <img className="block max-h-[60dvh] w-full object-contain" onError={() => reportOperation('preview', '图片原件不可读取，请检查项目素材文件')} alt={previewAsset?.name ?? '图片原件'} src={`${panelServiceUrl()}/api/media/${preview}/original`} />
+        : <video className="block max-h-[60dvh] w-full shrink-0" key={preview} controls muted autoPlay src={`${panelServiceUrl()}/api/media/${preview}/preview`} onError={() => reportOperation('preview', '原件预览不可用，请检查项目素材文件')} />}
+      {previewAsset?.derivation && <MaterialDerivationDetails key={preview} derivation={previewAsset.derivation} assets={status!.snapshot.assets} onOpen={assetId => {
+        setPreview(assetId);
+        previewClose.current?.focus();
+      }} />}
+      <Button ref={previewClose} variant="outline" onClick={() => focusReturns.close(returnFocus.current.preview, () => setPreview(null))}>关闭预览</Button>
     </DetailPanel>}
     {composedPreview && <DetailPanel title="片段合成预览" label="片段合成预览" restoreWithinLayer onClose={() => focusReturns.close(returnFocus.current.preview, () => setComposedPreview(null))} restoreFocus={returnFocus.current.preview}>
       {!visualPreviews.find(task => task.id === composedPreview.id)?.current && <p role="status">相关输入已变化，此预览待更新，请让 agent 重新制作。</p>}

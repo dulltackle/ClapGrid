@@ -4,7 +4,7 @@ import { buildIdentity, compatibleRuntime } from '../build-identity.js';
 import { readHostWorkspace, hostThreadId } from '../host-workspace.js';
 import { bindWorkspace } from '../workspace-service.js';
 import { z } from 'zod';
-import { exportTaskRequestSchema, submitExportSchema, speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importPageSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
+import { exportTaskRequestSchema, submitExportSchema, speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importPageSchema, importMaterialSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { RootsListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
 import { importStyle, importPage, queryVisualContext, importMaterial, previewSegment, queryVisualPreviews, submitExport, queryExports, cancelExport, submitSpeechBatch, queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
@@ -135,10 +135,10 @@ export function createBusinessMcp(url?: string) {
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   server.registerTool('clapgrid_import_material', {
-    description: '导入用户指定的原生 PNG（含透明）、JPEG 或视频，复制原件到项目，返回稳定素材身份；不自动关联或编排。',
-    inputSchema: importVideoSchema,
+    description: '导入用户指定的原生 PNG（含透明）、JPEG 或视频，复制原件到项目并返回素材身份。sourcePath 也可使用本回合 imagegen 工具返回的 savedPath，此路径来自工具输出，无需扫描或猜测。可附带 derivation 声明派生来源，inputs 填本项目的输入素材 ID，纯文字生图填空数组。不自动关联或编排。',
+    inputSchema: importMaterialSchema,
   }, async (input, extra) => {
-    try { const result = await importMaterial(await connection(extra._meta), input.sourcePath, undefined, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    try { const result = await importMaterial(await connection(extra._meta), input, undefined, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   server.registerTool('clapgrid_visual_context', {

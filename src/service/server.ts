@@ -14,7 +14,7 @@ import { readFileSync, readdirSync, openSync, fstatSync, createReadStream, const
 import { dirname, extname, join } from 'node:path';
 import { claimProjectService } from '../business/service-ownership.js';
 import { openBusiness } from '../business/index.js';
-import { importPageSchema, submitExportSchema, exportTaskRequestSchema, renameMaterialSchema, importVideoSchema, addSegmentSchema, editSegmentSchema, batchSchema, segmentQuerySchema, selectionSchema, scopedOperationSchema, type ServiceStatus } from '../shared/contracts.js';
+import { importPageSchema, submitExportSchema, exportTaskRequestSchema, renameMaterialSchema, importMaterialSchema, importVideoSchema, addSegmentSchema, editSegmentSchema, batchSchema, segmentQuerySchema, selectionSchema, scopedOperationSchema, type ServiceStatus } from '../shared/contracts.js';
 
 /** 心跳复用宿主工作空间核对结果的最长时间。 */
 const HEARTBEAT_HOST_CHECK_MS = 5000;
@@ -397,10 +397,11 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
             try { return { data: { asset: await business.renameMaterial(token, parsed.data) } }; }
             catch (error) { return { status: 409, error: (error as Error).message }; }
           } else if (path === '/api/material/import' || path === '/api/codex/import-material' || path === '/api/video/import' || path === '/api/codex/import-video') {
-            const parsed = importVideoSchema.safeParse(input);
-            if (!parsed.success) return { status: 400, error: '请提供用户明确指定的视频路径' };
+            const material = path.includes('material');
+            const parsed = (material ? importMaterialSchema : importVideoSchema).safeParse(input);
+            if (!parsed.success) return { status: 400, error: material ? '请提供素材路径和有效的派生来源' : '请提供用户明确指定的视频路径' };
             try {
-              const asset = await (path.includes('material') ? business.importMaterial(token, parsed.data) : business.importVideo(token, parsed.data));
+              const asset = await (material ? business.importMaterial(token, parsed.data) : business.importVideo(token, parsed.data));
               return { data: { asset } };
             } catch (error) { return { status: 400, error: (error as Error).message }; }
           } else if (path === '/api/codex/process') {
