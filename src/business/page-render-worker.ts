@@ -1,18 +1,18 @@
 import { chromium, type Browser } from 'playwright-core';
 import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
 import { createServer } from 'node:http';
-import { readFile, mkdtemp, rm } from 'node:fs/promises';
+import { readFile, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { constants, openSync, fstatSync, closeSync, createReadStream } from 'node:fs';
 import { join } from 'node:path';
 import { pageBrowserExecutable, pageBrowserVersion } from './page-browser.js';
 import { styleStore } from './styles.mjs';
+import { mediaProcess } from './media-process.js';
+import { pageTexts, trackPageTexts } from './page-diagnostics.js';
+import type { PageWorkerInput } from './page-worker-input.js';
 import { pageStyle, pageStore } from './pages.js';
 
 // Chrome 由本进程直接启动并继承进程组；守护进程的强制回收也覆盖浏览器后代。
-const input = JSON.parse(await readFile(process.argv[2]!, 'utf8')) as {
-  projectDirectory: string; pageId: string; assets: Record<string, { path: string; mime: string }>;
-  width: number; height: number; duration: number; fps: number; transparent: boolean; output: string;
-};
+const input = JSON.parse(await readFile(process.argv[2]!, 'utf8')) as PageWorkerInput;
 let browser: Browser | undefined; let chrome: ChildProcess | undefined; let encoder: ChildProcess | undefined;
 let stopped = false; let failure: Error | undefined;
 const failureListeners = new Set<(error: Error) => void>();
@@ -99,7 +99,7 @@ try {
     }
     document.addEventListener('securitypolicyviolation', event => console.error(`页面禁止外部请求或能力：${event.blockedURI}`));
   });
-  const instances = await Promise.all([0, 1].map(async () => {
+  const openPage = async () => {
     const tab = await context.newPage();
     tab.on('pageerror', error => fail(`页面脚本错误：${error.message}`));
     tab.on('console', message => { if (message.type() === 'error') fail(`${message.text().includes('Content Security Policy') ? '页面禁止外部请求或能力' : '页面错误'}：${message.text()}`); });
@@ -112,40 +112,92 @@ try {
     const valid = await tab.evaluate(duration => typeof (window as any).render === 'function' && Number.isFinite((window as any).DUR) && Math.abs((window as any).DUR - duration) <= 0.001, input.duration);
     if (!valid) throw new Error(`页面 DUR 必须等于图层区间 ${input.duration} 秒（误差 ≤1 ms），并暴露 render(t)`);
     return tab;
-  }));
+  };
+  const instances = await Promise.all(Array.from({ length: input.diagnostic?.kind === 'frames' ? 1 : 2 }, openPage));
   if (failure) throw failure;
-  let encoderError = '';
-  encoder = spawn('ffmpeg', ['-v', 'error', '-nostdin', '-xerror', '-f', 'image2pipe', '-framerate', String(input.fps), '-vcodec', input.transparent ? 'png' : 'mjpeg', '-i', 'pipe:0', '-an', '-c:v', 'ffv1', '-level', '3', '-pix_fmt', input.transparent ? 'bgra' : 'bgr0', '-threads', '2', '-f', 'matroska', input.output], { stdio: ['pipe', 'ignore', 'pipe'] });
-  const encoded = new Promise<void>((resolve, reject) => {
-    encoder!.on('error', reject); encoder!.stderr!.on('data', chunk => { encoderError = (encoderError + chunk.toString()).slice(-1500); });
-    encoder!.once('close', code => code === 0 ? resolve() : reject(new Error(`页面帧编码失败：${encoderError}`)));
-    encoder!.stdin!.on('error', reject);
-  });
-  // 提前绑定拒绝处理；按两帧为一批分配，保持输出顺序及有界内存。
-  void encoded.catch(error => fail((error as Error).message));
-  async function writeFrame(bytes: Buffer) {
-    if (encoder!.stdin!.write(bytes)) return;
-    await new Promise<void>((resolve, reject) => {
-      const stream = encoder!.stdin!;
-      const cleanup = () => { stream.off('drain', drained); stream.off('error', errored); stream.off('close', closed); encoder!.off('close', closed); };
-      const drained = () => { cleanup(); resolve(); };
-      const errored = (error: Error) => { cleanup(); reject(error); };
-      const closed = () => errored(new Error(`页面编码提前结束：${encoderError}`));
-      stream.once('drain', drained); stream.once('error', errored); stream.once('close', closed); encoder!.once('close', closed);
-    });
-  }
   const frames = Math.round(input.duration * input.fps);
   if (frames < 1) throw new Error('页面图层区间不足一帧');
-  for (let frame = 0; frame < frames; frame += instances.length) {
-    if (stopped) throw new Error('页面渲染已取消');
-    const batch = await Promise.all(instances.slice(0, frames - frame).map(async (tab, slot) => {
-      await guard(tab.evaluate(t => (window as any).render(t), (frame + slot) / input.fps));
-      return guard(tab.screenshot({ type: input.transparent ? 'png' : 'jpeg', ...(input.transparent ? { omitBackground: true } : { quality: 100 }), timeout: 120000 }));
-    }));
-    if (failure) throw failure;
-    for (const bytes of batch) await writeFrame(bytes);
+  if (input.diagnostic) {
+    const diagnostic = input.diagnostic;
+    const tab = instances[0]!;
+    const render = (instance: typeof tab, time: number) => guard(instance.evaluate(t => (window as any).render(t), time));
+    const screenshot = (instance: typeof tab, path: string) => guard(instance.screenshot({ path, type: 'png', omitBackground: input.transparent, timeout: 120000 }));
+    if (diagnostic.kind === 'frames') {
+      for (const [index, time] of diagnostic.times.entries()) {
+        if (stopped) throw new Error('页面抽帧已取消');
+        await render(tab, time);
+        await screenshot(tab, join(input.output, `frame-${index}.png`));
+      }
+    } else {
+      // 两个独立页面实例使用不同顺序；比较解码后的 RGBA 像素。
+      const samples = [...new Set([Math.floor(frames / 2), 0, frames - 1])];
+      const hashes: Map<number, string>[] = [];
+      for (const [index, instance] of instances.entries()) {
+        const result = new Map<number, string>();
+        for (const frame of index === 0 ? samples : [...samples].reverse()) {
+          if (stopped) throw new Error('页面检查已取消');
+          await render(instance, frame / input.fps);
+          const path = join(profile, 'sample.png');
+          await screenshot(instance, path);
+          const { stdout } = await mediaProcess('ffmpeg', ['-v', 'error', '-nostdin', '-threads', '1', '-i', path, '-pix_fmt', 'rgba', '-c:v', 'rawvideo', '-threads', '1', '-f', 'hash', '-hash', 'sha256', '-']);
+          result.set(frame, stdout.trim());
+        }
+        hashes.push(result);
+      }
+      const mismatchedTimes = samples.filter(frame => hashes[0]!.get(frame) !== hashes[1]!.get(frame)).sort((a, b) => a - b).map(frame => frame / input.fps);
+      const available = await guard(tab.evaluate(() => typeof (window as any).TEXTS === 'function'));
+      const tracker = trackPageTexts({ ...diagnostic, duration: input.duration, fps: input.fps });
+      if (available) {
+        // 新页面从初始状态按时间顺序取样，不继承乱序抽检的状态。
+        const textTab = await openPage();
+        for (let frame = 0; frame < frames; frame++) {
+          if (stopped) throw new Error('页面检查已取消');
+          const time = frame / input.fps;
+          await render(textTab, time);
+          const raw = await guard(textTab.evaluate(t => (window as any).TEXTS(t), time));
+          const parsed = pageTexts.safeParse(raw);
+          if (!parsed.success) throw new Error(`TEXTS(${time}) 必须返回有效的文字和页面像素框数组`);
+          tracker.frame(frame, parsed.data);
+        }
+      }
+      await writeFile(input.output, JSON.stringify({
+        text: available ? tracker.result() : { status: 'not-checked', issues: [], reason: '页面没有提供 TEXTS(t)' },
+        determinism: { sampledTimes: [...samples].sort((a, b) => a - b).map(frame => frame / input.fps), mismatchedTimes,
+          warnings: mismatchedTimes.length ? ['跨实例乱序渲染像素不一致，成片可能随机闪烁或跳帧。请检查无种子随机数、当前时间或依赖上一帧状态的代码。'] : [] },
+      }), { flag: 'wx' });
+    }
+  } else {
+    let encoderError = '';
+    encoder = spawn('ffmpeg', ['-v', 'error', '-nostdin', '-xerror', '-f', 'image2pipe', '-framerate', String(input.fps), '-vcodec', input.transparent ? 'png' : 'mjpeg', '-i', 'pipe:0', '-an', '-c:v', 'ffv1', '-level', '3', '-pix_fmt', input.transparent ? 'bgra' : 'bgr0', '-threads', '2', '-f', 'matroska', input.output], { stdio: ['pipe', 'ignore', 'pipe'] });
+    const encoded = new Promise<void>((resolve, reject) => {
+      encoder!.on('error', reject); encoder!.stderr!.on('data', chunk => { encoderError = (encoderError + chunk.toString()).slice(-1500); });
+      encoder!.once('close', code => code === 0 ? resolve() : reject(new Error(`页面帧编码失败：${encoderError}`)));
+      encoder!.stdin!.on('error', reject);
+    });
+    // 提前绑定拒绝处理；按两帧为一批分配，保持输出顺序及有界内存。
+    void encoded.catch(error => fail((error as Error).message));
+    async function writeFrame(bytes: Buffer) {
+      if (encoder!.stdin!.write(bytes)) return;
+      await new Promise<void>((resolve, reject) => {
+        const stream = encoder!.stdin!;
+        const cleanup = () => { stream.off('drain', drained); stream.off('error', errored); stream.off('close', closed); encoder!.off('close', closed); };
+        const drained = () => { cleanup(); resolve(); };
+        const errored = (error: Error) => { cleanup(); reject(error); };
+        const closed = () => errored(new Error(`页面编码提前结束：${encoderError}`));
+        stream.once('drain', drained); stream.once('error', errored); stream.once('close', closed); encoder!.once('close', closed);
+      });
+    }
+    for (let frame = 0; frame < frames; frame += instances.length) {
+      if (stopped) throw new Error('页面渲染已取消');
+      const batch = await Promise.all(instances.slice(0, frames - frame).map(async (tab, slot) => {
+        await guard(tab.evaluate(t => (window as any).render(t), (frame + slot) / input.fps));
+        return guard(tab.screenshot({ type: input.transparent ? 'png' : 'jpeg', ...(input.transparent ? { omitBackground: true } : { quality: 100 }), timeout: 120000 }));
+      }));
+      if (failure) throw failure;
+      for (const bytes of batch) await writeFrame(bytes);
+    }
+    encoder.stdin!.end(); await encoded;
   }
-  encoder.stdin!.end(); await encoded;
   if (failure) throw failure;
 } catch (error) {
   console.error((error as Error).message); process.exitCode = 1;

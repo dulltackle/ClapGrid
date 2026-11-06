@@ -1,4 +1,4 @@
-import { fileURLToPath } from 'node:url';
+import { pageGeometry, runPageWorker } from './page-worker-input.js';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { ExportSettings, Segment, VisualPlan } from '../shared/contracts.js';
@@ -17,7 +17,7 @@ export async function prepareExportAudio(source: string, directory: string, inde
   return { audio, duration };
 }
 
-function subtitle(settings: ExportSettings, text: string) {
+export function subtitle(settings: ExportSettings, text: string, mask = false) {
   // 阻止文案被当作 ASS 样式或换行指令；显式文案换行仍保留。
   const literal = text.replaceAll('\\', '\\\u2060').replaceAll('{', '\\{').replaceAll('}', '\\}').replace(/\r\n|\r|\n/g, '\\N');
   return `[Script Info]
@@ -27,7 +27,7 @@ PlayResY: 1080
 WrapStyle: 0
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,${settings.fontFamily},${settings.fontSize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,0,2,80,80,48,1
+Style: Default,${settings.fontFamily},${settings.fontSize},&H00FFFFFF,&H000000FF,${mask ? "&H00FFFFFF" : "&H00000000"},&H00000000,0,0,0,0,100,100,0,0,1,2,0,2,80,80,48,1
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 Dialogue: 0,0:00:00.00,999:00:00.00,Default,,0,0,0,,${literal}
@@ -52,10 +52,7 @@ export async function renderExportSegment(input: RenderSegment, settings: Export
         if (!source) throw new Error('页面声明的素材缺失');
         return [id, { path: source.path, mime: input.assetMimes?.[id] ?? 'application/octet-stream' }];
       }));
-      await writeFile(config, JSON.stringify({ projectDirectory: input.projectDirectory, pageId: layer.pageId, assets, width: Math.max(2, Math.round(1920 * layer.width / 2) * 2), height: Math.max(2, Math.round(1080 * layer.height / 2) * 2), duration: layer.to - layer.from, fps: settings.fps, transparent: layer.role === 'overlay', output }), { flag: 'wx' });
-      const sourceMode = import.meta.url.endsWith('.ts');
-      // 打包后的模块位于 service/main.js，worker 仍在固定的 business 目录。
-      await mediaProcess(process.execPath, [...(sourceMode ? ['--import', 'tsx'] : []), fileURLToPath(new URL(`../business/page-render-worker.${sourceMode ? 'ts' : 'js'}`, import.meta.url)), config], { signal, processGroup: true });
+      await runPageWorker({ projectDirectory: input.projectDirectory, pageId: layer.pageId, assets, ...pageGeometry(layer), duration: layer.to - layer.from, fps: settings.fps, transparent: layer.role === 'overlay', output }, config, signal);
       sources.push({ path: output, start: 0, kind: 'video' }); continue;
     }
     const source = input.videos.find(video => video.assetId === layer.assetId);

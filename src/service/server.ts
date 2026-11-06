@@ -14,7 +14,7 @@ import { readFileSync, readdirSync, openSync, fstatSync, createReadStream, const
 import { dirname, extname, join } from 'node:path';
 import { claimProjectService } from '../business/service-ownership.js';
 import { openBusiness } from '../business/index.js';
-import { importPageSchema, submitExportSchema, exportTaskRequestSchema, renameMaterialSchema, importMaterialSchema, importVideoSchema, addSegmentSchema, editSegmentSchema, batchSchema, segmentQuerySchema, selectionSchema, scopedOperationSchema, type ServiceStatus } from '../shared/contracts.js';
+import { checkPageSchema, pageFramesSchema, importPageSchema, submitExportSchema, exportTaskRequestSchema, renameMaterialSchema, importMaterialSchema, importVideoSchema, addSegmentSchema, editSegmentSchema, batchSchema, segmentQuerySchema, selectionSchema, scopedOperationSchema, type ServiceStatus } from '../shared/contracts.js';
 
 /** 心跳复用宿主工作空间核对结果的最长时间。 */
 const HEARTBEAT_HOST_CHECK_MS = 5000;
@@ -289,7 +289,7 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
         finally { clearTimeout(timer); }
         return;
       }
-      if (path === '/api/visual-previews/submit' || path === '/api/exports/submit'  || path === '/api/exports/cancel') {
+      if (path === '/api/page/check' || path === '/api/page/frames' || path === '/api/visual-previews/submit' || path === '/api/exports/submit'  || path === '/api/exports/cancel') {
         if (request.method !== 'POST') { reject(405, '请使用 POST。'); return; }
         if (request.headers['content-type']?.split(';')[0]?.trim() !== 'application/json') { reject(415, '请使用 application/json。'); return; }
         const timeout = setTimeout(() => request.destroy(), 5000);
@@ -302,7 +302,18 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
           }
           const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
           await verifyBinding();
-          if (path === '/api/visual-previews/submit') { json(business.submitPreview(z.object({ segmentId: z.uuid() }).strict().parse(input).segmentId)); }
+          if (path === '/api/page/check' || path === '/api/page/frames') {
+            clearTimeout(timeout);
+            const controller = new AbortController();
+            const abort = () => controller.abort();
+            response.once('close', abort);
+            try {
+              if (response.destroyed) return;
+              const parsed = (path === '/api/page/check' ? checkPageSchema : pageFramesSchema).parse(input);
+              const result = await business.inspectPage(parsed, AbortSignal.any([controller.signal, AbortSignal.timeout(10 * 60 * 1000)]));
+              if (!response.destroyed) json(result);
+            } finally { response.off('close', abort); }
+          } else if (path === '/api/visual-previews/submit') { json(business.submitPreview(z.object({ segmentId: z.uuid() }).strict().parse(input).segmentId)); }
           else if (path.endsWith('/submit')) { submitExportSchema.parse(input); json(business.submitExport()); }
           else { json(business.cancelExport(exportTaskRequestSchema.parse(input).taskId)); }
         } catch (error) { if (!response.destroyed) reject(400, error instanceof Error ? error.message : '导出请求未受理'); }

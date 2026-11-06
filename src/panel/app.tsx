@@ -507,7 +507,7 @@ export function App() {
   const batchTask = speech?.operations.at(-1);
   const exportTask = exports.exports?.tasks.at(-1);
   const exportProblems = exports.exports?.tasks.filter(task => task.state === 'failed' || task.state === 'interrupted') ?? [];
-  const lock = speech?.locked ? '配音进行中，项目已锁定；可查询和试听' : status?.taskLocked || exports.exports?.locked ? '导出进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : '';
+  const lock = speech?.locked ? '配音进行中，项目已锁定；可查询和试听' : exports.exports?.locked ? '导出进行中，项目已锁定' : status?.taskLocked ? '制作任务进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : '';
   const orderWidth = Math.max(36, 20 + String(status?.snapshot.segments.length ?? 0).length * 8);
   const actionReason = disabled ? lock || (!status || !speech ? '正在连接项目' : '请先结束编辑或等待项目解除占用') : '';
   const actionsFor = (segment: Segment) => segmentActions({ segment, segments: status?.snapshot.segments ?? [], checkedIds: selectedIds, speech, reason: actionReason, draftText: segmentDetail.draft?.id === segment.id ? segmentDetail.draft.text : undefined });

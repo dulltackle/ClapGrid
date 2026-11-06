@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 type Editor = 'user' | 'codex';
-type Task = 'speech' | 'export';
+type Task = 'speech' | 'export' | 'page-inspection';
 type Operation = 'edit' | Task | 'speech-batch' | 'speech-replay' | 'current-speech';
 type Occupation = { kind: 'edit'; owner: Editor; token: string; controller: AbortController; pending: number; verify?: () => Promise<void> } | { kind: Task };
 
@@ -14,6 +14,7 @@ export function projectAccess() {
     // 重放和读取已有配音各有允许范围，不能套用新任务的准入规则。
     if (operation === 'speech-replay') return current?.kind === 'export' ? exportMessage : undefined;
     if (operation === 'current-speech') return current?.kind === 'speech' ? speechMessage : undefined;
+    if (current?.kind === 'page-inspection') return '页面自检进行中，项目已锁定；允许查询和试听';
     if (current?.kind === 'export') return exportMessage;
     if (current?.kind === 'speech') {
       if (operation === 'export') return '配音任务尚未结束，不能开始导出；允许查询和试听';
@@ -35,7 +36,7 @@ export function projectAccess() {
     getActivity() {
       return {
         modification: current?.kind === 'edit' ? { owner: current.owner } : null,
-        task: current?.kind === 'speech' || current?.kind === 'export' ? current.kind : null,
+        task: current && current.kind !== 'edit' ? current.kind : null,
       };
     },
     acquire(owner: Editor, verify?: () => Promise<void>) {
@@ -63,7 +64,7 @@ export function projectAccess() {
       };
     },
     assertWritable(token?: string) {
-      if (current?.kind === 'speech' || current?.kind === 'export') assertAllowed('edit');
+      if (current && current.kind !== 'edit') assertAllowed('edit');
       if ((current?.kind === 'edit' && current.token !== token) || (token && !owns(token))) throw new Error('未持有有效修改权');
     },
     release(token: string) {
