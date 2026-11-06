@@ -1,5 +1,5 @@
 import { test, expect } from './helpers/media-project.js';
-import { importMaterial } from '../src/shared/client.js';
+import { importMaterial, querySpeech, queryVisualContext, submitSpeech } from '../src/shared/client.js';
 import { execCommand } from './helpers/command.js';
 import { join } from 'node:path';
 
@@ -52,7 +52,7 @@ for (const viewport of [{ width: 780, height: 579 }, { width: 420, height: 360 }
 });
 
 test('片段合成预览真实播放，内容变化后显示待更新且不能冒充当前结果', async ({ page, project, mediaFiles }) => {
-  const { querySpeech, submitSpeech, queryVisualContext, previewSegment, queryVisualPreviews, saveExportSettings } = await import('../src/shared/client.js');
+  const { previewSegment, queryVisualPreviews, saveExportSettings } = await import('../src/shared/client.js');
   const [id] = await project.seed(['本句合成效果']);
   const { asset } = await importMaterial(project.url, mediaFiles.video);
   await submitSpeech(project.url, { requestId: crypto.randomUUID(), segmentId: id! });
@@ -76,4 +76,37 @@ test('片段合成预览真实播放，内容变化后显示待更新且不能�
   await expect(dialog).toContainText('此预览待更新');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: '片段合成预览', exact: true })).toBeDisabled();
+});
+
+test('派生素材显示来源标记，并可逐级查看未关联本句的输入素材', async ({ page, project }) => {
+  const [segmentId] = await project.seed(['本句使用派生素材']);
+  const sourcePath = join(project.directory, '原素材.png');
+  await execCommand('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=red:s=32x32', '-frames:v', '1', sourcePath]);
+  const { asset: original } = await importMaterial(project.url, sourcePath);
+  const declaration = { executor: 'codex-imagegen', model: 'gpt-image-2' };
+  const { asset: cutout } = await importMaterial(project.url, { sourcePath, derivation: {
+    ...declaration, method: 'matte', prompt: '提取主体', inputs: [original.id],
+  } });
+  const { asset: illustration } = await importMaterial(project.url, { sourcePath, derivation: {
+    ...declaration, method: 'edit', prompt: '画成水彩插图', inputs: [cutout.id],
+  } });
+  await project.modify({ changes: [{ kind: 'materials', expected: (await project.status()).snapshot.segments[0]!, assetIds: [illustration.id] }] });
+
+  await submitSpeech(project.url, { requestId: crypto.randomUUID(), segmentId: segmentId! });
+  await expect.poll(async () => (await querySpeech(project.url)).locked).toBe(false);
+  expect((await queryVisualContext(project.url, segmentId!)).assets).toEqual([illustration]);
+
+  await page.goto(project.url);
+  await page.getByRole('button', { name: '片段 1 画面素材（1）', exact: true }).click();
+  const tray = page.getByRole('dialog', { name: '片段 1 素材面板', exact: true });
+  await tray.getByText('编辑', { exact: true }).click();
+  await expect(tray.getByText('画成水彩插图', { exact: true })).toBeVisible();
+  await tray.getByRole('button', { name: '查看输入素材 原素材.png' }).click();
+  const preview = page.getByRole('dialog', { name: '图片原件', exact: true });
+  await expect(preview.getByRole('img')).toHaveAttribute('src', new RegExp(cutout.id));
+  await preview.getByText('抠图', { exact: true }).click();
+  await preview.getByRole('button', { name: '查看输入素材 原素材.png' }).click();
+  await expect(preview.getByRole('img')).toHaveAttribute('src', new RegExp(original.id));
+  await preview.getByRole('button', { name: '关闭预览' }).click();
+  await expect(tray.getByRole('button', { name: '查看输入素材 原素材.png' })).toBeFocused();
 });

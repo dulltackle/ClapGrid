@@ -13,7 +13,7 @@ import { setImmediate } from 'node:timers/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { prepareMaterial, prepareVideo, validateImage, validateVideo, mediaPath, verifyMedia, discardImport } from './video-media.js';
-import { importVideoSchema, renameMaterialSchema, type RenameMaterial, type ImportVideo } from '../shared/contracts.js';
+import { importVideoSchema, importMaterialSchema, renameMaterialSchema, type ImportMaterial, type RenameMaterial, type ImportVideo } from '../shared/contracts.js';
 import { projectPaths } from './project-paths.js';
 import { DatabaseSync } from 'node:sqlite';
 import { segmentMaterials, visualPlanSchema, addSegmentSchema, editSegmentSchema, snapshotSchema, type Snapshot, batchSchema, type Batch, type ChangeResult, scopeSchema, selectionSchema, scopedOperationSchema, type SegmentScope, type ScopedOperation, type SegmentQueryResult } from '../shared/contracts.js';
@@ -197,14 +197,23 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
         return asset;
       } catch (error) { discardImport(mediaDirectory, id); throw error; }
     },
-    async importMaterial(token: string, input: ImportVideo) {
+    async importMaterial(token: string, input: ImportMaterial) {
       const signal = access.editSignal(token);
-      const { sourcePath } = importVideoSchema.parse(input); verify();
+      const { sourcePath, derivation } = importMaterialSchema.parse(input); verify();
       const id = randomUUID();
       try {
         const asset = await prepareMaterial(mediaDirectory, id, sourcePath, signal);
         await access.verifyEdit(token);
-        commit(() => { db.prepare('INSERT INTO visual_assets VALUES (?, ?)').run(id, JSON.stringify(asset)); }, token);
+        commit(() => {
+          if (derivation) {
+            const findInput = db.prepare('SELECT id FROM visual_assets WHERE id = ? UNION ALL SELECT id FROM video_assets WHERE id = ?');
+            for (const inputId of derivation.inputs) {
+              if (!findInput.get(inputId, inputId)) throw new Error(`派生来源的输入素材不存在：${inputId}`);
+            }
+            asset.derivation = { ...derivation, createdAt: new Date().toISOString() };
+          }
+          db.prepare('INSERT INTO visual_assets VALUES (?, ?)').run(id, JSON.stringify(asset));
+        }, token);
         return asset;
       } catch (error) { discardImport(mediaDirectory, id); throw error; }
     },

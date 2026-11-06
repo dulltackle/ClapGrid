@@ -136,3 +136,58 @@ test('宿主诊断查询 roots 并观测变更，但不把根列表推断为当�
   assert.equal(failedContext.workspace, null);
   assert.equal(JSON.stringify(failed).includes('secret'), false);
 });
+
+test('MCP 导入保留两级派生来源、独立素材身份，并拒绝无效声明', async ({ createDirectory, execBytes, openConnection, startService }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-derivation-'));
+  const sourcePath = join(root, 'original.png');
+  await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=red:s=32x32', '-frames:v', '1', sourcePath]);
+  const panelDirectory = join(root, 'panel');
+  mkdirSync(panelDirectory);
+  writeFileSync(join(panelDirectory, 'index.html'), 'ClapGrid');
+  const options = { projectDirectory: join(root, 'project'), panelDirectory, port: 0 };
+  const service = await startService(options);
+  const mcp = openConnection(() => createBusinessMcp(service.url));
+  const client = openConnection(() => new Client({ name: 'derivation-test', version: '1.0.0' }));
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await mcp.connect(serverTransport);
+  await client.connect(clientTransport);
+
+  const importImage = (derivation?: Record<string, unknown>) => client.callTool({
+    name: 'clapgrid_import_material', arguments: { sourcePath, ...(derivation && { derivation }) },
+  });
+  const readAsset = (result: Awaited<ReturnType<typeof importImage>>) => {
+    assert.notEqual(result.isError, true, JSON.stringify(result.content));
+    return (result.structuredContent as { asset: import('../src/shared/contracts.js').VideoAsset }).asset;
+  };
+  const original = readAsset(await importImage());
+  assert.equal('derivation' in original, false);
+  const matte = { inputs: [original.id], method: 'matte', executor: 'codex-imagegen', model: 'gpt-image-2', prompt: '提取主体' };
+  const before = Date.now();
+  const cutout = readAsset(await importImage(matte));
+  const edit = { ...matte, inputs: [cutout.id], method: 'edit', prompt: '画成水彩插图' };
+  const illustration = readAsset(await importImage(edit));
+  assert.equal(new Set([original.id, cutout.id, illustration.id]).size, 3);
+
+  for (const invalid of [{ ...matte, inputs: [crypto.randomUUID()] }, { ...matte, method: 'unknown' }]) {
+    assert.equal((await importImage(invalid)).isError, true);
+  }
+  const status = await client.callTool({ name: 'clapgrid_status', arguments: {} });
+  const { snapshot } = status.structuredContent as unknown as import('../src/shared/contracts.js').ServiceStatus;
+  const verifyChain = (assets: typeof snapshot.assets) => {
+    assert.equal(assets.length, 3);
+    const byId = new Map(assets.map(asset => [asset.id, asset]));
+    const last = byId.get(illustration.id)!;
+    const middle = byId.get(last.derivation!.inputs[0]!)!;
+    assert.deepEqual(byId.get(middle.derivation!.inputs[0]!), original);
+    for (const [asset, declaration] of [[last, edit], [middle, matte]] as const) {
+      const { createdAt, ...recorded } = asset.derivation!;
+      assert.deepEqual(recorded, declaration);
+      assert.ok(Date.parse(createdAt) >= before && Date.parse(createdAt) <= Date.now());
+    }
+  };
+  verifyChain(snapshot.assets);
+  await service.close();
+  const reopened = await startService(options);
+  const { queryStatus } = await import('../src/shared/client.js');
+  verifyChain((await queryStatus(reopened.url)).snapshot.assets);
+});
