@@ -241,6 +241,11 @@ export async function queryVisualContext(baseUrl: string, segmentId: string): Pr
   const body = await response.json(); if (!response.ok) throw new Error(body.error ?? '读取制作输入失败'); return body;
 }
 
+export async function importStyle(baseUrl: string, sourceDirectory: string, signal?: AbortSignal) {
+  const body = await postJson(baseUrl, '/api/codex/import-style', { sourceDirectory }, undefined, signal);
+  return { style: body.style as { styleId: string; fileCount: number; bytes: number }, status: statusSchema.parse(body.status) };
+}
+
 export async function importPage(baseUrl: string, sourceDirectory: string, signal?: AbortSignal) {
   const body = await postJson(baseUrl, '/api/codex/import-page', { sourceDirectory }, undefined, signal);
   return { page: body.page as import('./contracts.js').ImportedPage, status: statusSchema.parse(body.status) };

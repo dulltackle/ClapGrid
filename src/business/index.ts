@@ -1,3 +1,4 @@
+import { styleStore } from './styles.mjs';
 import { pageStore } from './pages.js';
 import { layerAssets } from '../shared/contracts.js';
 import { mediaProcess } from './media-process.js';
@@ -176,6 +177,10 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       if (!changes.length) return { results: [], summary: { applied: 0, changed: 0, deleted: 0, failed: 0 } };
       return business.modifyBatch(token, { changes });
     },
+    async importStyle(token: string, sourceDirectory: string, workspaceDirectory: string) {
+      await access.verifyEdit(token); verify();
+      return styleStore(projectDirectory).import(sourceDirectory, workspaceDirectory);
+    },
     async importPage(token: string, sourceDirectory: string, workspaceDirectory: string) {
       await access.verifyEdit(token); verify();
       return pageStore(projectDirectory).import(sourceDirectory, workspaceDirectory);
@@ -269,7 +274,7 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       if (!(duration > 0 && Number.isFinite(duration))) throw new Error('无法确认配音时长');
       const latest = getSnapshot().segments.find(item => item.id === segmentId);
       if (JSON.stringify(latest) !== JSON.stringify(segment) || speech.getCurrentSpeechAudio(segmentId) !== audio) throw new Error('制作输入已变化，请重新查询');
-      return { page: { canvas: { width: 1920, height: 1080 }, fps: snapshot.exportSettings.fps, assetUrls: Object.fromEntries(segmentMaterials(segment).map(id => [id, `/assets/${id}`])), limits: { files: 256, bytes: 33554432 }, readyTimeoutSeconds: 120 }, segment, assets: snapshot.assets.filter(asset => segmentMaterials(segment).includes(asset.id)), duration, compositionCurrent: !!segment.composition && segment.composition.inputVersion === segment.visualVersion };
+      return { page: { canvas: { width: 1920, height: 1080 }, fps: snapshot.exportSettings.fps, assetUrls: Object.fromEntries(segmentMaterials(segment).map(id => [id, `/assets/${id}`])), limits: { files: 256, bytes: 33554432 }, readyTimeoutSeconds: 120, style: { declaration: 'page.json: { style: <styleId> }', moduleUrl: '/styles/<styleId>/lib/', importTool: 'clapgrid_import_style', limits: { files: 256, bytes: 33554432 } } }, segment, assets: snapshot.assets.filter(asset => segmentMaterials(segment).includes(asset.id)), duration, compositionCurrent: !!segment.composition && segment.composition.inputVersion === segment.visualVersion };
     },
     submitPreview: exports.submitPreview,
     getVisualPreviews: exports.getVisualPreviews,

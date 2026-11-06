@@ -201,3 +201,34 @@ for (const media of ['静态图片', '单帧视频']) test(`隔离模拟机制�
   assert.equal(result.report.details.batchAllowed, false);
   assert.ok(!result.report.checks.some((check: { id: string; status: string }) => check.id === 'sample-video' && check.status === 'passed'));
 });
+
+for (const scenario of ['有效', '缺失', '变化', '副本篡改', '别名', '其他扩展名'] as const) test(`隔离模拟机制测试：采用方案风格${scenario}时核对批量许可`, async ({ command, createDirectory }) => {
+  const { cpSync, mkdirSync, chmodSync, renameSync, symlinkSync } = await import('node:fs');
+  const { resolve } = await import('node:path');
+  const { styleStore } = await import('../src/business/styles.mjs');
+  const f = await fixture({ command, createDirectory }); f.sample.mode = 'actual-project';
+  const sourceDirectory = join(f.project, 'styles/test-color'); mkdirSync(join(f.project, 'styles'));
+  cpSync(resolve('tests/fixtures/style'), sourceDirectory, { recursive: true });
+  const store = styleStore(join(f.project, 'clapgrid'));
+  const style = store.import(sourceDirectory, f.project);
+  const plan = { style: { id: ['缺失', '别名', '其他扩展名'].includes(scenario) ? 'a'.repeat(64) : style.styleId, source: { id: 'test-color', version: '1' } } };
+  writeFileSync(join(f.project, f.sample.plan.path), JSON.stringify(plan)); f.sample.plan = f.asset(f.sample.plan.path);
+  if (scenario === '别名' || scenario === '其他扩展名') {
+    renameSync(join(f.project, f.sample.plan.path), join(f.project, 'plan.data'));
+    if (scenario === '别名') symlinkSync('plan.data', join(f.project, f.sample.plan.path));
+    else f.sample.plan = f.asset('plan.data');
+  }
+  f.confirm('user-confirmation'); f.save();
+  if (scenario === '变化') {
+    writeFileSync(join(sourceDirectory, 'lib/color.js'), `export const color=t=>'blue';`);
+    plan.style.id = store.import(sourceDirectory, f.project).styleId;
+    writeFileSync(join(f.project, f.sample.plan.path), JSON.stringify(plan)); f.sample.plan = f.asset(f.sample.plan.path); f.save();
+  }
+  if (scenario === '副本篡改') {
+    const file = join(f.project, 'clapgrid/styles', style.styleId, 'lib/color.js'); chmodSync(file, 0o644); writeFileSync(file, 'changed');
+  }
+  const result = await f.run();
+  assert.equal(result.report.details.batchAllowed, scenario === '有效', result.stdout);
+  assert.equal(result.status, scenario === '有效' ? 0 : 1, result.stdout);
+  if (scenario === '缺失' || scenario === '副本篡改') assert.match(JSON.stringify(result.report.checks), /风格/);
+});

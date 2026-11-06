@@ -159,3 +159,44 @@ test('页面不能绕过请求拦截用 WebRTC 向未声明 UDP 目标发送数�
     expect(task.state).toBe('failed'); expect(task.output).toBeUndefined(); expect(packets).toBe(0);
   }
 }, 60000);
+
+test('页面引用风格模块渲染正确像素，更新风格与页面身份后旧预览待更新', async ({ createDirectory, execBytes, startService }) => {
+  const { cpSync, mkdirSync, readFileSync } = await import('node:fs');
+  const { resolve } = await import('node:path');
+  const p = await pageProject({ createDirectory, execBytes, startService });
+  const sourceDirectory = join(p.root, 'style'); cpSync(resolve('tests/fixtures/style'), sourceDirectory, { recursive: true });
+  const pageDirectory = join(p.root, 'styled-page'); mkdirSync(pageDirectory);
+  const render = async () => {
+    const style = (await p.post('/api/codex/import-style', { sourceDirectory })).style;
+    for (const name of ['index.html', 'page.json']) writeFileSync(join(pageDirectory, name), readFileSync(join(sourceDirectory, 'example', name), 'utf8').replaceAll('STYLE_ID', style.styleId).replace('window.DUR=1;', `window.DUR=${p.duration};`));
+    return (await p.post('/api/codex/import-page', { sourceDirectory: pageDirectory })).page.pageId;
+  };
+  const first = await render(); await p.save([fullPage(first, p.duration)]);
+  const preview = await p.task(); expect(preview, JSON.stringify(preview)).toMatchObject({ state: 'succeeded', current: true });
+  const output = join(p.root, 'styled.mp4'); writeFileSync(output, Buffer.from(await (await fetch(p.service.url + preview.output!.url)).arrayBuffer()));
+  for (const [time, channel] of [[0.2, 0], [0.7, 1]] as const) {
+    const pixel = await execBytes('ffmpeg', ['-v', 'error', '-ss', String(time), '-i', output, '-frames:v', '1', '-vf', 'crop=2:2:100:100,scale=1:1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-']);
+    expect(pixel[channel]).toBeGreaterThan(220);
+  }
+  writeFileSync(join(sourceDirectory, 'lib/color.js'), `export const color=t=>'blue';`);
+  const next = await render(); expect(next).not.toBe(first);
+  await p.save([fullPage(next, p.duration)]);
+  expect((await fetch(p.service.url + '/api/visual-previews').then(r => r.json())).tasks[0].current).toBe(false);
+}, 60000);
+
+for (const declared of [false, true]) test(`页面请求未声明的风格文件使任务失败并指明片段（有声明：${declared}）`, async ({ createDirectory, execBytes, startService }) => {
+  const { cpSync, mkdirSync } = await import('node:fs');
+  const { resolve } = await import('node:path');
+  const p = await pageProject({ createDirectory, execBytes, startService });
+  const sourceDirectory = join(p.root, 'style'); cpSync(resolve('tests/fixtures/style'), sourceDirectory, { recursive: true });
+  const first = (await p.post('/api/codex/import-style', { sourceDirectory })).style.styleId;
+  writeFileSync(join(sourceDirectory, 'lib/color.js'), `export const color=t=>'blue';`);
+  const other = (await p.post('/api/codex/import-style', { sourceDirectory })).style.styleId;
+  const pageDirectory = join(p.root, 'page'); mkdirSync(pageDirectory);
+  writeFileSync(join(pageDirectory, 'index.html'), `<script>window.DUR=${p.duration};fetch('/styles/${other}/lib/color.js').catch(()=>{});window.render=t=>{};window.READY=true</script>`);
+  if (declared) writeFileSync(join(pageDirectory, 'page.json'), JSON.stringify({ style: first }));
+  const pageId = (await p.post('/api/codex/import-page', { sourceDirectory: pageDirectory })).page.pageId;
+  await p.save([fullPage(pageId, p.duration)]);
+  const task = await p.task(); expect(task.state).toBe('failed'); expect(task.output).toBeUndefined();
+  expect(task.issues).toEqual(expect.arrayContaining([expect.objectContaining({ segmentId: p.segmentId, order: 1, message: expect.stringContaining('未声明') })]));
+}, 60000);

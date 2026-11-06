@@ -1,24 +1,36 @@
 import { test } from './helpers/resource-test.js';
 import { expect } from 'vitest';
-import { cpSync, mkdirSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createServer } from 'node:net';
 import { dependencyView } from './helpers/temporary-repository.js';
 import { fullPage, pageProject } from './helpers/page-project.js';
 
-test('正式插件包通过服务入口生成页面图层片段预览', async ({ createDirectory, execBytes, execCommand, startService, command }) => {
+test('正式插件包包含全部内置风格并通过服务入口生成风格页面片段预览', async ({ createDirectory, execBytes, execCommand, startService, command }) => {
   const repo = resolve('.');
   const build = createDirectory(join(tmpdir(), 'clapgrid-page-package-'));
   for (const name of ['src', 'plugins', 'package.json', 'package-lock.json']) {
     cpSync(join(repo, name), join(build, name), { recursive: true });
   }
+  cpSync(join(repo, 'tests/fixtures/style'), join(build, 'plugins/clapgrid/styles/test-color'), { recursive: true });
   dependencyView(build, join(repo, 'node_modules'));
   mkdirSync(join(build, 'dist/panel'), { recursive: true });
   writeFileSync(join(build, 'dist/panel/index.html'), 'panel');
   await execCommand(process.execPath, [join(repo, 'scripts/build-plugin.mjs')], { cwd: build });
   const p = await pageProject({ createDirectory, execBytes, startService });
-  const pageId = await p.importPage(`window.render=t=>{document.body.style.background='lime'};window.READY=true`);
+  const builtStyles = join(build, 'dist/plugin/clapgrid/styles');
+  const sourceStyles = join(build, 'plugins/clapgrid/styles');
+  for (const file of readdirSync(sourceStyles, { recursive: true, withFileTypes: true }).filter(entry => entry.isFile())) {
+    const path = join(file.parentPath, file.name).slice(sourceStyles.length + 1);
+    expect(readFileSync(join(builtStyles, path))).toEqual(readFileSync(join(sourceStyles, path)));
+  }
+  const sourceDirectory = join(p.root, 'style'); cpSync(join(builtStyles, 'test-color'), sourceDirectory, { recursive: true });
+  const styleId = (await p.post('/api/codex/import-style', { sourceDirectory })).style.styleId;
+  const pageDirectory = join(p.root, 'page'); mkdirSync(pageDirectory);
+  writeFileSync(join(pageDirectory, 'page.json'), JSON.stringify({ style: styleId }));
+  writeFileSync(join(pageDirectory, 'index.html'), `<script type="module">import {color} from '/styles/${styleId}/lib/color.js';window.DUR=${p.duration};window.render=t=>{document.body.style.background=color(0.7)};window.READY=true</script>`);
+  const pageId = (await p.post('/api/codex/import-page', { sourceDirectory: pageDirectory })).page.pageId;
   await p.save([fullPage(pageId, p.duration)]);
   await p.service.close();
   const reservation = createServer();
