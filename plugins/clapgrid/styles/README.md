@@ -1,6 +1,6 @@
 # 内置风格
 
-风格是可跨项目复用、可执行的视觉语言。内置风格按 `<id>/STYLE.md`、`<id>/lib/`（含 `subtitle.js`）、`<id>/example/` 组织，整个目录随插件构建复制发布。示例视频放在文档或 Release 中链接，不进入插件包；本目录不预置测试风格或渲染好的示例片。首批美术风格见 [#281](https://github.com/dulltackle/ClapGrid/issues/281)。
+风格是可跨项目复用、可执行的视觉语言。内置风格按 `<id>/STYLE.md`、`<id>/lib/`（含 `subtitle.js`）、`<id>/example/` 组织，整个目录随插件构建复制发布。本目录随包提供风格与示例源码，示例视频可从仓库观看。[内置风格示例片](https://github.com/dulltackle/ClapGrid/blob/main/README.md#内置风格示例)
 
 本页约定如何编写风格；项目选用、导入、页面引用与导入边界见[画面编排制作约定](../skills/open-clapgrid/references/composition.md#风格)。
 

@@ -7,7 +7,7 @@ import { queryStatus, queryVisualContext } from '../../src/shared/client.js';
 import type { ResourceFixtures } from './resource-test.js';
 import type { ExportTask, VisualPlan } from '../../src/shared/contracts.js';
 
-export async function pageProject(resources: Pick<ResourceFixtures, 'createDirectory' | 'execBytes' | 'startService'>, audioDuration = 1, styled = false) {
+export async function pageProject(resources: Pick<ResourceFixtures, 'createDirectory' | 'execBytes' | 'startService'>, audioDuration = 1, styled = false, text = '页面合成') {
   const root = resources.createDirectory(join(tmpdir(), 'clapgrid-page-render-'));
   const audio = join(root, 'voice.mp3');
   await resources.execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', `sine=duration=${audioDuration}`, '-c:a', 'libmp3lame', audio]);
@@ -19,7 +19,7 @@ export async function pageProject(resources: Pick<ResourceFixtures, 'createDirec
     const r = await fetch(service.url + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) });
     const body = await r.json(); expect(r.status, JSON.stringify(body)).toBe(200); return body;
   };
-  await post('/api/codex/modify', { changes: [{ kind: 'add', text: '页面合成' }] });
+  await post('/api/codex/modify', { changes: [{ kind: 'add', text }] });
   const segmentId = (await queryStatus(service.url)).snapshot.segments[0]!.id;
   await post('/api/speech/submit', { requestId: randomUUID(), segmentId });
   await expect.poll(async () => (await fetch(service.url + '/api/speech').then(r => r.json())).audio.length).toBe(1);
@@ -46,13 +46,13 @@ export async function pageProject(resources: Pick<ResourceFixtures, 'createDirec
     const result = await post('/api/codex/modify', { changes: [{ kind: 'composition', expected: segment, plan: { duration: context.duration, layers } }] });
     expect(result.summary.applied, JSON.stringify(result)).toBe(1);
   }
-  async function task(kind: 'preview' | 'export' = 'preview') {
+  async function task(kind: 'preview' | 'export' = 'preview', timeout = 60000) {
     const submitted = await post(kind === 'preview' ? '/api/visual-previews/submit' : '/api/exports/submit', kind === 'preview' ? { segmentId } : {});
     let task: ExportTask | undefined;
     await expect.poll(async () => {
       task = (await fetch(service.url + (kind === 'preview' ? '/api/visual-previews' : '/api/exports')).then(r => r.json())).tasks.find((t: ExportTask) => t.id === submitted.id);
       return task && ['succeeded', 'failed', 'cancelled', 'interrupted'].includes(task.state);
-    }, { timeout: 60000 }).toBe(true);
+    }, { timeout }).toBe(true);
     return task!;
   }
   return { root, options, service, post, segmentId, duration: context.duration, styleDirectory, setStyle, importPage, save, task };

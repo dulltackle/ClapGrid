@@ -20,6 +20,8 @@ test('正式插件包包含全部内置风格并通过服务入口生成风格�
   await execCommand(process.execPath, [join(repo, 'scripts/build-plugin.mjs')], { cwd: build });
   const p = await pageProject({ createDirectory, execBytes, startService });
   const builtStyles = join(build, 'dist/plugin/clapgrid/styles');
+  const packagedFiles = readdirSync(join(build, 'dist/plugin/clapgrid'), { recursive: true, encoding: 'utf8' });
+  expect(packagedFiles.filter(file => /(?:iso-infographic|warm-science)\.mp4$/.test(file))).toEqual([]);
   const sourceStyles = join(build, 'plugins/clapgrid/styles');
   for (const file of readdirSync(sourceStyles, { recursive: true, withFileTypes: true }).filter(entry => entry.isFile())) {
     const path = join(file.parentPath, file.name).slice(sourceStyles.length + 1);
