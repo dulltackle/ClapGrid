@@ -1,3 +1,5 @@
+// 服务通过 IPC 将媒体处理委托给独立守护进程。守护进程就绪后才继续项目恢复，
+// 并在服务退出或崩溃断开 IPC 后回收媒体子进程。
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { SERVICE_CLEANUP_MS, beforeServiceDeadline, ServiceCleanupError } from '../service-cleanup.js';
@@ -11,7 +13,6 @@ type Options = { signal?: AbortSignal; cwd?: string; timeout?: number; processGr
 type Runner = (command: string, args: string[], options: Options) => Promise<Result>;
 export const mediaScope = new AsyncLocalStorage<Runner>();
 
-/** 媒体锁直到所有子进程 close 才释放；服务崩溃后的 IPC 断开触发回收。 */
 export async function startMediaGuardian(directory: string) {
   const source = import.meta.url.endsWith('.ts');
   const worker = fork(fileURLToPath(new URL(`../business/media-worker.${source ? 'ts' : 'js'}`, import.meta.url)), [directory], {

@@ -1,3 +1,5 @@
+// 持有项目媒体锁，运行媒体子进程并记录活跃标记。IPC 断开后等待子进程退出再释放锁。
+// 守护进程异常遗留的标记会阻止恢复，只有 Linux 开机标识证实已经重启时才自动清除。
 import { DatabaseSync } from 'node:sqlite';
 import { join } from 'node:path';
 import { setTimeout } from 'node:timers/promises';

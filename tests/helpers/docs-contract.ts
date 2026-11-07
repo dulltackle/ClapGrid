@@ -42,6 +42,9 @@ function linkTargets(text: string): string[] {
 export function checkDocs(root: string): string[] {
   const files = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean);
   const scripts = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')).scripts ?? {};
+  const serverPath = resolve(root, 'src/mcp/server.ts');
+  const server = existsSync(serverPath) ? readFileSync(serverPath, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '') : '';
+  const tools = new Set(Array.from(server.matchAll(/^\s*server\.registerTool\(\s*(['"])(clapgrid_\w+)\1\s*,/gm), match => match[2]!));
   const current = (file: string) => file.endsWith('.md') && !/^(?:docs\/adr|tests\/fixtures)\//.test(file);
   const errors: string[] = [];
   const edges = new Map<string, string[]>();
@@ -60,6 +63,9 @@ export function checkDocs(root: string): string[] {
       if (!historical && (!existsSync(local) || !statSync(local).isFile())) errors.push(`${file}: 相对链接不存在：${target}`);
     }
     if (historical) continue;
+    for (const name of new Set(text.match(/\bclapgrid_\w+\b/g))) {
+      if (!tools.has(name)) errors.push(`${file}: 未注册业务 MCP 工具：${name}`);
+    }
     for (const match of commands.matchAll(/\b(?:node\s+--import\s+)?tsx\s+--test\b/g)) {
       errors.push(`${file}: 废弃测试命令：${match[0]}`);
     }
