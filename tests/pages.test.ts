@@ -16,8 +16,10 @@ test('页面通过 HTTP 导入得到内容身份，重复导入幂等且修改�
   };
   const first = await post(); expect(first.page.pageId).toMatch(/^[a-f0-9]{64}$/);
   expect((await post()).page).toEqual(first.page);
-  writeFileSync(join(sourceDirectory, 'index.html'), '<script>window.DUR=2;window.render=t=>{};window.READY=true</script>');
-  expect((await post()).page.pageId).not.toBe(first.page.pageId);
+  writeFileSync(join(sourceDirectory, 'index.html'), '<script>window.DUR=2;window.render=t=>Math.random();window.READY=true</script>');
+  const changed = (await post()).page;
+  expect(changed.pageId).not.toBe(first.page.pageId);
+  expect(changed.warnings).toEqual([expect.stringContaining('Math.random')]);
 });
 
 for (const scenario of ['symlink', 'hardlink', 'extension', 'files', 'bytes', 'outside', 'ancestor', 'missing-index'] as const) {

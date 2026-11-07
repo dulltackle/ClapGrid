@@ -4,10 +4,10 @@ import { buildIdentity, compatibleRuntime } from '../build-identity.js';
 import { readHostWorkspace, hostThreadId } from '../host-workspace.js';
 import { bindWorkspace } from '../workspace-service.js';
 import { z } from 'zod';
-import { exportTaskRequestSchema, submitExportSchema, speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importPageSchema, importMaterialSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
+import { checkPageSchema, pageFramesSchema, exportTaskRequestSchema, submitExportSchema, speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importPageSchema, importMaterialSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { RootsListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
-import { importStyle, importPage, queryVisualContext, importMaterial, previewSegment, queryVisualPreviews, submitExport, queryExports, cancelExport, submitSpeechBatch, queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
+import { checkPage, pageFrames, importStyle, importPage, queryVisualContext, importMaterial, previewSegment, queryVisualPreviews, submitExport, queryExports, cancelExport, submitSpeechBatch, queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
 
 export function createBusinessMcp(url?: string) {
   const baseUrl = url === undefined ? undefined : localServiceUrl(url);
@@ -132,6 +132,20 @@ export function createBusinessMcp(url?: string) {
     inputSchema: importPageSchema,
   }, async (input, extra) => {
     try { const result = await importPage(await connection(extra._meta), input.sourceDirectory, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+  });
+  server.registerTool('clapgrid_check_page', {
+    description: '对当前口播片段的页面图层执行制作者自检，返回文字停留、出框、字幕遮挡和跨实例确定性警告。layerIndex 是编排 layers 的零基下标，省略则检查所有页面图层。时间以图层起点为零；无 TEXTS(t) 时文字未检查。结果不属于审阅证据。',
+    inputSchema: checkPageSchema,
+  }, async (input, extra) => {
+    try { const result = await checkPage(await connection(extra._meta), input, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+  });
+  server.registerTool('clapgrid_page_frames', {
+    description: '从一个页面图层抽取最多 60 张 PNG（透明图层保留透明），返回图层局部时间和项目缓存绝对路径。sampling 传 {times:[…]} 或 {from,to,interval}，单位秒，时间须小于 DUR。多个页面图层时用 layerIndex 指定编排 layers 的零基下标。',
+    inputSchema: pageFramesSchema,
+  }, async (input, extra) => {
+    try { const result = await pageFrames(await connection(extra._meta), input, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   server.registerTool('clapgrid_import_material', {

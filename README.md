@@ -94,6 +94,13 @@ npm run runtime -- status --project /绝对路径/验证项目
 
 页面图层为 `{ kind: "page", pageId, assetIds, role, from, to, x, y, width, height, z }`，没有 start。assetIds 只声明本句素材，并计入“本句全部素材进入编排”的校验；页面只能读取自身文件、page.json 声明的风格和声明的素材。页面背景同样连续覆盖整句。素材图层的 kind 可为 asset，省略仍兼容旧编排。页面渲染失败会在任务问题中指明片段与原因，不产生成片。页面应将依赖保存在页面或声明的风格目录内，外网、任意本地路径、WebSocket、WebRTC、Worker 和嵌入框架均被拒绝；仅输出画面，字幕继续按导出设置统一烧录。固定浏览器、软件渲染和双页面实例产生 FFV1 中间视频，共用预览及导出滤镜链。组件来源见 [Linux 组件](docs/linux-components.md)，决策见 [ADR0015](docs/adr/0015-page-rendering.md)。
 
+交付前使用页面自检，定位阅读时长、排版和画面不确定性问题：
+
+- `clapgrid_check_page`（`POST /api/page/check`）接收 `{segmentId, layerIndex?}`。`layerIndex` 是编排 `layers` 中的零基下标，省略时检查全部页面图层。页面可在 `render(t)` 后用 `window.TEXTS(t)` 返回当前可见文字及页面像素框 `[{text,x,y,width,height,id?}]`；同文案的不同元素宜用稳定的 `id` 区分。没有 `TEXTS` 时返回 `not-checked`。检查结果的时间以图层起点为零，像素框以输出画面左上角为原点；连续几帧发生同类几何问题时报告首个问题框。阅读时长阈值来自 opuscar 默认值（汉字数 ÷ 4.5 + 其他字符数 ÷ 15 + 1.5 秒），尚待 ClapGrid 样片校准。字幕区域由当前导出字幕排版测得；缺少字体或字号时单独标为未检查。确定性检查比较少量局部时间在两个页面实例中按不同顺序渲染的像素；通过抽检不能证明所有帧都确定。导入时也会提示常见的不确定 API，静态提示可能误报。
+- `clapgrid_page_frames`（`POST /api/page/frames`）另外接收 `sampling: {times:[…]}` 或 `sampling: {from,to,interval}`，每次最多 60 帧。有多个页面图层时须指定 `layerIndex`。时间均为局部秒数，须在 `[0, DUR)` 内；区间从 `from` 采样至不超过 `to` 的最后一个等间隔时间点。按 1–2 秒间隔检查整体画面，按约 0.2 秒间隔观察关键动作。返回的 PNG 位于项目 `.cache/page-inspection/`，透明图层保留透明，文件可删除重建。
+
+两项工具只用于制作者自检，结果不写入项目记录，也不是审阅证据。自检警告不会阻止片段合成预览或导出；需要留痕时，在交付说明中记下所查图层、发现的问题和修正结果。整句的字幕、构图和节奏仍以片段合成预览及实际看片为准。
+
 `clapgrid_preview_segment({ segmentId })` 受理真实合成，使用 `clapgrid_visual_previews` 查询终态；只有 `succeeded` 且 `current: true` 表示当前输入的可审阅结果。任务期间沿用项目占用、取消、清理与中断恢复规则，取消使用 `clapgrid_cancel_export`。片段预览和全片导出共用渲染器执行已保存编排，真实混合透明通道，短视频冻结末帧；缺失或过期编排明确失败。普通制作请求包含素材准备、agent 编排和合成预览，明确“先准备素材”时停在准备阶段。
 
 风格由 `STYLE.md`、纯函数 ES module `lib/` 和 `example/` 组成；选用时整份复制到工作空间 `styles/<id>/`，由 `clapgrid_import_style` 导入为项目不可变副本。页面 `page.json` 声明 `{ "style": "<styleId>" }`，以 `/styles/<styleId>/lib/` 导入模块。项目副本独立于插件更新；修改后重新导入、更新页面和编排使旧预览待更新，并重新取得动态样片确认。先写项目方案再看示例，交付前按六个维度自检至少四项不同；详见[风格指南](docs/styles.md)。

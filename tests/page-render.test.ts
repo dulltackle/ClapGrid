@@ -200,3 +200,53 @@ for (const declared of [false, true]) test(`页面请求未声明的风格文件
   const task = await p.task(); expect(task.state).toBe('failed'); expect(task.output).toBeUndefined();
   expect(task.issues).toEqual(expect.arrayContaining([expect.objectContaining({ segmentId: p.segmentId, order: 1, message: expect.stringContaining('未声明') })]));
 }, 60000);
+
+test('页面自检报告文字与随机画面问题，抽帧保留透明，预览和导出仍可执行', async ({ createDirectory, execBytes, execText, startService, openConnection }) => {
+  const p = await pageProject({ createDirectory, execBytes, startService }, 2);
+  const background = await p.importPage('window.render=()=>{};window.READY=true');
+  const overlay = await p.importPage(`window.render=()=>{document.body.innerHTML='<div style="width:8px;height:8px;background:rgb('+Array.from({length:3},()=>Math.floor(Math.random()*256)).join(',')+')"></div>'};
+    window.TEXTS=t=>t<0.2?[{text:'画面文字',x:-3,y:1000,width:1000,height:60}]:[];window.READY=true`);
+  await p.save([fullPage(background, p.duration), { ...fullPage(overlay, p.duration), role: 'overlay', z: 1, x: 3 / 1920, width: 0.9 }]);
+  const input = { segmentId: p.segmentId, layerIndex: 1 };
+  const before = (await fetch(p.service.url + '/api/status').then(r => r.json())).snapshot;
+  const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
+  const { InMemoryTransport } = await import('@modelcontextprotocol/sdk/inMemory.js');
+  const { createBusinessMcp } = await import('../src/mcp/server.js');
+  const server = openConnection(() => createBusinessMcp(p.service.url));
+  const client = openConnection(() => new Client({ name: '页面自检测试', version: '1' }));
+  const [a, b] = InMemoryTransport.createLinkedPair(); await server.connect(a); await client.connect(b);
+  const checkedResult = await client.callTool({ name: 'clapgrid_check_page', arguments: input });
+  expect(checkedResult.isError, JSON.stringify(checkedResult)).not.toBe(true);
+  const { layers: [checked] } = checkedResult.structuredContent as { layers: any[] };
+  expect(checked.text.issues).toEqual(expect.arrayContaining([
+    expect.objectContaining({ kind: 'reading-time', text: '画面文字', from: 0, to: 0.2, requiredSeconds: expect.any(Number) }),
+    expect.objectContaining({ kind: 'out-of-frame', box: { x: -1, y: 1000, width: 1000, height: 60 } }),
+    expect.objectContaining({ kind: 'subtitle-overlap' }),
+  ]));
+  expect(checked.determinism.warnings[0]).toMatch(/闪烁或跳帧.*随机数.*上一帧/);
+  const { layers: [unchecked] } = await p.post('/api/page/check', { ...input, layerIndex: 0 });
+  expect(unchecked).toMatchObject({ text: { status: 'not-checked' }, determinism: { warnings: [] } });
+  const framesResult = await client.callTool({ name: 'clapgrid_page_frames', arguments: { ...input, sampling: { times: [0.2, 0.4] } } });
+  expect(framesResult.isError, JSON.stringify(framesResult)).not.toBe(true);
+  const { frames } = framesResult.structuredContent as { frames: { time: number; path: string }[] };
+  expect(frames.map((frame: { time: number }) => frame.time)).toEqual([0.2, 0.4]);
+  const image = JSON.parse(await execText('ffprobe', ['-v', 'error', '-show_streams', '-of', 'json', frames[0]!.path], { encoding: 'utf8' }));
+  expect(image.streams[0]).toMatchObject({ width: 1728, height: 1080, pix_fmt: 'rgba' });
+  const pixels = await execBytes('ffmpeg', ['-v', 'error', '-i', frames[0]!.path, '-vf', 'crop=16:2:0:0,alphaextract', '-frames:v', '1', '-f', 'rawvideo', '-']);
+  expect([pixels[0], pixels[12]]).toEqual([255, 0]);
+  const interval = await p.post('/api/page/frames', { ...input, sampling: { from: 0, to: 0.6, interval: 0.2 } });
+  expect(interval.frames.map((frame: { time: number }) => frame.time)).toEqual([0, 0.2, 0.4, 0.6]);
+  const excessive = await fetch(p.service.url + '/api/page/frames', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...input, sampling: { from: 0, to: 0.6, interval: 0.001 } }),
+  });
+  expect(excessive.status).toBe(400);
+  expect((await excessive.json()).error).toMatch(/60 帧/);
+  expect((await fetch(p.service.url + '/api/status').then(r => r.json())).snapshot).toEqual(before);
+  expect((await p.task()).state).toBe('succeeded');
+  expect((await p.task('export')).state).toBe('succeeded');
+  const good = await p.importPage("window.render=()=>{};window.TEXTS=()=>[{text:'A',x:20,y:20,width:16,height:20}];window.READY=true");
+  await p.save([fullPage(good, p.duration)]);
+  const { layers: [passed] } = await p.post('/api/page/check', { segmentId: p.segmentId });
+  expect(passed).toMatchObject({ text: { status: 'passed', issues: [] }, determinism: { warnings: [] } });
+}, 60000);

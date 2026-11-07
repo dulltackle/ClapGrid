@@ -1,3 +1,5 @@
+import { inspectPages } from './page-inspection.js';
+import { type CheckPage, type PageFrames } from '../shared/contracts.js';
 import { styleStore } from './styles.mjs';
 import { pageStore } from './pages.js';
 import { layerAssets } from '../shared/contracts.js';
@@ -284,6 +286,30 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       const latest = getSnapshot().segments.find(item => item.id === segmentId);
       if (JSON.stringify(latest) !== JSON.stringify(segment) || speech.getCurrentSpeechAudio(segmentId) !== audio) throw new Error('制作输入已变化，请重新查询');
       return { page: { canvas: { width: 1920, height: 1080 }, fps: snapshot.exportSettings.fps, assetUrls: Object.fromEntries(segmentMaterials(segment).map(id => [id, `/assets/${id}`])), limits: { files: 256, bytes: 33554432 }, readyTimeoutSeconds: 120, style: { declaration: 'page.json: { style: <styleId> }', moduleUrl: '/styles/<styleId>/lib/', importTool: 'clapgrid_import_style', limits: { files: 256, bytes: 33554432 } } }, segment, assets: snapshot.assets.filter(asset => segmentMaterials(segment).includes(asset.id)), duration, compositionCurrent: !!segment.composition && segment.composition.inputVersion === segment.visualVersion };
+    },
+    async inspectPage(input: CheckPage | PageFrames, signal: AbortSignal) {
+      verify();
+      signal.throwIfAborted();
+      const release = access.beginTask('page-inspection');
+      try {
+        const snapshot = getSnapshot();
+        const segment = snapshot.segments.find(segment => segment.id === input.segmentId);
+        if (!segment) throw new Error('口播片段不存在');
+        const plan = segment.composition;
+        if (!plan || plan.inputVersion !== segment.visualVersion) throw new Error('画面编排缺失或待更新，请先保存当前编排');
+        const layers = plan.layers.flatMap((layer, layerIndex) =>
+          layer.kind === 'page' && (input.layerIndex === undefined || input.layerIndex === layerIndex) ? [{ layer, layerIndex }] : []);
+        if (!layers.length) throw new Error('当前编排中没有匹配的页面图层');
+        const sampling = 'sampling' in input ? input.sampling : undefined;
+        if (sampling && layers.length !== 1) throw new Error('编排包含多个页面图层，请指定 layerIndex 后抽帧');
+        return await inspectPages({ projectDirectory, segmentId: segment.id, text: segment.text, settings: snapshot.exportSettings, layers, sampling, signal,
+          asset(id) {
+            const asset = snapshot.assets.find(asset => asset.id === id);
+            if (!asset) throw new Error('页面声明的素材缺失');
+            return { path: business.getMedia(id, 'source'), mime: asset.mime ?? (asset.kind === 'image' ? 'image/png' : 'video/mp4') };
+          },
+        });
+      } finally { release(); }
     },
     submitPreview: exports.submitPreview,
     getVisualPreviews: exports.getVisualPreviews,

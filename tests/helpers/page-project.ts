@@ -7,10 +7,10 @@ import { queryStatus, queryVisualContext } from '../../src/shared/client.js';
 import type { ResourceFixtures } from './resource-test.js';
 import type { ExportTask, VisualPlan } from '../../src/shared/contracts.js';
 
-export async function pageProject(resources: Pick<ResourceFixtures, 'createDirectory' | 'execBytes' | 'startService'>) {
+export async function pageProject(resources: Pick<ResourceFixtures, 'createDirectory' | 'execBytes' | 'startService'>, audioDuration = 1) {
   const root = resources.createDirectory(join(tmpdir(), 'clapgrid-page-render-'));
   const audio = join(root, 'voice.mp3');
-  await resources.execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=duration=1', '-c:a', 'libmp3lame', audio]);
+  await resources.execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', `sine=duration=${audioDuration}`, '-c:a', 'libmp3lame', audio]);
   const bytes = readFileSync(audio).toString('base64');
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'panel');
   const options = { projectDirectory: join(root, 'project'), panelDirectory, port: 0, speechRuntime: { configPath: '.env', key: () => 'test', fetch: (async () => new Response(`data: {"code":0,"data":"${bytes}"}\n\ndata: {"code":20000000}\n\n`)) as typeof fetch } };

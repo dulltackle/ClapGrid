@@ -251,3 +251,11 @@ export async function importPage(baseUrl: string, sourceDirectory: string, signa
   const body = await postJson(baseUrl, '/api/codex/import-page', { sourceDirectory }, undefined, signal);
   return { page: body.page as import('./contracts.js').ImportedPage, status: statusSchema.parse(body.status) };
 }
+
+export function checkPage(baseUrl: string, input: import('./contracts.js').CheckPage, signal?: AbortSignal) {
+  return postJson(baseUrl, '/api/page/check', input, undefined, signal ?? null);
+}
+
+export function pageFrames(baseUrl: string, input: import('./contracts.js').PageFrames, signal?: AbortSignal) {
+  return postJson(baseUrl, '/api/page/frames', input, undefined, signal ?? null);
+}

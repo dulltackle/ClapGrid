@@ -14,7 +14,17 @@ export const visualLayerSchema = z.discriminatedUnion('kind', [
   z.object({ ...visualGeometry, kind: z.literal('page'), pageId: z.string().regex(/^[a-f0-9]{64}$/), assetIds: z.array(z.uuid()).max(64) }).strict(),
 ]);
 export const importPageSchema = z.object({ sourceDirectory: z.string().min(1) }).strict();
-export type ImportedPage = { pageId: string; fileCount: number; bytes: number };
+export type ImportedPage = { pageId: string; fileCount: number; bytes: number; warnings: string[] };
+export const pageFrameLimit = 60;
+export const checkPageSchema = z.object({ segmentId: z.uuid(), layerIndex: z.int().nonnegative().optional() }).strict();
+export const pageFramesSchema = checkPageSchema.extend({
+  sampling: z.union([
+    z.object({ times: z.array(z.number().nonnegative()).min(1).max(pageFrameLimit, `每次最多抽取 ${pageFrameLimit} 帧`) }).strict(),
+    z.object({ from: z.number().nonnegative(), to: z.number().nonnegative(), interval: z.number().positive() }).strict(),
+  ]),
+}).strict();
+export type CheckPage = z.infer<typeof checkPageSchema>;
+export type PageFrames = z.infer<typeof pageFramesSchema>;
 export function layerAssets(layer: z.infer<typeof visualLayerSchema>) {
   return layer.kind === 'page' ? layer.assetIds : [layer.assetId];
 }
