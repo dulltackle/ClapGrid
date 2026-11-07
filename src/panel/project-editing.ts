@@ -1,3 +1,5 @@
+// 统一管理文案、画面素材与导出设置的编辑。按当前编辑与查询归属处理响应，
+// 防止迟到查询、保存结果或断线事件覆盖后续编辑，并释放失效编辑取得的修改权。
 import type { EditSession } from '../shared/client.js';
 import type { ServiceStatus } from '../shared/contracts.js';
 
@@ -7,7 +9,6 @@ type Action = { signal: AbortSignal; apply: (update: () => void) => void };
 type Failure = (error: Error) => void;
 type Holding = { owner: Owner; session: EditSession; disconnected: boolean; onDisconnect: () => void };
 
-/** 面板内共享的编辑过程；HTTP 与可控时序测试使用同一 interface。 */
 export function projectEditing(connect: () => Promise<EditSession>) {
   let active = true;
   let generation = 0;

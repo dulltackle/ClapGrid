@@ -4,9 +4,9 @@
 
 当前指南是除 `docs/adr/` 与 `tests/fixtures/` 外所有 Git 跟踪的 `*.md`，新目录默认受检。删除过时内容前核对仍有效的规则是否已有当前指南承载，补齐后再删除，并更新引用路径。旧的历史目录可从提交 `cec490e` 查阅，仅用于理解当时语义，不用于证明新版本通过。
 
-[契约测试](../../tests/docs-commands.test.ts)检查当前指南中的 npm script、Vitest/Playwright 命令显式测试路径、废弃测试命令、相对文件链接及孤立文档。所有当前指南须从根目录任一 Markdown 或 `plugins/**/SKILL.md` 沿相对链接可达；新增指南时在对应入口补上链接。ADR 与夹具不受这五类规则校验。相对链接核对文件存在性，不验证章节锚点或网络 URL。
+[契约测试](../../tests/docs-commands.test.ts)检查当前指南中的 npm script、Vitest/Playwright 命令显式测试路径、废弃测试命令、相对文件链接、孤立文档及业务 MCP 工具名。所有当前指南须从根目录任一 Markdown 或 `plugins/**/SKILL.md` 沿相对链接可达；新增指南时在对应入口补上链接。ADR 与夹具不受上述规则校验。相对链接核对文件存在性，不验证章节锚点或网络 URL。
 
-测试不支持行内豁免；需要解释旧测试机制时改写措辞，或链接到 ADR。脚本名称以 `package.json` 为准，日常检查见[检查与验收](verification.md)。
+测试不支持行内豁免；需要解释旧测试机制时改写措辞，或链接到 ADR。脚本名称以 `package.json` 为准，业务 MCP 工具名以 [`src/mcp/server.ts`](../../src/mcp/server.ts) 的注册为准。日常检查见[检查与验收](verification.md)。
 
 ## 当前指南导航
 
