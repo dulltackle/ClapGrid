@@ -1,6 +1,6 @@
 # 采用自建页面渲染底座
 
-状态：已采纳（[#268](https://github.com/dulltackle/ClapGrid/issues/268)）。
+状态：已采纳（[#268](https://github.com/dulltackle/ClapGrid/issues/268)）；字幕条款已被 [ADR0016](0016-style-owned-subtitles.md) 取代。
 
 页面以 `index.html`、`DUR`、确定性的 `render(t)` 和 `READY` 为约定，按内容身份保存不可变副本。画面编排引入页面图层，沿用素材图层的空间、层级和区间规则；页面声明的本句素材参与覆盖校验。修改页面须重新导入并提交新编排，已有预览随编排变化自然过期。
 
