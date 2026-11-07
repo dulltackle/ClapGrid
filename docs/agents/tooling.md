@@ -12,6 +12,8 @@ GitHub 单事项按任务选择 `gh issue view --repo dulltackle/ClapGrid <编�
 
 ## 执行与留存
 
+在新工作树里首次运行检查前，先确认 `node_modules` 已按锁定依赖安装，缺失时执行 `npm ci`。`npm exec` 在依赖缺失时仍能启动测试框架，失败会表现为 `Could not resolve` 等解析错误；遇到这类错误先核对依赖再排查代码。
+
 使用每次运行独立的目录，在任务活跃期保留 stdout、stderr 和实际退出码，避免后续执行覆盖失败现场。证据生命周期与删除条件统一按[验收原件与手动收尾](verification.md#验收原件与手动收尾)执行，持久摘要写入 GitHub Issue/PR 评论。优先使用 Vitest、Playwright 和 GitHub Actions 的原生报告及附件。需要普通命令日志时，可直接使用 shell，例如：
 
 ```bash
