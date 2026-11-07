@@ -37,6 +37,8 @@ async function stop() {
 }
 process.on('SIGTERM', () => { void stop(); });
 process.on('SIGINT', () => { void stop(); });
+// 产品期限固定 120 秒（与 readyTimeoutSeconds 契约一致）；仅测试用此变量缩短 READY 超时用例的真实等待。
+const readyTimeoutMs = Number(process.env.CLAPGRID_TEST_PAGE_READY_TIMEOUT_MS) > 0 ? Number(process.env.CLAPGRID_TEST_PAGE_READY_TIMEOUT_MS) : 120000;
 const page = pageStore(input.projectDirectory).read(input.pageId);
 const styleId = pageStyle(page.files);
 const style = styleId ? styleStore(input.projectDirectory).read(styleId) : undefined;
@@ -104,11 +106,11 @@ try {
     tab.on('pageerror', error => fail(`页面脚本错误：${error.message}`));
     tab.on('console', message => { if (message.type() === 'error') fail(`${message.text().includes('Content Security Policy') ? '页面禁止外部请求或能力' : '页面错误'}：${message.text()}`); });
     tab.on('requestfailed', request => fail(`页面加载失败：${request.url().split('?')[0]} ${request.failure()?.errorText}`));
-    const deadline = Date.now() + 120000;
+    const deadline = Date.now() + readyTimeoutMs;
     const remaining = () => Math.max(1, deadline - Date.now());
     await guard(tab.goto(`${origin}/pages/${input.pageId}/index.html`, { waitUntil: 'domcontentloaded', timeout: remaining() }));
     try { await guard(tab.waitForFunction(() => (window as any).READY === true, undefined, { timeout: remaining() })); }
-    catch { throw new Error(failure?.message ?? '页面 READY 等待超时（120 秒）'); }
+    catch { throw new Error(failure?.message ?? `页面 READY 等待超时（${readyTimeoutMs / 1000} 秒）`); }
     const valid = await tab.evaluate(duration => typeof (window as any).render === 'function' && Number.isFinite((window as any).DUR) && Math.abs((window as any).DUR - duration) <= 0.001, input.duration);
     if (!valid) throw new Error(`页面 DUR 必须等于图层区间 ${input.duration} 秒（误差 ≤1 ms），并暴露 render(t)`);
     return tab;
