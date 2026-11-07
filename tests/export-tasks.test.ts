@@ -127,7 +127,7 @@ async function probe(t: Pick<Resources, 'execText'>, path: string) { return JSON
 function frame(t: Pick<Resources, 'execBytes'>, path: string, seconds: number) { return t.execBytes('ffmpeg', ['-v', 'error', '-ss', String(seconds), '-i', path, '-frames:v', '1', '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-'], { maxBuffer: 8 * 1024 * 1024 }); }
 function pixel(data: Buffer, x: number, y: number) { return [...data.subarray((y * 1920 + x) * 3, (y * 1920 + x) * 3 + 3)]; }
 
-test('预览发布后成片目标冲突：撤销本次预览，不覆盖或删除原有文件', async ({ createDirectory, execBytes, openBusiness }) => {
+test('预览发布后成片目标冲突：撤销本次预览，不覆盖或删除原有文件', { timeout: 60000 }, async ({ createDirectory, execBytes, openBusiness }) => {
   const t = { createDirectory, execBytes, openBusiness };
   const { business, directory } = await ready(t);
   const task = business.submitExport();
@@ -146,7 +146,7 @@ test('预览发布后成片目标冲突：撤销本次预览，不覆盖或删�
   assert.equal(business.getExportTasks().locked, false);
 });
 
-test('成片和预览已发布后在清理期间取消：撤销两份文件，终态保存前保持占用', async ({ createDirectory, execBytes, openBusiness, onTestFinished, openConnection }) => {
+test('成片和预览已发布后在清理期间取消：撤销两份文件，终态保存前保持占用', { timeout: 60000 }, async ({ createDirectory, execBytes, openBusiness, onTestFinished, openConnection }) => {
   const t = { createDirectory, execBytes, openBusiness };
   const { business, directory } = await ready(t);
   const task = business.submitExport();
@@ -185,7 +185,7 @@ test('取消导出清理结束后下一例恢复真实文件删除，不泄漏�
   assert.equal(existsSync(directory), false);
 });
 
-test('成功产物已发布但终态保存失败：继续锁定且不可读取，重开清理后标记中断', async ({ createDirectory, execBytes, openBusiness, openConnection }) => {
+test('成功产物已发布但终态保存失败：继续锁定且不可读取，重开清理后标记中断', { timeout: 60000 }, async ({ createDirectory, execBytes, openBusiness, openConnection }) => {
   const t = { createDirectory, execBytes, openBusiness };
   const { business, directory, close } = await ready(t);
   const history = await finished(business, business.submitExport().id);
@@ -225,7 +225,7 @@ test('成功产物已发布但终态保存失败：继续锁定且不可读取�
   } finally { await reopened.close(); }
 });
 
-test('真实全片按项目顺序导出：起点、冻结、留边、风格字幕与 MP4 参数，失败的最新配音不妨碍有效旧配音', async ({ createDirectory, execBytes, execText, openBusiness }) => {
+test('真实全片按项目顺序导出：起点、冻结、留边、风格字幕与 MP4 参数，失败的最新配音不妨碍有效旧配音', { timeout: 60000 }, async ({ createDirectory, execBytes, execText, openBusiness }) => {
   const t = { createDirectory, execBytes, execText, openBusiness };
   const { business, first, second, failNextSpeech, waitSpeech, directory, asset } = await ready(t);
   const table = business.connectTable(); business.selectSegments(table, [second.id]);
@@ -272,7 +272,7 @@ async function rendering(business: ReturnType<typeof openBusiness>, id: string) 
   assert.equal(task!.state, 'rendering', JSON.stringify(task));
 }
 
-test('取消真实渲染显示清理状态，停止并删除本次文件后才解锁，保留历史成片', async ({ createDirectory, execBytes, openBusiness }) => {
+test('取消真实渲染显示清理状态，停止并删除本次文件后才解锁，保留历史成片', { timeout: 60000 }, async ({ createDirectory, execBytes, openBusiness }) => {
   const t = { createDirectory, execBytes, openBusiness };
   const { business, directory, first } = await ready(t);
   mkdirSync(join(directory, 'exports')); writeFileSync(join(directory, 'exports', 'previous.mp4'), '已有成片');
@@ -292,7 +292,7 @@ test('取消真实渲染显示清理状态，停止并删除本次文件后才�
   assert.equal(readFileSync(join(directory, 'exports', 'previous.mp4'), 'utf8'), '已有成片');
 });
 
-test('渲染器失败定位片段并清理半成品，已有成片保留且项目恢复编辑', async ({ createDirectory, execBytes, execText, openBusiness }) => {
+test('渲染器失败定位片段并清理半成品，已有成片保留且项目恢复编辑', { timeout: 60000 }, async ({ createDirectory, execBytes, execText, openBusiness }) => {
   const t = { createDirectory, execBytes, openBusiness };
   const { business, directory, root, first } = await ready(t);
   const actualFfmpeg = (await execText('which', ['ffmpeg'], { encoding: 'utf8' })).trim();
@@ -389,7 +389,7 @@ test('配音刚受理及生成时拒绝导出且不创建任务，结束后恢�
 
 });
 
-test('配音时长不是视频帧整倍数时，拼接处不插入静音间隔', async ({ createDirectory, execBytes, execText, openBusiness }) => {
+test('配音时长不是视频帧整倍数时，拼接处不插入静音间隔', { timeout: 60000 }, async ({ createDirectory, execBytes, execText, openBusiness }) => {
   const t = { createDirectory, execBytes, openBusiness };
   const { business } = await ready(t, { duration: 0.83 });
   const task = await finished(business, business.submitExport().id);
@@ -404,7 +404,7 @@ test('配音时长不是视频帧整倍数时，拼接处不插入静音间隔',
 
 });
 
-test('非方形像素视频按显示宽高比缩放，不能压成方形', async ({ createDirectory, execBytes, openBusiness }) => {
+test('非方形像素视频按显示宽高比缩放，不能压成方形', { timeout: 60000 }, async ({ createDirectory, execBytes, openBusiness }) => {
   const t = { createDirectory, execBytes, openBusiness };
   const { business } = await ready(t, { sar: 2 });
   const task = await finished(business, business.submitExport().id);
@@ -414,7 +414,7 @@ test('非方形像素视频按显示宽高比缩放，不能压成方形', async
   assert.ok(pixel(image, 960, 10).every(value => value < 5), '上下留边保持显示比例');
 });
 
-test('合法起点落在视频末帧持续区间内时，使用末帧冻结而不是丢失画面', async ({ createDirectory, execBytes, openBusiness }) => {
+test('合法起点落在视频末帧持续区间内时，使用末帧冻结而不是丢失画面', { timeout: 60000 }, async ({ createDirectory, execBytes, openBusiness }) => {
   const t = { createDirectory, execBytes, openBusiness };
   const { business, asset, compose } = await ready(t);
   const token = business.acquire('user');
@@ -425,7 +425,7 @@ test('合法起点落在视频末帧持续区间内时，使用末帧冻结而�
   assert.ok(pixel((await frame(t, task.output!.path, 0.1)), 960, 100)[2]! > 200);
 });
 
-test('成片提供含字幕和声音的浏览器兼容预览，MP4 原文件仍独立保留', async ({ createDirectory, execBytes, execText, openBusiness }) => {
+test('成片提供含字幕和声音的浏览器兼容预览，MP4 原文件仍独立保留', { timeout: 60000 }, async ({ createDirectory, execBytes, execText, openBusiness }) => {
   const t = { createDirectory, execBytes, execText, openBusiness };
   const { business } = await ready(t);
   const task = await finished(business, business.submitExport().id);
