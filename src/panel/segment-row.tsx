@@ -50,7 +50,7 @@ export function SegmentRowSupport({ data, assets, preview, expandedId, toggleNot
   const materials = segmentMaterials(data);
   const expanded = trayId === data.id;
   const task = previews.filter(task => task.preview?.segmentId === data.id).at(-1);
-  const message = task ? task.state === 'succeeded' ? task.current ? '预览已就绪' : '预览待更新' : task.message : data.composition ? '尚未生成合成预览' : '等待 agent 编排';
+  const message = task ? task.state === 'succeeded' ? task.current ? task.preview?.subtitleIssue ?? '预览已就绪' : '预览待更新' : task.message : data.composition ? '尚未生成合成预览' : '等待 agent 编排';
   return <Popover open={expanded} onOpenChange={open => { if (open !== expanded) toggleTray(data.id); }}><div data-segment-support className="flex min-w-0 shrink-0 flex-col">
     <div className="flex h-[54px] min-w-0 items-center gap-2">
       <PopoverTrigger asChild><Button ref={trayTrigger} variant="ghost" size="xs" className="h-10 shrink-0 gap-1 px-1" title={`${expanded ? '收起' : '展开'}本句画面素材，查看或添加图片和视频`} aria-label={`片段 ${data.order} 画面素材（${materials.length}）`}>

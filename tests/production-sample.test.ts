@@ -5,19 +5,22 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { selectTestStyle } from './helpers/project-style.js';
 import { createHash } from 'node:crypto';
 
-type Resources = Pick<ResourceFixtures, 'command' | 'createDirectory'>;
+type Resources = Pick<ResourceFixtures, 'command' | 'createDirectory' | 'openBusiness'>;
 
 const entry = fileURLToPath(new URL('../scripts/production.mjs', import.meta.url));
 type RecordEntry = { id: string; requirement: string; criterion: string; kind: string; reviewVersion: string; artifact: { path: string; sha256: string }; scope: string[]; status: string; source: string;
   provenance: { actor: string; record: string; observedAt: string }; reuseOf?: string };
-async function fixture(t: Pick<Resources, 'command' | 'createDirectory'>) {
+async function fixture(t: Pick<Resources, 'command' | 'createDirectory' | 'openBusiness'>) {
   const project = t.createDirectory(join(tmpdir(), '样片 中文 项目 '));
   const media = (await t.command('ffmpeg', ['-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i', 'testsrc2=s=64x48:r=10:d=0.3', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', join(project, '动态样片.mp4')], { encoding: 'utf8' }));
   assert.equal(media.status, 0, media.stderr);
   writeFileSync(join(project, '模拟确认原件.txt'), '隔离模拟机制测试；没有实际用户看过或批准项目，不构成实际制作许可。\n');
-  writeFileSync(join(project, '视觉方案.json'), '{"整体观感":"简洁图形","关键做法":"对象移动保持标签与身份"}\n');
+  const business = t.openBusiness(join(project, 'clapgrid'));
+  const styleId = await selectTestStyle(business);
+  writeFileSync(join(project, '视觉方案.json'), JSON.stringify({ style: { id: styleId, source: { id: 'test-color', version: '1' } }, 整体观感: '简洁图形' }));
   const asset = (path: string) => ({ path, sha256: createHash('sha256').update(readFileSync(join(project, path))).digest('hex') });
   const scope = ['visual:materials', 'visual:motion', 'visual:transition'];
   const sample = { id: 'sample-1', mode: 'controlled-test', reviewVersion: 'direction-1', video: asset('动态样片.mp4'), plan: asset('视觉方案.json'), scope,
@@ -40,11 +43,11 @@ async function fixture(t: Pick<Resources, 'command' | 'createDirectory'>) {
     return { ...result, report: JSON.parse(readFileSync(join(project, '结果.json'), 'utf8')) };
   };
   save();
-  return { project, sample, evidence, confirm, save, run, asset };
+  return { project, sample, evidence, confirm, save, run, asset, business };
 }
 
-test('真实动态样片与视觉方案未取得用户确认时禁止批量并保留终审边界', async ({ command, createDirectory }) => {
-  const t = { command, createDirectory };
+test('真实动态样片与视觉方案未取得用户确认时禁止批量并保留终审边界', async ({ command, createDirectory, openBusiness }) => {
+  const t = { command, createDirectory, openBusiness };
   const f = (await fixture(t)); const result = (await f.run());
   assert.equal(result.status, 1);
   assert.equal(result.report.status, 'pending', result.stdout);
@@ -52,8 +55,8 @@ test('真实动态样片与视觉方案未取得用户确认时禁止批量并�
   assert.deepEqual(result.report.details.excluded, ['其他画面', '领域准确性', '发音听审', '完整成片终审']);
 });
 
-test('隔离模拟机制测试：实际项目模式配合模拟用户确认可取得程序许可，不代表实际用户确认或制作许可', async ({ command, createDirectory }) => {
-  const t = { command, createDirectory };
+test('隔离模拟机制测试：实际项目模式配合模拟用户确认可取得程序许可，不代表实际用户确认或制作许可', async ({ command, createDirectory, openBusiness }) => {
+  const t = { command, createDirectory, openBusiness };
   const f = (await fixture(t)); f.sample.mode = 'actual-project'; f.confirm('user-confirmation'); f.save();
   const result = (await f.run());
   assert.equal(result.status, 0, result.stdout);
@@ -63,8 +66,8 @@ test('隔离模拟机制测试：实际项目模式配合模拟用户确认可�
   assert.deepEqual(result.report.details.excluded, ['其他画面', '领域准确性', '发音听审', '完整成片终审']);
 });
 
-test('隔离模拟机制测试：受控确认完整时只演练机制，即使模拟真实来源也不授予实际批量许可', async ({ command, createDirectory }) => {
-  const t = { command, createDirectory };
+test('隔离模拟机制测试：受控确认完整时只演练机制，即使模拟真实来源也不授予实际批量许可', async ({ command, createDirectory, openBusiness }) => {
+  const t = { command, createDirectory, openBusiness };
   const f = (await fixture(t));
   for (const source of ['controlled-test', 'user-confirmation']) {
     f.confirm(source); f.save();
@@ -77,8 +80,8 @@ test('隔离模拟机制测试：受控确认完整时只演练机制，即使�
   }
   });
 
-test('隔离模拟机制测试：实际项目模式配合受控来源独立阻止批量许可', async ({ command, createDirectory }) => {
-  const t = { command, createDirectory };
+test('隔离模拟机制测试：实际项目模式配合受控来源独立阻止批量许可', async ({ command, createDirectory, openBusiness }) => {
+  const t = { command, createDirectory, openBusiness };
   const f = (await fixture(t)); f.sample.mode = 'actual-project'; f.confirm(); f.save();
   const result = (await f.run());
   assert.equal(result.status, 1, result.stdout);
@@ -87,8 +90,8 @@ test('隔离模拟机制测试：实际项目模式配合受控来源独立阻�
   assert.equal(result.report.details.batchAllowed, false);
 });
 
-test('隔离模拟机制测试：方案和范围不变可复用样片确认，普通文档备注不使产物确认失效', async ({ command, createDirectory }) => {
-  const t = { command, createDirectory };
+test('隔离模拟机制测试：方案和范围不变可复用样片确认，普通文档备注不使产物确认失效', async ({ command, createDirectory, openBusiness }) => {
+  const t = { command, createDirectory, openBusiness };
   const f = (await fixture(t)); f.sample.mode = 'actual-project'; f.confirm('user-confirmation');
   const originals = f.evidence.records;
   f.sample.reviewVersion = f.evidence.reviewVersion = 'direction-2';
@@ -104,8 +107,8 @@ test('隔离模拟机制测试：方案和范围不变可复用样片确认，�
   assert.deepEqual(result.report.details.confirmations.map((item: { provenance: unknown }) => item.provenance), originals.map(item => item.provenance));
 });
 
-for (const scenario of ['否决', '错误版本', '样片版本变化', '方案变化', '样片变化', '范围变化', '其他确认来源', '声明者变化', '确认时间变化', '技术证据替代用户', '范围越界', '损坏视频']) test(`隔离模拟机制测试：真实样片入口在${scenario}时保持未允许批量`, async ({ command, createDirectory }) => {
-  const t = { command, createDirectory };
+for (const scenario of ['否决', '错误版本', '样片版本变化', '方案变化', '样片变化', '范围变化', '其他确认来源', '声明者变化', '确认时间变化', '技术证据替代用户', '范围越界', '损坏视频']) test(`隔离模拟机制测试：真实样片入口在${scenario}时保持未允许批量`, async ({ command, createDirectory, openBusiness }) => {
+  const t = { command, createDirectory, openBusiness };
   const f = (await fixture(t)); f.sample.mode = 'actual-project'; f.confirm('user-confirmation');
   if (scenario === '否决') f.evidence.records[0]!.status = 'denied';
   if (scenario === '错误版本') f.evidence.reviewVersion = 'other-review';
@@ -131,8 +134,8 @@ for (const scenario of ['否决', '错误版本', '样片版本变化', '方案�
   assert.deepEqual(readFileSync(join(f.project, '审阅.json')), before);
 });
 
-test('隔离模拟机制测试：其它终审要求待审时所选视觉范围仍可许可，保留终审排除范围', async ({ command, createDirectory }) => {
-  const t = { command, createDirectory };
+test('隔离模拟机制测试：其它终审要求待审时所选视觉范围仍可许可，保留终审排除范围', async ({ command, createDirectory, openBusiness }) => {
+  const t = { command, createDirectory, openBusiness };
   const f = (await fixture(t)); f.sample.mode = 'actual-project'; f.confirm('user-confirmation');
   f.evidence.requirements.push({ id: 'final-film', text: '完整成片终审', classifiedBy: { source: 'human', identity: '受控测试作者' }, required: [{ id: 'final', kind: 'user', artifact: '未制作全片.mp4', scope: ['final-film'] }] });
   f.save();
@@ -145,8 +148,8 @@ test('隔离模拟机制测试：其它终审要求待审时所选视觉范围�
   assert.ok(result.report.checks.every((check: { id: string }) => !check.id.startsWith('final-film:')));
 });
 
-test('隔离模拟机制测试：局部损坏的视频即使工具宽容退出零也不能冒记完整解码通过', async ({ command, createDirectory }) => {
-  const t = { command, createDirectory };
+test('隔离模拟机制测试：局部损坏的视频即使工具宽容退出零也不能冒记完整解码通过', async ({ command, createDirectory, openBusiness }) => {
+  const t = { command, createDirectory, openBusiness };
   const f = (await fixture(t)); f.sample.mode = 'actual-project';
   const path = join(f.project, f.sample.video.path);
   const encode = (await command('ffmpeg', ['-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i', 'testsrc2=s=64x48:r=10:d=1', '-c:v', 'libx264', '-g', '10', '-bf', '0', '-pix_fmt', 'yuv420p', path], { encoding: 'utf8' }));
@@ -171,8 +174,8 @@ test('隔离模拟机制测试：局部损坏的视频即使工具宽容退出�
   assert.deepEqual(readFileSync(join(f.project, '审阅.json')), before);
 });
 
-test('隔离模拟机制测试：含冒号身份碰撞仍定位所选视觉方向，不代表实际用户确认或制作许可', async ({ command, createDirectory }) => {
-  const t = { command, createDirectory };
+test('隔离模拟机制测试：含冒号身份碰撞仍定位所选视觉方向，不代表实际用户确认或制作许可', async ({ command, createDirectory, openBusiness }) => {
+  const t = { command, createDirectory, openBusiness };
   const f = (await fixture(t)); f.sample.mode = 'actual-project'; f.confirm('user-confirmation');
   f.sample.confirmation.requirement = 'direction:visual';
   f.evidence.requirements[0]!.id = 'direction:visual';
@@ -188,8 +191,8 @@ test('隔离模拟机制测试：含冒号身份碰撞仍定位所选视觉方�
   assert.ok(result.report.checks.some((check: { id: string }) => check.id === 'direction:visual:video'));
 });
 
-for (const media of ['静态图片', '单帧视频']) test(`隔离模拟机制测试：${media}不能取得批量许可`, async ({ command, createDirectory }) => {
-  const t = { command, createDirectory };
+for (const media of ['静态图片', '单帧视频']) test(`隔离模拟机制测试：${media}不能取得批量许可`, async ({ command, createDirectory, openBusiness }) => {
+  const t = { command, createDirectory, openBusiness };
   const f = (await fixture(t)); f.sample.mode = 'actual-project';
   const path = media === '静态图片' ? '静态图片.png' : f.sample.video.path;
   const encode = (await command('ffmpeg', ['-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i', 'testsrc2=s=64x48:r=10', '-frames:v', '1', join(f.project, path)], { encoding: 'utf8' }));
@@ -202,11 +205,11 @@ for (const media of ['静态图片', '单帧视频']) test(`隔离模拟机制�
   assert.ok(!result.report.checks.some((check: { id: string; status: string }) => check.id === 'sample-video' && check.status === 'passed'));
 });
 
-for (const scenario of ['有效', '缺失', '变化', '副本篡改', '别名', '其他扩展名'] as const) test(`隔离模拟机制测试：采用方案风格${scenario}时核对批量许可`, async ({ command, createDirectory }) => {
+for (const scenario of ['有效', '缺失', '变化', '未设置', '副本篡改', '别名', '其他扩展名'] as const) test(`隔离模拟机制测试：采用方案风格${scenario}时核对批量许可`, async ({ command, createDirectory, openBusiness }) => {
   const { cpSync, mkdirSync, chmodSync, renameSync, symlinkSync } = await import('node:fs');
   const { resolve } = await import('node:path');
   const { styleStore } = await import('../src/business/styles.mjs');
-  const f = await fixture({ command, createDirectory }); f.sample.mode = 'actual-project';
+  const f = await fixture({ command, createDirectory, openBusiness }); f.sample.mode = 'actual-project';
   const sourceDirectory = join(f.project, 'styles/test-color'); mkdirSync(join(f.project, 'styles'));
   cpSync(resolve('tests/fixtures/style'), sourceDirectory, { recursive: true });
   const store = styleStore(join(f.project, 'clapgrid'));
@@ -219,6 +222,11 @@ for (const scenario of ['有效', '缺失', '变化', '副本篡改', '别名', 
     else f.sample.plan = f.asset('plan.data');
   }
   f.confirm('user-confirmation'); f.save();
+  if (scenario === '未设置') {
+    const token = f.business.acquire('codex');
+    await f.business.setProjectStyle(token, { expected: style.styleId, styleId: null });
+    f.business.release(token);
+  }
   if (scenario === '变化') {
     writeFileSync(join(sourceDirectory, 'lib/color.js'), `export const color=t=>'blue';`);
     plan.style.id = store.import(sourceDirectory, f.project).styleId;
@@ -230,5 +238,5 @@ for (const scenario of ['有效', '缺失', '变化', '副本篡改', '别名', 
   const result = await f.run();
   assert.equal(result.report.details.batchAllowed, scenario === '有效', result.stdout);
   assert.equal(result.status, scenario === '有效' ? 0 : 1, result.stdout);
-  if (scenario === '缺失' || scenario === '副本篡改') assert.match(JSON.stringify(result.report.checks), /风格/);
+  if (['缺失', '变化', '未设置', '副本篡改'].includes(scenario)) assert.match(JSON.stringify(result.report.checks), /风格/);
 });

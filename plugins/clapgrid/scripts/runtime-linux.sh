@@ -42,13 +42,11 @@ node_ready() {
 }
 
 ffmpeg_ready() {
-  local encoders filters encoder
+  local encoders encoder
   encoders=$("$1" -hide_banner -encoders 2>/dev/null) || return 1
   for encoder in libx264 mpeg4 libvpx libvorbis ffv1 aac; do
     [[ $encoders =~ [[:space:]]$encoder[[:space:]] ]] || return 1
   done
-  filters=$("$1" -hide_banner -h filter=subtitles 2>/dev/null) || return 1
-  [[ $filters == *wrap_unicode* ]]
 }
 
 fonts_ready() {

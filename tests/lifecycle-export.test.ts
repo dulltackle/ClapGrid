@@ -1,3 +1,5 @@
+import { dependencyView } from './helpers/temporary-repository.js';
+import { selectTestStyle } from './helpers/project-style.js';
 import { test } from './helpers/resource-test.js';
 import { exportState } from './helpers/export-state.js';
 import { vi, expect } from 'vitest';
@@ -7,7 +9,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { serviceProcess, waitForServiceExit } from './helpers/service-exit.js';
 import { queryStatus, queryExports, submitExport, modifyBatch, connectTable, querySpeech } from '../src/shared/client.js';
@@ -24,12 +26,13 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
   const payload = readFileSync(audio).toString('base64');
   const business = openBusiness(directory, { key: () => 'test', configPath: 'test', fetch: (async () => new Response(`data: {"code":0,"data":"${payload}"}\n\ndata: {"code":20000000}\n\n`)) as typeof fetch });
   try {
+    await selectTestStyle(business);
     const token = business.acquire('codex');
     const segment = business.addSegment('崩溃恢复验证', token).segments[0]!;
     const asset = await business.importVideo(token, { sourcePath: video });
     await business.modifyBatch(token, { changes: [{ kind: 'video', expected: segment, assetId: asset.id, start: 0 }] });
     const expected = business.getSnapshot().exportSettings;
-    await business.setExportSettings(token, { expected, settings: { ...expected, fontFamily: 'Noto Sans CJK SC', fontSize: 48 } });
+    await business.setExportSettings(token, { expected, settings: { ...expected } });
     business.release(token);
     business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
     await vi.waitFor(async () => { const value = await (async () => business.getSpeechStatus())(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
@@ -38,10 +41,11 @@ test('真实媒体导出跨客户端重开，服务崩溃后先停止旧媒体�
     try { await business.modifyBatch(compositionToken, { changes: [{ kind: 'composition', expected: context.segment, plan: { duration: context.duration, layers: [{ assetId: asset.id, role: 'background', from: 0, to: context.duration, start: 0, x: 0, y: 0, width: 1, height: 1, z: 0 }] } }] }); }
     finally { business.release(compositionToken); }
   } finally { await business.close(); }
+  dependencyView(root, resolve('node_modules'));
   const dist = join(root, 'dist'); mkdirSync(join(dist, 'panel'), { recursive: true });
   writeFileSync(join(root, 'package.json'), '{"type":"module"}'); writeFileSync(join(dist, 'panel', 'index.html'), 'ClapGrid');
-  await build({ entryPoints: ['src/runtime.ts', 'src/service/main.ts', 'src/business/media-worker.ts', 'src/mcp/main.ts'], outbase: 'src', outdir: dist,
-    bundle: true, platform: 'node', format: 'esm', target: 'node22', external: ['vite'],
+  await build({ entryPoints: ['src/runtime.ts', 'src/service/main.ts', 'src/business/media-worker.ts', 'src/business/page-render-worker.ts', 'src/mcp/main.ts'], outbase: 'src', outdir: dist,
+    bundle: true, platform: 'node', format: 'esm', target: 'node22', external: ['vite', 'playwright-core'],
     banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" } });
   const thread = randomUUID(); const otherThread = randomUUID(); const hostState = join(root, 'host.json');
   const setWorkspace = (current: string) => writeFileSync(hostState, JSON.stringify({ [thread]: current, [otherThread]: workspace }));

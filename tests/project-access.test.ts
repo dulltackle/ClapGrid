@@ -1,3 +1,4 @@
+import { selectTestStyle } from './helpers/project-style.js';
 import { test } from './helpers/resource-test.js';
 import { expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
@@ -12,6 +13,7 @@ for (const kind of ['单片段配音', '批量配音', '导出'] as const) test(
   const directory = createDirectory(join(tmpdir(), 'clapgrid-admission-failure-'));
   let calls = 0;
   const business = openBusiness(directory, { key: () => '测试', configPath: '测试', fetch: (async () => { calls++; throw new Error('不应调用供应商'); }) as typeof fetch });
+  if (kind === '导出') await selectTestStyle(business);
   const segment = business.addSegment('任务受理失败').segments[0]!;
   const db = openConnection(() => new DatabaseSync(business.getSnapshot().storage.database));
 
@@ -41,6 +43,7 @@ for (const kind of ['speech', 'export'] as const) test(`${kind}终态保存失�
     key: () => '测试', configPath: '测试', fetch: (async () => { calls++; return new Response('data: {"code":0,"data":"SUQz"}\n\ndata: {"code":20000000}\n\n'); }) as typeof fetch,
   } };
   let service = await startService(options);
+  if (kind === 'export') await selectTestStyle(service.url);
   await modifyBatch(service.url, { changes: [{ kind: 'add', text: '终态保存失败' }] });
   const before = await queryStatus(service.url);
   const db = openConnection(() => new DatabaseSync(before.snapshot.storage.database));

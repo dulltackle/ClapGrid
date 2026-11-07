@@ -1,27 +1,25 @@
 import { test } from './helpers/resource-test.js';
 import { expect, describe } from 'vitest';
 import assert from 'node:assert/strict';
-import {  } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-test('首次导出设置提供编码帧率默认值，字体字号留空且阻止导出', async ({ createDirectory, openBusiness }) => {
+test('导出设置只有编码与帧率，未设置项目风格时不受理导出', async ({ createDirectory, openBusiness }) => {
   const directory = createDirectory(join(tmpdir(), 'clapgrid-export-'));
   const business = openBusiness(directory);
   const status = await business.getExportStatus();
-  assert.deepEqual(status.settings, { codec: 'libx264', fps: 30, fontFamily: null, fontSize: null });
-  assert.deepEqual(status.output, { width: 1920, height: 1080, aspectRatio: '16:9', container: 'mp4', fontSizeUnit: 'px' });
-  assert.ok(status.fonts.length > 0);
-  assert.deepEqual(status.issues, ['请设置字幕字体', '请设置字幕字号']);
-  await assert.rejects(business.getCurrentExportSettings(), /请设置字幕字体.*请设置字幕字号/);
+  assert.deepEqual(status.settings, { codec: 'libx264', fps: 30 });
+  assert.deepEqual(status.output, { width: 1920, height: 1080, aspectRatio: '16:9', container: 'mp4' });
+  assert.deepEqual(status.issues, []);
+  assert.throws(() => business.submitExport(), /请设置项目风格/);
+  assert.deepEqual(business.getExportTasks(), { locked: false, tasks: [] });
 });
 
 test('导出设置持有普通修改权保存，拒绝过时快照与无效参数，重开恢复', async ({ createDirectory, openBusiness }) => {
   const directory = createDirectory(join(tmpdir(), 'clapgrid-export-save-'));
   let business = openBusiness(directory);
   const original = await business.getExportStatus();
-  const settings = { ...original.settings, fps: 25 as const, fontFamily: 'Noto Sans CJK SC', fontSize: 48 };
-  assert.ok(original.fonts.includes(settings.fontFamily));
+  const settings = { ...original.settings, fps: 25 as const };
   const input = { expected: original.settings, settings };
   await assert.rejects(business.setExportSettings('invalid', input), /修改权/);
   const token = business.acquire('user');
@@ -30,17 +28,15 @@ test('导出设置持有普通修改权保存，拒绝过时快照与无效参�
   for (const patch of [{ fps: 0 }, { fps: 29.97 }, { codec: 'vp8' }, { fontSize: 0 }, { fontSize: 1081 }, { fontSize: 1.5 }, { fontFamily: '' }, { width: 1280 }]) {
     await assert.rejects(business.setExportSettings(token, { expected: settings, settings: { ...settings, ...patch } } as never));
   }
-  await assert.rejects(business.setExportSettings(token, { expected: settings, settings: { ...settings, fontFamily: 'ClapGrid 不存在的字体' } }), /字体不可用/);
   assert.deepEqual((await business.getExportStatus()).settings, settings);
   business.release(token); await business.close(); business = openBusiness(directory);
   assert.deepEqual((await business.getExportStatus()).settings, settings);
   const first = await business.getCurrentExportSettings();
   const secondToken = business.acquire('codex');
-  await business.setExportSettings(secondToken, { expected: settings, settings: { ...settings, fps: 60, fontSize: 64 } });
+  await business.setExportSettings(secondToken, { expected: settings, settings: { ...settings, fps: 60 } });
   business.release(secondToken);
   assert.equal((await business.getCurrentExportSettings()).fps, 60);
   assert.equal(first.fps, 25);
-  assert.equal(first.fontSize, 48);
 });
 
 test('媒体组件缺失时准确反馈并拒绝保存，原设置保留', async ({ createDirectory, openBusiness }) => {
@@ -53,7 +49,6 @@ test('媒体组件缺失时准确反馈并拒绝保存，原设置保留', async
     process.env.PATH = directory;
     const status = await business.getExportStatus();
     assert.ok(status.issues.some(issue => issue.includes('FFmpeg')));
-    assert.ok(status.issues.some(issue => issue.includes('Fontconfig')));
     await assert.rejects(business.setExportSettings(token, { expected: original, settings: { ...original, fps: 24 } }), /FFmpeg/);
   } finally { process.env.PATH = previousPath; business.release(token); }
   assert.deepEqual((await business.getExportStatus()).settings, original);
@@ -64,7 +59,7 @@ describe('两个编码与全部支持帧率经真实 1080p MP4 编码解码验�
     for (const fps of [24, 25, 30, 50, 60] as const) {
       test(`${codec} / ${fps} fps`, async ({  }) => {
         const { verifyExportMedia } = await import('../src/business/export-media.js');
-        const settings = { codec, fps, fontFamily: 'Noto Sans CJK SC', fontSize: 48 };
+        const settings = { codec, fps };
         await verifyExportMedia(settings);
       });
     }
@@ -101,35 +96,12 @@ test('设置修改不改变有效配音或已有成片，配音任务锁与断�
   assert.deepEqual((await business.getExportStatus()).settings, settings);
 });
 
-test('已保存字体从当前环境消失后阻止导出，不悄悄采用替代字体', async ({ createDirectory, openBusiness }) => {
-  const { writeFileSync } = await import('node:fs');
-  const directory = createDirectory(join(tmpdir(), 'clapgrid-export-font-'));
-  const business = openBusiness(directory);
-  const original = (await business.getExportStatus()).settings;
-  const settings = { ...original, fontFamily: 'Noto Sans CJK SC', fontSize: 48 };
-  const token = business.acquire('user');
-  await business.setExportSettings(token, { expected: original, settings }); business.release(token);
-  const config = join(directory, 'no-fonts.conf');
-  writeFileSync(config, '<?xml version="1.0"?><!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd"><fontconfig></fontconfig>');
-  const oldConfig = process.env.FONTCONFIG_FILE;
-  try {
-    process.env.FONTCONFIG_FILE = config;
-    const status = await business.getExportStatus();
-    assert.deepEqual(status.fonts, []);
-    assert.ok(status.issues.some(issue => issue.includes('字幕字体不可用：Noto Sans CJK SC')));
-    await assert.rejects(business.getCurrentExportSettings(), /字幕字体不可用/);
-  } finally {
-    if (oldConfig === undefined) delete process.env.FONTCONFIG_FILE; else process.env.FONTCONFIG_FILE = oldConfig;
-  }
-  assert.deepEqual((await business.getExportStatus()).settings, settings);
-});
-
-test('字体枚举期间编辑断开返回修改权失效，并保留已保存值', async ({ createDirectory, openBusiness }) => {
+test('媒体探测期间编辑断开返回修改权失效，并保留已保存值', async ({ createDirectory, openBusiness }) => {
   const directory = createDirectory(join(tmpdir(), 'clapgrid-export-disconnect-'));
   const business = openBusiness(directory);
   const original = (await business.getExportStatus()).settings;
   const token = business.acquire('user');
-  const saving = business.setExportSettings(token, { expected: original, settings: { ...original, fontFamily: 'Noto Sans CJK SC', fontSize: 48 } });
+  const saving = business.setExportSettings(token, { expected: original, settings: { ...original, fps: 25 } });
   business.release(token);
   await assert.rejects(saving, /修改权已失效|连接已断开/);
   assert.deepEqual(business.getSnapshot().exportSettings, original);

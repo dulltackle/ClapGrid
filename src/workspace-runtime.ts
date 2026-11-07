@@ -1,7 +1,7 @@
 import { buildIdentity, compatibleRuntime } from './build-identity.js';
 import { verifyLoadedPlugin } from './plugin-release.js';
 import { spawn } from 'node:child_process';
-import { openSync, closeSync } from 'node:fs';
+import { openSync, closeSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -18,6 +18,7 @@ export async function workspaceRuntime(action: 'open' | 'workspace-status' | 'wo
   const { workspace, project } = workspaceProject(values.workspace);
   if (await readHostWorkspace(values.thread) !== workspace) throw new Error('宿主当前工作空间已改变，请重新打开。');
   if (action === 'open') await verifyLoadedPlugin();
+  if (action !== 'workspace-stop' && existsSync(join(project, 'clapgrid.sqlite'))) projectPaths(project);
   let found = false;
   try { await discoverWorkspace(workspace); found = true; }
   catch (error) {

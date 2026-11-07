@@ -1,3 +1,4 @@
+import { selectTestStyle } from './helpers/project-style.js';
 import { test } from './helpers/resource-test.js';
 import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
@@ -73,6 +74,7 @@ for (const task of ['speech','export'] as const) test(`相对插入在 ${task} �
   const root = createDirectory(join(tmpdir(), 'clapgrid-insert-lock-'));
   const business = openBusiness(root,{key:()=> '测试',configPath:'测试',fetch: async () => new Response('data: {"code":20000000}\n\n')});
 
+  if (task === 'export') await selectTestStyle(business);
   business.addSegment('甲'); const before = business.getSnapshot();
   if(task==='speech') business.submitSpeech({requestId:randomUUID(),segmentId:before.segments[0]!.id});
   else business.submitExport();

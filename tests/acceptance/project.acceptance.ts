@@ -1,3 +1,4 @@
+import { selectTestStyle } from '../helpers/project-style.js';
 import { randomUUID } from 'node:crypto';
 import { test, expect } from '../helpers/acceptance.js';
 import { queryVisualContext, importVideo, queryExports, queryExportSettings, querySpeech, saveExportSettings, submitExport, submitSpeech } from '../../src/shared/client.js';
@@ -13,8 +14,8 @@ test('真实成片已导出', async ({ acceptance, project, mediaFiles }) => {
   await submitSpeech(project.url, { requestId: randomUUID(), segmentId: id! });
   await expect.poll(async () => (await querySpeech(project.url)).locked, { timeout: 30000 }).toBe(false);
   const details = await queryExportSettings(project.url);
-  expect(details.fonts.length).toBeGreaterThan(0);
-  await saveExportSettings(project.url, { expected: details.settings, settings: { ...details.settings, codec: 'libx264', fps: 24, fontFamily: details.fonts[0]!, fontSize: 32 } });
+  await selectTestStyle(project.url);
+  await saveExportSettings(project.url, { expected: details.settings, settings: { ...details.settings, codec: 'libx264', fps: 24 } });
   const context = await queryVisualContext(project.url, id!);
   await project.modify({ changes: [{ kind: 'composition', expected: context.segment, plan: { duration: context.duration, layers: [{ assetId: asset.id, role: 'background', from: 0, to: context.duration, start: 1, x: 0, y: 0, width: 1, height: 1, z: 0 }] } }] });
   const task = await submitExport(project.url);

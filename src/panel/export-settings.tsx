@@ -1,5 +1,5 @@
 import { panelServiceUrl } from './service-url.js';
-import { Button, Input, NativeSelect, Dialog, DialogContent, DialogTitle, DialogDescription } from './components/ui/index.js';
+import { Button, NativeSelect, Dialog, DialogContent, DialogTitle, DialogDescription } from './components/ui/index.js';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { queryExportSettings, saveExportSettings } from '../shared/client.js';
 import type { ExportSettings, ExportStatus, ServiceStatus } from '../shared/contracts.js';
@@ -9,12 +9,10 @@ type Props = { onError: (message: string) => void; restoreFocus: () => void; edi
 export function ExportSettingsPanel({ editing, status, onStatus, onClose, restoreFocus, onError }: Props) {
   const [details, setDetails] = useState<ExportStatus>();
   const [draft, setDraft] = useState<ExportSettings>(status.snapshot.exportSettings);
-  const [size, setSize] = useState(status.snapshot.exportSettings.fontSize?.toString() ?? '');
   const activity = useSyncExternalStore(editing.subscribe, editing.getState);
   const owns = activity.owner === 'settings';
   const mode = owns && activity.busy ? 'saving' : owns && activity.editing ? 'editing' : 'view';
-  const [message, setMessage] = useState('正在检查媒体组件与字体…');
-  const saved = useRef(status.snapshot.exportSettings);
+  const [message, setMessage] = useState('正在检查媒体组件…');
   const errorVersion = useRef(0);
   const reportError = (message: string) => { errorVersion.current++; onError(message); };
   const settingsKey = JSON.stringify(status.snapshot.exportSettings);
@@ -24,37 +22,28 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose, restor
     void queryExportSettings(panelServiceUrl()).then(result => {
       if (!active) return;
       setDetails(result);
-      setMessage(current => current === '正在检查媒体组件与字体…' ? '设置按项目自动保存' : current);
-    }).catch(error => { if (active) { setMessage(current => current === '正在检查媒体组件与字体…' ? error.message : current); if (version === errorVersion.current) onError(error.message); } });
+      setMessage(current => current === '正在检查媒体组件…' ? '设置按项目自动保存' : current);
+    }).catch(error => { if (active) { setMessage(current => current === '正在检查媒体组件…' ? error.message : current); if (version === errorVersion.current) onError(error.message); } });
     return () => { active = false; };
   }, [settingsKey]);
   useEffect(() => () => { void editing.cancel('settings'); }, [editing]);
-  const adopt = (settings: ExportSettings) => {
-    saved.current = settings; setDraft(settings); setSize(settings.fontSize?.toString() ?? '');
-  };
   const edit = () => editing.begin('settings', next => {
-    onStatus(next); adopt(next.snapshot.exportSettings);
-    setMessage('修改后自动保存；字号输入完成后离开输入框保存');
+    onStatus(next); setDraft(next.snapshot.exportSettings);
+    setMessage('修改后自动保存');
   }, () => {
-    setSize(saved.current.fontSize?.toString() ?? '');
     reportError('编辑连接已断开，未提交输入已取消，请重新读取后编辑');
     setMessage(current => `${current === '已保存' || current.startsWith('保存失败：') ? current + '；' : ''}编辑连接已断开，未提交输入已取消，请重新读取后编辑`);
   }, error => { setMessage(error.message); reportError(error.message); });
   const save = (settings: ExportSettings) => {
-    if (JSON.stringify(settings) === JSON.stringify(draft)) { setSize(draft.fontSize?.toString() ?? ''); return; }
+    if (JSON.stringify(settings) === JSON.stringify(draft)) return;
     return editing.save('settings', { retain: true }, async (token, action) => {
       setMessage('保存中…'); reportError('');
       const result = await saveExportSettings(panelServiceUrl(), { expected: draft, settings }, token);
-      action.apply(() => { adopt(result.settings); onStatus(result.status); setMessage('已保存'); reportError(''); });
-    }, error => {
-      setSize(saved.current.fontSize?.toString() ?? ''); setMessage(`保存失败：${error.message}`); reportError(`保存失败：${error.message}`);
-    });
+      action.apply(() => { setDraft(result.settings); onStatus(result.status); setMessage('已保存'); reportError(''); });
+    }, error => { setMessage(`保存失败：${error.message}`); reportError(`保存失败：${error.message}`); });
   };
   const close = async () => {
     if (activity.busy) return;
-    if (owns && size !== (draft.fontSize?.toString() ?? '')) {
-      setMessage('字号尚未保存，请先离开输入框完成保存'); return;
-    }
     if (!owns || await editing.cancel('settings')) onClose();
   };
   const disabled = mode !== 'editing';
@@ -71,13 +60,7 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose, restor
     <label className="flex min-w-0 flex-col gap-1">帧率<NativeSelect aria-label="导出帧率" disabled={disabled} value={settings.fps} onChange={event => { void save({ ...draft, fps: Number(event.target.value) as ExportSettings['fps'] }); }}>
       {[24, 25, 30, 50, 60].map(fps => <option key={fps} value={fps}>{fps} fps</option>)}
     </NativeSelect></label>
-    <label className="flex min-w-0 flex-col gap-1">字幕字体<NativeSelect aria-label="字幕字体" disabled={disabled || !details} value={settings.fontFamily ?? ''} onChange={event => { void save({ ...draft, fontFamily: event.target.value || null }); }}>
-      <option value="">未设置，请选择字体</option>
-      {settings.fontFamily && !details?.fonts.includes(settings.fontFamily) && <option value={settings.fontFamily}>{settings.fontFamily}（当前不可用）</option>}
-      {details?.fonts.map(font => <option key={font} value={font}>{font}</option>)}
-    </NativeSelect></label>
-    <label className="flex min-w-0 flex-col gap-1">字幕字号（px）<Input aria-label="字幕字号（px）" type="number" min="1" max="1080" step="1" disabled={disabled} value={owns ? size : status.snapshot.exportSettings.fontSize?.toString() ?? ''} onChange={event => setSize(event.target.value)} onBlur={() => { void save({ ...draft, fontSize: size.trim() === '' ? null : Number(size) }); }} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }} /></label>
-    <p className="m-0">字号为 1080p 画布像素，范围 1–1080 的整数；字体与字号均须主动设置。字体来自本机 Fontconfig，安装字体后可关闭并重开此入口刷新。</p>
+    <p className="m-0">{status.snapshot.projectStyle ? `项目风格 ${status.snapshot.projectStyle.id} · ${status.snapshot.projectStyle.version}` : '未设置项目风格，无法导出'}</p>
     {!!issues.length && <ul className="m-0 list-disc pl-5" aria-label="导出设置待解决项">{issues.map(issue => <li key={issue}>{issue}</li>)}</ul>}
     <p className="m-0" role="status">{message}</p>
     <div className="flex flex-wrap items-center gap-2">

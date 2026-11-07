@@ -1,3 +1,4 @@
+import { selectTestStyle } from './helpers/project-style.js';
 import { randomUUID } from 'node:crypto';
 import { test, expect } from './helpers/media-project.js';
 import { holdResponse } from './helpers/response-gate.js';
@@ -127,6 +128,7 @@ test('未知提交复用原请求标识且不重复付费', async ({ page, proje
 });
 
 test('批量配音进度与失败请求在查找未匹配片段时仍可访问', async ({ page, project, speechControl }) => {
+  await selectTestStyle(project.url);
   await project.seed(['A', 'B']); speechControl.mode = 'pending';
   const batch = await submitSpeechBatch(project.url, { requestId: randomUUID(), mode: 'generate', scope: { kind: 'all' } });
   await page.goto(project.url); await page.getByRole('button', { name: '查找', exact: true }).click();

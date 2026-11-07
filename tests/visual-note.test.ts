@@ -1,21 +1,14 @@
 import { test } from './helpers/resource-test.js';
 import assert from 'node:assert/strict';
-import {  } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { DatabaseSync } from 'node:sqlite';
 import { batchSchema, editSegmentSchema } from '../src/shared/contracts.js';
 
-test('旧项目补齐空画面说明，独立修改、清空、重开及新增均保留正确内容', async ({ createDirectory, openBusiness }) => {
+test('新片段初始画面说明为空，独立修改、清空、重开及新增均保留正确内容', async ({ createDirectory, openBusiness }) => {
   const directory = createDirectory(join(tmpdir(), 'clapgrid-visual-note-'));
-  const id = randomUUID();
-  const legacy = new DatabaseSync(join(directory, 'clapgrid.sqlite'));
-  try {
-    legacy.exec('CREATE TABLE segments (id TEXT PRIMARY KEY, position INTEGER NOT NULL UNIQUE, text TEXT NOT NULL)');
-    legacy.prepare('INSERT INTO segments VALUES (?, 1, ?)').run(id, '旧文案');
-  } finally { legacy.close(); }
   const business = openBusiness(directory);
+  const { id } = business.addSegment('原文案').segments[0]!;
   assert.equal(business.getSnapshot().segments[0]!.visualNote, '');
   business.updateSegment(id, { visualNote: '产品特写\n切换全景' });
   business.editSegment(id, '新文案');

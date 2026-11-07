@@ -45,7 +45,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
   function previewInput(segmentId: string) {
     const snapshot = inputs.snapshot(); const segment = snapshot.segments.find(segment => segment.id === segmentId);
     const speech = inputs.speech();
-    return JSON.stringify([segment, snapshot.exportSettings, speech.voice, speech.audio.filter(audio => audio.segmentId === segmentId && audio.valid).at(-1)?.taskId]);
+    return JSON.stringify([segment, snapshot.projectStyle?.styleId ?? null, snapshot.exportSettings, speech.voice, speech.audio.filter(audio => audio.segmentId === segmentId && audio.valid).at(-1)?.taskId]);
   }
   const api = {
     getExportTasks(): ExportTasksStatus {
@@ -61,13 +61,14 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
       if (active) { if (active.preview?.segmentId !== previewSegmentId) throw new Error('已有制作任务进行中'); return structuredClone(active); }
       inputs.access.assertAllowed('export');
       const snapshot = inputs.snapshot();
+      if (!previewSegmentId && !snapshot.projectStyle) throw new Error('请设置项目风格后再导出');
       if (previewSegmentId) {
         if (!snapshot.segments.some(segment => segment.id === previewSegmentId)) throw new Error('口播片段不存在');
         snapshot.segments = snapshot.segments.filter(segment => segment.id === previewSegmentId);
       }
       const speech = inputs.speech();
       const task: ExportTask = { id: randomUUID(), createdAt: new Date().toISOString(), state: 'accepted', message: '已受理，尚未完成', completed: 0, total: snapshot.segments.length,
-        issues: [], warnings: [], ...(previewSegmentId ? { preview: { segmentId: previewSegmentId, input: previewInput(previewSegmentId) } } : {}) };
+        issues: [], warnings: [], ...(previewSegmentId ? { preview: { segmentId: previewSegmentId, input: previewInput(previewSegmentId), ...(!snapshot.projectStyle && { subtitleIssue: '未设置项目风格，预览不含字幕' }) } } : {}) };
       const release = inputs.access.beginTask('export');
       try { save(task); } catch (error) { release(); throw error; }
       active = task;
@@ -124,7 +125,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
                 const audio = await prepareExportAudio(copied, workspace, index, signal);
                 if (visualInputs.length === references.length && (visualInputs.length || plan?.layers.some(layer => layer.kind === 'page'))) {
                   if (plan && Math.abs(plan.duration - audio.duration) > 0.001) task.issues.push({ ...location, field: 'video', message: `编排时长 ${plan.duration} 秒与配音 ${audio.duration} 秒不一致，请更新编排` });
-                  render.push({ segment, videos: visualInputs, plan, projectDirectory: snapshot.project.directory, assetMimes: Object.fromEntries(snapshot.assets.map(asset => [asset.id, asset.mime ?? (asset.kind === 'image' ? 'image/png' : 'video/mp4')])), ...audio });
+                  render.push({ segment, videos: visualInputs, plan, projectDirectory: snapshot.project.directory, styleId: snapshot.projectStyle?.styleId, assetMimes: Object.fromEntries(snapshot.assets.map(asset => [asset.id, asset.mime ?? (asset.kind === 'image' ? 'image/png' : 'video/mp4')])), ...audio });
                   if (visualInputs.some(video => video.duration - video.start < (plan ? Math.max(0, ...plan.layers.filter(layer => layer.kind !== 'page' && layer.assetId === video.assetId).map(layer => layer.to - layer.from + (layer.kind === 'page' ? 0 : layer.start))) : audio.duration))) task.warnings.push({ ...location, field: 'video', message: '视频剩余时长不足，末帧将冻结补足配音时长' });
                 }
               } catch (error) { task.issues.push({ ...location, field: 'speech', message: `配音不可读或不可解码：${(error as Error).message}` }); }
@@ -156,7 +157,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
         await outputFiles.finish(output => {
           if (signal.aborted) { task.state = closed ? 'interrupted' : 'cancelled'; task.message = closed ? '导出已中断，本次文件已清理；不会自动重试' : '导出已取消，本次文件已清理'; }
           else if (output) {
-            task.state = 'succeeded'; task.message = '导出成功';
+            task.state = 'succeeded'; task.message = task.preview ? task.preview.subtitleIssue ?? '合成成功' : '导出成功';
             task.output = output;
           } else { task.state = 'failed'; task.message = resultMessage; }
           save(task); active = undefined; controller = undefined; release();

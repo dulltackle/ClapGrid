@@ -552,9 +552,11 @@ export function App() {
         open: openRowMenu, remove: requestDelete, insert: (placement: 'before' | 'after') => { void insertRelative(placement); }, changed: setRowActionMenuOpen, restore: () => menuRestore.current, menuActions: rowMenu ? segmentActions({ segment: rowMenu.anchor, segments: rowMenu.targets, checkedIds: rowMenu.targets.map(item => item.id), reason: actionReason }) : undefined } },
   ];
   const searchStatus = !query ? '输入文案查找' : !matchedIds.length ? '无匹配片段' : activeMatch ? `第 ${matchedIds.indexOf(activeMatch) + 1} / ${matchedIds.length} 个匹配片段` : `${matchedIds.length} 个匹配片段，点击下一个定位`;
+  const projectStyleLabel = status?.snapshot.projectStyle ? `项目风格 ${status.snapshot.projectStyle.id} · ${status.snapshot.projectStyle.version}` : '未设置项目风格，无法导出';
   return <main style={{ '--project-status-height': `${footerHeight}px` } as import('react').CSSProperties} className="relative mx-auto flex h-dvh min-w-0 max-w-[1600px] flex-col gap-1 px-4 py-3 pb-2 max-[600px]:p-2">
     <header className={`mb-1 flex h-8 min-h-8 flex-none flex-nowrap items-center justify-between max-[600px]:gap-1 ${searchOpen ? 'gap-1' : 'gap-3'}`}>
       <h1 className="m-0 flex-none text-[22px] max-[600px]:text-[18px] leading-normal font-semibold">口播片段</h1>
+      {status && <span id="project-style" className="mr-auto hidden min-w-0 truncate text-xs text-muted-foreground min-[720px]:block" aria-label="项目风格" title={projectStyleLabel}>{projectStyleLabel}</span>}
       {searchOpen && <section id="segment-search" className="search-popover absolute right-4 top-12 z-30 flex min-h-10 w-[560px] max-w-[calc(100%-32px)] items-center gap-1 rounded-lg border border-solid border-input bg-background p-2 shadow-lg" role="dialog" aria-modal="false" aria-label="查找口播片段">
         <label className="min-w-[72px] flex-1"><Input className="h-6 px-1.5 py-0.5 text-[12px] md:text-[12px]" ref={searchInput} aria-label="查找文案" placeholder="查找文案" value={query}
           onChange={event => { setQuery(event.target.value); locate(event.target.value, 1, true); }}
@@ -569,7 +571,7 @@ export function App() {
       <div className="flex flex-none flex-nowrap items-center gap-2 max-[600px]:gap-1">
         <Button size="sm" className={`max-[600px]:px-2 ${segmentEditingBusy ? 'disabled:opacity-100' : ''}`} disabled={disabled} onClick={() => { void addSegment(); }}>新增口播片段</Button>
         <Button variant="outline" size="sm" className="search-trigger border-input text-foreground max-[600px]:px-2" ref={tableFallback} aria-expanded={searchOpen} aria-controls="segment-search" onClick={() => { setSearchOpen(true); locate(query, 1, true); }}>查找</Button>
-        <Button variant="outline" size="sm" className="border-input text-foreground max-[600px]:px-2" disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" title="全片导出：查找与勾选不改变范围" onClick={() => { void exports.run(); }}>导出全片</Button>
+        <Button variant="outline" size="sm" className="border-input text-foreground max-[600px]:px-2" disabled={!status?.snapshot.projectStyle || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope project-style" title={status && !status.snapshot.projectStyle ? projectStyleLabel : '全片导出：查找与勾选不改变范围'} onClick={() => { void exports.run(); }}>导出全片</Button>
         <Button variant="outline" size="sm" className="border-input text-foreground max-[600px]:px-2" ref={moreButton} aria-haspopup="dialog" aria-expanded={detail === 'more'} onClick={event => openDetail('more', event.currentTarget)}>更多</Button>
       </div>
     </header>
@@ -578,8 +580,9 @@ export function App() {
       <div className="flex flex-col gap-2 mb-1">
         {searchOpen && <>
           <Button variant="outline" size="sm" className={`border-input text-foreground shrink-0 ${segmentEditingBusy ? 'disabled:opacity-100' : ''}`} disabled={disabled} onClick={() => { closeDetail(); void addSegment(); }}>新增口播片段</Button>
-          <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!status || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { closeDetail(); void exports.run(); }}>导出全片</Button>
+          <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={!status?.snapshot.projectStyle || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby="export-scope" onClick={() => { closeDetail(); void exports.run(); }}>导出全片</Button>
         </>}
+        {status && <p className="m-0 text-xs text-muted-foreground [overflow-wrap:anywhere]">{projectStyleLabel}</p>}
         <p className="m-0 text-[12px] text-muted-foreground">全片导出：查找与勾选不改变范围</p>
         <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => { rememberOrigin(moreButton.current!, 'video'); closeDetail(); void openVideoEditor(); }}>导入项目素材</Button>
         <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled} onClick={() => setDetail('paste')}>粘贴多行文案</Button>
@@ -662,6 +665,7 @@ export function App() {
     </DetailPanel>}
     {composedPreview && <DetailPanel title="片段合成预览" label="片段合成预览" restoreWithinLayer onClose={() => focusReturns.close(returnFocus.current.preview, () => setComposedPreview(null))} restoreFocus={returnFocus.current.preview}>
       {!visualPreviews.find(task => task.id === composedPreview.id)?.current && <p role="status">相关输入已变化，此预览待更新，请让 agent 重新制作。</p>}
+      {composedPreview.preview?.subtitleIssue && <p>{composedPreview.preview.subtitleIssue}</p>}
       <video className="block max-h-[60dvh] w-full shrink-0" controls autoPlay src={`${panelServiceUrl()}${composedPreview.output?.previewUrl ?? composedPreview.output?.url}`} onError={() => reportOperation('preview', '片段合成预览不可播放，请检查任务结果')} />
       <Button variant="outline" onClick={() => focusReturns.close(returnFocus.current.preview, () => setComposedPreview(null))}>关闭预览</Button>
     </DetailPanel>}

@@ -9,7 +9,7 @@ import { styleStore } from './styles.mjs';
 import { mediaProcess } from './media-process.js';
 import { pageTexts, trackPageTexts } from './page-diagnostics.js';
 import type { PageWorkerInput } from './page-worker-input.js';
-import { pageStyle, pageStore } from './pages.js';
+import { pageStore } from './pages.js';
 
 // Chrome 由本进程直接启动并继承进程组；守护进程的强制回收也覆盖浏览器后代。
 const input = JSON.parse(await readFile(process.argv[2]!, 'utf8')) as PageWorkerInput;
@@ -37,9 +37,31 @@ async function stop() {
 }
 process.on('SIGTERM', () => { void stop(); });
 process.on('SIGINT', () => { void stop(); });
-const page = pageStore(input.projectDirectory).read(input.pageId);
-const styleId = pageStyle(page.files);
-const style = styleId ? styleStore(input.projectDirectory).read(styleId) : undefined;
+const page = input.pageId ? pageStore(input.projectDirectory).read(input.pageId) : undefined;
+const style = input.styleId ? styleStore(input.projectDirectory).read(input.styleId) : undefined;
+const documentPath = page ? `/pages/${input.pageId}/index.html` : '/subtitle-host.html';
+const subtitleHost = Buffer.from(`<!doctype html>
+<meta charset="utf-8">
+<style>html,body{margin:0;background:transparent}canvas{display:block}</style>
+<canvas width="1920" height="1080"></canvas>
+<script type="module">
+  import * as style from '/style/lib/subtitle.js';
+  if (typeof style.drawSubtitle !== 'function') throw new Error('字幕模块必须导出 drawSubtitle(ctx, text, t, duration)');
+  const box = style.subtitleRegion;
+  if (!box || typeof box !== 'object' || Array.isArray(box) ||
+      Object.keys(box).length !== 4 || !['x','y','width','height'].every(key => Number.isFinite(box[key])) ||
+      box.x < 0 || box.y < 0 || box.width <= 0 || box.height <= 0 || box.x + box.width > 1920 || box.y + box.height > 1080) {
+    throw new Error('字幕模块的 subtitleRegion 必须是 1920×1080 画布内的有效矩形');
+  }
+  const ctx = document.querySelector('canvas').getContext('2d');
+  window.subtitleRegion = { x: box.x, y: box.y, width: box.width, height: box.height };
+  window.setupSubtitle = (text, duration) => {
+    window.DUR = duration;
+    window.render = t => { ctx.reset(); return style.drawSubtitle(ctx, text, t, duration); };
+  };
+  await document.fonts.ready;
+  window.READY = true;
+</script>`);
 const profile = await mkdtemp(join(input.output + '.browser-'));
 const mime: Record<string, string> = { html: 'text/html', js: 'text/javascript', mjs: 'text/javascript', css: 'text/css', json: 'application/json', svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', woff2: 'font/woff2', ttf: 'font/ttf', otf: 'font/otf' };
 let origin = '';
@@ -60,16 +82,17 @@ const server = createServer((request, response) => {
       const stream = createReadStream('', { fd, autoClose: true }); stream.on('error', () => response.destroy()); response.on('close', () => stream.destroy()); stream.pipe(response); return;
     }
     const prefix = `/pages/${input.pageId}/`;
-    const stylePrefix = `/styles/${styleId}/`;
-    const file = path.startsWith(prefix) ? page.files.get(path.slice(prefix.length) || 'index.html')
+    const stylePrefix = '/style/';
+    const file = !page && path === documentPath ? subtitleHost
+      : page && path.startsWith(prefix) ? page.files.get(path.slice(prefix.length) || 'index.html')
       : style && path.startsWith(stylePrefix) ? style.files.get(path.slice(stylePrefix.length)) : undefined;
-    if (!file) { fail(`页面文件或素材未声明：${path}`); response.writeHead(404).end(); return; }
+    if (!file) { fail(!style && path.startsWith(stylePrefix) ? `未设置项目风格，无法读取 ${path}` : `页面文件或素材未声明：${path}`); response.writeHead(404).end(); return; }
     response.writeHead(200, { 'Content-Type': (mime[path.split('.').at(-1)!.toLowerCase()] ?? 'application/octet-stream') + (['html', 'js', 'mjs', 'css', 'json', 'svg'].includes(path.split('.').at(-1)!.toLowerCase()) ? '; charset=utf-8' : '') }); response.end(file);
   } catch (error) { fail((error as Error).message); if (!response.headersSent) response.writeHead(404); response.end(); }
 });
 server.on('connect', (_request, socket) => { fail('页面禁止外部代理连接'); socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n'); });
 try {
-  const executable = pageBrowserExecutable();
+  const executable = pageBrowserExecutable(chromium.executablePath());
   if (!execFileSync(executable, ['--version'], { encoding: 'utf8', timeout: 10000 }).trim().endsWith(` ${pageBrowserVersion}`)) throw new Error(`页面浏览器版本必须为 ${pageBrowserVersion}`);
   await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
   origin = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
@@ -106,23 +129,27 @@ try {
     tab.on('requestfailed', request => fail(`页面加载失败：${request.url().split('?')[0]} ${request.failure()?.errorText}`));
     const deadline = Date.now() + 120000;
     const remaining = () => Math.max(1, deadline - Date.now());
-    await guard(tab.goto(`${origin}/pages/${input.pageId}/index.html`, { waitUntil: 'domcontentloaded', timeout: remaining() }));
+    await guard(tab.goto(`${origin}${documentPath}`, { waitUntil: 'domcontentloaded', timeout: remaining() }));
     try { await guard(tab.waitForFunction(() => (window as any).READY === true, undefined, { timeout: remaining() })); }
     catch { throw new Error(failure?.message ?? '页面 READY 等待超时（120 秒）'); }
+    if (!page) await guard(tab.evaluate(({ text, duration }) => (window as any).setupSubtitle(text, duration), { text: input.subtitleText, duration: input.duration }));
     const valid = await tab.evaluate(duration => typeof (window as any).render === 'function' && Number.isFinite((window as any).DUR) && Math.abs((window as any).DUR - duration) <= 0.001, input.duration);
     if (!valid) throw new Error(`页面 DUR 必须等于图层区间 ${input.duration} 秒（误差 ≤1 ms），并暴露 render(t)`);
     return tab;
   };
-  const instances = await Promise.all(Array.from({ length: input.diagnostic?.kind === 'frames' ? 1 : 2 }, openPage));
+  const instances = await Promise.all(Array.from({ length: input.diagnostic && input.diagnostic.kind !== 'check' ? 1 : 2 }, openPage));
   if (failure) throw failure;
-  const frames = Math.round(input.duration * input.fps);
+  const frames = input.subtitleText === undefined ? Math.round(input.duration * input.fps) : Math.ceil(input.duration * input.fps);
   if (frames < 1) throw new Error('页面图层区间不足一帧');
   if (input.diagnostic) {
     const diagnostic = input.diagnostic;
     const tab = instances[0]!;
     const render = (instance: typeof tab, time: number) => guard(instance.evaluate(t => (window as any).render(t), time));
     const screenshot = (instance: typeof tab, path: string) => guard(instance.screenshot({ path, type: 'png', omitBackground: input.transparent, timeout: 120000 }));
-    if (diagnostic.kind === 'frames') {
+    if (diagnostic.kind === 'subtitle-region') {
+      const box = await guard(tab.evaluate(() => (window as any).subtitleRegion));
+      await writeFile(input.output, JSON.stringify(box), { flag: 'wx' });
+    } else if (diagnostic.kind === 'frames') {
       for (const [index, time] of diagnostic.times.entries()) {
         if (stopped) throw new Error('页面抽帧已取消');
         await render(tab, time);
@@ -190,7 +217,16 @@ try {
     for (let frame = 0; frame < frames; frame += instances.length) {
       if (stopped) throw new Error('页面渲染已取消');
       const batch = await Promise.all(instances.slice(0, frames - frame).map(async (tab, slot) => {
-        await guard(tab.evaluate(t => (window as any).render(t), (frame + slot) / input.fps));
+        const time = (frame + slot) / input.fps;
+        if (!page) {
+          // 字幕模块只绘制 Canvas，直接读取透明像素，省去整页截图。
+          const png = await guard(tab.evaluate(async t => {
+            await (window as any).render(t);
+            return document.querySelector('canvas')!.toDataURL('image/png');
+          }, time));
+          return Buffer.from(png.slice('data:image/png;base64,'.length), 'base64');
+        }
+        await guard(tab.evaluate(t => (window as any).render(t), time));
         return guard(tab.screenshot({ type: input.transparent ? 'png' : 'jpeg', ...(input.transparent ? { omitBackground: true } : { quality: 100 }), timeout: 120000 }));
       }));
       if (failure) throw failure;

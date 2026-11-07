@@ -60,7 +60,7 @@ test('片段合成预览真实播放，内容变化后显示待更新且不能�
   await project.modify({ changes: [{ kind: 'materials', expected: (await project.status()).snapshot.segments[0]!, assetIds: [asset.id] }] });
   const context = await queryVisualContext(project.url, id!);
   await project.modify({ changes: [{ kind: 'composition', expected: context.segment, plan: { duration: context.duration, layers: [{ assetId: asset.id, role: 'background', from: 0, to: context.duration, start: 0, x: 0, y: 0, width: 1, height: 1, z: 0 }] } }] });
-  await saveExportSettings(project.url, { expected: (await project.status()).snapshot.exportSettings, settings: { codec: 'libx264', fps: 25, fontFamily: 'DejaVu Sans', fontSize: 32 } });
+  await saveExportSettings(project.url, { expected: (await project.status()).snapshot.exportSettings, settings: { codec: 'libx264', fps: 25 } });
   await previewSegment(project.url, id!);
   await expect.poll(async () => (await queryVisualPreviews(project.url)).tasks[0]?.state, { timeout: 30000 }).toBe('succeeded');
   await page.goto(project.url);
@@ -71,6 +71,7 @@ test('片段合成预览真实播放，内容变化后显示待更新且不能�
   await page.getByRole('button', { name: /片段 1 画面素材/ }).click();
   await page.getByRole('button', { name: '片段合成预览', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '片段合成预览', exact: true });
+  await expect(dialog).toContainText('未设置项目风格，预览不含字幕');
   await expect.poll(() => dialog.locator('video').evaluate(node => (node as HTMLVideoElement).currentTime)).toBeGreaterThan(0);
   await project.modify({ changes: [{ kind: 'edit', expected: (await project.status()).snapshot.segments[0]!, visualNote: '改为特写' }] });
   await expect(dialog).toContainText('此预览待更新');

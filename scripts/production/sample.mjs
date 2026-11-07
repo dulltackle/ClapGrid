@@ -1,5 +1,6 @@
-import { createReadStream } from 'node:fs';
+import { createReadStream, lstatSync, realpathSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { DatabaseSync } from 'node:sqlite';
 import { extname, join } from 'node:path';
 import { styleStore } from '../../src/business/styles.mjs';
 import { createHash } from 'node:crypto';
@@ -46,14 +47,34 @@ export default async function sample(options) {
     let adopted;
     try { adopted = JSON.parse(await readFile(plan, 'utf8')); }
     catch (error) { if (extname(input.plan.path).toLowerCase() === '.json') throw error; }
-    if (adopted) {
-      if (adopted && typeof adopted === 'object' && 'style' in adopted) {
-        const style = z.object({ id: z.string().regex(/^[a-f0-9]{64}$/), source: z.object({ id: identity, version: identity }) }).strict().parse(adopted.style);
-        styleStore(join(options.project, 'clapgrid')).read(style.id);
-        details.style = style;
-        checks.push({ id: 'sample-style', status: 'passed', message: '采用方案的风格不可变副本与内容身份已核对。' });
+    const projectDirectory = join(realpathSync(options.project), 'clapgrid');
+    const database = await resolveProjectFile(options.project, 'clapgrid/clapgrid.sqlite').catch(() => {
+      throw new Error('未设置项目风格，请先在 ClapGrid 中设置');
+    });
+    const readProjectStyleId = () => {
+      const stat = lstatSync(database);
+      if (database !== join(projectDirectory, 'clapgrid.sqlite') || realpathSync(database) !== database || !stat.isFile() || stat.nlink !== 1) {
+        throw new Error('ClapGrid 项目数据库路径不安全');
       }
-    }
+      const db = new DatabaseSync(database, { readOnly: true });
+      try {
+        if (!db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'project_style'").get()) return null;
+        const row = db.prepare('SELECT value FROM project_style WHERE singleton = 1').get();
+        return row ? JSON.parse(String(row.value)).styleId : null;
+      } finally { db.close(); }
+    };
+    const projectStyleId = readProjectStyleId();
+    if (!projectStyleId) throw new Error('未设置项目风格，请先在 ClapGrid 中设置');
+    const parsedStyle = z.object({ style: z.object({
+      id: z.string().regex(/^[a-f0-9]{64}$/),
+      source: z.object({ id: identity, version: identity }).strict(),
+    }).strict() }).safeParse(adopted);
+    if (!parsedStyle.success) throw new Error('采用方案须在 JSON 中提供 style.id 及来源');
+    const { style } = parsedStyle.data;
+    if (style.id !== projectStyleId) throw new Error('采用方案的 style.id 与当前项目风格不一致');
+    styleStore(projectDirectory).read(style.id);
+    details.style = style;
+    checks.push({ id: 'sample-style', status: 'passed', message: '采用方案与当前项目风格一致，风格内容身份已核对。' });
     Object.assign(details, { video: input.video, plan: input.plan });
     checks.push({ id: 'sample-identities', status: 'passed', path: video, message: '样片与视觉方案的实际内容身份已核对。' });
     const probe = await exec('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-count_frames', '-show_entries', 'stream=nb_read_frames', '-of', 'json', video], { maxBuffer: 1024 * 1024 });
@@ -83,6 +104,7 @@ export default async function sample(options) {
     }
     if (confirmations.length === 2 && JSON.stringify(confirmations[0]?.provenance) !== JSON.stringify(confirmations[1]?.provenance)) throw new Error('样片与采用方案应关联同一实际用户确认来源。');
     Object.assign(details, { confirmations, mechanicalEvidenceComplete: direction.status === 'passed' });
+    if (readProjectStyleId() !== style.id) throw new Error('检查期间项目风格已变化，请重新核对采用方案');
     batchAllowed = statusOf(checks) === 'passed' && actualUser && !direction.controlledTest && input.mode === 'actual-project';
     checks.push({ id: 'batch-permission', status: batchAllowed ? 'passed' : 'pending', message: batchAllowed ? '允许按已确认视觉方案及范围批量制作；其它画面与完整终审继续待审。' : '未取得可用于实际项目的用户视觉方向确认；受控测试不授予批量制作许可。' });
   } catch (error) { checks.push(failure('sample-input', error instanceof Error ? error.message : String(error))); }

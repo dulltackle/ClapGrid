@@ -1,3 +1,4 @@
+import { selectTestStyle } from './helpers/project-style.js';
 import { test, expect } from './helpers/project.js';
 import type { Page } from '@playwright/test';
 
@@ -115,6 +116,7 @@ test('文案编辑器保留系统右键菜单且允许准备拖拽', async ({ pa
 });
 
 test('查找和部分勾选仍提交全片导出，不附加局部范围', async ({ page, project }) => {
+  await selectTestStyle(project.url);
   const [a] = await project.seed(['A', 'B', 'C']); await page.goto(project.url);
   await page.locator(`[row-id="${a}"] input[type="checkbox"]`).click();
   await page.getByRole('button', { name: '查找', exact: true }).click(); await page.getByLabel('查找文案', { exact: true }).fill('A');
