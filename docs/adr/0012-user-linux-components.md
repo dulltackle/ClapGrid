@@ -2,7 +2,7 @@
 
 日期：2026-10-22
 
-状态：已采纳（实施规格 [#219](https://github.com/dulltackle/ClapGrid/issues/219)）。
+状态：已采纳（实施规格 [#219](https://github.com/dulltackle/ClapGrid/issues/219)）；字体枚举与中文字幕导出验收由 [ADR0016](0016-style-owned-subtitles.md) 修订。
 
 ## 背景
 
