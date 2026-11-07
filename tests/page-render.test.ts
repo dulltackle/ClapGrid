@@ -92,6 +92,8 @@ test('透明页面按局部时间与层级叠加，透明区域保留下层视�
 for (const [name, script, reason] of [
   ['加载脚本报错', `throw new Error('加载失败样例')`, '加载失败样例'],
   ['render 抛错', `window.render=t=>{throw new Error('渲染失败样例')};window.READY=true`, '渲染失败样例'],
+  // 延迟抛错时编码器已启动并阻塞读取 stdin，单个 SIGTERM 不能使其退出。
+  ['render 延迟抛错', `window.render=t=>new Promise((_,reject)=>setTimeout(()=>reject(new Error('延迟渲染失败样例')),1000));window.READY=true`, '延迟渲染失败样例'],
   ['DUR 不一致', `window.DUR=8;window.render=t=>{};window.READY=true`, 'DUR'],
   ['外部 fetch', `fetch('https://example.invalid/secret').catch(()=>{});window.render=t=>{};window.READY=true`, '禁止外部请求'],
   ['外部图片', `document.write('<img src="https://example.invalid/pixel.png">');window.render=t=>{};window.READY=true`, '禁止外部请求'],
