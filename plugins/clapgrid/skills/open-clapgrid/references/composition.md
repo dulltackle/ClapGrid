@@ -48,7 +48,7 @@
 风格由 `STYLE.md`、含 `subtitle.js` 的 ES module `lib/` 和 `example/` 组成。项目采用的规则仍记录在视觉方案中，风格本身不代表已被采用。
 
 1. 阅读所选内置风格的 `STYLE.md`，将整个风格目录复制到工作空间 `styles/<id>/`，在 `STYLE.md` 头部追加来源 id/version，保留项目版本自己的 id 与 version。插件更新不改变此独立副本。
-2. 在 `video.md` 的“风格”小节链接该目录的 `STYLE.md`。先写本项目方案，再阅读示例源码；按 `STYLE.md` 的修改分级调整项目风格。
+2. 在 `video.md` 的“风格”小节链接该目录的 `STYLE.md`。先完成本项目的结构方案和视觉方案，再阅读风格示例源码、编写第一个页面。结构方案按[项目制作约定模板](https://github.com/dulltackle/ClapGrid/blob/main/docs/templates/video.md#结构方案)记录，仅供制作者自检，不作为审阅证据。按 `STYLE.md` 的修改分级调整项目风格。
 3. 用 `clapgrid_import_style` 导入风格。不可变副本存于项目 `clapgrid/styles/<SHA-256>/`。同一内容重复导入返回相同身份；修改工作副本后重新导入，不编辑已导入副本。导入遵循现有修改权流程，限制见[导入边界](#导入边界)。
 4. 核对项目状态后，用 `clapgrid_set_project_style` 设置项目风格。面板显示当前风格，项目状态及 `clapgrid_visual_context` 返回风格身份与来源。
 5. 页面以绝对路径引用项目风格，例如 `import { draw } from '/style/lib/draw.js'`。渲染时只开放当前项目风格；未设置风格时请求 `/style/` 返回 404，并使任务失败、指明片段。旧 `page.json` 的 `style` 字段会被拒绝。
