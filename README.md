@@ -92,6 +92,15 @@ HTTP 对应 `POST /api/page/import`、`POST /api/codex/import-page`、`POST /api
 
 旧单视频与多视频项目继续保留素材身份、关联、顺序和起点。既有旧单视频记录的导出保留原行为；今后经旧 video／videos 接口写入也会确认素材归属并清空编排，须由 agent 重新编排后制作；旧多视频不会再自动均分，需要 agent 确认素材并保存明确编排才能导出。旧记录未生成新编排时，页面显示等待 agent 编排，不把原件播放器当成片段合成结果。
 
+## 内置风格示例
+
+示例由 ClapGrid 片段合成预览生成，保留实际字幕层，播放时为静音。
+
+| 风格 | 画面 | 示例片 |
+| --- | --- | --- |
+| [等距信息图](plugins/clapgrid/styles/iso-infographic/STYLE.md) | 止回阀从定位、纵剖到开启通路 | [12 秒 MP4](docs/style-examples/iso-infographic.mp4?raw=1) |
+| [暖浅底科普风](plugins/clapgrid/styles/warm-science/STYLE.md) | 摆锤单主体、摆长对照、三组种子的数量与比例 | [18 秒 MP4](docs/style-examples/warm-science.mp4?raw=1) |
+
 ## 本机插件更新
 
 更新已安装插件时先读[本机插件交付](docs/agents/plugin-delivery.md)，按实际安装来源执行更新，并依据运行时与协议是否相容选择面板快更新或完整更新。该文档统一维护命令、空闲条件、恢复位置及实际宿主验收步骤。
