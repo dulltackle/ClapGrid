@@ -44,6 +44,8 @@
 
 `status` 可为 `passed`、`pending`、`failed`、`skipped`、`denied`。来源 `execution` 或 `actual-host` 用于 `ran`，`independent-review` 用于 `reviewed`，`user-confirmation` 用于 `user`；隔离回归使用 `controlled-test`。`provenance.record` 指向原日志、独立审查或实际用户发言，`actor` 标明原声明者，`observedAt` 保留原结论的实际时间。工具不认证声明者身份或证明指针的真实性，调用者须根据实际原件确认可信性。
 
+本页的 `source` 取值属于制作审阅证据。`actual-host` 和 `controlled-test` 与[插件交付的宿主证据](agents/plugin-delivery.md#证据格式)同名，两类证据不能互换。
+
 ## 变更与显式复用
 
 旧版本的通过不会自动覆盖当前版本。内容或已审范围未变时，为当前版本新增记录并通过 `reuseOf` 指向原记录 ID，携带原来源、原证明指针和原结论时间；不能把复用日期当作新的用户确认日期。最新结论仍被否决、待审、失败或跳过时，不能挑更早的通过来复用；新的真实通过须由对应执行者、独立审查者或用户提供更晚的结论记录。

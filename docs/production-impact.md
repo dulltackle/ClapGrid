@@ -34,7 +34,7 @@ node scripts/production.mjs impact --project '/项目/中文 路径' --report /t
 | last-frame | 从实际片段输出取得的末帧；必须关联对应装配 |
 | transition | 转场输出；必须被所属片段的实际装配消费 |
 
-额外消费的图片在片段 `assets` 中列出，实际末帧在 `lastFrame` 中声明，转场在 `transitions` 中列出。
+片段声明的[可选文件引用](production.md#清单字段)也须在依赖图中有对应节点，并满足上表的消费关系。
 
 例如 A 的画面源 → A 装配 → A 末帧 → B 转场 → B 装配 → B 审阅。A 修改后，即使尚未重制的 B 文件摘要未变，也必须核对 B；与这次画面变化无关的 C 和配音保持可复用。
 
