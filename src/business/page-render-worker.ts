@@ -28,11 +28,24 @@ const fail = (message: string) => {
     for (const reject of failureListeners) reject(failure);
   }
 };
-const chromeEnded = () => chrome ? new Promise<void>(resolve => { if (chrome!.exitCode !== null || chrome!.signalCode !== null) resolve(); else chrome!.once('close', () => resolve()); }) : Promise.resolve();
-const encoderEnded = () => encoder ? new Promise<void>(resolve => { if (encoder!.exitCode !== null || encoder!.signalCode !== null) resolve(); else encoder!.once('close', () => resolve()); }) : Promise.resolve();
+// 关闭各步必须有界：worker 不退出，父进程就一直视任务为进行中。
+const STOP_GRACE_MS = 2000;
+const within = (work: Promise<unknown>, ms: number) => new Promise<boolean>(resolve => {
+  const timer = setTimeout(() => resolve(false), ms);
+  work.then(() => { clearTimeout(timer); resolve(true); }, () => { clearTimeout(timer); resolve(true); });
+});
+// 等 exit 而非 close：浏览器后代继承 stderr，主进程退出后管道仍可能不关闭；后代由父进程按进程组回收。
+const exited = (child: ChildProcess) => new Promise<void>(resolve => { if (child.exitCode !== null || child.signalCode !== null) resolve(); else child.once('exit', () => resolve()); });
+async function ended(child: ChildProcess | undefined) {
+  if (!child) return;
+  if (!await within(exited(child), STOP_GRACE_MS)) { child.kill('SIGKILL'); await exited(child); }
+  for (const stream of child.stdio) stream?.destroy();
+}
 async function stop() {
   stopped = true;
-  await browser?.close().catch(() => {});
+  if (browser) await within(browser.close(), 5000);
+  // FFmpeg 阻塞读取 stdin 时不响应单个 SIGTERM，先断开输入使其读到 EOF。
+  encoder?.stdin?.destroy();
   chrome?.kill('SIGTERM'); encoder?.kill('SIGTERM');
 }
 process.on('SIGTERM', () => { void stop(); });
@@ -240,7 +253,7 @@ try {
 } catch (error) {
   console.error((error as Error).message); process.exitCode = 1;
 } finally {
-  await stop(); await Promise.all([chromeEnded(), encoderEnded()]);
+  await stop(); await Promise.all([ended(chrome), ended(encoder)]);
   await new Promise<void>(resolve => { server.close(() => resolve()); server.closeAllConnections(); });
   await rm(profile, { recursive: true, force: true });
 }
