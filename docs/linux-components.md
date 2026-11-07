@@ -15,4 +15,4 @@ BtbN 的[保留策略](https://github.com/BtbN/FFmpeg-Builds#release-retention-p
 
 维护者更换固定组件时应同时保留对应源码、构建脚本和许可，并校验两个架构的原包摘要；安装后的试运行及媒体能力检查继续执行。容器结果与实际 Codex 宿主交付分开记录（[#219](https://github.com/dulltackle/ClapGrid/issues/219)）。
 
-页面渲染约定见 [README](../README.md#画面素材与编排) 和 [ADR0015](adr/0015-page-rendering.md)。`check` 缺浏览器返回 10，成功时同时输出实际 Headless Shell 版本；install 只补齐缺失或版本不匹配的组件，发布前校验摘要和试运行。浏览器独立于面板旅程使用的 CHROME_BIN，不能用另一版桌面 Chrome 代替。
+页面渲染约定见[画面编排制作约定](../plugins/clapgrid/skills/open-clapgrid/references/composition.md#页面图层)和 [ADR0015](adr/0015-page-rendering.md)。`check` 缺浏览器返回 10，成功时同时输出实际 Headless Shell 版本；install 只补齐缺失或版本不匹配的组件，发布前校验摘要和试运行。浏览器独立于面板旅程使用的 CHROME_BIN，不能用另一版桌面 Chrome 代替。
