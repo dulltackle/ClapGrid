@@ -1,3 +1,5 @@
+// 项目内统一管理普通修改权和后台任务占用。写入与任务受理在此判断准入，
+// 表格状态与退出保护读取同一份占用记录。任务在终态保存与必要清理完成后释放占用。
 import { randomUUID } from 'node:crypto';
 
 type Editor = 'user' | 'codex';
@@ -5,7 +7,6 @@ type Task = 'speech' | 'export' | 'page-inspection';
 type Operation = 'edit' | Task | 'speech-batch' | 'speech-replay' | 'current-speech';
 type Occupation = { kind: 'edit'; owner: Editor; token: string; controller: AbortController; pending: number; verify?: () => Promise<void> } | { kind: Task };
 
-/** 项目内唯一的占用记录；任务自行确认保存、清理完成后才释放。 */
 export function projectAccess() {
   let current: Occupation | null = null;
   const speechMessage = '配音进行中，项目已锁定；允许查询和试听';

@@ -1,3 +1,5 @@
+// 管理单次导出的素材副本、工作目录、成片与预览的发布和清理。
+// 导出任务负责进度、终态保存和释放占用。成功状态落盘后才开放成片读取。
 import { constants } from 'node:fs';
 import fs from 'node:fs/promises';
 import { join } from 'node:path';
@@ -6,7 +8,6 @@ import { verifyMedia } from './video-media.js';
 
 type Identity = Pick<ExportTask, 'id' | 'createdAt'>;
 
-/** 管理一次导出的文件归属；任务确认终态落盘后，才可开放成片读取。 */
 export function exportFiles(project: { directory: string; mediaDirectory: string }, verify: () => void) {
   const directory = join(project.directory, 'exports');
   const paths = (task: Identity) => ({

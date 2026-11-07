@@ -42,6 +42,22 @@ test('当前指南拒绝失效的相对链接', () => {
   ]);
 });
 
+test('当前指南中的业务 MCP 工具名必须已注册', () => {
+  expect(checkDocs(repository({
+    'README.md': '[插件指南](plugins/example/skills/open/SKILL.md)\n`clapgrid_status`',
+    'plugins/example/skills/open/SKILL.md': '用 clapgrid_typo 查询，示例为 `clapgrid_typo`。',
+    'src/mcp/server.ts': [
+      'server.registerTool("clapgrid_status", {});',
+      'const example = "clapgrid_typo";',
+      '/*',
+      'server.registerTool("clapgrid_typo", {});',
+      '*/',
+    ].join('\n'),
+    'docs/adr/old.md': '`clapgrid_removed`',
+    'tests/fixtures/old.md': '`clapgrid_fixture`',
+  }))).toEqual(['plugins/example/skills/open/SKILL.md: 未注册业务 MCP 工具：clapgrid_typo']);
+});
+
 test('当前指南必须从根目录文档或插件 SKILL 沿相对链接可达', () => {
   expect(checkDocs(repository({
     'README.md': '[入口](docs/start.md)',
