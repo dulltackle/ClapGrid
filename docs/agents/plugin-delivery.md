@@ -18,10 +18,10 @@ schema 2 保留完整包身份，额外标识运行时、面板资源及协议�
 
 ## 完整插件更新
 
-1. 完成代码检查并记录目标提交。用 `codex plugin marketplace list --json`、`codex plugin list --json` 和实际 `clapgrid_host_context` 确认当前安装来源。只更新对应的 ClapGrid 市场条目，保留其他插件与配置。
+1. 完成代码检查并记录目标提交。改动涉及 `scripts/build-plugin.mjs` 的打包入口（含渲染 worker）、外部依赖或随包运行资源时，在执行更新前运行 `npm exec vitest -- run tests/page-package.test.ts`，在正式包里实际启动服务并生成页面预览；失败即停在源码阶段修复，不进入安装和重载。用 `codex plugin marketplace list --json`、`codex plugin list --json` 和实际 `clapgrid_host_context` 确认当前安装来源。只更新对应的 ClapGrid 市场条目，保留其他插件与配置。
 2. 从干净的目标提交执行 `npm run plugin:update -- --revision <提交> --marketplace-root <市场根目录> --cache-root <Codex 插件缓存根目录> --workspace <当前工作空间> --thread <当前聊天ID>`。参数必须来自当前宿主与安装信息。此命令构建完整包、校验指纹、保存恢复包、通过 `codex plugin add` 安装并正常重启空闲服务。
 3. 有任务或编辑占用时保持服务，等待用户结束后再更新。失败以返回的 `backup`、`rollback`、`rollbackError` 为准；`needs-attention` 时保留现场和恢复目录。更新仅操作插件包和服务生命周期，不迁移、删除或重建 `clapgrid/` 项目。
-4. 安装成功返回 `host: reload-required`、`complete: false`。使用宿主支持的插件重载入口；若当前工具无法重载，明确告知用户“安装已完成，宿主仍需重载”。不能用另起一个 MCP 测试进程代替实际调用证据。
+4. 安装成功返回 `host: reload-required`、`complete: false`。重载以第 2 步的返回为门槛：`installed` 与 `service` 均为 `verified`，且 `identity.source.commit` 等于目标提交；任一不满足时按第 3 步处理，不请求重载。满足后使用宿主支持的插件重载入口；若当前工具无法重载，告知用户“安装已完成，宿主仍需重载”，同时写明目标提交和重载后待验的第 5 步动作。用户回复已重载后，先调用实际 `clapgrid_host_context` 核对已加载身份属于目标提交，仍为旧身份时再次请求重载，不进入第 5 步。不能用另起一个 MCP 测试进程代替实际调用证据。
 5. 重新调用实际 `clapgrid_host_context` 和 `clapgrid_status`，打开真实面板的“连接诊断”，核对目标构建、安装包、MCP、服务及面板指纹，以及工作空间、服务实例。保存本次实际观察后运行 `npm run plugin:verify -- --build <构建包> --installed <安装包> --workspace <工作空间> --service-url <服务根地址> --mcp-evidence <宿主证据> --panel-evidence <面板证据>`。缺失、过期、不一致或受控测试证据均不能通过交付门槛。
 6. 最终报告分别列出源码提交／合并状态、本机安装版本、实际宿主验证结果。仅第 5 步退出 0 才称“已更新可用”；其余状态报告尚未完成的具体环节和恢复位置。
 
