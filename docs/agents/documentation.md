@@ -1,6 +1,6 @@
 # 文档维护约定
 
-仓库只存放持续维护的当前指南与 ADR。一次性评估、试点、调研、验收和制作记录写在对应 GitHub Issue 或 PR 评论中，不提交到 `docs/`；Issue/PR 评论是唯一权威持久记录，本机原件按[验收原件与手动收尾](verification.md#验收原件与手动收尾)只在任务活跃期保留，Issue 关闭或 PR 合并且摘要写入后手动删除。历史制作与设计副本按 [ADR0013](../adr/0013-local-evidence-lifecycle.md) 不再在本机保留。指南只写现行规则，不记录某次运行的结果、迁移过程或“本轮”结论。
+仓库只存放持续维护的当前指南与 ADR。一次性评估、试点、调研、验收和制作记录写在对应 GitHub Issue 或 PR 评论中，不提交到 `docs/`；Issue/PR 评论是唯一权威持久记录，本机原件按[验收原件与手动收尾](tooling.md#验收原件与手动收尾)处理。历史制作与设计副本按 [ADR0013](../adr/0013-local-evidence-lifecycle.md) 不再在本机保留。指南只写现行规则，不记录某次运行的结果、迁移过程或“本轮”结论。
 
 当前指南是除 `docs/adr/` 与 `tests/fixtures/` 外所有 Git 跟踪的 `*.md`，新目录默认受检。删除过时内容前核对仍有效的规则是否已有当前指南承载，补齐后再删除，并更新引用路径。旧的历史目录可从提交 `cec490e` 查阅，仅用于理解当时语义，不用于证明新版本通过。
 
@@ -17,4 +17,4 @@
 - 面板与配置：[统一组件维护](../ui-components.md)、[面板规范](../panel-style.md)、[导出设置](../export-settings.md)。
 - 构建与交付：[构建身份](../build-identity.md)、[本机插件交付](plugin-delivery.md)、[Linux 组件](../linux-components.md)。
 - 视频制作：[制作命令](../production.md)、[画面编排](../../plugins/clapgrid/skills/open-clapgrid/references/composition.md)、[内置风格](../../plugins/clapgrid/styles/README.md)、[制作模板](../templates/video.md)、[依赖与局部重制](../production-impact.md)、[证据核对](../production-evidence.md)、[制作交付包](../production-package.md)、[抽检](../production-sample.md)。
-- 测试执行：[原生 CI](../testing/native-ci.md)、[期限与等待](../testing/bounded-waits.md)、[项目生命周期](../testing/project-lifecycle.md)、[Vitest 夹具](../testing/vitest-fixtures.md)。
+- 测试执行：[检查与验收](verification.md)、[持续交互验收](../testing/acceptance.md)、[工具与日志留存](tooling.md)、[原生 CI](../testing/native-ci.md)、[期限与等待](../testing/bounded-waits.md)、[项目生命周期](../testing/project-lifecycle.md)、[Vitest 夹具](../testing/vitest-fixtures.md)。

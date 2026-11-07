@@ -10,7 +10,7 @@ status: accepted
 
 ## 范围与生命周期
 
-一次性截图、命令输出、运行日志、`acceptance.json` 和临时运行目录等验收原件只在任务活跃期保留，存放于本轮运行目录（如 `logs/playwright/<run>`、acceptance 运行目录或 `/tmp`），不再新建 `docs/validation/` 归档。Issue 关闭或 PR 合并且摘要写入后，确认无活跃依赖，再手动删除本轮目录；不按固定天数清理，不编写自动删除脚本或新增自动清理测试。定义、排除范围与手动收尾清单以[检查与验收](../agents/verification.md#验收原件与手动收尾)为准。
+一次性截图、命令输出、运行日志、`acceptance.json` 和临时运行目录等验收原件只在任务活跃期保留，存放于本轮运行目录（如 `logs/playwright/<run>`、acceptance 运行目录或 `/tmp`），不再新建 `docs/validation/` 归档。Issue 关闭或 PR 合并且摘要写入后，确认无活跃依赖，再手动删除本轮目录；不按固定天数清理，不编写自动删除脚本或新增自动清理测试。定义、排除范围与手动收尾清单以[工具指引](../agents/tooling.md#验收原件与手动收尾)为准。
 
 `docs/productions/`、`docs/design/` 的历史本机副本也不保留；保留当前项目、交付包、测试夹具与 Git 历史。产品项目内的审阅证据、交付包成员、当前 `clapgrid/` 项目数据、仍在使用的制作项目和设计源文件不在清理范围内。三个历史目录的 `.gitignore` 规则继续作为防误提交安全网，不承诺本机保留。
 

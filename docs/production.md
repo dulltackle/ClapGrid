@@ -8,9 +8,36 @@ node scripts/production.mjs check --project '/路径/中文 项目' --manifest p
 
 `--manifest` 默认为项目根的 `production.json`；`--report` 未指定时保存至项目 `logs/production/`。只有全部检查为 `passed` 时退出 0；失败、待审、跳过及未执行均退出非零。
 
+## 清单字段
+
+`check`、`impact`、`evidence`、`sample`、`pack`、`verify-package` 都校验基础清单结构。表中单列结构校验以外的用途。`init` 和 `refs` 的业务输入是 `video.md`，所有命令共用的报告路径保护也会读取清单中的文件引用。
+
+| 字段 | 读取命令与用途 | 含义与详细说明 |
+| --- | --- | --- |
+| `schemaVersion` | 基础结构校验 | 固定为 `1`。见[清单示例](#清单与制作卡)。 |
+| `project` | `check`、`impact` | 项目媒体参数。`width`、`height`、`fps` 用于媒体核对与渲染参数比较。见[清单示例](#清单与制作卡)及[渲染参数基线](production-impact.md#渲染参数基线)。 |
+| `project.audio.maxNormalizedError` | `check` | 可选的配音样本比较容差，位于可选的 `project.audio` 内。见[音频检查说明](#清单与制作卡)。 |
+| `typecheck` | `check`、`pack`、`verify-package` | TypeScript 配置路径。见[类型检查说明](#清单与制作卡)及[归档成员规则](production-package.md#清单成员)。 |
+| `segments` | `check`、`impact`、`pack`、`verify-package` | 非空口播片段列表，成员字段见下方，示例见[清单与制作卡](#清单与制作卡)。 |
+| `dependencies` | `impact`、`pack`、`verify-package` | 制作依赖及渲染基线。归档命令读取节点路径以核对成员。见[制作依赖与局部重制](production-impact.md)。 |
+| `evidence` | `evidence`、`impact`、`sample`、`pack`、`verify-package` | 项目内审阅记录 JSON 路径。见[制作验收证据](production-evidence.md)。 |
+| `files` | `pack`、`verify-package` | 交付包成员及其摘要、分类。见[归档成员规则](production-package.md#清单成员)。 |
+| `sample` | `sample`、`pack`、`verify-package` | 动态样片、采用方案及确认范围。归档命令读取样片和方案的路径以核对成员。见[样片与采用方案](production-sample.md#样片与采用方案)。 |
+| `segments[].id` | `check`、`impact` | 唯一且稳定的口播片段身份。见[制作卡映射](#清单与制作卡)。 |
+| `segments[].name` | 基础结构校验 | 可选显示名称。见[清单示例](#清单与制作卡)。 |
+| `segments[].card` | `check`、`impact`、`pack`、`verify-package` | 制作卡路径。见[制作卡映射](#清单与制作卡)。 |
+| `segments[].source` | `check`、`impact`、`pack`、`verify-package` | 制作源文件路径。见[制作卡映射](#清单与制作卡)。 |
+| `segments[].audio` | `check`、`impact`、`pack`、`verify-package` | 实际配音文件路径。见[制作卡映射](#清单与制作卡)。 |
+| `segments[].frames` | `check`、`impact` | 口播片段帧长。见[清单示例](#清单与制作卡)及[渲染参数基线](production-impact.md#渲染参数基线)。 |
+| `segments[].assembly` | `check`、`impact`、`pack`、`verify-package` | 无音轨装配素材路径。见[媒体检查说明](#清单与制作卡)。 |
+| `segments[].review` | `check`、`impact`、`pack`、`verify-package` | 含视频和配音音轨的审阅素材路径。见[媒体检查说明](#清单与制作卡)。 |
+| `segments[].assets` | `impact`、`pack`、`verify-package` | 可选路径数组，列出片段装配实际使用的图片等额外素材。见[依赖关系](production-impact.md#记录实际使用的关系)及[归档成员规则](production-package.md#清单成员)。 |
+| `segments[].lastFrame` | `impact`、`pack`、`verify-package` | 可选路径，指向从该片段实际装配输出取得的末帧。见[依赖关系](production-impact.md#记录实际使用的关系)及[归档成员规则](production-package.md#清单成员)。 |
+| `segments[].transitions` | `impact`、`pack`、`verify-package` | 可选路径数组，列出该片段装配实际消费的转场输出。见[依赖关系](production-impact.md#记录实际使用的关系)及[归档成员规则](production-package.md#清单成员)。 |
+
 ## 清单与制作卡
 
-`check` 的最小清单如下。尺寸、帧率、帧长、配音与素材角色按当前项目填写，不以历史项目的参数作为默认标准。
+`check` 的基础清单如下。尺寸、帧率、帧长、配音与素材角色按当前项目填写，不以历史项目的参数作为默认标准。
 
 ```json
 {

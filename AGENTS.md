@@ -1,8 +1,8 @@
 ## Agent skills
 
-定位工具或技能、查询 GitHub、处理长输出时，读取 `docs/agents/tooling.md`。
+定位工具或技能、查询 GitHub、留存日志或清理验收原件时，读取 `docs/agents/tooling.md`。
 
-检查工具、CI 或正式验收变更前，读取 `docs/agents/verification.md`；样式或 UI 组件变更前，读取 `docs/ui-components.md`。
+检查工具、CI 或正式验收变更前，读取 `docs/agents/verification.md`。运行持续交互验收前，读取 `docs/testing/acceptance.md`。样式或 UI 组件变更前，读取 `docs/ui-components.md`。
 
 按修改范围查找其他指南时，读取 `docs/agents/documentation.md` 的“当前指南导航”。
 
