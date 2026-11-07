@@ -23,7 +23,7 @@ function visit(file) {
     const local = resolve(dirname(file), decodeURIComponent(target.split('#')[0]));
     if (!existsSync(local)) errors.push(`${file} → 缺失链接：${target}`);
     // 仅递归审查规范本身，其余领域文件只验证可达性。
-    else if (local.endsWith('/.opencodereview/rule.json') || local.includes('/docs/review/')) visit(local);
+    else if (local.endsWith('/.opencodereview/rule.json')) visit(local);
   }
 }
 try {

@@ -4,6 +4,12 @@
 
 检查工具、CI 或正式验收变更前，读取 `docs/agents/verification.md`；样式或 UI 组件变更前，读取 `docs/ui-components.md`。
 
+按修改范围查找其他指南时，读取 `docs/agents/documentation.md` 的“当前指南导航”。
+
+### 视频制作
+
+制作命令、制作清单与交付包相关工作前，读取 `docs/production.md`。为口播片段搭配画面、编写页面或选用风格前，读取 `plugins/clapgrid/skills/open-clapgrid/references/composition.md`；编写或修改内置风格前，读取 `plugins/clapgrid/styles/README.md`。
+
 ### Issue tracker
 
 使用 dulltackle/ClapGrid 的 GitHub Issues；操作事项或规格前，读取 `docs/agents/issue-tracker.md`。
