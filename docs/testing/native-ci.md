@@ -8,11 +8,11 @@
 
 ## 并发选择
 
-`check.yml` 把类型检查与生产构建、全套 Vitest、Playwright 2 个分片拆为并行 job，测试 job 共用 `test-environment` composite action 准备同一环境；汇总 job 保持 `check` 名称供分支保护使用（[ADR0017](../adr/0017-parallel-ci-jobs.md)）。这以多次环境准备的 runner 占用换取墙钟。
+`check.yml` 把类型检查与生产构建、Vitest 3 个分片、Playwright 2 个分片拆为并行 job，测试 job 共用 `test-environment` composite action 准备同一环境；汇总 job 保持 `check` 名称供分支保护使用（[ADR0017](../adr/0017-parallel-ci-jobs.md)）。这以多次环境准备的 runner 占用换取墙钟。
 
-各 job 内 Vitest 使用 50% workers（CI 4 vCPU 为 2 workers），Playwright 使用 3 workers（[#215](https://github.com/dulltackle/ClapGrid/issues/215)）。
+分片使用框架原生 `--shard`，按文件路径哈希均分文件数，各片负载不均；不按历史耗时自建分配。各 job 内 Vitest 使用 50% workers（CI 4 vCPU 为 2 workers），Playwright 使用 3 workers（[#215](https://github.com/dulltackle/ClapGrid/issues/215)）。
 
-`bounded-run.test.ts` 用 500ms 故障期限检查取消、命令超时和资源退出。并行时 CPU 调度竞争会让测试期限先于预期的命令超时到达；调整资源命名无法消除，放宽期限又改变故障窗口，因此该文件单独作为 `deadline` project 在其他文件结束后独占执行（[#212](https://github.com/dulltackle/ClapGrid/issues/212)）。
+`bounded-run.test.ts` 用 500ms 故障期限检查取消、命令超时和资源退出。并行时 CPU 调度竞争会让测试期限先于预期的命令超时到达；调整资源命名无法消除，放宽期限又改变故障窗口，因此该文件单独作为 `deadline` project 在其他文件结束后独占执行（[#212](https://github.com/dulltackle/ClapGrid/issues/212)）。分片后它只出现在其中一片，仍在该片其他文件结束后独占执行。
 
 CI 4 workers 仅比 2 workers 快约 7 秒，却出现真实媒体导出超出期限等更多失败，因此 workflow 不加 4 workers 覆盖。
 
@@ -22,7 +22,7 @@ main 的 GitHub 分支保护要求通过 PR 合并，`check` 与 `process-trace`
 
 ## 报告与失败状态
 
-- 报告使用框架原生格式（Vitest JSON、Playwright JSON/HTML 与失败 trace/截图），不转换为自研报告，也不新增签名或跨框架累计协议。Playwright 每个分片各自保存报告，不合并。报告校验只检查必需文件存在且非空，语义和状态以原生框架及 Actions 为准。
+- 报告使用框架原生格式（Vitest JSON、Playwright JSON/HTML 与失败 trace/截图），不转换为自研报告，也不新增签名或跨框架累计协议。Vitest 与 Playwright 每个分片各自保存报告，不合并。报告校验只检查必需文件存在且非空，语义和状态以原生框架及 Actions 为准。
 - `/usr/bin/time -v` 资源日志的 maxRSS 是单进程最大观测值，不是进程树同时总峰值；作业耗时以 GitHub job 记录为准。
 - 检查步骤不设 continue-on-error，`tee` 不吞没失败。汇总 job `check` 在任一阶段失败、取消或跳过时失败。已启动但失败或取消的测试仍尝试保存结果，缺失必需报告使校验失败；未启动的测试不伪造报告。取消运行仍是取消，不能当作通过。
 
