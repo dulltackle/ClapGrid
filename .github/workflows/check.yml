@@ -44,15 +44,19 @@ jobs:
           retention-days: 14
 
   vitest:
-    name: 全套 Vitest 逻辑与服务测试
+    name: 全套 Vitest 逻辑与服务测试 (${{ matrix.shard }}/3)
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: ./.github/actions/test-environment
-      - name: 全套 Vitest 逻辑与服务测试
+      - name: 全套 Vitest 逻辑与服务测试（分片）
         id: vitest
-        run: /usr/bin/time -v -o logs/vitest-resources.txt node_modules/.bin/vitest run --reporter=default --reporter=json --outputFile.json=logs/vitest.json 2>&1 | tee logs/vitest.log
+        run: /usr/bin/time -v -o logs/vitest-resources.txt node_modules/.bin/vitest run --shard=${{ matrix.shard }}/3 --reporter=default --reporter=json --outputFile.json=logs/vitest.json 2>&1 | tee logs/vitest.log
       # 只对实际启动过的阶段要求报告；失败/取消仍尝试保留原生结果。
       - name: 核对 Vitest 必需报告已保存
         if: ${{ always() && steps.vitest.outcome != '' && steps.vitest.outcome != 'skipped' }}
@@ -61,7 +65,7 @@ jobs:
         if: ${{ always() && steps.vitest.outcome != '' && steps.vitest.outcome != 'skipped' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: vitest-${{ github.run_id }}-${{ github.run_attempt }}
+          name: vitest-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: logs/vitest.json
           if-no-files-found: error
           retention-days: 14
@@ -69,7 +73,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: checks-vitest-${{ github.run_id }}-${{ github.run_attempt }}
+          name: checks-vitest-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             logs/*.log
             logs/*-resources.txt
