@@ -1,13 +1,13 @@
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { cpSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { expect } from 'vitest';
 import { queryStatus, queryVisualContext } from '../../src/shared/client.js';
 import type { ResourceFixtures } from './resource-test.js';
 import type { ExportTask, VisualPlan } from '../../src/shared/contracts.js';
 
-export async function pageProject(resources: Pick<ResourceFixtures, 'createDirectory' | 'execBytes' | 'startService'>, audioDuration = 1) {
+export async function pageProject(resources: Pick<ResourceFixtures, 'createDirectory' | 'execBytes' | 'startService'>, audioDuration = 1, styled = false) {
   const root = resources.createDirectory(join(tmpdir(), 'clapgrid-page-render-'));
   const audio = join(root, 'voice.mp3');
   await resources.execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', `sine=duration=${audioDuration}`, '-c:a', 'libmp3lame', audio]);
@@ -23,7 +23,16 @@ export async function pageProject(resources: Pick<ResourceFixtures, 'createDirec
   const segmentId = (await queryStatus(service.url)).snapshot.segments[0]!.id;
   await post('/api/speech/submit', { requestId: randomUUID(), segmentId });
   await expect.poll(async () => (await fetch(service.url + '/api/speech').then(r => r.json())).audio.length).toBe(1);
-  await post('/api/codex/export-settings', { expected: (await queryStatus(service.url)).snapshot.exportSettings, settings: { codec: 'libx264', fps: 25, fontFamily: 'DejaVu Sans', fontSize: 32 } });
+  await post('/api/codex/export-settings', { expected: (await queryStatus(service.url)).snapshot.exportSettings, settings: { codec: 'libx264', fps: 25 } });
+  const styleDirectory = join(root, 'style');
+  cpSync(new URL('../fixtures/style', import.meta.url), styleDirectory, { recursive: true });
+  async function setStyle(sourceDirectory: string | null) {
+    const expected = (await queryStatus(service.url)).snapshot.projectStyle?.styleId ?? null;
+    const styleId = sourceDirectory ? (await post('/api/codex/import-style', { sourceDirectory })).style.styleId : null;
+    await post('/api/codex/project-style', { expected, styleId });
+    return styleId;
+  }
+  if (styled) await setStyle(styleDirectory);
   const context = await queryVisualContext(service.url, segmentId);
   async function importPage(script: string) {
     const sourceDirectory = join(root, randomUUID()); mkdirSync(sourceDirectory);
@@ -46,6 +55,6 @@ export async function pageProject(resources: Pick<ResourceFixtures, 'createDirec
     }, { timeout: 60000 }).toBe(true);
     return task!;
   }
-  return { root, options, service, post, segmentId, duration: context.duration, importPage, save, task };
+  return { root, options, service, post, segmentId, duration: context.duration, styleDirectory, setStyle, importPage, save, task };
 }
 export const fullPage = (pageId: string, duration: number): Extract<VisualPlan['layers'][number], { kind: 'page' }> => ({ kind: 'page', pageId, assetIds: [], role: 'background', from: 0, to: duration, x: 0, y: 0, width: 1, height: 1, z: 0 });

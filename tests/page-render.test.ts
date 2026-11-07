@@ -1,11 +1,31 @@
 import { test } from './helpers/resource-test.js';
 import { expect, onTestFinished } from 'vitest';
 import { join } from 'node:path';
-import { writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fullPage, pageProject } from './helpers/page-project.js';
 
-test('页面背景在片段合成预览与全片导出中逐帧渲染，换用新页面身份使旧预览待更新', async ({ createDirectory, execBytes, execText, startService }) => {
-  const p = await pageProject({ createDirectory, execBytes, startService });
+test('页面背景与字幕逐帧合成，文案变化仅重渲字幕层', async ({ createDirectory, execBytes, execText, startService, onTestFinished }) => {
+  const ffmpeg = (await execText('which', ['ffmpeg'], { encoding: 'utf8' })).trim();
+  const bin = createDirectory(join(tmpdir(), 'clapgrid-render-observer-'));
+  const calls = join(bin, 'renders.log');
+  writeFileSync(join(bin, 'ffmpeg'), `#!/bin/bash
+case "\${!#}" in
+  */page-[0-9]*.mkv) echo page >> "$CLAPGRID_RENDER_LOG" ;;
+  */subtitle-[0-9]*.mkv) echo subtitle >> "$CLAPGRID_RENDER_LOG" ;;
+esac
+exec "$CLAPGRID_RENDER_FFMPEG" "$@"
+`, { mode: 0o700 });
+  const env = { PATH: `${bin}:${process.env.PATH}`, CLAPGRID_RENDER_FFMPEG: ffmpeg, CLAPGRID_RENDER_LOG: calls };
+  const previous = Object.keys(env).map(name => [name, process.env[name]] as const);
+  Object.assign(process.env, env);
+  onTestFinished(() => {
+    for (const [name, value] of previous) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  });
+  const p = await pageProject({ createDirectory, execBytes, startService }, 1, true);
   const pageId = await p.importPage(`window.render=t=>{document.body.style.background=t<0.5?'red':'lime'};window.READY=true`);
   await p.save([fullPage(pageId, p.duration)]);
   const preview = await p.task(); expect(preview, JSON.stringify(preview)).toMatchObject({ state: 'succeeded', current: true });
@@ -15,7 +35,7 @@ test('页面背景在片段合成预览与全片导出中逐帧渲染，换用�
     const media = JSON.parse(await execText('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', result], { encoding: 'utf8' }));
     expect(media.streams).toEqual(expect.arrayContaining([expect.objectContaining({ codec_type: 'video', width: 1920, height: 1080, r_frame_rate: '25/1' }), expect.objectContaining({ codec_type: 'audio' })]));
     expect(Math.abs(Number(media.format.duration) - p.duration)).toBeLessThan(0.05);
-    const caption = await execBytes('ffmpeg', ['-v', 'error', '-i', result, '-frames:v', '1', '-vf', 'crop=700:100:610:920', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-']);
+    const caption = await execBytes('ffmpeg', ['-v', 'error', '-i', result, '-frames:v', '1', '-vf', 'crop=700:100:112:920', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-']);
     let white = 0;
     for (let i = 0; i < caption.length; i += 3) if (caption[i]! > 220 && caption[i + 1]! > 220 && caption[i + 2]! > 220) white++;
     expect(white).toBeGreaterThan(30);
@@ -24,7 +44,21 @@ test('页面背景在片段合成预览与全片导出中逐帧渲染，换用�
       expect(pixel[channel!]!).toBeGreaterThan(220);
     }
   }
-  await check(preview); const full = await p.task('export'); expect(full.state).toBe('succeeded'); await check(full);
+  await check(preview);
+  expect(readFileSync(calls, 'utf8').trim().split('\n')).toEqual(['page', 'subtitle']);
+  const full = await p.task('export'); expect(full.state).toBe('succeeded'); await check(full);
+  const { snapshot } = await fetch(p.service.url + '/api/status').then(r => r.json());
+  await p.post('/api/codex/modify', { changes: [{ kind: 'edit', expected: snapshot.segments[0], text: '新文案' }] });
+  await p.post('/api/speech/submit', { requestId: crypto.randomUUID(), segmentId: p.segmentId });
+  await expect.poll(async () => (await fetch(p.service.url + '/api/speech').then(r => r.json())).audio.length).toBe(2);
+  const changed = await p.task();
+  expect(changed, JSON.stringify(changed)).toMatchObject({ state: 'succeeded', current: true });
+  writeFileSync(result, Buffer.from(await (await fetch(p.service.url + changed.output!.url)).arrayBuffer()));
+  const mark = await execBytes('ffmpeg', ['-v', 'error', '-i', result, '-frames:v', '1', '-vf', 'crop=2:2:90:950,scale=1:1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-']);
+  expect(mark[0]).toBeLessThan(30);
+  expect(mark[1]).toBeGreaterThan(220);
+  expect(mark[2]).toBeGreaterThan(220);
+  expect(readFileSync(calls, 'utf8').trim().split('\n')).toEqual(['page', 'subtitle', 'subtitle']);
   const next = await p.importPage(`window.render=t=>{document.body.style.background='blue'};window.READY=true`);
   await p.save([fullPage(next, p.duration)]);
   expect((await fetch(p.service.url + '/api/visual-previews').then(r => r.json())).tasks[0].current).toBe(false);
@@ -40,7 +74,10 @@ test('透明页面按局部时间与层级叠加，透明区域保留下层视�
     { assetId: asset.id, role: 'background', from: 0, to: p.duration, start: 0, x: 0, y: 0, width: 1, height: 1, z: 0 },
     { ...fullPage(pageId, p.duration), role: 'overlay', z: 1, from: 0.2, to: 0.8, x: 0.25, y: 0.25, width: 0.5, height: 0.5 },
   ], [asset.id]);
-  const task = await p.task(); expect(task, JSON.stringify(task)).toMatchObject({ state: 'succeeded', current: true });
+  const task = await p.task();
+  expect(task, JSON.stringify(task)).toMatchObject({ state: 'succeeded', current: true, preview: { subtitleIssue: '未设置项目风格，预览不含字幕' } });
+  const check = await p.post('/api/page/check', { segmentId: p.segmentId });
+  expect(check.subtitle).toEqual({ status: 'not-checked', reason: '未设置项目风格' });
   const result = join(p.root, 'transparent.mp4'); writeFileSync(result, Buffer.from(await (await fetch(p.service.url + task.output!.url)).arrayBuffer()));
   async function pixel(t: number, x: number, y: number) {
     return [...await execBytes('ffmpeg', ['-v', 'error', '-ss', String(t), '-i', result, '-frames:v', '1', '-vf', `crop=2:2:${x}:${y},scale=1:1`, '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'])];
@@ -165,49 +202,53 @@ test('页面不能绕过请求拦截用 WebRTC 向未声明 UDP 目标发送数�
   }
 }, 60000);
 
-test('页面引用风格模块渲染正确像素，更新风格与页面身份后旧预览待更新', async ({ createDirectory, execBytes, startService }) => {
-  const { cpSync, mkdirSync, readFileSync } = await import('node:fs');
-  const { resolve } = await import('node:path');
-  const p = await pageProject({ createDirectory, execBytes, startService });
-  const sourceDirectory = join(p.root, 'style'); cpSync(resolve('tests/fixtures/style'), sourceDirectory, { recursive: true });
+test('页面通过稳定路径引用项目风格，换风格后原页面可继续渲染且旧预览待更新', async ({ createDirectory, execBytes, startService }) => {
+  const p = await pageProject({ createDirectory, execBytes, startService }, 1, true);
   const pageDirectory = join(p.root, 'styled-page'); mkdirSync(pageDirectory);
-  const render = async () => {
-    const style = (await p.post('/api/codex/import-style', { sourceDirectory })).style;
-    for (const name of ['index.html', 'page.json']) writeFileSync(join(pageDirectory, name), readFileSync(join(sourceDirectory, 'example', name), 'utf8').replaceAll('STYLE_ID', style.styleId).replace('window.DUR=1;', `window.DUR=${p.duration};`));
-    return (await p.post('/api/codex/import-page', { sourceDirectory: pageDirectory })).page.pageId;
-  };
-  const first = await render(); await p.save([fullPage(first, p.duration)]);
-  const preview = await p.task(); expect(preview, JSON.stringify(preview)).toMatchObject({ state: 'succeeded', current: true });
-  const output = join(p.root, 'styled.mp4'); writeFileSync(output, Buffer.from(await (await fetch(p.service.url + preview.output!.url)).arrayBuffer()));
-  for (const [time, channel] of [[0.2, 0], [0.7, 1]] as const) {
-    const pixel = await execBytes('ffmpeg', ['-v', 'error', '-ss', String(time), '-i', output, '-frames:v', '1', '-vf', 'crop=2:2:100:100,scale=1:1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-']);
-    expect(pixel[channel]).toBeGreaterThan(220);
-  }
-  writeFileSync(join(sourceDirectory, 'lib/color.js'), `export const color=t=>'blue';`);
-  const next = await render(); expect(next).not.toBe(first);
-  await p.save([fullPage(next, p.duration)]);
-  expect((await fetch(p.service.url + '/api/visual-previews').then(r => r.json())).tasks[0].current).toBe(false);
-}, 60000);
-
-for (const declared of [false, true]) test(`页面请求未声明的风格文件使任务失败并指明片段（有声明：${declared}）`, async ({ createDirectory, execBytes, startService }) => {
-  const { cpSync, mkdirSync } = await import('node:fs');
-  const { resolve } = await import('node:path');
-  const p = await pageProject({ createDirectory, execBytes, startService });
-  const sourceDirectory = join(p.root, 'style'); cpSync(resolve('tests/fixtures/style'), sourceDirectory, { recursive: true });
-  const first = (await p.post('/api/codex/import-style', { sourceDirectory })).style.styleId;
-  writeFileSync(join(sourceDirectory, 'lib/color.js'), `export const color=t=>'blue';`);
-  const other = (await p.post('/api/codex/import-style', { sourceDirectory })).style.styleId;
-  const pageDirectory = join(p.root, 'page'); mkdirSync(pageDirectory);
-  writeFileSync(join(pageDirectory, 'index.html'), `<script>window.DUR=${p.duration};fetch('/styles/${other}/lib/color.js').catch(()=>{});window.render=t=>{};window.READY=true</script>`);
-  if (declared) writeFileSync(join(pageDirectory, 'page.json'), JSON.stringify({ style: first }));
+  writeFileSync(join(pageDirectory, 'index.html'), readFileSync(join(p.styleDirectory, 'example/index.html'), 'utf8').replace('window.DUR=1;', `window.DUR=${p.duration};`));
   const pageId = (await p.post('/api/codex/import-page', { sourceDirectory: pageDirectory })).page.pageId;
   await p.save([fullPage(pageId, p.duration)]);
+  async function check(channel: number) {
+    const preview = await p.task();
+    expect(preview, JSON.stringify(preview)).toMatchObject({ state: 'succeeded', current: true });
+    const output = join(p.root, 'styled.mp4');
+    writeFileSync(output, Buffer.from(await (await fetch(p.service.url + preview.output!.url)).arrayBuffer()));
+    const pixel = await execBytes('ffmpeg', ['-v', 'error', '-ss', '0.2', '-i', output, '-frames:v', '1', '-vf', 'crop=2:2:100:100,scale=1:1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-']);
+    expect(pixel[channel]).toBeGreaterThan(220);
+  }
+  await check(0);
+  writeFileSync(join(p.styleDirectory, 'lib/color.js'), `export const color=t=>'blue';`);
+  await p.setStyle(p.styleDirectory);
+  expect((await fetch(p.service.url + '/api/visual-previews').then(r => r.json())).tasks[0].current).toBe(false);
+  await check(2);
+}, 60000);
+
+for (const styled of [false, true]) test(`页面请求未开放的风格路径使任务失败并指明片段（项目有风格：${styled}）`, async ({ createDirectory, execBytes, startService }) => {
+  const p = await pageProject({ createDirectory, execBytes, startService }, 1, styled);
+  const path = styled ? '/styles/' + 'a'.repeat(64) + '/lib/color.js' : '/style/lib/color.js';
+  const pageId = await p.importPage(`fetch('${path}').catch(()=>{});window.render=t=>{};window.READY=true`);
+  await p.save([fullPage(pageId, p.duration)]);
   const task = await p.task(); expect(task.state).toBe('failed'); expect(task.output).toBeUndefined();
-  expect(task.issues).toEqual(expect.arrayContaining([expect.objectContaining({ segmentId: p.segmentId, order: 1, message: expect.stringContaining('未声明') })]));
+  expect(task.issues).toEqual(expect.arrayContaining([expect.objectContaining({ segmentId: p.segmentId, order: 1, message: expect.stringContaining(path) })]));
+}, 60000);
+
+for (const [module, reason] of [
+  ['export const subtitleRegion = { x: 0, y: 0, width: 32, height: 32 };', 'drawSubtitle'],
+  ['export const subtitleRegion = { x: 1910, y: 0, width: 32, height: 32 }; export function drawSubtitle() {}', '有效矩形'],
+  ['export const subtitleRegion = [0, 0, 32, 32]; export function drawSubtitle() {}', '有效矩形'],
+]) test(`非法字幕模块使渲染任务失败并定位片段（${module}）`, async ({ createDirectory, execBytes, startService }) => {
+  const p = await pageProject({ createDirectory, execBytes, startService });
+  writeFileSync(join(p.styleDirectory, 'lib/subtitle.js'), module!);
+  await p.setStyle(p.styleDirectory);
+  const pageId = await p.importPage('window.render=()=>{};window.READY=true');
+  await p.save([fullPage(pageId, p.duration)]);
+  const task = await p.task();
+  expect(task).toMatchObject({ state: 'failed', segmentId: p.segmentId });
+  expect(task.issues).toContainEqual(expect.objectContaining({ segmentId: p.segmentId, message: expect.stringContaining(reason!) }));
 }, 60000);
 
 test('页面自检报告文字与随机画面问题，抽帧保留透明，预览和导出仍可执行', async ({ createDirectory, execBytes, execText, startService, openConnection }) => {
-  const p = await pageProject({ createDirectory, execBytes, startService }, 2);
+  const p = await pageProject({ createDirectory, execBytes, startService }, 2, true);
   const background = await p.importPage('window.render=()=>{};window.READY=true');
   const overlay = await p.importPage(`window.render=()=>{document.body.innerHTML='<div style="width:8px;height:8px;background:rgb('+Array.from({length:3},()=>Math.floor(Math.random()*256)).join(',')+')"></div>'};
     window.TEXTS=t=>t<0.2?[{text:'画面文字',x:-3,y:1000,width:1000,height:60}]:[];window.READY=true`);

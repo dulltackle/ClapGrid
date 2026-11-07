@@ -41,6 +41,7 @@ try {
   } else if (action === 'status') {
     console.log(JSON.stringify(await verify(), null, 2));
   } else {
+    if (existsSync(join(options.projectDirectory, 'clapgrid.sqlite'))) projectPaths(options.projectDirectory);
     // 只在明确拒绝连接时启动；未知服务、超时或身份不符均保留现场。
     let offline = false;
     try {

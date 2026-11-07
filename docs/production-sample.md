@@ -33,13 +33,13 @@
 
 ## 采用方案中的风格
 
-选用风格时，采用方案使用 JSON 文件，并声明：
+采用方案使用 JSON 文件，并声明项目风格：
 
 ```json
 { "style": { "id": "64 位小写风格摘要", "source": { "id": "来源风格 id", "version": "来源版本" } } }
 ```
 
-`sample --project` 指向工作空间根目录，工具核对其中 `clapgrid/styles/<摘要>/` 的存在与完整性；缺失、篡改或非法身份使 `batchAllowed` 为 false。未选用风格的方案保持原用法。风格身份属于方案实际内容，重新导入后更新方案摘要，旧用户确认不再匹配；需重新展示动态样片并确认受影响范围，`reuseOf` 规则保持不变，样式稿可选。
+`sample --project` 指向工作空间根目录，工具将 `style.id` 与 ClapGrid 项目状态的风格身份比较，并核对 `clapgrid/styles/<摘要>/` 的完整性。项目风格未设置、身份不一致或副本篡改时，`batchAllowed` 为 false。风格身份属于方案实际内容，重新导入后更新方案摘要，旧用户确认不再匹配；需重新展示动态样片并确认受影响范围，`reuseOf` 规则保持不变，样式稿可选。
 
 选用、导入与六维度制作者自检见[画面编排制作约定](../plugins/clapgrid/skills/open-clapgrid/references/composition.md#风格)。
 

@@ -4,10 +4,10 @@ import { buildIdentity, compatibleRuntime } from '../build-identity.js';
 import { readHostWorkspace, hostThreadId } from '../host-workspace.js';
 import { bindWorkspace } from '../workspace-service.js';
 import { z } from 'zod';
-import { checkPageSchema, pageFramesSchema, exportTaskRequestSchema, submitExportSchema, speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importPageSchema, importMaterialSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
+import { checkPageSchema, pageFramesSchema, exportTaskRequestSchema, submitExportSchema, speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importPageSchema, setProjectStyleSchema, importMaterialSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { RootsListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
-import { checkPage, pageFrames, importStyle, importPage, queryVisualContext, importMaterial, previewSegment, queryVisualPreviews, submitExport, queryExports, cancelExport, submitSpeechBatch, queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
+import { checkPage, pageFrames, importStyle, setProjectStyle, importPage, queryVisualContext, importMaterial, previewSegment, queryVisualPreviews, submitExport, queryExports, cancelExport, submitSpeechBatch, queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
 
 export function createBusinessMcp(url?: string) {
   const baseUrl = url === undefined ? undefined : localServiceUrl(url);
@@ -121,14 +121,21 @@ export function createBusinessMcp(url?: string) {
     }
   });
   server.registerTool('clapgrid_import_style', {
-    description: '从当前工作空间内绝对目录导入风格（STYLE.md、lib/、example/），返回不可变 styleId；最多 256 文件、32 MiB，拒绝链接。项目修改后重新导入；页面 page.json 声明该身份，以 /styles/<styleId>/lib/ 绝对路径 import。',
+    description: '从当前工作空间内绝对目录导入风格（STYLE.md、lib/subtitle.js、example/index.html），返回不可变 styleId；最多 256 文件、32 MiB，拒绝链接。修改风格后重新导入，再设置为项目风格。',
     inputSchema: importPageSchema,
   }, async (input, extra) => {
     try { const result = await importStyle(await connection(extra._meta), input.sourceDirectory, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
+  server.registerTool('clapgrid_set_project_style', {
+    description: '按项目状态的 projectStyle.styleId 提交 expected，指定已导入的 styleId 设置项目风格，传 null 清空。未设置时 expected 为 null。遵循项目修改权。',
+    inputSchema: setProjectStyleSchema,
+  }, async (input, extra) => {
+    try { const result = await setProjectStyle(await connection(extra._meta), input, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+  });
   server.registerTool('clapgrid_import_page', {
-    description: '从当前用户工作空间内的绝对目录导入页面，包含 index.html；按内容摘要保存不可变副本，重复内容返回相同 pageId。页面暴露 DUR、render(t)、READY；可用 page.json 声明已导入风格。仅能读取自身、声明的风格及页面图层 assetIds 声明的本句素材。',
+    description: '从当前用户工作空间内的绝对目录导入页面，包含 index.html；按内容摘要保存不可变副本，重复内容返回相同 pageId。页面暴露 DUR、render(t)、READY；经 /style/ 使用项目风格。仅能读取自身、项目风格及页面图层 assetIds 声明的本句素材。',
     inputSchema: importPageSchema,
   }, async (input, extra) => {
     try { const result = await importPage(await connection(extra._meta), input.sourceDirectory, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
@@ -156,7 +163,7 @@ export function createBusinessMcp(url?: string) {
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   server.registerTool('clapgrid_visual_context', {
-    description: '返回页面画布 1920×1080、导出帧率、/assets/<assetId> 原件地址及导入上限；风格先用 clapgrid_import_style 导入，在 page.json 声明 styleId，以 /styles/<styleId>/lib/ 导入模块；只允许声明的风格。页面视口按图层尺寸取偶数，render(t) 使用图层局部时间，DUR 等于 to-from。查询指定片段当前文案、说明、素材、已保存编排及有效配音的精确解码时长（秒）。先完成配音，再据此 duration 提交编排；缺失或待更新的配音会明确拒绝。',
+    description: '返回页面画布 1920×1080、导出帧率、/assets/<assetId> 原件地址及导入上限；返回项目风格身份与来源；以 /style/lib/ 导入项目风格模块。页面视口按图层尺寸取偶数，render(t) 使用图层局部时间，DUR 等于 to-from。查询指定片段当前文案、说明、素材、已保存编排及有效配音的精确解码时长（秒）。先完成配音，再据此 duration 提交编排；缺失或待更新的配音会明确拒绝。',
     inputSchema: z.object({ segmentId: z.uuid() }).strict(),
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async (input, extra) => {
@@ -164,7 +171,7 @@ export function createBusinessMcp(url?: string) {
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   server.registerTool('clapgrid_preview_segment', {
-    description: '请求本句真实合成，返回任务标识不代表成功。先用 clapgrid_visual_context 查询本句素材及精确配音时长，再提交 materials 归属及 composition 编排；需要有效配音、导出设置和与配音匹配的明确时长。通过 clapgrid_visual_previews 查询终态，仅 succeeded 且 current 才可审阅。普通素材制作请求默认完成准备、编排和预览；明确先准备素材时不调用本工具。取消使用 clapgrid_cancel_export。',
+    description: '请求本句真实合成，返回任务标识不代表成功。先用 clapgrid_visual_context 查询本句素材及精确配音时长，再提交 materials 归属及 composition 编排；需要有效配音和与配音匹配的明确时长。通过 clapgrid_visual_previews 查询终态，仅 succeeded 且 current 才可审阅。普通素材制作请求默认完成准备、编排和预览；明确先准备素材时不调用本工具。取消使用 clapgrid_cancel_export。',
     inputSchema: z.object({ segmentId: z.uuid() }).strict(),
   }, async (input, extra) => {
     try { const result = await previewSegment(await connection(extra._meta), input.segmentId); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
@@ -227,7 +234,7 @@ export function createBusinessMcp(url?: string) {
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   server.registerTool('clapgrid_set_export_settings', {
-    description: '修改并自动保存全片导出设置，必须携带查询所得 expected 与完整 settings。编码 libx264/mpeg4；帧率 24/25/30/50/60；fontFamily 从查询的 fonts 选择，fontSize 为 1–1080 整数 px，两者可为 null 表示未设置（不可导出）。取得普通修改权后重读并拒绝过时设置，任务锁期间拒绝；不生成配音或修改已有成片。',
+    description: '修改并自动保存全片导出设置，必须携带查询所得 expected 与完整 settings。编码 libx264/mpeg4；帧率 24/25/30/50/60。取得普通修改权后重读并拒绝过时设置，任务锁期间拒绝；不生成配音或修改已有成片。',
     inputSchema: updateExportSettingsSchema, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   }, async (input, extra) => {
     try { const result = await saveExportSettings(await connection(extra._meta), input, undefined, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }

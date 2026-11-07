@@ -1,15 +1,14 @@
 import { directoryStore, contentIdPattern, directoryLimits } from './directory-store.mjs';
-import { styleStore } from './styles.mjs';
 
 export const pageLimits = directoryLimits;
 export const pageIdPattern = contentIdPattern;
 
-export function pageStyle(files: Map<string, Buffer>): string | undefined {
+function validatePageMetadata(files: Map<string, Buffer>) {
   const metadata = files.get('page.json');
   if (!metadata) return;
   const value: unknown = JSON.parse(metadata.toString('utf8'));
-  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 1 || !('style' in value) || typeof value.style !== 'string' || !pageIdPattern.test(value.style)) throw new Error('page.json 必须为 { "style": "<风格身份>" }');
-  return value.style;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('page.json 必须是 JSON 对象');
+  if ('style' in value) throw new Error('page.json 不再接受 style 字段，请改用 /style/ 引用项目风格');
 }
 
 // 启发式扫描：字符串和注释也可能命中，不作为导入门槛。
@@ -24,8 +23,7 @@ const nondeterministic = [
 export function pageStore(projectDirectory: string) {
   const store = directoryStore(projectDirectory, 'pages', files => {
     if (!files.has('index.html')) throw new Error('页面必须包含 index.html');
-    const style = pageStyle(files);
-    if (style) styleStore(projectDirectory).read(style);
+    validatePageMetadata(files);
   }, '页面');
   return {
     read: store.read,

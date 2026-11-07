@@ -25,11 +25,10 @@ test('正式插件包包含全部内置风格并通过服务入口生成风格�
     const path = join(file.parentPath, file.name).slice(sourceStyles.length + 1);
     expect(readFileSync(join(builtStyles, path))).toEqual(readFileSync(join(sourceStyles, path)));
   }
-  const sourceDirectory = join(p.root, 'style'); cpSync(join(builtStyles, 'test-color'), sourceDirectory, { recursive: true });
-  const styleId = (await p.post('/api/codex/import-style', { sourceDirectory })).style.styleId;
+  const sourceDirectory = join(p.root, 'packaged-style'); cpSync(join(builtStyles, 'test-color'), sourceDirectory, { recursive: true });
+  await p.setStyle(sourceDirectory);
   const pageDirectory = join(p.root, 'page'); mkdirSync(pageDirectory);
-  writeFileSync(join(pageDirectory, 'page.json'), JSON.stringify({ style: styleId }));
-  writeFileSync(join(pageDirectory, 'index.html'), `<script type="module">import {color} from '/styles/${styleId}/lib/color.js';window.DUR=${p.duration};window.render=t=>{document.body.style.background=color(0.7)};window.READY=true</script>`);
+  writeFileSync(join(pageDirectory, 'index.html'), `<script type="module">import {color} from '/style/lib/color.js';window.DUR=${p.duration};window.render=t=>{document.body.style.background=color(0.7)};window.READY=true</script>`);
   const pageId = (await p.post('/api/codex/import-page', { sourceDirectory: pageDirectory })).page.pageId;
   await p.save([fullPage(pageId, p.duration)]);
   await p.service.close();

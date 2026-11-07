@@ -88,7 +88,7 @@ npm run runtime -- status --project /绝对路径/验证项目
 
 素材归属、编排字段、页面图层、风格、制作者自检与片段合成预览的规则统一见[画面编排制作约定](plugins/clapgrid/skills/open-clapgrid/references/composition.md)，风格编写约定见[内置风格](plugins/clapgrid/styles/README.md)。
 
-HTTP 对应 `POST /api/page/import`、`POST /api/codex/import-page`、`POST /api/style/import`、`POST /api/codex/import-style`、`POST /api/page/check`、`POST /api/page/frames`、`/api/material/rename`、`/api/codex/rename-material`、`/api/material/import`、`/api/codex/import-material`、`/api/segments/modify`、`/api/codex/modify`、`GET /api/visual-context/:segmentId`、`POST /api/visual-previews/submit` 和 `GET /api/visual-previews`。风格导入请求为 `{ "sourceDirectory": "工作空间内绝对路径" }`，返回 `style: { styleId, fileCount, bytes }` 和项目状态。图片仅通过已登记身份的 `/api/media/:id/original` 查看，保留原始 MIME 与透明通道；视频不开放任意源文件路径。
+HTTP 对应 `POST /api/page/import`、`POST /api/codex/import-page`、`POST /api/style/import`、`POST /api/codex/import-style`、`POST /api/project-style`、`POST /api/codex/project-style`、`POST /api/page/check`、`POST /api/page/frames`、`/api/material/rename`、`/api/codex/rename-material`、`/api/material/import`、`/api/codex/import-material`、`/api/segments/modify`、`/api/codex/modify`、`GET /api/visual-context/:segmentId`、`POST /api/visual-previews/submit` 和 `GET /api/visual-previews`。风格导入请求为 `{ "sourceDirectory": "工作空间内绝对路径" }`，返回 `style: { styleId, fileCount, bytes }` 和项目状态。图片仅通过已登记身份的 `/api/media/:id/original` 查看，保留原始 MIME 与透明通道；视频不开放任意源文件路径。
 
 旧单视频与多视频项目继续保留素材身份、关联、顺序和起点。既有旧单视频记录的导出保留原行为；今后经旧 video／videos 接口写入也会确认素材归属并清空编排，须由 agent 重新编排后制作；旧多视频不会再自动均分，需要 agent 确认素材并保存明确编排才能导出。旧记录未生成新编排时，页面显示等待 agent 编排，不把原件播放器当成片段合成结果。
 
@@ -161,7 +161,7 @@ Linux 组件的准备步骤见[组件准备流程](plugins/clapgrid/skills/open-
 
 项目内部由 `project-access.ts` 统一管理普通修改权、配音及导出占用，写入与任务受理共用准入规则，表格状态和退出保护读取同一份占用状态。普通编辑与后台任务仍有区别：默认退出只保护后台任务。任务终态保存或必要清理失败时继续保持占用，清理完成且终态保存成功后才解锁。
 
-画面从指定起点截取至配音结束，剩余画面不足时冻结末帧并提示；视频等比缩放留边、原声静音，片段直接拼接。字幕按项目字体字号整句烧录，支持中文自动换行和多行，不因长文案拒绝导出。媒体环境需 FFmpeg、ffprobe、Fontconfig，以及 ffv1、libvpx、libvorbis 和支持 `wrap_unicode` 的 libass/libunibreak。字幕排版使用 ASS，须显式开启 Unicode 换行（[FFmpeg 官方说明](https://ffmpeg.org/ffmpeg-filters.html#subtitles-1)）。
+画面从指定起点截取至配音结束，剩余画面不足时冻结末帧并提示；视频等比缩放留边、原声静音，片段直接拼接。每个片段的字幕等于文案，由项目风格绘制并贯穿片段。未设置风格时，片段预览会标明未绘制字幕，全片导出会被拒绝。导出使用固定版本的 Chrome Headless Shell 与 FFmpeg、ffprobe。旧格式项目打开时提示新建项目，原文件保留。
 
 成片输出至项目 `exports/`，格式固定 1920×1080 MP4，编码及帧率使用当前设置。文件名包含时间及 UUID，每次生成新文件；表格显示位置并提供打开入口；内置浏览器以兼容的 WebM 预览播放，并提供原始 MP4 下载，预览保存在项目媒体目录。取消先显示「正在清理」，等待媒体进程结束和本次临时文件删除后才解锁。失败显示原因与能定位的片段，已有成片保留。清理或状态保存失败时保持锁定并显示原因，不能把未清理的文件当作已清理。
 

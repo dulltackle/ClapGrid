@@ -1,3 +1,4 @@
+import { selectTestStyle } from './helpers/project-style.js';
 import { test, type ResourceFixtures } from './helpers/resource-test.js';
 import type { TestContext } from 'vitest';
 import { speechState } from './helpers/speech-state.js';
@@ -10,7 +11,7 @@ import { join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createBusinessMcp } from '../src/mcp/server.js';
-import { queryVisualContext, connectTable, importVideo, modifyBatch, queryExports, queryExportSettings, querySpeech, queryStatus, saveExportSettings, submitExport, submitSpeech, submitSpeechBatch } from '../src/shared/client.js';
+import { queryVisualContext, connectTable, importVideo, modifyBatch, queryExports, querySpeech, queryStatus, submitExport, submitSpeech, submitSpeechBatch } from '../src/shared/client.js';
 
 type Resources = Pick<ResourceFixtures, 'createDirectory' | 'execBytes' | 'openConnection' | 'startService'> & Pick<TestContext, 'onTestFinished' | 'task'>;
 
@@ -68,8 +69,7 @@ for (const outcome of ['成功', '明确失败', '中断'] as const) test(`可�
   const segment = (await queryStatus(service.url)).snapshot.segments[0]!;
   const { asset } = await importVideo(service.url, video);
   await modifyBatch(service.url, { changes: [{ kind: 'video', expected: segment, assetId: asset.id, start: 0 }] });
-  const { settings } = await queryExportSettings(service.url);
-  await saveExportSettings(service.url, { expected: settings, settings: { ...settings, fontFamily: 'Noto Sans CJK SC', fontSize: 48 } });
+  await selectTestStyle(service.url);
   await submitSpeech(service.url, { requestId: randomUUID(), segmentId: segment.id });
   await vi.waitFor(async () => { const value = await (() => querySpeech(service.url))(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   for (const segment of (await queryStatus(service.url)).snapshot.segments) {
@@ -156,8 +156,7 @@ test('批量配音中尚未发送的 accepted 任务在表格重连后仍保留�
   const segments = (await queryStatus(service.url)).snapshot.segments;
   const { asset } = await importVideo(service.url, video);
   await modifyBatch(service.url, { changes: segments.map(expected => ({ kind: 'video' as const, expected, assetId: asset.id, start: 0 })) });
-  const { settings } = await queryExportSettings(service.url);
-  await saveExportSettings(service.url, { expected: settings, settings: { ...settings, fontFamily: 'Noto Sans CJK SC', fontSize: 48 } });
+  await selectTestStyle(service.url);
   await submitSpeechBatch(service.url, { requestId: randomUUID(), mode: 'generate', scope: { kind: 'all' } });
   await vi.waitFor(async () => { const value = await (() => querySpeech(service.url))(); assert.ok((value => !value.locked)(value), JSON.stringify(value)); return value; }, { timeout: 60000, interval: 20 });
   // 保留有效旧配音，制造可显式重试的最新失败任务，不以缺少配音作为拒绝原因。

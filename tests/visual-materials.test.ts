@@ -1,3 +1,4 @@
+import { selectTestStyle } from './helpers/project-style.js';
 import { test } from './helpers/resource-test.js';
 import { expect } from 'vitest';
 import { join } from 'node:path';
@@ -81,7 +82,8 @@ test('MCP 保存编排并真实合成透明叠加，查询过期状态及重开�
   const saved = await client.callTool({ name: 'clapgrid_modify', arguments: { changes: [{ kind: 'composition', expected: segment, plan }] } });
   expect(saved.isError).not.toBe(true);
   expect((saved.structuredContent as any).summary.applied).toBe(1);
-  await post('/api/codex/export-settings', { expected: (await queryStatus(service.url)).snapshot.exportSettings, settings: { codec: 'libx264', fps: 25, fontFamily: 'DejaVu Sans', fontSize: 32 } });
+  await selectTestStyle(service.url);
+  await post('/api/codex/export-settings', { expected: (await queryStatus(service.url)).snapshot.exportSettings, settings: { codec: 'libx264', fps: 25 } });
   const submitted = await client.callTool({ name: 'clapgrid_preview_segment', arguments: { segmentId: segment.id } });
   expect(submitted.isError).not.toBe(true);
   const id = (submitted.structuredContent as any).id;
@@ -132,38 +134,16 @@ test('MCP 保存编排并真实合成透明叠加，查询过期状态及重开�
   expect((await queryStatus(service.url)).snapshot.assets).toHaveLength(3);
 }, 60000);
 
-test('升级前项目恢复单视频和多视频引用，旧单视频可导出，后续兼容写入要求显式编排', async ({ createDirectory, startService }) => {
-  const { cpSync } = await import('node:fs');
+test('拒绝打开旧格式项目，保留旧数据库和媒体原件', async ({ createDirectory }) => {
+  const { startService } = await import('../src/service/server.js');
+  const { cpSync, readdirSync, readFileSync } = await import('node:fs');
   const root = createDirectory(join(tmpdir(), 'clapgrid-legacy-read-'));
   const projectDirectory = join(root, 'project');
   cpSync(new URL('./fixtures/legacy-visuals', import.meta.url), projectDirectory, { recursive: true });
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'panel');
-  let service = await startService({ projectDirectory, panelDirectory, port: 0 });
-  let snapshot = (await queryStatus(service.url)).snapshot;
-  const [single, multiple] = snapshot.segments;
-  expect(single?.video?.start).toBe(0.25);
-  expect(multiple?.additionalVideos?.[0]?.start).toBe(0.5);
-  expect(single?.materials).toBeUndefined(); expect(single?.composition).toBeUndefined();
-  expect(snapshot.assets).toHaveLength(1);
-  expect((await fetch(service.url + '/api/visual-previews').then(r => r.json())).tasks).toEqual([]);
-  const before = snapshot;
-  await service.close(); service = await startService({ projectDirectory, panelDirectory, port: Number(new URL(service.url).port) });
-  expect((await queryStatus(service.url)).snapshot).toEqual(before);
-  const post = async (path: string, input: unknown) => { const response = await fetch(service.url + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) }); expect(response.status).toBe(200); return response.json(); };
-  await post('/api/codex/export-settings', { expected: snapshot.exportSettings, settings: { codec: 'libx264', fps: 25, fontFamily: 'DejaVu Sans', fontSize: 32 } });
-  const unfinished = await post('/api/exports/submit', {});
-  let task: any;
-  await expect.poll(async () => { task = (await fetch(service.url + '/api/exports').then(r => r.json())).tasks.find((t: any) => t.id === unfinished.id); return task.state; }, { timeout: 60000 }).toBe('failed');
-  expect(task.issues.some((issue: any) => issue.message.includes('旧多视频'))).toBe(true);
-  snapshot = (await queryStatus(service.url)).snapshot;
-  await post('/api/codex/modify', { changes: [{ kind: 'delete', expected: snapshot.segments[1] }] });
-  const legacyExport = await post('/api/exports/submit', {});
-  await expect.poll(async () => (await fetch(service.url + '/api/exports').then(r => r.json())).tasks.find((t: any) => t.id === legacyExport.id)?.state, { timeout: 60000 }).toBe('succeeded');
-  snapshot = (await queryStatus(service.url)).snapshot;
-  await post('/api/codex/modify', { changes: [{ kind: 'video', expected: snapshot.segments[0], assetId: snapshot.assets[0]!.id, start: 0.3 }] });
-  const changed = (await queryStatus(service.url)).snapshot.segments[0]!;
-  expect(changed.materials).toEqual([snapshot.assets[0]!.id]); expect(changed.composition).toBeUndefined();
-  const newExport = await post('/api/exports/submit', {});
-  await expect.poll(async () => { task = (await fetch(service.url + '/api/exports').then(r => r.json())).tasks.find((t: any) => t.id === newExport.id); return task.state; }, { timeout: 60000 }).toBe('failed');
-  expect(task.issues.some((issue: any) => issue.message.includes('编排缺失'))).toBe(true);
-}, 60000);
+  const files = () => readdirSync(projectDirectory, { recursive: true, withFileTypes: true })
+    .filter(entry => entry.isFile()).map(entry => [join(entry.parentPath, entry.name), readFileSync(join(entry.parentPath, entry.name))]);
+  const before = files();
+  await expect(startService({ projectDirectory, panelDirectory, port: 0 })).rejects.toThrow('项目格式过旧，请新建项目');
+  expect(files()).toEqual(before);
+});

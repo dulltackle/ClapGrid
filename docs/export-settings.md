@@ -2,36 +2,20 @@
 
 ## 首次配置与作用范围
 
-导出设置放在专门的设置入口，按项目自动保存，重开项目恢复：
+通过面板的「更多 → 导出设置」查看或编辑。设置按项目保存，重开后恢复。
 
-| 设置 | 首次状态 | 用户操作与约束 |
-| --- | --- | --- |
-| 编码 | 提供可用默认值 | 用户可修改，须与 MP4 及实际媒体组件兼容 |
-| 帧率 | 提供可用默认值 | 用户可修改，校验实际支持的合法值 |
-| 字幕字体 | 未设置，不预选 | 用户自行选择，首次导出前必须设置 |
-| 字幕字号 | 未设置，不预填 | 用户自行填写，首次导出前必须设置 |
-| 画面比例、分辨率、容器 | 16:9、1920×1080、MP4 | 本版暂时固定 |
-
-字体和字号适用于全片。缺少必填配置不能导出，与长文案不阻止导出的规则分别处理；字幕与长文案规则见[产品契约](product-contract.md#字幕)。
-
-设置修改遵守普通修改权及任务锁。修改设置不会重新生成配音，也不会改变已导出的成片；下一次导出采用当前设置。
-
-## 参数选择依据
-
-| 参数 | 依据 |
+| 参数 | 默认值与范围 |
 | --- | --- |
-| 编码：默认 `libx264`（H.264，yuv420p），可选 `mpeg4` | H.264 面向常见播放器，另提供 FFmpeg 原生 MPEG-4 Part 2。当前环境不支持所选编码时明确拒绝，不偷偷切换编码。 |
-| 帧率：整数 24、25、30、50、60 | 有限支持集覆盖常用帧率；分数帧率及任意数值不在本版支持范围。 |
-| 字体：首次不预选 | 枚举本机 Fontconfig 字族并按完整名称校验；不自动下载字体，不以替代字体掩盖所选字体缺失。字体名中的逗号、换行和空字符不受支持，避免破坏 ASS 样式记录。 |
-| 字号：首次不预填，1–1080 px | 以 ASS `PlayResX=1920`、`PlayResY=1080` 的画布像素解释，不依赖屏幕 DPI；指字体标称大小，不保证每个字形的实际像素高度。 |
-| 输出：固定 16:9、1920×1080、MP4 | 不能通过设置接口修改分辨率、比例或容器。 |
+| 编码 | 默认 H.264（`libx264`），可选 MPEG-4 Part 2（`mpeg4`） |
+| 帧率 | 默认 30 fps，可选 24、25、30、50、60 fps |
+| 输出 | 固定为 16:9、1920×1080、MP4，像素格式为 yuv420p |
 
-保存完整配置时实际烧录一份临时 ASS 字幕并编码/解码，确认当前环境能渲染；缺少媒体组件或无法渲染时拒绝保存。导出任务须在自己的任务锁边界读取并固定当前设置，不沿用旧快照。
+保存和导出校验会实际编码与解码临时视频，确认所选参数和兼容预览所需组件可用。设置保存遵守普通修改权和任务锁，下一次导出使用当前设置。
+
+全片导出前须由 agent 设置项目风格。项目风格决定字幕的字体、排版和出场方式。每个口播片段的文案由风格字幕模块逐帧绘制成透明层，贯穿片段并叠在画面最上层。未设置项目风格时仍可制作片段合成预览，预览会标明字幕缺失的原因。字幕模块约定见[内置风格](../plugins/clapgrid/styles/README.md#字幕模块)，选用与设置流程见[画面编排制作约定](../plugins/clapgrid/skills/open-clapgrid/references/composition.md#风格)。
 
 ## 媒体环境与跨平台范围
 
-需要 PATH 中的 FFmpeg、ffprobe、Fontconfig 的 `fc-list`。FFmpeg 需包含 libx264、原生 mpeg4、libass，并使用 Fontconfig 字体提供者。Windows、macOS 同样需要这套组件与字体配置，不能把 Fontconfig 枚举结果直接交给另一字体提供者。新安装或卸载字体后重新打开设置入口刷新列表；下一次导出还会重新校验。
+导出使用 Linux 的固定版本 Chrome Headless Shell 和 FFmpeg、ffprobe。FFmpeg 需提供 libx264、原生 mpeg4、ffv1、AAC、libvpx 和 libvorbis。用户目录的 Noto Sans CJK SC 继续提供页面和字幕绘制的中文后备字体。组件安装见[Linux 用户目录运行组件](linux-components.md)。
 
-Windows/macOS 的组件安装和实际运行须由 [#11](https://github.com/dulltackle/ClapGrid/issues/11)、[#12](https://github.com/dulltackle/ClapGrid/issues/12) 的平台验收验证；不能将 Linux 结果视为三平台通过。
-
-参考：[FFmpeg subtitles 过滤器](https://ffmpeg.org/ffmpeg-filters.html#subtitles)、[Fontconfig 开发文档](https://fontconfig.pages.freedesktop.org/fontconfig/fontconfig-devel/)、[fc-list 手册](https://xorg.freedesktop.org/archive/X11R7.0/doc/html/fc-list.1.html)。
+macOS、Windows 的浏览器组件与导出分别跟踪于 [#27](https://github.com/dulltackle/ClapGrid/issues/27) 和 [#28](https://github.com/dulltackle/ClapGrid/issues/28)。

@@ -49,6 +49,8 @@ jobs:
         run: |
           set -o pipefail
           npm ci 2>&1 | tee .cache/process-trace/npm-ci.log
+      - name: 安装固定版本页面渲染浏览器
+        run: node_modules/.bin/playwright install --with-deps chromium-headless-shell
       - name: 验证拒绝窗口及真实 FFmpeg 正向对照
         run: node scripts/verify-speech-export-processes.mjs .cache/process-trace
       - name: 发布结果摘要

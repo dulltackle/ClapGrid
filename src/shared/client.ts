@@ -237,9 +237,15 @@ export async function previewSegment(baseUrl: string, segmentId: string): Promis
   return postJson(baseUrl, '/api/visual-previews/submit', { segmentId });
 }
 
-export async function queryVisualContext(baseUrl: string, segmentId: string): Promise<{ segment: import('./contracts.js').Segment; assets: import('./contracts.js').VideoAsset[]; duration: number; compositionCurrent: boolean; page: { canvas: { width: number; height: number }; fps: number; assetUrls: Record<string, string>; limits: { files: number; bytes: number }; readyTimeoutSeconds: number } }> {
+export async function queryVisualContext(baseUrl: string, segmentId: string): Promise<{ projectStyle: import('./contracts.js').ProjectStyle | null; segment: import('./contracts.js').Segment; assets: import('./contracts.js').VideoAsset[]; duration: number; compositionCurrent: boolean; page: { canvas: { width: number; height: number }; fps: number; assetUrls: Record<string, string>; limits: { files: number; bytes: number }; readyTimeoutSeconds: number } }> {
   const response = await fetch(`${baseUrl}/api/visual-context/${segmentId}`, { signal: AbortSignal.timeout(30000), redirect: 'error' });
   const body = await response.json(); if (!response.ok) throw new Error(body.error ?? '读取制作输入失败'); return body;
+}
+
+export async function setProjectStyle(baseUrl: string, input: import('./contracts.js').SetProjectStyle, signal?: AbortSignal) {
+  const body = await postJson(baseUrl, '/api/codex/project-style', input, undefined, signal);
+  const status = statusSchema.parse(body.status);
+  return { projectStyle: status.snapshot.projectStyle, status };
 }
 
 export async function importStyle(baseUrl: string, sourceDirectory: string, signal?: AbortSignal) {

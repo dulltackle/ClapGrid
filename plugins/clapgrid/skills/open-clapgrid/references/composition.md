@@ -35,8 +35,8 @@
 - `t` 以图层 `from` 为零点；DUR 等于 `to - from`，误差不超过 1 ms。帧数为 round(DUR×fps)，不足一帧会明确失败。
 - `render(t)` 必须独立确定，不依赖上一帧、当前时间或无种子随机数。
 - 视口按 1920×width、1080×height 四舍五入到最近偶数（至少 2 px），设备像素比 1，以 innerWidth/innerHeight 布局。
-- 页面只能读取自身文件、`page.json` 声明的风格和图层 `assetIds` 声明的本句素材；依赖保存在页面或声明的风格目录内。外网、任意本地路径、WebSocket、WebRTC、Worker 和嵌入框架均被拒绝。
-- 页面只输出画面，字幕按导出设置统一烧录。
+- 页面只能读取自身文件、经 `/style/` 提供的项目风格和图层 `assetIds` 声明的本句素材；依赖保存在页面或项目风格目录内。外网、任意本地路径、WebSocket、WebRTC、Worker 和嵌入框架均被拒绝。
+- 页面只输出画面。ClapGrid 在页面和素材图层上方叠加由项目风格绘制的透明字幕层；字幕模块约定见[内置风格](../../../styles/README.md#字幕模块)。
 
 ### 图层字段
 
@@ -46,16 +46,17 @@
 
 ## 风格
 
-风格由 `STYLE.md`、纯函数 ES module `lib/` 和 `example/` 组成。项目采用的规则仍记录在视觉方案中，风格本身不代表已被采用。
+风格由 `STYLE.md`、含 `subtitle.js` 的 ES module `lib/` 和 `example/` 组成。项目采用的规则仍记录在视觉方案中，风格本身不代表已被采用。
 
 1. 阅读所选内置风格的 `STYLE.md`，将整个风格目录复制到工作空间 `styles/<id>/`，在 `STYLE.md` 头部追加来源 id/version，保留项目版本自己的 id 与 version。插件更新不改变此独立副本。
 2. 在 `video.md` 的“风格”小节链接该目录的 `STYLE.md`。先写本项目方案，再阅读示例源码；按 `STYLE.md` 的修改分级调整项目风格。
 3. 用 `clapgrid_import_style({ sourceDirectory })` 导入工作空间内的绝对目录，得到 `styleId`；不可变副本存于项目 `clapgrid/styles/<SHA-256>/`。同一内容重复导入返回相同身份；修改工作副本后重新导入，不编辑已导入副本。导入遵循现有修改权流程，限制见[导入边界](#导入边界)。
-4. 页面可含严格的 `page.json`：`{ "style": "<styleId>" }`，页面导入时核对风格存在与完整性。模块使用绝对路径导入，例如 `import { draw } from '/styles/<styleId>/lib/draw.js'`。渲染时只开放该页声明的风格；未声明、其他风格或越界路径返回 404，并使任务失败、指明片段。没有 `page.json` 的页面按原页面约定运行。
-5. 使用示例时，将 `example/` 复制到风格目录外的页面目录，把 `STYLE_ID` 占位替换为返回的 `styleId`，按实际图层区间调整 DUR，再导入页面。
-6. 风格只绘制画面；字幕字体和字号按 `STYLE.md` 推荐写入统一导出设置。
+4. 从项目状态读取当前 `projectStyle.styleId`，用 `clapgrid_set_project_style({ expected, styleId })` 设置项目风格，首次设置 `expected` 填 `null`，清空时 `styleId` 用 `null`。面板显示当前风格，项目状态及 `clapgrid_visual_context` 返回身份与 `STYLE.md` 头部来源。HTTP 入口为 `POST /api/codex/project-style`，普通修改会话可用 `POST /api/project-style`，均在事务内校验 `expected`。
+5. 页面以绝对路径引用项目风格，例如 `import { draw } from '/style/lib/draw.js'`。渲染时只开放当前项目风格；未设置风格时请求 `/style/` 返回 404，并使任务失败、指明片段。旧 `page.json` 的 `style` 字段会被拒绝。
+6. 使用示例时，将 `example/` 复制到风格目录外的页面目录，按实际图层区间调整 DUR，再导入页面。
+7. 根据字幕模块的 `subtitleRegion` 为字幕留出画布空间。导出前必须设置项目风格；未设置时片段合成预览会标明字幕缺失，全片导出被拒绝。
 
-风格变化后重新导入，更新页面声明和模块路径、重新导入页面并保存编排，旧预览随之显示待更新。同时更新采用方案中的风格身份，重新展示动态样片并取得受影响范围的确认；样式稿可选。确认记录格式见[样片接入说明](https://github.com/dulltackle/ClapGrid/blob/main/docs/production-sample.md)。
+风格变化后重新导入并设置新身份，原页面引用继续生效，旧预览随之显示待更新。同时更新采用方案中的风格身份，重新展示动态样片并取得受影响范围的确认；样式稿可选。确认记录格式见[样片接入说明](https://github.com/dulltackle/ClapGrid/blob/main/docs/production-sample.md)。
 
 交付前与示例比较六个维度：题材与对象、构图、配色、材质、运动与镜头、转场，至少四项不同，并在项目方案中记录差异。这是制作者自检，工具不机械核对，也不作为审阅证据必需项。
 
@@ -69,7 +70,7 @@
 
 - `clapgrid_check_page` 接收 `{segmentId, layerIndex?}`。`layerIndex` 是编排 `layers` 中的零基下标，省略时检查全部页面图层。页面可在 `render(t)` 后用 `window.TEXTS(t)` 返回当前可见文字及页面像素框 `[{text,x,y,width,height,id?}]`；同文案的不同元素宜用稳定的 `id` 区分。没有 `TEXTS` 时返回 `not-checked`。
   - 结果时间以图层起点为零，像素框以输出画面左上角为原点；连续几帧发生同类几何问题时报告首个问题框。
-  - 检查文字是否停留足够、是否出框、是否挡住字幕。阅读时长阈值采用 opuscar 默认公式（汉字数 ÷ 4.5 + 其他字符数 ÷ 15 + 1.5 秒），尚待 ClapGrid 样片校准。字幕区域由当前导出字幕排版测得；缺少字体或字号时单独标为未检查。
+  - 检查文字是否停留足够、是否出框、是否挡住字幕。阅读时长阈值采用 opuscar 默认公式（汉字数 ÷ 4.5 + 其他字符数 ÷ 15 + 1.5 秒），尚待 ClapGrid 样片校准。字幕区域取自项目风格字幕模块的 `subtitleRegion`；未设置项目风格时单独标为未检查。
   - 确定性检查比较少量局部时间在两个页面实例中按不同顺序渲染的像素，并对随机闪烁或跳帧给出警告；通过抽检不能证明所有帧都确定。
 - `clapgrid_page_frames` 另外接收 `sampling: {times:[…]}` 或 `sampling: {from,to,interval}`，每次最多 60 帧。有多个页面图层时须指定 `layerIndex`。时间均为局部秒数，须在 `[0, DUR)` 内；区间从 `from` 采样至不超过 `to` 的最后一个等间隔时间点。按 1–2 秒间隔检查整体构图，按约 0.2 秒间隔观察关键动作。返回的 PNG 位于项目 `.cache/page-inspection/`，透明图层保留透明，文件可删除重建。
 

@@ -1,3 +1,4 @@
+import { selectTestStyle } from './helpers/project-style.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
@@ -5,6 +6,7 @@ import { test, expect } from './helpers/media-project.js';
 import { queryVisualContext, importVideo, queryExports, queryExportSettings, querySpeech, saveExportSettings, submitSpeech } from '../src/shared/client.js';
 
 for (const viewport of [{ width: 1600, height: 1000 }, { width: 420, height: 360 }]) test(`全片导出错误跨任务详情及连接恢复持续可见 ${viewport.width}`, async ({ page, project }) => {
+  await selectTestStyle(project.url);
   const [a] = await project.seed(['A', '未匹配片段']); await page.setViewportSize(viewport); await page.goto(project.url);
   await page.locator(`[row-id="${a}"] input[type="checkbox"]`).click();
   await page.getByRole('button', { name: '查找', exact: true }).click(); await page.getByLabel('查找文案', { exact: true }).fill('A');
@@ -37,8 +39,9 @@ test('真实成片的兼容预览在 Chrome 播放，下载原片一致，任务
   await project.modify({ changes: [{ kind: 'video', expected: (await project.status()).snapshot.segments[0]!, assetId: asset.id, start: 1 }] });
   await submitSpeech(project.url, { requestId: randomUUID(), segmentId: id! });
   await expect.poll(async () => (await querySpeech(project.url)).locked).toBe(false);
-  const details = await queryExportSettings(project.url); expect(details.fonts.length).toBeGreaterThan(0);
-  await saveExportSettings(project.url, { expected: details.settings, settings: { ...details.settings, codec: 'libx264', fps: 24, fontFamily: details.fonts[0]!, fontSize: 32 } });
+  await selectTestStyle(project.url);
+  const details = await queryExportSettings(project.url);
+  await saveExportSettings(project.url, { expected: details.settings, settings: { ...details.settings, codec: 'libx264', fps: 24 } });
   const context = await queryVisualContext(project.url, id!);
   await project.modify({ changes: [{ kind: 'composition', expected: context.segment, plan: { duration: context.duration, layers: [{ assetId: asset.id, role: 'background', from: 0, to: context.duration, start: 1, x: 0, y: 0, width: 1, height: 1, z: 0 }] } }] });
   await page.goto(project.url); await page.getByRole('button', { name: '导出全片', exact: true }).click();
@@ -80,6 +83,7 @@ import { submitExport } from '../src/shared/client.js';
 import { holdResponse } from './helpers/response-gate.js';
 
 test('取消错误跨详情和连接恢复保留，重试期间禁用并在成功后清除', async ({ page, project }) => {
+  await selectTestStyle(project.url);
   await project.seed(['A']); await submitExport(project.url);
   await expect.poll(async () => (await queryExports(project.url)).locked).toBe(false);
   // 仅把真实任务的展示状态固定为rendering以控制取消交互；真实取消/进程清理由现有服务与#198专项覆盖。

@@ -1,3 +1,4 @@
+import { selectTestStyle } from './helpers/project-style.js';
 import { test, type ResourceFixtures } from './helpers/resource-test.js';
 import type { TestContext } from 'vitest';
 import { randomUUID } from 'node:crypto';
@@ -22,9 +23,10 @@ async function finished(business: ReturnType<typeof openBusiness>, id: string): 
   return task!;
 }
 
-test('先受理再汇总空项目及设置问题，重复请求共享任务且校验期间锁定', async ({ createDirectory, openBusiness }) => {
+test('先受理再汇总空项目问题，重复请求共享任务且校验期间锁定', async ({ createDirectory, openBusiness }) => {
   const directory = createDirectory(join(tmpdir(), 'clapgrid-export-task-'));
   const business = openBusiness(directory);
+  await selectTestStyle(business);
 
   const task = business.submitExport();
   assert.equal(task.state, 'accepted');
@@ -35,7 +37,7 @@ test('先受理再汇总空项目及设置问题，重复请求共享任务且�
   assert.throws(() => business.setVoice({ speaker: 'zh_female_vv_uranus_bigtts', speechRate: 0 }), /导出|修改/);
   const result = await finished(business, task.id);
   assert.equal(result.state, 'failed');
-  assert.match(result.issues.map(issue => issue.message).join('；'), /空项目.*字幕字体.*字幕字号/);
+  assert.match(result.issues.map(issue => issue.message).join('；'), /空项目/);
   assert.equal(business.getExportTasks().locked, false);
   assert.equal(business.getSpeechStatus().tasks.length, 0);
 });
@@ -43,6 +45,7 @@ test('先受理再汇总空项目及设置问题，重复请求共享任务且�
 test('汇总逐片段缺失视频和配音，不自动配音或跳过片段', async ({ createDirectory, openBusiness }) => {
   const directory = createDirectory(join(tmpdir(), 'clapgrid-export-invalid-'));
   const business = openBusiness(directory);
+  await selectTestStyle(business);
 
   const first = business.addSegment('甲').segments[0]!;
   const second = business.addSegment('乙').segments[1]!;
@@ -59,6 +62,7 @@ test('汇总逐片段缺失视频和配音，不自动配音或跳过片段', as
 for (const owner of ['user', 'codex'] as const) test(`${owner} 持有修改权时拒绝导出，不创建任务且原编辑可以继续`, async ({ createDirectory, openBusiness }) => {
   const directory = createDirectory(join(tmpdir(), 'clapgrid-export-editing-'));
   const business = openBusiness(directory);
+  await selectTestStyle(business);
 
   const token = business.acquire(owner);
   const before = business.getSnapshot();
@@ -85,6 +89,7 @@ async function ready(t: Pick<Resources, 'createDirectory' | 'execBytes' | 'openB
   const business = t.openBusiness(directory, { key: () => 'test-key', configPath: '.env', fetch: (async () => failSpeech
     ? new Response('失败', { status: 500 })
     : new Response(`data: {"code":0,"data":"${payload}"}\n\ndata: {"code":20000000}\n\n`)) as typeof fetch });
+  await selectTestStyle(business);
   let closing: Promise<void> | undefined;
   const close = () => closing ??= business.close();
 
@@ -97,7 +102,7 @@ async function ready(t: Pick<Resources, 'createDirectory' | 'execBytes' | 'openB
     { kind: 'video', expected: second, assetId: asset.id, start: 0 },
   ] });
   const expected = business.getSnapshot().exportSettings;
-  await business.setExportSettings(token, { expected, settings: { ...expected, fps: 25, fontFamily: 'Noto Sans CJK SC', fontSize: 48 } });
+  await business.setExportSettings(token, { expected, settings: { ...expected, fps: 25 } });
   business.release(token);
   const waitSpeech = async () => {
     await expect.poll(() => business.getSpeechStatus().locked).toBeFalsy();
@@ -220,7 +225,7 @@ test('成功产物已发布但终态保存失败：继续锁定且不可读取�
   } finally { await reopened.close(); }
 });
 
-test('真实全片按项目顺序导出：起点、冻结、留边、烧录字幕与 MP4 参数，失败的最新配音不妨碍有效旧配音', async ({ createDirectory, execBytes, execText, openBusiness }) => {
+test('真实全片按项目顺序导出：起点、冻结、留边、风格字幕与 MP4 参数，失败的最新配音不妨碍有效旧配音', async ({ createDirectory, execBytes, execText, openBusiness }) => {
   const t = { createDirectory, execBytes, execText, openBusiness };
   const { business, first, second, failNextSpeech, waitSpeech, directory, asset } = await ready(t);
   const table = business.connectTable(); business.selectSegments(table, [second.id]);
@@ -253,8 +258,8 @@ test('真实全片按项目顺序导出：起点、冻结、留边、烧录字�
   assert.ok(pixel(next, 960, 100)[0]! > 200, '第二片段紧接红色画面');
   assert.ok(pixel(start, 10, 100).every(value => value < 5), '方形视频等比缩放留边');
   let white = 0;
-  for (let y = 850; y < 1070; y++) for (let x = 500; x < 1420; x++) if (pixel(start, x, y).every(value => value > 210)) white++;
-  assert.ok(white > 300, '底部有烧录的白色字幕像素');
+  for (let y = 850; y < 1070; y++) for (let x = 120; x < 1420; x++) if (pixel(start, x, y).every(value => value > 210)) white++;
+  assert.ok(white > 300, '底部有风格绘制的白色字幕像素');
   assert.deepEqual(readdirSync(join(directory, 'exports')), [path.split('/').at(-1)]);
 });
 
@@ -292,7 +297,7 @@ test('渲染器失败定位片段并清理半成品，已有成片保留且项�
   const { business, directory, root, first } = await ready(t);
   const actualFfmpeg = (await execText('which', ['ffmpeg'], { encoding: 'utf8' })).trim();
   const shim = join(root, 'bin'); mkdirSync(shim);
-  writeFileSync(join(shim, 'ffmpeg'), `#!${process.execPath}\nconst fs = require('node:fs');\nconst args = process.argv.slice(2);\nif (args.some(value => value.includes('subtitles=subtitle-'))) { fs.writeFileSync(args.at(-1), '半成品'); console.error('模拟编码器运行失败'); process.exit(7); }\nconst result = require('node:child_process').spawnSync(${JSON.stringify(actualFfmpeg)}, args, {stdio:'inherit', timeout:10000, killSignal:'SIGKILL'}); process.exit(result.status ?? 1);\n`, { mode: 0o755 });
+  writeFileSync(join(shim, 'ffmpeg'), `#!${process.execPath}\nconst fs = require('node:fs');\nconst args = process.argv.slice(2);\nif (args.some(value => value.endsWith('clip-0.mkv'))) { fs.writeFileSync(args.at(-1), '半成品'); console.error('模拟编码器运行失败'); process.exit(7); }\nconst result = require('node:child_process').spawnSync(${JSON.stringify(actualFfmpeg)}, args, {stdio:'inherit', timeout:10000, killSignal:'SIGKILL'}); process.exit(result.status ?? 1);\n`, { mode: 0o755 });
   const previous = process.env.PATH; process.env.PATH = `${shim}:${previous}`;
   try {
     mkdirSync(join(directory, 'exports')); writeFileSync(join(directory, 'exports', 'previous.mp4'), '已有成片');
@@ -327,7 +332,7 @@ test('损坏视频、真实时长变化导致起点失效、待更新或损坏�
   assert.deepEqual(readdirSync(join(directory, 'exports')), []);
 });
 
-test('再次导出使用新内容和设置，生成唯一文件且保留原成片，长文案多行烧录不阻止导出', { timeout: 60000 }, async ({ createDirectory, execBytes, execText, openBusiness }) => {
+test('再次导出使用新内容和设置，生成唯一文件且保留原成片，长文案仍可导出', { timeout: 60000 }, async ({ createDirectory, execBytes, execText, openBusiness }) => {
   const t = { createDirectory, execBytes, execText, openBusiness };
   const { business, first, waitSpeech, compose } = await ready(t);
   const original = await finished(business, business.submitExport().id);
@@ -338,7 +343,7 @@ test('再次导出使用新内容和设置，生成唯一文件且保留原成�
   business.submitSpeech({ requestId: randomUUID(), segmentId: first.id }); await waitSpeech();
   await compose();
   const token = business.acquire('user'); const expected = business.getSnapshot().exportSettings;
-  await business.setExportSettings(token, { expected, settings: { ...expected, codec: 'mpeg4', fps: 30, fontSize: 64 } }); business.release(token);
+  await business.setExportSettings(token, { expected, settings: { ...expected, codec: 'mpeg4', fps: 30 } }); business.release(token);
   const result = await finished(business, business.submitExport().id);
   assert.equal(result.state, 'succeeded', JSON.stringify(result));
   assert.equal(result.total, 2); assert.notEqual(result.output!.path, original.output!.path);
@@ -348,13 +353,11 @@ test('再次导出使用新内容和设置，生成唯一文件且保留原成�
   assert.deepEqual([video.codec_name, video.r_frame_rate], ['mpeg4', '30/1']);
   assert.ok(result.warnings.every(issue => issue.field === 'video'));
   const image = (await frame(t, result.output!.path, 0.1));
-  const bands: number[] = [];
-  for (let y = 300; y < 1030; y++) {
-    let whites = 0;
-    for (let x = 80; x < 1840; x++) if (pixel(image, x, y).every(value => value > 220)) whites++;
-    if (whites > 15 && (bands.length === 0 || y - bands.at(-1)! > 65)) bands.push(y);
+  let whites = 0;
+  for (let y = 940; y < 1000; y++) {
+    for (let x = 120; x < 1780; x++) if (pixel(image, x, y).every(value => value > 220)) whites++;
   }
-  assert.ok(bands.length >= 3, `长文案至少分三行烧录，实际行带 ${bands}`);
+  assert.ok(whites > 300, '新成片保留风格绘制的长文案');
 });
 
 test('配音刚受理及生成时拒绝导出且不创建任务，结束后恢复前置校验', async ({ createDirectory, openBusiness }) => {
@@ -362,6 +365,7 @@ test('配音刚受理及生成时拒绝导出且不创建任务，结束后恢�
   let finish!: (response: Response) => void;
   const business = openBusiness(directory, { configPath: '.env', key: () => 'key', fetch: (async () => new Promise<Response>(resolve => { finish = resolve; })) as typeof fetch });
 
+  await selectTestStyle(business);
   const segment = business.addSegment('配音尚未完成').segments[0]!;
   business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
   assert.equal(business.getSpeechStatus().tasks[0]!.state, 'accepted');
@@ -381,7 +385,6 @@ test('配音刚受理及生成时拒绝导出且不创建任务，结束后恢�
   const result = await finished(business, business.submitExport().id);
   assert.equal(result.state, 'failed');
   assert.ok(result.issues.some(issue => issue.field === 'video'));
-  assert.ok(result.issues.some(issue => issue.field === 'settings'));
   assert.ok(result.issues.every(issue => !/配音任务尚未结束/.test(issue.message)));
 
 });

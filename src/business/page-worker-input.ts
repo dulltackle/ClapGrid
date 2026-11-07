@@ -6,10 +6,10 @@ import { mediaProcess } from './media-process.js';
 
 export type PageLayer = Extract<VisualPlan['layers'][number], { kind: 'page' }>;
 export type PageWorkerInput = {
-  projectDirectory: string; pageId: string; assets: Record<string, { path: string; mime: string }>;
+  projectDirectory: string; styleId?: string; assets: Record<string, { path: string; mime: string }>;
   width: number; height: number; duration: number; fps: number; transparent: boolean; output: string;
-  diagnostic?: { kind: 'check'; x: number; y: number; scaleX: number; scaleY: number; subtitle?: PixelBox } | { kind: 'frames'; times: number[] };
-};
+  diagnostic?: { kind: 'check'; x: number; y: number; scaleX: number; scaleY: number; subtitle?: PixelBox } | { kind: 'frames'; times: number[] } | { kind: 'subtitle-region' };
+} & ({ pageId: string; subtitleText?: never } | { pageId?: never; subtitleText: string });
 
 export function pageGeometry(layer: PageLayer) {
   return {

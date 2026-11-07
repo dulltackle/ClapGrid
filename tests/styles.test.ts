@@ -2,7 +2,7 @@ import { test } from './helpers/resource-test.js';
 import { expect } from 'vitest';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { cpSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { cpSync, mkdirSync, writeFileSync, readFileSync, chmodSync } from 'node:fs';
 
 test('风格通过 HTTP 导入得到稳定身份，源文件变化产生新身份且项目副本独立', async ({ createDirectory, startService }) => {
   const root = createDirectory(join(tmpdir(), 'clapgrid-style-'));
@@ -14,14 +14,14 @@ test('风格通过 HTTP 导入得到稳定身份，源文件变化产生新身�
     expect(r.status, await r.clone().text()).toBe(200); return (await r.json()).style;
   };
   const description = readFileSync(join(sourceDirectory, 'STYLE.md'), 'utf8');
-  for (const heading of ['本质与“它不是什么”', '材质与渲染', '配色逻辑', '字体', '运动质感', '镜头语法', '转场', '修改分级']) expect(description).toContain(`## ${heading}`);
+  for (const heading of ['本质与“它不是什么”', '材质与渲染', '配色逻辑', '字体与字幕', '运动质感', '镜头语法', '转场', '修改分级']) expect(description).toContain(`## ${heading}`);
   const first = await post(); expect(first.styleId).toMatch(/^[a-f0-9]{64}$/);
   expect(await post()).toEqual(first);
   writeFileSync(join(sourceDirectory, 'lib/color.js'), `export const color=t=>'blue';`);
   expect((await post()).styleId).not.toBe(first.styleId);
 });
 
-for (const scenario of ['symlink', 'hardlink', 'extension', 'files', 'bytes', 'outside', 'ancestor', 'missing-style', 'missing-lib', 'missing-example'] as const) {
+for (const scenario of ['symlink', 'hardlink', 'extension', 'files', 'bytes', 'outside', 'ancestor', 'missing-style', 'missing-lib', 'missing-example', 'missing-subtitle'] as const) {
   test(`风格导入拒绝不安全、超限或不完整目录：${scenario}`, async ({ createDirectory, startService }) => {
     const { symlinkSync, linkSync, truncateSync, rmSync, readdirSync, existsSync } = await import('node:fs');
     const root = createDirectory(join(tmpdir(), 'clapgrid-style-boundary-'));
@@ -37,17 +37,18 @@ for (const scenario of ['symlink', 'hardlink', 'extension', 'files', 'bytes', 'o
     if (scenario === 'ancestor') { symlinkSync(source, join(root, 'alias')); sourceDirectory = join(root, 'alias'); }
     if (scenario === 'missing-style') rmSync(join(source, 'STYLE.md'));
     if (scenario === 'missing-lib') rmSync(join(source, 'lib'), { recursive: true });
+    if (scenario === 'missing-subtitle') rmSync(join(source, 'lib/subtitle.js'));
     if (scenario === 'missing-example') rmSync(join(source, 'example'), { recursive: true });
     const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'panel');
     const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
     const response = await fetch(service.url + '/api/codex/import-style', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sourceDirectory }) });
     expect(response.status).toBe(400);
-    expect((await response.json()).error).toMatch(/链接|类型|上限|工作空间|STYLE.md/);
+    expect((await response.json()).error).toMatch(/链接|类型|上限|工作空间|STYLE.md|subtitle.js/);
     const styles = join(root, 'project', 'styles'); expect(existsSync(styles) ? readdirSync(styles) : []).toEqual([]);
   });
 }
 
-test('MCP 风格导入返回稳定身份，页面导入仅接受存在的风格和合法声明', async ({ createDirectory, startService, openConnection }) => {
+test('MCP 风格导入返回稳定身份，可设置和清空项目风格，页面拒绝旧风格声明', async ({ createDirectory, startService, openConnection }) => {
   const root = createDirectory(join(tmpdir(), 'clapgrid-style-mcp-'));
   const sourceDirectory = join(root, 'style'); cpSync(resolve('tests/fixtures/style'), sourceDirectory, { recursive: true });
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'panel');
@@ -63,8 +64,33 @@ test('MCP 风格导入返回稳定身份，页面导入仅接受存在的风格�
   expect(style.styleId).toMatch(/^[a-f0-9]{64}$/);
   const repeated = await client.callTool({ name: 'clapgrid_import_style', arguments: { sourceDirectory } });
   expect((repeated.structuredContent as any).style).toEqual(style);
+  const set = (expected: string | null, styleId: string | null) => client.callTool({
+    name: 'clapgrid_set_project_style', arguments: { expected, styleId },
+  });
+  expect((await set(null, 'a'.repeat(64))).isError).toBe(true);
+  const { beginEdit } = await import('../src/shared/client.js');
+  const editing = await beginEdit(service.url);
+  try {
+    const blocked = await set(null, style.styleId);
+    expect(blocked.isError).toBe(true);
+    expect(JSON.stringify(blocked.content)).toContain('用户正在编辑');
+  } finally { await editing.close(); }
+  const selected = await set(null, style.styleId);
+  expect(selected.isError, JSON.stringify(selected)).not.toBe(true);
+  expect((selected.structuredContent as any).status.snapshot.projectStyle).toEqual({
+    styleId: style.styleId, id: 'test-color', version: '1', source: null,
+  });
+  expect((await set(null, null)).isError).toBe(true);
+  const cleared = await set(style.styleId, null);
+  expect((cleared.structuredContent as any).status.snapshot.projectStyle).toBeNull();
+  const importedModule = join(root, 'project', 'styles', style.styleId, 'lib/color.js');
+  chmodSync(importedModule, 0o644);
+  writeFileSync(importedModule, 'export const color = () => "orange";');
+  const tampered = await set(null, style.styleId);
+  expect(tampered.isError).toBe(true);
+  expect(JSON.stringify(tampered.content)).toContain('副本已改变');
   const pageDirectory = join(root, 'page'); mkdirSync(pageDirectory); writeFileSync(join(pageDirectory, 'index.html'), 'page');
-  for (const [metadata, status] of [[{ style: 'a'.repeat(64) }, 400], [{ style: '../style' }, 400], [{}, 400], [{ style: style.styleId, extra: true }, 400], [{ style: style.styleId }, 200]] as const) {
+  for (const [metadata, status] of [[{ style: 'a'.repeat(64) }, 400], [{ style: '../style' }, 400], [{}, 200], [{ style: style.styleId, extra: true }, 400], [{ style: style.styleId }, 400]] as const) {
     writeFileSync(join(pageDirectory, 'page.json'), JSON.stringify(metadata));
     const response = await fetch(service.url + '/api/codex/import-page', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sourceDirectory: pageDirectory }) });
     expect(response.status, await response.clone().text()).toBe(status);

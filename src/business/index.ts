@@ -7,8 +7,8 @@ import { mediaProcess } from './media-process.js';
 import { SERVICE_CLEANUP_MS, beforeServiceDeadline, ServiceCleanupError } from '../service-cleanup.js';
 import { projectAccess } from './project-access.js';
 import { exportTasks } from './export-tasks.js';
-import { listExportFonts, missingExportSettings, verifyExportMedia } from './export-media.js';
-import { defaultExportSettings, exportSettingsSchema, exportOutput, updateExportSettingsSchema, type UpdateExportSettings, type ExportStatus } from '../shared/contracts.js';
+import { verifyExportMedia } from './export-media.js';
+import { defaultExportSettings, exportSettingsSchema, projectStyleSchema, setProjectStyleSchema, type SetProjectStyle, exportOutput, updateExportSettingsSchema, type UpdateExportSettings, type ExportStatus } from '../shared/contracts.js';
 import { speechTasks } from './speech-tasks.js';
 import type { SpeechRuntime } from './speech.js';
 import { setImmediate } from 'node:timers/promises';
@@ -16,7 +16,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { prepareMaterial, prepareVideo, validateImage, validateVideo, mediaPath, verifyMedia, discardImport } from './video-media.js';
 import { importVideoSchema, importMaterialSchema, renameMaterialSchema, type ImportMaterial, type RenameMaterial, type ImportVideo } from '../shared/contracts.js';
-import { projectPaths } from './project-paths.js';
+import { projectFormatVersion, projectPaths } from './project-paths.js';
 import { DatabaseSync } from 'node:sqlite';
 import { segmentMaterials, visualPlanSchema, addSegmentSchema, editSegmentSchema, snapshotSchema, type Snapshot, batchSchema, type Batch, type ChangeResult, scopeSchema, selectionSchema, scopedOperationSchema, type SegmentScope, type ScopedOperation, type SegmentQueryResult } from '../shared/contracts.js';
 
@@ -37,9 +37,11 @@ export function openBusiness(directory: string, speechRuntime: SpeechRuntime = {
 
 function initializeBusiness(db: DatabaseSync, { projectDirectory, database, mediaDirectory }: ReturnType<typeof projectPaths>, speechRuntime: SpeechRuntime, verify: () => void) {
   db.exec(`
-    PRAGMA journal_mode = WAL;
     PRAGMA busy_timeout = 1000;
     PRAGMA synchronous = FULL;
+    BEGIN IMMEDIATE;
+    PRAGMA user_version = ${projectFormatVersion};
+    CREATE TABLE IF NOT EXISTS project_style (singleton INTEGER PRIMARY KEY CHECK (singleton = 1), value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS export_settings (singleton INTEGER PRIMARY KEY CHECK (singleton = 1), value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS segments (
       id TEXT PRIMARY KEY,
@@ -64,19 +66,22 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       id TEXT NOT NULL,
       created_at TEXT NOT NULL
     );
+    COMMIT;
+    PRAGMA journal_mode = WAL;
   `);
-  // 旧项目就地补列，原有片段和所有新增入口共享空说明默认值。
-  if (!db.prepare('PRAGMA table_info(segments)').all().some(column => column.name === 'visual_note')) {
-    db.exec("ALTER TABLE segments ADD COLUMN visual_note TEXT NOT NULL DEFAULT ''");
-  }
   db.prepare('INSERT OR IGNORE INTO project_identity VALUES (1, ?, ?)')
     .run(randomUUID(), new Date().toISOString());
+  function getProjectStyle() {
+    const row = db.prepare('SELECT value FROM project_style WHERE singleton = 1').get();
+    return row ? projectStyleSchema.parse(JSON.parse(String(row.value))) : null;
+  }
   function getSnapshot(): Snapshot {
     const row = db.prepare('SELECT id, created_at FROM project_identity WHERE singleton = 1').get()!;
     return snapshotSchema.parse({
       project: { id: row.id, directory: projectDirectory, createdAt: row.created_at },
       storage: { database, mediaDirectory },
       exportSettings: getExportSettings(),
+      projectStyle: getProjectStyle(),
       segments: db.prepare('SELECT id, ROW_NUMBER() OVER (ORDER BY position) AS "order", text, visual_note AS visualNote FROM segments ORDER BY position').all().map(segment => {
         const video = db.prepare('SELECT asset_id AS assetId, start FROM segment_video WHERE segment_id = ?').get(segment.id!);
         const additionalVideos = db.prepare('SELECT asset_id AS assetId, start FROM segment_additional_videos WHERE segment_id = ? ORDER BY position').all(segment.id!);
@@ -84,7 +89,8 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
         const visuals = db.prepare('SELECT materials, composition FROM segment_visuals WHERE segment_id = ?').get(segment.id!);
         if (!visuals) return legacy;
         const materials = JSON.parse(String(visuals.materials));
-        const visualVersion = createHash('sha256').update(JSON.stringify([segment.text, segment.visualNote, materials])).digest('hex');
+        // 文案变化使配音和预览过时；时长一致时保留现有画面编排。
+        const visualVersion = createHash('sha256').update(JSON.stringify([segment.visualNote, materials])).digest('hex');
         return { ...legacy, materials, visualVersion, ...(visuals.composition ? { composition: JSON.parse(String(visuals.composition)) } : {}) };
       }),
       assets: [...db.prepare('SELECT id, name, duration FROM video_assets ORDER BY rowid').all(), ...db.prepare('SELECT value FROM visual_assets ORDER BY rowid').all().map(row => JSON.parse(String(row.value)))],
@@ -96,14 +102,9 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
   }
   async function getExportStatus(signal?: AbortSignal): Promise<ExportStatus> {
     const settings = getExportSettings();
-    const issues = missingExportSettings(settings);
-    let fonts: string[] = [];
-    try {
-      fonts = await listExportFonts(signal);
-      if (settings.fontFamily && !fonts.includes(settings.fontFamily)) issues.push(`字幕字体不可用：${settings.fontFamily}，请安装该字体或重新选择`);
-    } catch (error) { issues.push((error as Error).message); }
+    const issues: string[] = [];
     try { await verifyExportMedia(settings, signal); } catch (error) { issues.push((error as Error).message); }
-    return { settings, output: exportOutput, fonts, issues };
+    return { settings, output: exportOutput, issues };
   }
   const access = projectAccess();
   // 所有项目变更共用事务边界；仅在提交成功后向 UI / MCP 发布快照。
@@ -183,6 +184,18 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       await access.verifyEdit(token); verify();
       return styleStore(projectDirectory).import(sourceDirectory, workspaceDirectory);
     },
+    async setProjectStyle(token: string, input: SetProjectStyle) {
+      const { expected, styleId } = setProjectStyleSchema.parse(input);
+      await access.verifyEdit(token);
+      return commit(() => {
+        if ((getProjectStyle()?.styleId ?? null) !== expected) throw new Error('项目风格已变化，请重新读取后修改');
+        if (styleId === null) db.exec('DELETE FROM project_style WHERE singleton = 1');
+        else {
+          const { metadata } = styleStore(projectDirectory).read(styleId);
+          db.prepare('INSERT OR REPLACE INTO project_style VALUES (1, ?)').run(JSON.stringify({ styleId, ...metadata }));
+        }
+      }, token).projectStyle;
+    },
     async importPage(token: string, sourceDirectory: string, workspaceDirectory: string) {
       await access.verifyEdit(token); verify();
       return pageStore(projectDirectory).import(sourceDirectory, workspaceDirectory);
@@ -251,8 +264,6 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
         if (JSON.stringify(getExportSettings()) !== JSON.stringify(expected)) throw new Error('导出设置已变化，请重新读取后修改');
       };
       check();
-      if (settings.fontFamily && !(await listExportFonts()).includes(settings.fontFamily)) throw new Error(`字幕字体不可用：${settings.fontFamily}，请安装该字体或重新选择`);
-      check();
       await verifyExportMedia(settings, signal);
       await access.verifyEdit(token);
       check();
@@ -284,8 +295,8 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       const duration = decoded.frames?.reduce((sum: number, frame: { nb_samples: number }) => sum + Number(frame.nb_samples), 0) / rate;
       if (!(duration > 0 && Number.isFinite(duration))) throw new Error('无法确认配音时长');
       const latest = getSnapshot().segments.find(item => item.id === segmentId);
-      if (JSON.stringify(latest) !== JSON.stringify(segment) || speech.getCurrentSpeechAudio(segmentId) !== audio) throw new Error('制作输入已变化，请重新查询');
-      return { page: { canvas: { width: 1920, height: 1080 }, fps: snapshot.exportSettings.fps, assetUrls: Object.fromEntries(segmentMaterials(segment).map(id => [id, `/assets/${id}`])), limits: { files: 256, bytes: 33554432 }, readyTimeoutSeconds: 120, style: { declaration: 'page.json: { style: <styleId> }', moduleUrl: '/styles/<styleId>/lib/', importTool: 'clapgrid_import_style', limits: { files: 256, bytes: 33554432 } } }, segment, assets: snapshot.assets.filter(asset => segmentMaterials(segment).includes(asset.id)), duration, compositionCurrent: !!segment.composition && segment.composition.inputVersion === segment.visualVersion };
+      if ((getProjectStyle()?.styleId ?? null) !== (snapshot.projectStyle?.styleId ?? null) || JSON.stringify(latest) !== JSON.stringify(segment) || speech.getCurrentSpeechAudio(segmentId) !== audio) throw new Error('制作输入已变化，请重新查询');
+      return { projectStyle: snapshot.projectStyle, page: { canvas: { width: 1920, height: 1080 }, fps: snapshot.exportSettings.fps, assetUrls: Object.fromEntries(segmentMaterials(segment).map(id => [id, `/assets/${id}`])), limits: { files: 256, bytes: 33554432 }, readyTimeoutSeconds: 120, style: { moduleUrl: '/style/lib/', importTool: 'clapgrid_import_style', setTool: 'clapgrid_set_project_style', limits: { files: 256, bytes: 33554432 } } }, segment, assets: snapshot.assets.filter(asset => segmentMaterials(segment).includes(asset.id)), duration, compositionCurrent: !!segment.composition && segment.composition.inputVersion === segment.visualVersion };
     },
     async inspectPage(input: CheckPage | PageFrames, signal: AbortSignal) {
       verify();
@@ -302,7 +313,7 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
         if (!layers.length) throw new Error('当前编排中没有匹配的页面图层');
         const sampling = 'sampling' in input ? input.sampling : undefined;
         if (sampling && layers.length !== 1) throw new Error('编排包含多个页面图层，请指定 layerIndex 后抽帧');
-        return await inspectPages({ projectDirectory, segmentId: segment.id, text: segment.text, settings: snapshot.exportSettings, layers, sampling, signal,
+        return await inspectPages({ projectDirectory, segmentId: segment.id, styleId: snapshot.projectStyle?.styleId, settings: snapshot.exportSettings, layers, sampling, signal,
           asset(id) {
             const asset = snapshot.assets.find(asset => asset.id === id);
             if (!asset) throw new Error('页面声明的素材缺失');

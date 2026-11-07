@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { parseArgs } from 'node:util';
 import { workspaceProject } from './workspace-service.js';
 import { readHostWorkspace } from './host-workspace.js';
+import { projectPaths } from './business/project-paths.js';
 import { claimProjectService } from './business/service-ownership.js';
 
 /** 只接受已退出服务的源项目；服务所有权覆盖检查和复制的整个期间。 */
@@ -18,6 +19,7 @@ export async function importProject(args: string[]) {
   const source = realpathSync(values.source);
   if (project === source || project.startsWith(source + sep) || source.startsWith(project + sep)) throw new Error('来源与目标不能相同或互相包含。');
   if (!existsSync(join(source, 'clapgrid.sqlite'))) throw new Error('来源不是已有 ClapGrid 项目。');
+  projectPaths(source);
   const reservation = join(dirname(project), `.${basename(project)}-import`);
   try { mkdirSync(reservation); } catch { throw new Error('目标正在迁入或上次迁入中断；请检查迁入现场，不会覆盖或自动重试。'); }
   let staging: string | undefined;
