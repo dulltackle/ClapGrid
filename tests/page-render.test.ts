@@ -1,5 +1,5 @@
 import { test } from './helpers/resource-test.js';
-import { expect } from 'vitest';
+import { expect, onTestFinished } from 'vitest';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -100,16 +100,21 @@ for (const [name, script, reason] of [
   ['READY 超时', `window.render=t=>{};`, 'READY 等待超时'],
 ] as const) {
   test(`页面${name}使任务失败，并指明片段和原因`, async ({ createDirectory, execBytes, startService }) => {
+    if (name === 'READY 超时') {
+      // 产品期限为 120 秒；超时路径与期限长短无关，缩短后只省掉真实等待。
+      const previous = process.env.CLAPGRID_TEST_PAGE_READY_TIMEOUT_MS; process.env.CLAPGRID_TEST_PAGE_READY_TIMEOUT_MS = '5000';
+      onTestFinished(() => { if (previous === undefined) delete process.env.CLAPGRID_TEST_PAGE_READY_TIMEOUT_MS; else process.env.CLAPGRID_TEST_PAGE_READY_TIMEOUT_MS = previous; });
+    }
     const p = await pageProject({ createDirectory, execBytes, startService });
     const pageId = await p.importPage(script); await p.save([fullPage(pageId, p.duration)]);
     const submitted = await p.post('/api/visual-previews/submit', { segmentId: p.segmentId });
     let task: any;
     await expect.poll(async () => {
       task = (await fetch(p.service.url + '/api/visual-previews').then(r => r.json())).tasks.find((t: any) => t.id === submitted.id); return task?.state;
-    }, { timeout: 140000 }).toBe('failed');
+    }, { timeout: 60000 }).toBe('failed');
     expect(task.issues).toEqual(expect.arrayContaining([expect.objectContaining({ segmentId: p.segmentId, order: 1, message: expect.stringContaining(reason) })]));
     expect(task.output).toBeUndefined();
-  }, 150000);
+  }, 90000);
 }
 
 test('页面声明的本句素材计入编排覆盖，并通过固定原件地址读取', async ({ createDirectory, execBytes, startService }) => {

@@ -9,72 +9,54 @@ concurrency:
 
 permissions:
   contents: read
+defaults:
+  run:
+    shell: bash
+# 各阶段并行运行（ADR0017）；分支保护只认汇总 job `check`。
 jobs:
-  check:
+  static:
+    name: 类型检查与生产构建
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    defaults:
-      run:
-        shell: bash
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: .node-version
           cache: npm
-      - name: 生成系统依赖缓存键
-        id: system-key
-        shell: bash
-        run: echo "key=system-debs-${ImageOS}-${ImageVersion}-$(sha256sum scripts/ci/system-packages.txt | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
-      - name: 恢复系统依赖缓存
-        id: system-cache
-        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: .cache/system-packages/*.deb
-          key: ${{ steps.system-key.outputs.key }}
-      - name: 准备媒体工具与中文字体
-        shell: bash
-        timeout-minutes: 5
-        env:
-          CLAPGRID_APT_CACHE_HIT: ${{ steps.system-cache.outputs.cache-hit || 'false' }}
-          CLAPGRID_APT_LOG: logs/system-dependencies.log
-        run: scripts/ci/install-system-packages.sh ffmpeg fontconfig fonts-noto-cjk
-      - name: 保存系统依赖缓存
-        if: steps.system-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: .cache/system-packages/*.deb
-          key: ${{ steps.system-key.outputs.key }}
-      - uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2
-        id: chrome
-        with:
-          chrome-version: '131.0.6778.204'
-          install-dependencies: true
-      - name: 记录环境
-        env:
-          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
-        run: |
-          set -o pipefail
-          { node --version; npm --version; "$CHROME_BIN" --version; ffmpeg -version; ffprobe -version; fc-list :lang=zh family; dpkg-query -W ffmpeg fontconfig fonts-noto-cjk libass9; } 2>&1 | tee logs/environment.log
       - name: 记录实际检出源码
-        run: git rev-parse HEAD | tee logs/source-commit.log
+        run: mkdir -p logs && git rev-parse HEAD | tee logs/source-commit.log
       - name: 安装锁定依赖
         run: /usr/bin/time -v -o logs/npm-ci-resources.txt npm ci 2>&1 | tee logs/npm-ci.log
-      - name: 安装固定版本页面渲染浏览器
-        run: node_modules/.bin/playwright install --with-deps chromium-headless-shell
       - name: 类型检查
         run: /usr/bin/time -v -o logs/typecheck-resources.txt npm run typecheck 2>&1 | tee logs/typecheck.log
-      - name: 全套 Vitest 逻辑与服务测试
-        id: vitest
-        run: /usr/bin/time -v -o logs/vitest-resources.txt node_modules/.bin/vitest run --reporter=default --reporter=json --outputFile.json=logs/vitest.json 2>&1 | tee logs/vitest.log
-      - name: 全套 Playwright 浏览器测试
-        id: playwright
-        env:
-          CLAPGRID_PLAYWRIGHT_RUN_DIR: logs/playwright/ci
-          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
-        run: /usr/bin/time -v -o logs/playwright-resources.txt node_modules/.bin/playwright test 2>&1 | tee logs/playwright.log
       - name: 生产构建
         run: /usr/bin/time -v -o logs/build-resources.txt npm run build 2>&1 | tee logs/build.log
+      - name: 保留完整检查日志（包括失败）
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: checks-static-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            logs/*.log
+            logs/*-resources.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  vitest:
+    name: 全套 Vitest 逻辑与服务测试 (${{ matrix.shard }}/3)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/test-environment
+      - name: 全套 Vitest 逻辑与服务测试（分片）
+        id: vitest
+        run: /usr/bin/time -v -o logs/vitest-resources.txt node_modules/.bin/vitest run --shard=${{ matrix.shard }}/3 --reporter=default --reporter=json --outputFile.json=logs/vitest.json 2>&1 | tee logs/vitest.log
       # 只对实际启动过的阶段要求报告；失败/取消仍尝试保留原生结果。
       - name: 核对 Vitest 必需报告已保存
         if: ${{ always() && steps.vitest.outcome != '' && steps.vitest.outcome != 'skipped' }}
@@ -83,10 +65,39 @@ jobs:
         if: ${{ always() && steps.vitest.outcome != '' && steps.vitest.outcome != 'skipped' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: vitest-${{ github.run_id }}-${{ github.run_attempt }}
+          name: vitest-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: logs/vitest.json
           if-no-files-found: error
           retention-days: 14
+      - name: 保留完整检查日志（包括失败）
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: checks-vitest-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            logs/*.log
+            logs/*-resources.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  playwright:
+    name: 全套 Playwright 浏览器测试 (${{ matrix.shard }}/2)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/test-environment
+        id: environment
+      - name: 全套 Playwright 浏览器测试（分片）
+        id: playwright
+        env:
+          CLAPGRID_PLAYWRIGHT_RUN_DIR: logs/playwright/ci
+          CHROME_BIN: ${{ steps.environment.outputs.chrome-path }}
+        run: /usr/bin/time -v -o logs/playwright-resources.txt node_modules/.bin/playwright test --shard=${{ matrix.shard }}/2 2>&1 | tee logs/playwright.log
       - name: 核对 Playwright 必需报告已保存
         if: ${{ always() && steps.playwright.outcome != '' && steps.playwright.outcome != 'skipped' }}
         run: |
@@ -96,7 +107,7 @@ jobs:
         if: ${{ always() && steps.playwright.outcome != '' && steps.playwright.outcome != 'skipped' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: playwright-${{ github.run_id }}-${{ github.run_attempt }}
+          name: playwright-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             logs/playwright/ci/report.json
             logs/playwright/ci/report/
@@ -107,9 +118,23 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: checks-${{ github.run_id }}-${{ github.run_attempt }}
+          name: checks-playwright-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             logs/*.log
             logs/*-resources.txt
           if-no-files-found: error
           retention-days: 14
+
+  # 必需检查名保持 `check`；任一阶段失败、取消或跳过都使其失败，不把未执行当通过。
+  check:
+    if: always()
+    needs: [static, vitest, playwright]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: 汇总各阶段结果
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$RESULTS" | jq -e 'all(.[]; .result == "success")' > /dev/null

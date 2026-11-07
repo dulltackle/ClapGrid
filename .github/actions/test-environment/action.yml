@@ -1,0 +1,60 @@
+name: 准备测试环境
+description: 安装 Node 锁定依赖、媒体工具与中文字体、固定版本 Chrome 和页面渲染浏览器，并记录环境与实际检出源码。
+outputs:
+  chrome-path:
+    description: 固定版本 Chrome 可执行文件路径
+    value: ${{ steps.chrome.outputs.chrome-path }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version-file: .node-version
+        cache: npm
+    - name: 生成系统依赖缓存键
+      id: system-key
+      shell: bash
+      run: echo "key=system-debs-${ImageOS}-${ImageVersion}-$(sha256sum scripts/ci/system-packages.txt | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+    - name: 恢复系统依赖缓存
+      id: system-cache
+      uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+      with:
+        path: .cache/system-packages/*.deb
+        key: ${{ steps.system-key.outputs.key }}
+    # composite 步骤不支持 timeout-minutes；安装脚本的下载阶段自带外层期限（#240）。
+    - name: 准备媒体工具与中文字体
+      shell: bash
+      env:
+        CLAPGRID_APT_CACHE_HIT: ${{ steps.system-cache.outputs.cache-hit || 'false' }}
+        CLAPGRID_APT_LOG: logs/system-dependencies.log
+      run: scripts/ci/install-system-packages.sh ffmpeg fontconfig fonts-noto-cjk
+    # 并行 job 可能同时未命中；后保存者因键已存在只告警，不使 job 失败。
+    - name: 保存系统依赖缓存
+      if: steps.system-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+      with:
+        path: .cache/system-packages/*.deb
+        key: ${{ steps.system-key.outputs.key }}
+    - uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2
+      id: chrome
+      with:
+        chrome-version: '131.0.6778.204'
+        install-dependencies: true
+    - name: 记录环境
+      shell: bash
+      env:
+        CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
+      run: |
+        set -o pipefail
+        { node --version; npm --version; "$CHROME_BIN" --version; ffmpeg -version; ffprobe -version; fc-list :lang=zh family; dpkg-query -W ffmpeg fontconfig fonts-noto-cjk libass9; } 2>&1 | tee logs/environment.log
+    - name: 记录实际检出源码
+      shell: bash
+      run: git rev-parse HEAD | tee logs/source-commit.log
+    - name: 安装锁定依赖
+      shell: bash
+      run: |
+        set -o pipefail
+        /usr/bin/time -v -o logs/npm-ci-resources.txt npm ci 2>&1 | tee logs/npm-ci.log
+    - name: 安装固定版本页面渲染浏览器
+      shell: bash
+      run: node_modules/.bin/playwright install --with-deps chromium-headless-shell
