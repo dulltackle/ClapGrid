@@ -265,3 +265,7 @@ export function checkPage(baseUrl: string, input: import('./contracts.js').Check
 export function pageFrames(baseUrl: string, input: import('./contracts.js').PageFrames, signal?: AbortSignal) {
   return postJson(baseUrl, '/api/page/frames', input, undefined, signal ?? null);
 }
+
+export function contactSheet(baseUrl: string, input: import('./contracts.js').ContactSheetRequest, signal?: AbortSignal): Promise<import('./contracts.js').ContactSheet> {
+  return postJson(baseUrl, '/api/exports/contact-sheet', input, undefined, signal ?? null);
+}

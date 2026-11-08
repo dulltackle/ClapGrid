@@ -4,10 +4,10 @@ import { buildIdentity, compatibleRuntime } from '../build-identity.js';
 import { readHostWorkspace, hostThreadId } from '../host-workspace.js';
 import { bindWorkspace } from '../workspace-service.js';
 import { z } from 'zod';
-import { checkPageSchema, pageFramesSchema, exportTaskRequestSchema, submitExportSchema, speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importPageSchema, setProjectStyleSchema, importMaterialSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
+import { checkPageSchema, pageFramesSchema, contactSheetSchema, exportTaskRequestSchema, submitExportSchema, speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importPageSchema, setProjectStyleSchema, importMaterialSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { RootsListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
-import { checkPage, pageFrames, importStyle, setProjectStyle, importPage, queryVisualContext, importMaterial, previewSegment, queryVisualPreviews, submitExport, queryExports, cancelExport, submitSpeechBatch, queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
+import { checkPage, pageFrames, contactSheet, importStyle, setProjectStyle, importPage, queryVisualContext, importMaterial, previewSegment, queryVisualPreviews, submitExport, queryExports, cancelExport, submitSpeechBatch, queryExportSettings, saveExportSettings, localServiceUrl, querySpeech, submitSpeech, setVoice, queryStatus, importVideo, modifyBatch, querySegments, processSegments } from '../shared/client.js';
 
 export function createBusinessMcp(url?: string) {
   const baseUrl = url === undefined ? undefined : localServiceUrl(url);
@@ -163,6 +163,14 @@ export function createBusinessMcp(url?: string) {
     try { const result = await pageFrames(await connection(extra._meta), input, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
+  server.registerTool('clapgrid_contact_sheet', {
+    description: '按 taskId 从已成功的成片或当前片段合成预览解码合成画面。sampling 传 {times:[…]} 或 {from,to,interval}，单位为秒，分别使用全片或片段内时间 [0, 时长)，最多 60 帧。返回接触印样、每帧的时间与片段归属及 1920×1080 PNG 缓存路径。结果只用于制作者自检，不是审阅证据，不写入项目记录，也不阻止预览或导出。',
+    inputSchema: contactSheetSchema,
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  }, async (input, extra) => {
+    try { const result = await contactSheet(await connection(extra._meta), input, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+  });
   server.registerTool('clapgrid_import_material', {
     description: '导入用户指定的原生 PNG（含透明）、JPEG 或视频，复制原件到项目并返回素材身份。sourcePath 为用户指定的文件绝对路径，也可使用本回合 imagegen 工具返回的 savedPath，此路径来自工具输出，无需扫描或猜测。可附带 derivation 声明派生来源，记录 method（generate/edit/matte）、executor（Codex 生图填 codex-imagegen）、实际 model、prompt 和 inputs（本项目的直接输入素材 ID，纯文字生图填空数组）。时间由服务记录。不自动关联或编排。',
     inputSchema: importMaterialSchema,
@@ -186,7 +194,7 @@ export function createBusinessMcp(url?: string) {
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   server.registerTool('clapgrid_visual_previews', {
-    description: '查询片段合成任务、错误和可播放结果。current 为 false 的旧结果不能当作当前编排；修改文案、说明、素材、编排、声音或设置后须重新制作。', inputSchema: {},
+    description: '查询片段合成任务、错误、可播放结果和已记录的片段边界（序号、身份、起点、时长，时间单位为秒）。current 为 false 的旧结果不能当作当前编排；修改文案、说明、素材、编排、声音或设置后须重新制作。', inputSchema: {},
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async (_input, extra) => {
     try { const result = await queryVisualPreviews(await connection(extra._meta)); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
@@ -256,7 +264,7 @@ export function createBusinessMcp(url?: string) {
     catch (error) { return { isError: true, content: [{ type: 'text', text: `${(error as Error).message}；请先查询导出任务确认是否已受理` }] }; }
   });
   server.registerTool('clapgrid_export_status', {
-    description: '查询全片导出任务标识、校验问题及对应片段、完成片段数、短视频冻结提示、取消清理与最终结果。succeeded 才代表成功；output 包含成片绝对路径及本地服务打开路径。',
+    description: '查询全片导出任务标识、校验问题及对应片段、完成片段数、短视频冻结提示、取消清理与最终结果。succeeded 才代表成功；output 包含成片绝对路径及本地服务打开路径。segmentBoundaries 记录片段序号、身份、精确合成起点 start、合成时长 duration 和帧对齐的画面切点 visualStart，单位为秒；旧任务可能没有该字段。',
     inputSchema: {}, annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async (_input, extra) => {
     try { const result = await queryExports(await connection(extra._meta)); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: { ...result } }; }

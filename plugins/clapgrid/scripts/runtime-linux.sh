@@ -42,11 +42,13 @@ node_ready() {
 }
 
 ffmpeg_ready() {
-  local encoders encoder
+  local encoders encoder drawtext
   encoders=$("$1" -hide_banner -encoders 2>/dev/null) || return 1
   for encoder in libx264 mpeg4 libvpx libvorbis ffv1 aac; do
     [[ $encoders =~ [[:space:]]$encoder[[:space:]] ]] || return 1
   done
+  drawtext=$("$1" -hide_banner -h filter=drawtext 2>/dev/null) || return 1
+  [[ $drawtext =~ [[:space:]]font[[:space:]]+\<string\> ]]
 }
 
 fonts_ready() {
@@ -103,7 +105,7 @@ xml_text() {
 }
 
 missing() {
-  echo '运行组件缺失或不兼容：需要 Chrome Headless Shell 156.0.8078.4、Node.js >=22.13（含 SQLite）、FFmpeg/ffprobe（含视频编码与字幕自动换行）、Fontconfig 及中文字体。本次未启动服务；由 Codex 经宿主许可执行 install 后重试。' >&2
+  echo '运行组件缺失或不兼容：需要 Chrome Headless Shell 156.0.8078.4、Node.js >=22.13（含 SQLite）、FFmpeg/ffprobe（含视频编码及支持字体名称的 drawtext）、Fontconfig 及中文字体。本次未启动服务；由 Codex 经宿主许可执行 install 后重试。' >&2
   exit 10
 }
 

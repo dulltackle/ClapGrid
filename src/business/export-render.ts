@@ -6,7 +6,7 @@ import { pageStore } from './pages.js';
 import { styleStore } from './styles.mjs';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { ExportSettings, Segment, VisualPlan } from '../shared/contracts.js';
+import type { ExportSegmentBoundary, ExportSettings, Segment, VisualPlan } from '../shared/contracts.js';
 import { exportEncodingArguments } from './export-media.js';
 import { mediaProcess } from './media-process.js';
 
@@ -83,13 +83,21 @@ export async function renderExportSegment(input: RenderSegment, settings: Export
 }
 
 export async function assembleExport(segments: RenderSegment[], settings: ExportSettings, directory: string, signal: AbortSignal) {
+  let start = 0;
+  const segmentBoundaries: ExportSegmentBoundary[] = segments.map(({ segment, duration }) => {
+    // 拼接器先把起点对齐到 Matroska 的毫秒时间戳，fps 滤镜再取最近的输出帧。
+    const visualStart = Math.round(Math.round(start * 1000) * settings.fps / 1000) / settings.fps;
+    const boundary = { order: segment.order, segmentId: segment.id, start, duration, visualStart };
+    start = Number((start + duration).toFixed(6));
+    return boundary;
+  });
   // 时间轴以精确配音时长相接，不能使用按视频帧向上取整的容器时长。
-  await writeFile(join(directory, 'clips.txt'), segments.map((segment, index) => `file clip-${index}.mkv\nduration ${segment.duration}`).join('\n'), { flag: 'wx' });
+  await writeFile(join(directory, 'clips.txt'), segmentBoundaries.map(({ duration }, index) => `file clip-${index}.mkv\nduration ${duration}`).join('\n'), { flag: 'wx' });
   signal.throwIfAborted();
   await mediaProcess('ffmpeg', ['-v', 'error', '-nostdin', '-xerror', '-f', 'concat', '-safe', '1', '-i', 'clips.txt', '-map', '0:v:0', '-map', '0:a:0',
-    '-vf', `fps=${settings.fps}`, '-af', 'asetpts=N/SR/TB', ...exportEncodingArguments(settings), '-threads', '2', '-c:a', 'aac', '-movflags', '+faststart', 'result.mp4'], { cwd: directory, signal });
+    '-vf', `fps=${settings.fps}:round=near`, '-af', 'asetpts=N/SR/TB', ...exportEncodingArguments(settings), '-threads', '2', '-c:a', 'aac', '-movflags', '+faststart', 'result.mp4'], { cwd: directory, signal });
   await mediaProcess('ffmpeg', ['-v', 'error', '-nostdin', '-xerror', '-i', 'result.mp4', '-f', 'null', '-'], { cwd: directory, signal });
-  return join(directory, 'result.mp4');
+  return { path: join(directory, 'result.mp4'), segmentBoundaries };
 }
 
 /** 内置浏览器可能不含 MP4 专有解码器，提供单独的 WebM 播放预览。 */
