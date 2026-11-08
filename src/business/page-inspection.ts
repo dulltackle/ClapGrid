@@ -1,20 +1,9 @@
 import { mkdir, mkdtemp, readFile, realpath, rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import { pageFrameLimit, type ExportSettings, type PageFrames } from '../shared/contracts.js';
+import type { ExportSettings, PageFrames } from '../shared/contracts.js';
+import { samplingTimes } from './frame-sampling.js';
 import { pageGeometry, pageOutputTransform, runPageWorker, type PageLayer, type PageWorkerInput } from './page-worker-input.js';
 import type { PixelBox } from './page-diagnostics.js';
-
-function samplingTimes(sampling: PageFrames['sampling'], duration: number) {
-  if ('times' in sampling) {
-    if (sampling.times.some(time => time >= duration)) throw new Error('抽帧时间须位于图层局部区间 [0, DUR) 内');
-    return sampling.times;
-  }
-  const { from, to, interval } = sampling;
-  if (from > to || to >= duration) throw new Error('抽帧区间须位于图层局部区间 [0, DUR) 内，且起点不大于终点');
-  const count = Math.floor((to - from) / interval + 1e-9) + 1;
-  if (count > pageFrameLimit) throw new Error(`每次最多抽取 ${pageFrameLimit} 帧`);
-  return Array.from({ length: count }, (_, i) => Math.min(to, Number((from + i * interval).toPrecision(15))));
-}
 
 export async function inspectPages(input: {
   projectDirectory: string; segmentId: string; styleId?: string; settings: ExportSettings;
@@ -23,7 +12,7 @@ export async function inspectPages(input: {
 }) {
   const { signal, settings, sampling, layers } = input;
   const selected = layers[0]!;
-  const times = sampling && samplingTimes(sampling, selected.layer.to - selected.layer.from);
+  const times = sampling && samplingTimes(sampling, selected.layer.to - selected.layer.from, '图层局部区间 [0, DUR) 内');
   const cache = join(input.projectDirectory, '.cache', 'page-inspection');
   // 不通过项目内的符号链接写到其他位置。
   for (const directory of [join(input.projectDirectory, '.cache'), cache]) {

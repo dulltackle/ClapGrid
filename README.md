@@ -16,7 +16,7 @@
 ## 运行条件
 
 - Node.js **22.13 以上**；开发与构建另需 npm。Linux 正式插件的固定组件版本和复用规则见 [Linux 用户目录运行组件](docs/linux-components.md)。
-- 视频处理要求运行进程的 PATH 中有 `ffmpeg` 与 `ffprobe`，FFmpeg 含 `libvpx` 编码器。Linux 正式插件按[组件准备流程](plugins/clapgrid/skills/open-clapgrid/references/linux.md)复用兼容组件或补齐缺失组件；开发模式缺失时明确失败。
+- 视频处理要求运行进程的 PATH 中有 `ffmpeg` 与 `ffprobe`，FFmpeg 含 `libvpx` 编码器。接触印样还需要支持通过 Fontconfig 选字体的 `drawtext` 滤镜和中文字体。Linux 正式插件按[组件准备流程](plugins/clapgrid/skills/open-clapgrid/references/linux.md)复用兼容组件或补齐缺失组件；开发模式缺失时明确失败。
 - 采用 Node 内置 `node:sqlite`，无需单独编译 SQLite 扩展；Node 22 会输出实验性 API 警告。运行时要求与版本锁定记在 `package.json` 和 `package-lock.json`。
 - Codex 桌面端须有右侧内置浏览器与宿主命令执行能力。外部浏览器仅可辅助开发，不能替代右侧验收。
 - 首次 `npm ci` 需要联网。宿主限制安装、文件写入或后台启动时遵守其审批；拒绝后停止，不改变安全配置或替换执行路径。
@@ -76,7 +76,7 @@ npm run plugin:build
 | 用途 | 工具名（参数以 [`src/mcp/server.ts`](src/mcp/server.ts) 为准） |
 | --- | --- |
 | 项目与片段 | `clapgrid_status`、`clapgrid_query_segments`、`clapgrid_modify`、`clapgrid_process_segments` |
-| 画面 | `clapgrid_import_material`、`clapgrid_import_video`、`clapgrid_visual_context`、`clapgrid_import_page`、`clapgrid_check_page`、`clapgrid_page_frames`、`clapgrid_import_style`、`clapgrid_set_project_style`、`clapgrid_preview_segment`、`clapgrid_visual_previews` |
+| 画面 | `clapgrid_import_material`、`clapgrid_import_video`、`clapgrid_visual_context`、`clapgrid_import_page`、`clapgrid_check_page`、`clapgrid_page_frames`、`clapgrid_contact_sheet`、`clapgrid_import_style`、`clapgrid_set_project_style`、`clapgrid_preview_segment`、`clapgrid_visual_previews` |
 | 配音 | `clapgrid_set_voice`、`clapgrid_submit_speech`、`clapgrid_submit_speech_batch`、`clapgrid_speech_status` |
 | 导出 | `clapgrid_export_settings`、`clapgrid_set_export_settings`、`clapgrid_submit_export`、`clapgrid_export_status`、`clapgrid_cancel_export` |
 | 打开与诊断 | `clapgrid_prepare_panel`、`clapgrid_host_context` |

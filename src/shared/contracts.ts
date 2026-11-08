@@ -17,12 +17,11 @@ export const importPageSchema = z.object({ sourceDirectory: z.string().min(1) })
 export type ImportedPage = { pageId: string; fileCount: number; bytes: number; warnings: string[] };
 export const pageFrameLimit = 60;
 export const checkPageSchema = z.object({ segmentId: z.uuid(), layerIndex: z.int().nonnegative().optional() }).strict();
-export const pageFramesSchema = checkPageSchema.extend({
-  sampling: z.union([
-    z.object({ times: z.array(z.number().nonnegative()).min(1).max(pageFrameLimit, `每次最多抽取 ${pageFrameLimit} 帧`) }).strict(),
-    z.object({ from: z.number().nonnegative(), to: z.number().nonnegative(), interval: z.number().positive() }).strict(),
-  ]),
-}).strict();
+const frameSamplingSchema = z.union([
+  z.object({ times: z.array(z.number().nonnegative()).min(1).max(pageFrameLimit, `每次最多抽取 ${pageFrameLimit} 帧`) }).strict(),
+  z.object({ from: z.number().nonnegative(), to: z.number().nonnegative(), interval: z.number().positive() }).strict(),
+]);
+export const pageFramesSchema = checkPageSchema.extend({ sampling: frameSamplingSchema }).strict();
 export type CheckPage = z.infer<typeof checkPageSchema>;
 export type PageFrames = z.infer<typeof pageFramesSchema>;
 export function layerAssets(layer: z.infer<typeof visualLayerSchema>) {
@@ -88,14 +87,22 @@ export type UpdateExportSettings = z.infer<typeof updateExportSettingsSchema>;
 
 export const submitExportSchema = z.object({}).strict();
 export const exportTaskRequestSchema = z.object({ taskId: z.uuid() }).strict();
+export const contactSheetSchema = exportTaskRequestSchema.extend({ sampling: frameSamplingSchema }).strict();
+export type ContactSheetRequest = z.infer<typeof contactSheetSchema>;
+export type ContactSheet = {
+  path: string; heading: string;
+  frames: { time: number; order: number | null; segmentId: string | null; segmentTime: number | null; label: string; path: string }[];
+};
 export type ExportIssue = { segmentId?: string; order?: number; field: 'project' | 'video' | 'start' | 'speech' | 'settings'; message: string };
+export type ExportSegmentBoundary = { order: number; segmentId: string; start: number; duration: number; visualStart: number };
 export type ExportTask = {
-  id: string; createdAt: string;
+  id: string; createdAt: string; finishedAt?: string;
   preview?: { segmentId: string; input: string; subtitleIssue?: string };
   current?: boolean;
   state: 'accepted' | 'validating' | 'rendering' | 'cleaning' | 'succeeded' | 'failed' | 'cancelled' | 'interrupted';
   message: string; completed: number; total: number; segmentId?: string;
   issues: ExportIssue[]; warnings: ExportIssue[];
+  segmentBoundaries?: ExportSegmentBoundary[];
   output?: { path: string; url: string; previewUrl?: string };
 };
 export type ExportTasksStatus = { locked: boolean; tasks: ExportTask[] };

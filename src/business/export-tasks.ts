@@ -2,9 +2,10 @@ import { segmentMaterials, segmentVideos } from '../shared/contracts.js';
 import type { ProjectAccess } from './project-access.js';
 import { randomUUID } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
-import type { ExportTask, ExportTasksStatus, ExportStatus, Snapshot, SpeechStatus } from '../shared/contracts.js';
+import type { ContactSheetRequest, ExportTask, ExportTasksStatus, ExportStatus, Snapshot, SpeechStatus } from '../shared/contracts.js';
 import { validateImage, validateVideo } from './video-media.js';
 import { exportFiles } from './export-files.js';
+import { createContactSheet } from './contact-sheet.js';
 import { assembleExport, prepareExportAudio, renderExportSegment, renderExportPreview, type RenderSegment } from './export-render.js';
 
 type ExportInputs = {
@@ -21,6 +22,10 @@ type ExportInputs = {
 export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
   db.exec('CREATE TABLE IF NOT EXISTS export_tasks (id TEXT PRIMARY KEY, value TEXT NOT NULL)');
   const tasks = (): ExportTask[] => db.prepare('SELECT value FROM export_tasks ORDER BY rowid').all().map(row => JSON.parse(String(row.value)));
+  const findTask = (id: string): ExportTask | undefined => {
+    const row = db.prepare('SELECT value FROM export_tasks WHERE id = ?').get(id);
+    return row && JSON.parse(String(row.value));
+  };
   const save = (task: ExportTask) => { inputs.verify(); db.prepare('INSERT INTO export_tasks VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET value = excluded.value').run(task.id, JSON.stringify(task)); };
   const project = inputs.snapshot();
   const files = exportFiles({ directory: project.project.directory, mediaDirectory: project.storage.mediaDirectory }, inputs.verify);
@@ -47,13 +52,14 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
     const speech = inputs.speech();
     return JSON.stringify([segment, snapshot.projectStyle?.styleId ?? null, snapshot.exportSettings, speech.voice, speech.audio.filter(audio => audio.segmentId === segmentId && audio.valid).at(-1)?.taskId]);
   }
+  const previewCurrent = (task: ExportTask) => task.state === 'succeeded' && task.preview!.input === previewInput(task.preview!.segmentId);
   const api = {
     getExportTasks(): ExportTasksStatus {
       const all = tasks();
       return { locked: inputs.access.getActivity().task === 'export', tasks: all.filter(task => !task.preview).map(task => task.id === active?.id ? structuredClone(active) : task) };
     },
     getVisualPreviews() {
-      return { ...api.getExportTasks(), tasks: tasks().filter(task => task.preview).map(task => task.id === active?.id ? structuredClone(active) : task).map(task => ({ ...task, current: task.state === 'succeeded' && task.preview!.input === previewInput(task.preview!.segmentId) })) };
+      return { ...api.getExportTasks(), tasks: tasks().filter(task => task.preview).map(task => task.id === active?.id ? structuredClone(active) : task).map(task => ({ ...task, current: previewCurrent(task) })) };
     },
     submitPreview(segmentId: string) { return api.submitExport(segmentId); },
     submitExport(previewSegmentId?: string): ExportTask {
@@ -76,6 +82,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
       running = (async () => {
         await new Promise<void>(resolve => setImmediate(resolve));
         const outputFiles = files.open(task, signal);
+        let segmentBoundaries: ExportTask['segmentBoundaries'];
         try {
           signal.throwIfAborted();
           task.state = 'validating'; task.message = '正在汇总导出问题'; save(task);
@@ -147,7 +154,8 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
           const result = await assembleExport(render, snapshot.exportSettings, workspace, signal);
           task.message = '正在生成播放预览'; save(task);
           const preview = await renderExportPreview(workspace, signal);
-          await outputFiles.publish(result, preview);
+          await outputFiles.publish(result.path, preview);
+          segmentBoundaries = result.segmentBoundaries;
         } catch (error) {
           task.message = signal.aborted ? '导出已取消' : (error as Error).message;
           if (task.segmentId) task.issues.push({ segmentId: task.segmentId, order: snapshot.segments.find(segment => segment.id === task.segmentId)?.order, field: 'video', message: task.message });
@@ -159,6 +167,8 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
           else if (output) {
             task.state = 'succeeded'; task.message = task.preview ? task.preview.subtitleIssue ?? '合成成功' : '导出成功';
             task.output = output;
+            task.segmentBoundaries = segmentBoundaries;
+            task.finishedAt = new Date().toISOString();
           } else { task.state = 'failed'; task.message = resultMessage; }
           save(task); active = undefined; controller = undefined; release();
         });
@@ -169,9 +179,26 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
       return structuredClone(task);
     },
     getExportFile(id: string, kind: 'file' | 'preview' = 'file') {
-      const task = tasks().find(task => task.id === id && task.state === 'succeeded');
-      if (!task) throw new Error('成片不存在或导出未成功');
+      const task = findTask(id);
+      if (task?.state !== 'succeeded') throw new Error('成片不存在或导出未成功');
       return files.read(task, kind);
+    },
+    contactSheet({ taskId, sampling }: ContactSheetRequest, signal: AbortSignal) {
+      inputs.verify();
+      const task = findTask(taskId);
+      if (!task) throw new Error('导出任务不存在');
+      if (task.state !== 'succeeded') throw new Error('导出任务未成功，无法抽帧');
+      const checkCurrent = () => {
+        if (task.preview && !previewCurrent(task)) throw new Error('片段合成预览已过期，请重新制作预览后再抽帧');
+      };
+      checkCurrent();
+      let source: string;
+      try { source = files.read(task, 'file'); }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new Error('导出产物文件已不存在');
+        throw error;
+      }
+      return createContactSheet({ projectDirectory: project.project.directory, task, source, sampling, signal, checkCurrent });
     },
     cancelExport(id: string): ExportTask {
       const task = active?.id === id ? active : tasks().find(task => task.id === id);

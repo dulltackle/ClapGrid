@@ -326,6 +326,7 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
     getVisualPreviews: exports.getVisualPreviews,
     submitExport: () => exports.submitExport(),
     getExportTasks: exports.getExportTasks,
+    contactSheet: exports.contactSheet,
     cancelExport: exports.cancelExport,
     getExportFile: exports.getExportFile,
     getSpeechAudio: speech.getSpeechAudio,
