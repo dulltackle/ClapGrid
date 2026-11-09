@@ -264,7 +264,7 @@ export function createBusinessMcp(url?: string) {
     catch (error) { return { isError: true, content: [{ type: 'text', text: `${(error as Error).message}；请先查询导出任务确认是否已受理` }] }; }
   });
   server.registerTool('clapgrid_export_status', {
-    description: '查询全片导出任务标识、校验问题及对应片段、完成片段数、短视频冻结提示、取消清理与最终结果。succeeded 才代表成功；output 包含成片绝对路径及本地服务打开路径。segmentBoundaries 记录片段序号、身份、精确合成起点 start、合成时长 duration 和帧对齐的画面切点 visualStart，单位为秒；旧任务可能没有该字段。',
+    description: '查询全片导出任务标识、校验问题及对应片段、完成片段数、警告、取消清理与最终结果。succeeded 才代表成功；output 包含成片绝对路径及本地服务打开路径。segmentBoundaries 记录片段序号、身份、精确合成起点 start、合成时长 duration 和帧对齐的画面切点 visualStart，单位为秒。technicalChecks 记录标准化前后实测响度（LUFS、dBTP、LU）和全片黑场区间（秒），用于制作者自检；旧任务可能缺少这些字段。',
     inputSchema: {}, annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async (_input, extra) => {
     try { const result = await queryExports(await connection(extra._meta)); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: { ...result } }; }

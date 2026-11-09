@@ -6,8 +6,9 @@ import { pageStore } from './pages.js';
 import { styleStore } from './styles.mjs';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { ExportSegmentBoundary, ExportSettings, Segment, VisualPlan } from '../shared/contracts.js';
+import type { ExportSegmentBoundary, ExportSettings, ExportTask, Segment, VisualPlan } from '../shared/contracts.js';
 import { exportEncodingArguments } from './export-media.js';
+import { checkExport, measureExportAudio } from './export-checks.js';
 import { mediaProcess } from './media-process.js';
 
 export type RenderSegment = { segment: Segment; projectDirectory: string; styleId?: string; assetMimes?: Record<string, string>; videos: { path: string; start: number; assetId?: string; kind?: 'image' | 'video' }[]; plan?: VisualPlan; audio: string; duration: number };
@@ -82,7 +83,7 @@ export async function renderExportSegment(input: RenderSegment, settings: Export
     '-c:v', 'ffv1', '-level', '3', '-pix_fmt', 'yuv420p', '-threads', '2', '-c:a', 'pcm_s16le', '-f', 'matroska', `clip-${index}.mkv`], { cwd: directory, signal });
 }
 
-export async function assembleExport(segments: RenderSegment[], settings: ExportSettings, directory: string, signal: AbortSignal) {
+export async function assembleExport(segments: RenderSegment[], settings: ExportSettings, directory: string, signal: AbortSignal, checks?: { onVerifying: () => void }): Promise<{ path: string; segmentBoundaries: ExportSegmentBoundary[]; technicalChecks?: ExportTask['technicalChecks'] }> {
   let start = 0;
   const segmentBoundaries: ExportSegmentBoundary[] = segments.map(({ segment, duration }) => {
     // 拼接器先把起点对齐到 Matroska 的毫秒时间戳，fps 滤镜再取最近的输出帧。
@@ -94,10 +95,19 @@ export async function assembleExport(segments: RenderSegment[], settings: Export
   // 时间轴以精确配音时长相接，不能使用按视频帧向上取整的容器时长。
   await writeFile(join(directory, 'clips.txt'), segmentBoundaries.map(({ duration }, index) => `file clip-${index}.mkv\nduration ${duration}`).join('\n'), { flag: 'wx' });
   signal.throwIfAborted();
-  await mediaProcess('ffmpeg', ['-v', 'error', '-nostdin', '-xerror', '-f', 'concat', '-safe', '1', '-i', 'clips.txt', '-map', '0:v:0', '-map', '0:a:0',
-    '-vf', `fps=${settings.fps}:round=near`, '-af', 'asetpts=N/SR/TB', ...exportEncodingArguments(settings), '-threads', '2', '-c:a', 'aac', '-movflags', '+faststart', 'result.mp4'], { cwd: directory, signal });
+  const input = ['-f', 'concat', '-safe', '1', '-i', 'clips.txt'];
+  const measured = checks && await measureExportAudio(input, directory, signal);
+  const audioFilter = measured ? `asetpts=N/SR/TB,${measured.filter}` : 'asetpts=N/SR/TB';
+  await mediaProcess('ffmpeg', ['-v', 'error', '-nostdin', '-xerror', ...input, '-map', '0:v:0', '-map', '0:a:0',
+    '-vf', `fps=${settings.fps}:round=near`, '-af', audioFilter, '-ar', '48000', ...exportEncodingArguments(settings), '-threads', '2', '-c:a', 'aac', '-movflags', '+faststart', 'result.mp4'], { cwd: directory, signal });
+  const result = { path: join(directory, 'result.mp4'), segmentBoundaries };
+  if (checks && measured) {
+    checks.onVerifying();
+    const verified = await checkExport(directory, signal);
+    return { ...result, technicalChecks: { loudnessBefore: measured.loudnessBefore, ...verified } };
+  }
   await mediaProcess('ffmpeg', ['-v', 'error', '-nostdin', '-xerror', '-i', 'result.mp4', '-f', 'null', '-'], { cwd: directory, signal });
-  return { path: join(directory, 'result.mp4'), segmentBoundaries };
+  return result;
 }
 
 /** 内置浏览器可能不含 MP4 专有解码器，提供单独的 WebM 播放预览。 */
