@@ -1,7 +1,7 @@
 import { panelServiceUrl } from './service-url.js';
-import { Button, NativeSelect, Dialog, DialogContent, DialogTitle, DialogDescription } from './components/ui/index.js';
+import { Button, Input, NativeSelect, Dialog, DialogContent, DialogTitle, DialogDescription } from './components/ui/index.js';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { queryExportSettings, saveExportSettings } from '../shared/client.js';
+import { queryExportSettings, saveExportSettings, setBackgroundMusic } from '../shared/client.js';
 import type { ExportSettings, ExportStatus, ServiceStatus } from '../shared/contracts.js';
 import type { ProjectEditing } from './project-editing.js';
 
@@ -34,14 +34,21 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose, restor
     reportError('编辑连接已断开，未提交输入已取消，请重新读取后编辑');
     setMessage(current => `${current === '已保存' || current.startsWith('保存失败：') ? current + '；' : ''}编辑连接已断开，未提交输入已取消，请重新读取后编辑`);
   }, error => { setMessage(error.message); reportError(error.message); });
+  const persist = (write: (token: string, signal: AbortSignal) => Promise<{ status: ServiceStatus }>) =>
+    editing.save('settings', { retain: true }, async (token, action) => {
+      setMessage('保存中…'); reportError('');
+      const result = await write(token, action.signal);
+      action.apply(() => { setDraft(result.status.snapshot.exportSettings); onStatus(result.status); setMessage('已保存'); reportError(''); });
+    }, error => { setMessage(`保存失败：${error.message}`); reportError(`保存失败：${error.message}`); });
   const save = (settings: ExportSettings) => {
     if (JSON.stringify(settings) === JSON.stringify(draft)) return;
-    return editing.save('settings', { retain: true }, async (token, action) => {
-      setMessage('保存中…'); reportError('');
-      const result = await saveExportSettings(panelServiceUrl(), { expected: draft, settings }, token);
-      action.apply(() => { setDraft(result.settings); onStatus(result.status); setMessage('已保存'); reportError(''); });
-    }, error => { setMessage(`保存失败：${error.message}`); reportError(`保存失败：${error.message}`); });
+    return persist(token => saveExportSettings(panelServiceUrl(), { expected: draft, settings }, token));
   };
+  const music = status.snapshot.backgroundMusic;
+  const saveMusic = (file: File | null) => persist((token, signal) => {
+    const expected = music?.id ?? null;
+    return setBackgroundMusic(panelServiceUrl(), file ? { expected, file } : { expected, sourcePath: null }, token, signal);
+  });
   const close = async () => {
     if (activity.busy) return;
     if (!owns || await editing.cancel('settings')) onClose();
@@ -60,6 +67,17 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose, restor
     <label className="flex min-w-0 flex-col gap-1">帧率<NativeSelect aria-label="导出帧率" disabled={disabled} value={settings.fps} onChange={event => { void save({ ...draft, fps: Number(event.target.value) as ExportSettings['fps'] }); }}>
       {[24, 25, 30, 50, 60].map(fps => <option key={fps} value={fps}>{fps} fps</option>)}
     </NativeSelect></label>
+    <div className="flex min-w-0 flex-col items-start gap-1">
+      <p className="m-0">{music ? `背景乐 ${music.name}` : '未设置背景乐'} · 仅用于全片导出</p>
+      <label className="flex w-full flex-col gap-1">选择背景乐文件
+        <Input type="file" accept="audio/*,.m4a,.mkv,.webm" disabled={disabled} onChange={event => {
+          const file = event.currentTarget.files?.[0];
+          event.currentTarget.value = '';
+          if (file) void saveMusic(file);
+        }} />
+      </label>
+      {music && <Button variant="outline" size="sm" disabled={disabled} onClick={() => { void saveMusic(null); }}>移除背景乐</Button>}
+    </div>
     <p className="m-0">{status.snapshot.projectStyle ? `项目风格 ${status.snapshot.projectStyle.id} · ${status.snapshot.projectStyle.version}` : '未设置项目风格，无法导出'}</p>
     {!!issues.length && <ul className="m-0 list-disc pl-5" aria-label="导出设置待解决项">{issues.map(issue => <li key={issue}>{issue}</li>)}</ul>}
     <p className="m-0" role="status">{message}</p>

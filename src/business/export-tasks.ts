@@ -1,6 +1,7 @@
 import { segmentMaterials, segmentVideos } from '../shared/contracts.js';
 import type { ProjectAccess } from './project-access.js';
 import { randomUUID } from 'node:crypto';
+import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import type { ContactSheetRequest, ExportTask, ExportTasksStatus, ExportStatus, Snapshot, SpeechStatus, SpeechTimestamp } from '../shared/contracts.js';
 import { validateImage, validateVideo } from './video-media.js';
@@ -8,6 +9,7 @@ import { exportFiles } from './export-files.js';
 import { blackIntervalWarnings, exportLoudnessWarning, isSilentExportAudio } from './export-checks.js';
 import { createContactSheet } from './contact-sheet.js';
 import { assembleExport, prepareExportAudio, renderExportSegment, renderExportPreview, type RenderSegment } from './export-render.js';
+import { backgroundMusicPath, decodeBackgroundMusic } from './background-music.js';
 
 type ExportInputs = {
   snapshot: () => Snapshot;
@@ -143,6 +145,19 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
             }
           }
           signal.throwIfAborted();
+          let backgroundMusic: string | undefined;
+          if (!previewSegmentId && snapshot.backgroundMusic) {
+            const { id, name } = snapshot.backgroundMusic;
+            const duration = render.reduce((total, segment) => total + segment.duration, 0);
+            const output = duration > 0 ? { path: join(workspace, 'background-music.pcm'), duration } : undefined;
+            try {
+              await decodeBackgroundMusic(backgroundMusicPath(snapshot.storage.mediaDirectory, id), signal, output);
+              backgroundMusic = output?.path;
+            } catch (error) {
+              signal.throwIfAborted();
+              task.issues.push({ field: 'settings', message: `${name}：${(error as Error).message}` });
+            }
+          }
           const settings = await inputs.settings(signal);
           task.issues.push(...settings.issues.map(message => ({ field: 'settings' as const, message })));
           signal.throwIfAborted();
@@ -154,8 +169,9 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
             await renderExportSegment(input, snapshot.exportSettings, workspace, index, signal);
             task.completed++; save(task);
           }
-          delete task.segmentId; task.message = previewSegmentId ? '正在拼接并验证片段合成预览' : '正在拼接成片并标准化响度'; save(task);
+          delete task.segmentId; task.message = previewSegmentId ? '正在拼接并验证片段合成预览' : backgroundMusic ? '正在混入背景乐并标准化响度' : '正在拼接成片并标准化响度'; save(task);
           const result = await assembleExport(render, snapshot.exportSettings, workspace, signal, previewSegmentId ? undefined : {
+            backgroundMusic,
             onVerifying: () => { task.message = '正在检查成片响度与黑场'; save(task); },
           });
           task.message = '正在生成播放预览'; save(task);

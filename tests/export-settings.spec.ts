@@ -1,6 +1,7 @@
 import { selectTestStyle } from './helpers/project-style.js';
 import { test, expect } from './helpers/project.js';
 import { holdResponse } from './helpers/response-gate.js';
+import { readFileSync } from 'node:fs';
 
 test('导出设置查看不占修改权，原生选择器自动保存并在重开保留', async ({ page, project }) => {
   await project.seed(['A']); await page.goto(project.url);
@@ -22,6 +23,29 @@ test('导出设置查看不占修改权，原生选择器自动保存并在重�
   await page.getByRole('button', { name: '更多', exact: true }).click();
   await page.getByRole('button', { name: '导出设置', exact: true }).click();
   await expect(fps).toHaveValue('60'); await expect(page.getByLabel('导出编码', { exact: true })).toHaveValue('mpeg4');
+});
+
+test('面板取得修改权后可选择、替换与移除项目背景乐', async ({ page, project }) => {
+  const buffer = readFileSync('tests/fixtures/legacy-visuals/media/86c4315d-612c-4d37-bea5-6be31bde1b5e.mp3');
+  await page.setViewportSize({ width: 420, height: 430 });
+  await page.goto(project.url);
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('button', { name: '导出设置', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '全片导出设置', exact: true });
+  const input = dialog.getByLabel('选择背景乐文件', { exact: true });
+  await expect(input).toBeDisabled();
+  await expect(dialog).toContainText('未设置背景乐');
+  await dialog.getByRole('button', { name: '编辑设置' }).click();
+  await expect(input).toBeEnabled();
+  for (const name of ['第一首.mp3', '第二首.mp3']) {
+    await input.setInputFiles({ name, mimeType: 'audio/mpeg', buffer });
+    await expect(dialog.getByRole('status')).toHaveText('已保存');
+    await expect(dialog).toContainText(name);
+    expect((await project.status()).snapshot.backgroundMusic?.name).toBe(name);
+  }
+  await dialog.getByRole('button', { name: '移除背景乐' }).click();
+  await expect(dialog).toContainText('未设置背景乐');
+  expect((await project.status()).snapshot.backgroundMusic).toBeNull();
 });
 
 test('设置保存中禁止关闭，失败保留旧值，真实断线释放修改权', async ({ page, project }) => {

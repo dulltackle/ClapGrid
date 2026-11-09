@@ -4,6 +4,8 @@ import { buildIdentity, compatibleRuntime } from '../build-identity.js';
 import { readHostWorkspace, hostThreadId } from '../host-workspace.js';
 import { bindWorkspace } from '../workspace-service.js';
 import { z } from 'zod';
+import { setBackgroundMusicSchema } from '../shared/contracts.js';
+import { setBackgroundMusic } from '../shared/client.js';
 import { checkPageSchema, pageFramesSchema, contactSheetSchema, exportTaskRequestSchema, submitExportSchema, speechBatchSchema, updateExportSettingsSchema, submitSpeechSchema, voiceSchema, importPageSchema, setProjectStyleSchema, importMaterialSchema, importVideoSchema, batchSchema, segmentQuerySchema, scopedOperationSchema } from '../shared/contracts.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { RootsListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -243,7 +245,7 @@ export function createBusinessMcp(url?: string) {
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   server.registerTool('clapgrid_export_settings', {
-    description: '读取项目全片导出设置、当前本机可选字体和环境校验问题。固定 16:9、1920×1080、MP4；字体字号首次为空，字号以 1080p 画布像素计。普通查询不持有修改权。',
+    description: '读取项目全片导出的编码、帧率、背景乐与媒体环境校验问题。固定 16:9、1920×1080、MP4。普通查询不持有修改权。',
     inputSchema: {}, annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async (_input, extra) => {
     try { const result = await queryExportSettings(await connection(extra._meta)); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: { ...result } }; }
@@ -254,6 +256,13 @@ export function createBusinessMcp(url?: string) {
     inputSchema: updateExportSettingsSchema, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   }, async (input, extra) => {
     try { const result = await saveExportSettings(await connection(extra._meta), input, undefined, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
+    catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
+  });
+  server.registerTool('clapgrid_set_background_music', {
+    description: '设置仅在全片导出时混入的一条项目背景乐。expected 填查询所得背景乐 ID，未设置时填 null。sourcePath 填用户明确指定的本机音频绝对路径，文件会复制到项目；填 null 移除设置并保留素材文件。任务锁期间拒绝修改。',
+    inputSchema: setBackgroundMusicSchema, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  }, async (input, extra) => {
+    try { const result = await setBackgroundMusic(await connection(extra._meta), input, undefined, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   server.registerTool('clapgrid_submit_export', {

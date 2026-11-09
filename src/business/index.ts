@@ -13,6 +13,9 @@ import { decodedSpeechDuration, type SpeechRuntime } from './speech.js';
 import { setImmediate } from 'node:timers/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
+import { open, rm } from 'node:fs/promises';
+import { backgroundMusicBytes, backgroundMusicName, backgroundMusicPath, decodeBackgroundMusic, type BackgroundMusicSource } from './background-music.js';
+import { backgroundMusicSchema, setBackgroundMusicSchema } from '../shared/contracts.js';
 import { prepareMaterial, prepareVideo, validateImage, validateVideo, mediaPath, verifyMedia, discardImport } from './video-media.js';
 import { importVideoSchema, importMaterialSchema, renameMaterialSchema, type ImportMaterial, type RenameMaterial, type ImportVideo } from '../shared/contracts.js';
 import { projectFormatVersion, projectPaths } from './project-paths.js';
@@ -42,6 +45,7 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
     PRAGMA user_version = ${projectFormatVersion};
     CREATE TABLE IF NOT EXISTS project_style (singleton INTEGER PRIMARY KEY CHECK (singleton = 1), value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS export_settings (singleton INTEGER PRIMARY KEY CHECK (singleton = 1), value TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS background_music (singleton INTEGER PRIMARY KEY CHECK (singleton = 1), value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS segments (
       id TEXT PRIMARY KEY,
       position INTEGER NOT NULL UNIQUE CHECK (position > 0),
@@ -80,6 +84,7 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       project: { id: row.id, directory: projectDirectory, createdAt: row.created_at },
       storage: { database, mediaDirectory },
       exportSettings: getExportSettings(),
+      backgroundMusic: getBackgroundMusic(),
       projectStyle: getProjectStyle(),
       segments: db.prepare('SELECT id, ROW_NUMBER() OVER (ORDER BY position) AS "order", text, visual_note AS visualNote FROM segments ORDER BY position').all().map(segment => {
         const video = db.prepare('SELECT asset_id AS assetId, start FROM segment_video WHERE segment_id = ?').get(segment.id!);
@@ -99,11 +104,16 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
     const row = db.prepare('SELECT value FROM export_settings WHERE singleton = 1').get();
     return exportSettingsSchema.parse(row ? JSON.parse(String(row.value)) : defaultExportSettings);
   }
+  function getBackgroundMusic() {
+    const row = db.prepare('SELECT value FROM background_music WHERE singleton = 1').get();
+    return row ? backgroundMusicSchema.parse(JSON.parse(String(row.value))) : null;
+  }
   async function getExportStatus(signal?: AbortSignal): Promise<ExportStatus> {
     const settings = getExportSettings();
+    const backgroundMusic = getBackgroundMusic();
     const issues: string[] = [];
     try { await verifyExportMedia(settings, signal); } catch (error) { issues.push((error as Error).message); }
-    return { settings, output: exportOutput, issues };
+    return { settings, backgroundMusic, output: exportOutput, issues };
   }
   const access = projectAccess();
   // 所有项目变更共用事务边界；仅在提交成功后向 UI / MCP 发布快照。
@@ -253,6 +263,37 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       return path;
     },
     getExportStatus,
+    async setBackgroundMusic(token: string, expected: string | null, source: BackgroundMusicSource | null) {
+      const signal = access.editSignal(token);
+      setBackgroundMusicSchema.shape.expected.parse(expected);
+      const check = () => {
+        if ((getBackgroundMusic()?.id ?? null) !== expected) throw new Error('背景乐设置已变化，请重新读取后修改');
+      };
+      check(); verify();
+      const music = source === null ? null : backgroundMusicSchema.parse({ id: randomUUID(), name: backgroundMusicName(source) });
+      let ownedPath: string | undefined;
+      try {
+        if (music && source !== null) {
+          const path = backgroundMusicPath(mediaDirectory, music.id);
+          const file = await open(path, 'wx', 0o600);
+          ownedPath = path;
+          try {
+            await file.writeFile(backgroundMusicBytes(source, signal), { signal });
+            await file.sync();
+          } finally { await file.close(); }
+          await decodeBackgroundMusic(path, signal);
+        }
+        await access.verifyEdit(token);
+        return commit(() => {
+          check();
+          if (music) db.prepare('INSERT OR REPLACE INTO background_music VALUES (1, ?)').run(JSON.stringify(music));
+          else db.exec('DELETE FROM background_music WHERE singleton = 1');
+        }, token).backgroundMusic;
+      } catch (error) {
+        if (ownedPath) await rm(ownedPath, { force: true });
+        throw error;
+      }
+    },
     async setExportSettings(token: string, input: UpdateExportSettings) {
       const signal = access.editSignal(token);
       const parsed = updateExportSettingsSchema.safeParse(input);

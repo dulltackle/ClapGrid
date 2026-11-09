@@ -81,7 +81,11 @@ export const exportSettingsSchema = z.object({
 export type ExportSettings = z.infer<typeof exportSettingsSchema>;
 export const defaultExportSettings: ExportSettings = { codec: 'libx264', fps: 30 };
 export const exportOutput = { width: 1920, height: 1080, aspectRatio: '16:9', container: 'mp4' } as const;
-export type ExportStatus = { settings: ExportSettings; output: typeof exportOutput; issues: string[] };
+export const backgroundMusicSchema = z.object({ id: z.uuid(), name: z.string().min(1).max(255) });
+export type BackgroundMusic = z.infer<typeof backgroundMusicSchema>;
+export const setBackgroundMusicSchema = z.object({ expected: z.uuid().nullable(), sourcePath: z.string().min(1).nullable() }).strict();
+export type SetBackgroundMusic = z.infer<typeof setBackgroundMusicSchema>;
+export type ExportStatus = { settings: ExportSettings; backgroundMusic: BackgroundMusic | null; output: typeof exportOutput; issues: string[] };
 export const updateExportSettingsSchema = z.object({ expected: exportSettingsSchema, settings: exportSettingsSchema }).strict();
 export type UpdateExportSettings = z.infer<typeof updateExportSettingsSchema>;
 
@@ -123,6 +127,7 @@ export const snapshotSchema = z.object({
   segments: z.array(segmentSchema),
   assets: z.array(videoAssetSchema),
   exportSettings: exportSettingsSchema,
+  backgroundMusic: backgroundMusicSchema.nullable().default(null),
   projectStyle: projectStyleSchema.nullable(),
 });
 export const statusSchema = z.object({
