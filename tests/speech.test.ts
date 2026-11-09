@@ -2,9 +2,12 @@ import { test } from './helpers/resource-test.js';
 import { expect } from 'vitest';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import {  } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { mediaScope } from '../src/business/media-guardian.js';
+import { defaultVoice } from '../src/shared/contracts.js';
+import recording from './fixtures/tokendance-speech/captures.json' with { type: 'json' };
 
 test('缺凭据时提交前拒绝且不发送付费请求', async ({ createDirectory, openBusiness }) => {
   const directory = createDirectory(join(tmpdir(), 'clapgrid-speech-'));
@@ -27,7 +30,7 @@ test('受理后持续锁定、重发去重，完整成功音频及输入快照�
     calls++;
     assert.equal(url, 'https://tokendance.space/gateway/ark/v3/tts/unidirectional');
     assert.equal(new Headers(options?.headers).get('X-Api-Resource-Id'), 'seed-tts-2.0');
-    assert.deepEqual(JSON.parse(String(options?.body)).req_params, { text: '你好', speaker: 'zh_female_vv_uranus_bigtts', audio_params: { format: 'mp3', sample_rate: 24000, speech_rate: 0 } });
+    assert.deepEqual(JSON.parse(String(options?.body)).req_params, { text: '你好', speaker: 'zh_female_vv_uranus_bigtts', audio_params: { format: 'mp3', sample_rate: 24000, speech_rate: 0, enable_subtitle: true } });
     return await new Promise<Response>(resolve => { finish = resolve; });
   }) as typeof fetch };
   let business = openBusiness(directory, runtime);
@@ -80,6 +83,72 @@ test('统一声音保存并校验范围，改变输入只改变配音有效性',
     business.editSegment(segment.id, '原文');
     assert.equal(business.getSpeechStatus().audio[0]?.valid, true);
   }
+});
+
+test('字级时间戳随有效配音保存、恢复和更新，末字不超过解码时长', async ({ createDirectory, execBytes, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-speech-timestamps-'));
+  const path = join(directory, 'sample.mp3');
+  await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=sample_rate=24000:duration=0.6', '-c:a', 'libmp3lame', path]);
+  const data = readFileSync(path).toString('base64');
+  const { text, frames } = recording.captures.single;
+  let nextFrames = frames;
+  const runtime = { key: () => 'controlled', configPath: 'controlled', fetch: async () => new Response(
+    [{ code: 0, data }, ...nextFrames, { code: 20000000 }].map(frame => `data: ${JSON.stringify(frame)}\n\n`).join(''),
+  ) };
+  let business = openBusiness(join(directory, 'project'), runtime);
+  const segment = business.addSegment(text).segments[0]!;
+  const generate = async () => {
+    const task = business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id });
+    await expect.poll(() => business.getSpeechStatus().locked).toBe(false);
+    return task.id;
+  };
+  const original = await generate();
+  const current = () => business.getCurrentSpeech(segment.id);
+  const timestamps = [
+    { word: '风', startTime: 0.045, endTime: 0.235, confidence: 0.8117268 },
+    { word: '起', startTime: 0.235, endTime: 0.465, confidence: 0.8936036 },
+    { word: '了。', startTime: 0.465, endTime: 0.6, confidence: 0.93361443 },
+  ];
+  expect(current()).toEqual({ path: business.getSpeechAudio(original), timestamps });
+  expect(business.getSpeechStatus().audio[0]).not.toHaveProperty('timestamps');
+
+  await business.close();
+  business = openBusiness(join(directory, 'project'), runtime);
+  expect(current().timestamps).toEqual(timestamps);
+  business.editSegment(segment.id, '风停了。');
+  expect(current).toThrow('配音待更新');
+  business.editSegment(segment.id, text);
+  business.setVoice({ ...defaultVoice, speechRate: 10 });
+  expect(current).toThrow('配音待更新');
+  business.setVoice(defaultVoice);
+  expect(current().timestamps).toEqual(timestamps);
+
+  nextFrames = [];
+  const regenerated = await generate();
+  expect(current()).toEqual({ path: business.getSpeechAudio(regenerated), timestamps: undefined });
+});
+
+test('关闭时中断配音时长探测，重开后仍可读取已完整收到的音频', async ({ createDirectory, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-speech-probe-close-'));
+  const { text, frames } = recording.captures.single;
+  const runtime = { key: () => 'controlled', configPath: 'controlled', fetch: async () => new Response(
+    [{ code: 0, data: 'SUQz' }, ...frames, { code: 20000000 }].map(frame => `data: ${JSON.stringify(frame)}\n\n`).join(''),
+  ) };
+  let business = openBusiness(directory, runtime);
+  const segment = business.addSegment(text).segments[0]!;
+  let probing = false;
+  const task = mediaScope.run(async (_command, _args, { signal }) => new Promise((_resolve, reject) => {
+    signal!.addEventListener('abort', () => reject(signal!.reason), { once: true });
+    probing = true;
+  }), () => business.submitSpeech({ requestId: randomUUID(), segmentId: segment.id }));
+  await expect.poll(() => probing).toBe(true);
+  await business.close();
+
+  business = openBusiness(directory, runtime);
+  expect(business.getSpeechStatus().tasks[0]?.state).toBe('succeeded');
+  const audio = business.getCurrentSpeech(segment.id);
+  expect(audio).toEqual({ path: business.getSpeechAudio(task.id), timestamps: undefined });
+  expect(readFileSync(audio.path, 'utf8')).toBe('ID3');
 });
 
 test('服务异常不重试，失败保留旧配音；中断任务重开标记未知且不重新请求', async ({ createDirectory, openBusiness }) => {

@@ -3,17 +3,23 @@ import { randomUUID } from 'node:crypto';
 import { rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
-import { speechBatchSchema, type SpeechBatchRequest, type SpeechOperation, type SpeechBatchResult, type SpeechBatchItem, type SegmentScope, type SegmentQueryResult, defaultVoice, submitSpeechSchema, voiceSchema, type Snapshot, type SpeechTask, type SpeechStatus } from '../shared/contracts.js';
-import { synthesize, SpeechFailure, type SpeechRuntime } from './speech.js';
+import { speechBatchSchema, type SpeechBatchRequest, type SpeechOperation, type SpeechBatchResult, type SpeechBatchItem, type SegmentScope, type SegmentQueryResult, defaultVoice, submitSpeechSchema, voiceSchema, type Snapshot, type SpeechTask, type SpeechStatus, type SpeechTimestamp } from '../shared/contracts.js';
+import { decodedSpeechDuration, synthesize, SpeechFailure, type SpeechRuntime } from './speech.js';
 import { verifyMedia } from './video-media.js';
+
+type StoredSpeechTask = SpeechTask & { timestamps?: SpeechTimestamp[] };
+
+function withoutTimestamps({ timestamps: _timestamps, ...task }: StoredSpeechTask): SpeechTask {
+  return task;
+}
 
 export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: SpeechRuntime, snapshot: () => Snapshot, verify: () => void, access: ProjectAccess, querySegments: (scope: SegmentScope, owner?: string) => SegmentQueryResult) {
   db.exec(`CREATE TABLE IF NOT EXISTS voice_settings (singleton INTEGER PRIMARY KEY, value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS speech_operations (id TEXT PRIMARY KEY, request_id TEXT UNIQUE NOT NULL, value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS speech_tasks (id TEXT PRIMARY KEY, request_id TEXT UNIQUE NOT NULL, value TEXT NOT NULL);`);
   db.prepare('INSERT OR IGNORE INTO voice_settings VALUES (1, ?)').run(JSON.stringify(defaultVoice));
-  const tasks = (): SpeechTask[] => db.prepare('SELECT value FROM speech_tasks ORDER BY rowid').all().map(row => JSON.parse(String(row.value)));
-  const save = (task: SpeechTask) => { verify(); db.prepare('INSERT INTO speech_tasks VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET value = excluded.value').run(task.id, task.requestId, JSON.stringify(task)); };
+  const tasks = (): StoredSpeechTask[] => db.prepare('SELECT value FROM speech_tasks ORDER BY rowid').all().map(row => JSON.parse(String(row.value)));
+  const save = (task: StoredSpeechTask) => { verify(); db.prepare('INSERT INTO speech_tasks VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET value = excluded.value').run(task.id, task.requestId, JSON.stringify(task)); };
   for (const task of tasks()) if (task.state === 'accepted' || task.state === 'running' || task.state === 'unknown') {
     // 成功终态未落盘的文件不作为可用配音，清理完成前不开放项目。
     verify(); rmSync(join(mediaDirectory, `${task.id}.mp3`), { force: true });
@@ -31,21 +37,29 @@ export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: S
     return (task: SpeechTask) => texts.get(task.segmentId) === task.input.text
       && settings.speaker === task.input.voice.speaker && settings.speechRate === task.input.voice.speechRate;
   };
-  const recordings = () => tasks().filter(task => task.state === 'succeeded' && !task.audioRemoved)
+  const recordings = (all = tasks()) => all.filter(task => task.state === 'succeeded' && !task.audioRemoved)
     .sort((a, b) => (a.succeededAt ?? a.createdAt).localeCompare(b.succeededAt ?? b.createdAt));
+  const currentSpeech = (segmentId: string) => {
+    access.assertAllowed('current-speech'); verify();
+    if (!snapshot().segments.some(segment => segment.id === segmentId)) throw new Error('口播片段不存在');
+    const available = recordings().filter(task => task.segmentId === segmentId);
+    const current = available.filter(inputMatcher()).at(-1);
+    if (!current) throw new Error(available.length ? '配音待更新，不可用于导出' : '配音缺失，不可用于导出');
+    const path = audioPath(current.id); verifyMedia(path);
+    return { path, timestamps: current.timestamps };
+  };
   const prune = (segmentId: string) => {
     const newest = recordings().filter(task => task.segmentId === segmentId).reverse();
     const current = newest.find(inputMatcher());
     const keep = new Set([...(current ? [current] : []), ...newest.filter(task => task !== current)].slice(0, 3).map(task => task.id));
     // 先持久化不可读取标记，再删除文件；任务和请求身份始终保留。
-    for (const task of newest) if (!keep.has(task.id)) save({ ...task, audioRemoved: true });
+    for (const task of newest) if (!keep.has(task.id)) save({ ...withoutTimestamps(task), audioRemoved: true });
     for (const task of tasks()) if (task.segmentId === segmentId && task.audioRemoved) { verify(); rmSync(audioPath(task.id), { force: true }); }
   };
   // 兼容旧项目未受限的成功音频，同时补完中断的文件清理。
   for (const segment of snapshot().segments) prune(segment.id);
   const operations = (): SpeechOperation[] => db.prepare('SELECT value FROM speech_operations ORDER BY rowid').all().map(row => JSON.parse(String(row.value)));
-  const result = (operation: SpeechOperation, replay = false): SpeechBatchResult => {
-    const all = tasks();
+  const result = (operation: SpeechOperation, replay = false, all = tasks()): SpeechBatchResult => {
     const results = operation.results.map(item => {
       const task = all.find(task => task.id === item.taskId);
       return { ...item, ...(replay && item.outcome === 'accepted' ? { outcome: 'existing' as const } : {}),
@@ -61,24 +75,35 @@ export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: S
     return { ...operation, results, summary };
   };
   // 整批共享一个锁，逐项终态落盘后继续；不依赖发起客户端的连接。
-  const run = (pending: SpeechTask[], key: string, release: () => void) => {
+  const run = (pending: StoredSpeechTask[], key: string, release: () => void) => {
     running = (async () => {
       await new Promise<void>(resolve => setImmediate(resolve));
       for (const task of pending) {
         if (closed) return;
         try {
           task.state = 'running'; task.message = '正在生成'; save(task);
-          const audio = await synthesize(task.input, key, task.requestId, runtime, controller.signal);
+          const { audio, timestamps } = await synthesize(task.input, key, task.requestId, runtime, controller.signal);
           if (closed) return;
           if (!snapshot().segments.some(segment => segment.id === task.segmentId)) throw new SpeechFailure('口播片段已删除，生成结果已丢弃');
-          verify(); writeFileSync(audioPath(task.id), audio, { flag: 'wx', mode: 0o600 });
+          const path = audioPath(task.id);
+          verify(); writeFileSync(path, audio, { flag: 'wx', mode: 0o600 });
+          const last = timestamps?.at(-1);
+          if (last) {
+            // 配音成功仍沿用原有规则；只有能确认时长时才保存时间戳。
+            const duration = await decodedSpeechDuration(path, controller.signal).catch(() => undefined);
+            if (!closed && duration !== undefined && last.startTime <= duration) {
+              last.endTime = Math.min(last.endTime, duration);
+              task.timestamps = timestamps;
+            }
+          }
           task.state = 'succeeded'; task.message = '生成成功'; task.succeededAt = new Date().toISOString();
         } catch (error) {
           if (closed) return;
           task.state = error instanceof SpeechFailure && !error.unknownResult ? 'failed' : 'unknown';
           task.message = error instanceof SpeechFailure ? error.message : '结果未知，可能已计费。请检查本地存储与供应商记录；不会自动重试。';
         } finally {
-          if (!closed) {
+          // 关闭时可取消时长探测，已完整写入的音频仍应持久化为成功结果。
+          if (!closed || task.state === 'succeeded') {
             try { save(task); if (task.state === 'succeeded') prune(task.segmentId); }
             catch { return; /* 终态不能持久化时保留锁，防止重新提交付费请求。 */ }
           }
@@ -91,8 +116,8 @@ export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: S
     getSpeechStatus(): SpeechStatus {
       const settings = voice(); const segments = snapshot().segments; const all = tasks();
       const matches = inputMatcher(segments, settings);
-      return { configured: !!runtime.key().trim(), configPath: runtime.configPath, locked: access.getActivity().task === 'speech', operations: operations().map(operation => result(operation)), voice: settings, tasks: all,
-        audio: recordings().filter(task => segments.some(segment => segment.id === task.segmentId)).map(task => ({ taskId: task.id, segmentId: task.segmentId, input: task.input, createdAt: task.succeededAt ?? task.createdAt,
+      return { configured: !!runtime.key().trim(), configPath: runtime.configPath, locked: access.getActivity().task === 'speech', operations: operations().map(operation => result(operation, false, all)), voice: settings, tasks: all.map(withoutTimestamps),
+        audio: recordings(all).filter(task => segments.some(segment => segment.id === task.segmentId)).map(task => ({ taskId: task.id, segmentId: task.segmentId, input: task.input, createdAt: task.succeededAt ?? task.createdAt,
           valid: matches(task), url: `/api/speech/audio/${task.id}` })) };
     },
     setVoice(input: unknown) {
@@ -109,7 +134,7 @@ export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: S
       const existing = tasks().find(task => task.requestId === request.requestId);
       if (existing) {
         if (existing.segmentId !== request.segmentId) throw new Error('请求标识已用于其他片段');
-        return existing;
+        return withoutTimestamps(existing);
       }
       access.assertAllowed('speech');
       const key = runtime.key().trim();
@@ -189,14 +214,8 @@ export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: S
       verify(); if (!recordings().some(task => task.id === id && snapshot().segments.some(segment => segment.id === task.segmentId))) throw new Error('完整音频不存在');
       const path = audioPath(id); verifyMedia(path); return path;
     },
-    getCurrentSpeechAudio(segmentId: string) {
-      access.assertAllowed('current-speech'); verify();
-      if (!snapshot().segments.some(segment => segment.id === segmentId)) throw new Error('口播片段不存在');
-      const available = recordings().filter(task => task.segmentId === segmentId);
-      const current = available.filter(inputMatcher()).at(-1);
-      if (!current) throw new Error(available.length ? '配音待更新，不可用于导出' : '配音缺失，不可用于导出');
-      const path = audioPath(current.id); verifyMedia(path); return path;
-    },
+    getCurrentSpeech: currentSpeech,
+    getCurrentSpeechAudio: (segmentId: string) => currentSpeech(segmentId).path,
     async close() { closed = true; controller.abort(); await running; },
   };
 }
