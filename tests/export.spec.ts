@@ -79,6 +79,32 @@ test('真实成片的兼容预览在 Chrome 播放，下载原片一致，任务
   await expect(page.getByRole('button', { name: '更多', exact: true })).toBeFocused();
 });
 
+test('只有成功的全片导出任务显示成片响度，并区分全片和片段警告', async ({ page, project }) => {
+  const base = { createdAt: '2026-11-08T00:00:00Z', state: 'succeeded', completed: 1, total: 1, message: '制作成功', issues: [], warnings: [] };
+  const measured = { integratedLufs: -14.02, truePeakDbtp: -1.58, rangeLu: 3 };
+  const technicalChecks = { loudnessBefore: measured, loudnessAfter: measured, blackIntervals: [] };
+  await page.route('**/api/exports', route => route.fulfill({ json: { locked: false, tasks: [
+    { ...base, id: '旧导出' },
+    { ...base, id: '新导出', technicalChecks, warnings: [{ field: 'project', message: '响度偏离目标' }, { order: 1, field: 'video', message: '检测到黑场' }] },
+  ] } }));
+  await page.route('**/api/visual-previews', route => route.fulfill({ json: { locked: false, tasks: [
+    { ...base, id: '预览', current: true, preview: { segmentId: '预览片段', input: '' } },
+  ] } }));
+  await page.goto(project.url);
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('button', { name: '任务记录', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '任务记录', exact: true });
+  const current = dialog.locator('details').filter({ hasText: '任务 新导出' });
+  const legacy = dialog.locator('details').filter({ hasText: '任务 旧导出' });
+  const preview = dialog.locator('details').filter({ hasText: '预览片段' });
+  for (const card of [current, legacy, preview]) await card.locator('summary').click();
+  await expect(current.getByText('成片响度 −14.0 LUFS · 真峰值 −1.6 dBTP', { exact: true })).toBeVisible();
+  await expect(current.getByText('全片：响度偏离目标', { exact: true })).toBeVisible();
+  await expect(current.getByText('片段 1：检测到黑场', { exact: true })).toBeVisible();
+  await expect(legacy.getByText('成片响度')).toHaveCount(0);
+  await expect(preview.getByText('成片响度')).toHaveCount(0);
+});
+
 import { submitExport } from '../src/shared/client.js';
 import { holdResponse } from './helpers/response-gate.js';
 

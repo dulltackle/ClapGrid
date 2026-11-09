@@ -292,19 +292,25 @@ test('取消真实渲染显示清理状态，停止并删除本次文件后才�
   assert.equal(readFileSync(join(directory, 'exports', 'previous.mp4'), 'utf8'), '已有成片');
 });
 
-test('渲染器失败定位片段并清理半成品，已有成片保留且项目恢复编辑', { timeout: 60000 }, async ({ createDirectory, execBytes, execText, openBusiness }) => {
+for (const { name, output, completed } of [
+  { name: '片段渲染失败时定位片段并', output: 'clip-0.mkv', completed: 0 },
+  { name: '标准化编码失败时', output: 'result.mp4', completed: 2 },
+]) test(`${name}清理半成品，已有成片保留且项目恢复编辑`, { timeout: 60000 }, async ({ createDirectory, execBytes, execText, openBusiness }) => {
   const t = { createDirectory, execBytes, openBusiness };
   const { business, directory, root, first } = await ready(t);
   const actualFfmpeg = (await execText('which', ['ffmpeg'], { encoding: 'utf8' })).trim();
   const shim = join(root, 'bin'); mkdirSync(shim);
-  writeFileSync(join(shim, 'ffmpeg'), `#!${process.execPath}\nconst fs = require('node:fs');\nconst args = process.argv.slice(2);\nif (args.some(value => value.endsWith('clip-0.mkv'))) { fs.writeFileSync(args.at(-1), '半成品'); console.error('模拟编码器运行失败'); process.exit(7); }\nconst result = require('node:child_process').spawnSync(${JSON.stringify(actualFfmpeg)}, args, {stdio:'inherit', timeout:10000, killSignal:'SIGKILL'}); process.exit(result.status ?? 1);\n`, { mode: 0o755 });
+  writeFileSync(join(shim, 'ffmpeg'), `#!${process.execPath}\nconst fs = require('node:fs');\nconst args = process.argv.slice(2);\nif (args.at(-1) === ${JSON.stringify(output)}) { fs.writeFileSync(args.at(-1), '半成品'); console.error('模拟编码器运行失败'); process.exit(7); }\nconst result = require('node:child_process').spawnSync(${JSON.stringify(actualFfmpeg)}, args, {stdio:'inherit', timeout:10000, killSignal:'SIGKILL'}); process.exit(result.status ?? 1);\n`, { mode: 0o755 });
   const previous = process.env.PATH; process.env.PATH = `${shim}:${previous}`;
   try {
     mkdirSync(join(directory, 'exports')); writeFileSync(join(directory, 'exports', 'previous.mp4'), '已有成片');
     const result = await finished(business, business.submitExport().id);
     assert.equal(result.state, 'failed'); assert.match(result.message, /模拟编码器运行失败/);
-    assert.equal(result.segmentId, first.id);
-    assert.equal(result.issues.at(-1)?.segmentId, first.id);
+    assert.equal(result.completed, completed);
+    assert.equal(result.output, undefined);
+    const segmentId = output === 'clip-0.mkv' ? first.id : undefined;
+    assert.equal(result.segmentId, segmentId);
+    assert.equal(result.issues.at(-1)?.segmentId, segmentId);
     assert.deepEqual(readdirSync(join(directory, 'exports')), ['previous.mp4']);
     const token = business.acquire('user'); business.release(token);
   } finally { if (previous === undefined) delete process.env.PATH; else process.env.PATH = previous; }
@@ -330,6 +336,60 @@ test('损坏视频、真实时长变化导致起点失效、待更新或损坏�
   assert.equal(result.issues.filter(issue => issue.field === 'video' && issue.message.includes('不可读或不可解码')).length, 2);
   assert.equal(business.getSpeechStatus().tasks.length, 2);
   assert.deepEqual(readdirSync(join(directory, 'exports')), []);
+});
+
+for (const { name, source } of [
+  { name: '完全静音', source: 'anullsrc=r=24000:cl=mono:d=0.8' },
+  { name: '低于 −50 dBFS', source: 'sine=frequency=440:duration=0.8,volume=-36dB' },
+]) test(`有效配音${name}时在校验阶段定位到口播片段`, async ({ createDirectory, execBytes, openBusiness }) => {
+  const { business, directory, root, second } = await ready({ createDirectory, execBytes, openBusiness });
+  const silent = join(root, 'silent.mp3');
+  await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', source, '-ar', '24000', silent]);
+  writeFileSync(business.getCurrentSpeechAudio(second.id), readFileSync(silent));
+  const result = await finished(business, business.submitExport().id);
+  expect(result).toMatchObject({ state: 'failed', completed: 0, issues: [{
+    segmentId: second.id, order: second.order, field: 'speech', message: '配音为静音，请重新生成',
+  }] });
+  expect(result.output).toBeUndefined();
+  expect(readdirSync(join(directory, 'exports'))).toEqual([]);
+});
+
+test('响度无法测量时停止导出并清理本次文件', { timeout: 60000 }, async ({ createDirectory, execBytes, openBusiness }) => {
+  // 两段可听的配音合计不足一个 400 ms 的综合响度测量窗口。
+  const { business, directory } = await ready({ createDirectory, execBytes, openBusiness }, { duration: 0.12 });
+  const result = await finished(business, business.submitExport().id);
+  expect(result).toMatchObject({ state: 'failed', completed: 2, issues: [] });
+  expect(result.message).toContain('无法读取标准化前的响度测量值');
+  expect(result.output).toBeUndefined();
+  expect(readdirSync(join(directory, 'exports'))).toEqual([]);
+});
+
+for (const { name, blackOrders, interval } of [
+  { name: '中间恰好一秒', blackOrders: [2], interval: { start: 1, end: 2 } },
+  { name: '跨两个片段至片尾', blackOrders: [2, 3], interval: { start: 1, end: 3 } },
+  { name: '片尾恰好一秒', blackOrders: [3], interval: { start: 2, end: 3 } },
+]) test(`黑场${name}时按全片时间定位且允许导出`, { timeout: 60000 }, async ({ createDirectory, execBytes, openBusiness }) => {
+  const { business, root, asset, waitSpeech, compose } = await ready({ createDirectory, execBytes, openBusiness }, { duration: 1 });
+  const black = join(root, 'black.mp4');
+  await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=black:s=96x96:r=25:d=1', '-c:v', 'libx264', black]);
+  const token = business.acquire('codex');
+  const blackAsset = await business.importVideo(token, { sourcePath: black });
+  const segments = business.addSegment('第三句字幕', token).segments;
+  const third = segments[2]!;
+  await business.modifyBatch(token, { changes: segments.slice(1).map(segment => ({
+    kind: 'video', expected: segment, assetId: blackOrders.includes(segment.order) ? blackAsset.id : asset.id, start: 0,
+  })) });
+  business.release(token);
+  business.submitSpeech({ requestId: randomUUID(), segmentId: third.id }); await waitSpeech();
+  await compose();
+
+  const result = await finished(business, business.submitExport().id);
+  expect(result, JSON.stringify(result)).toMatchObject({ state: 'succeeded', technicalChecks: { blackIntervals: [interval] } });
+  const blackWarnings = result.warnings.filter(warning => warning.message.includes('黑场'));
+  expect(blackWarnings).toEqual(blackOrders.map(order => ({
+    order, segmentId: segments[order - 1]!.id, field: 'video',
+    message: `检测到黑场 ${interval.start.toFixed(1)}–${interval.end.toFixed(1)} 秒（全片时间），可能为有意设计`,
+  })));
 });
 
 test('再次导出使用新内容和设置，生成唯一文件且保留原成片，长文案仍可导出', { timeout: 60000 }, async ({ createDirectory, execBytes, execText, openBusiness }) => {

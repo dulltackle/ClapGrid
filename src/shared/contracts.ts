@@ -95,6 +95,8 @@ export type ContactSheet = {
 };
 export type ExportIssue = { segmentId?: string; order?: number; field: 'project' | 'video' | 'start' | 'speech' | 'settings'; message: string };
 export type ExportSegmentBoundary = { order: number; segmentId: string; start: number; duration: number; visualStart: number };
+export type ExportLoudness = { integratedLufs: number; truePeakDbtp: number; rangeLu: number };
+export type ExportBlackInterval = { start: number; end: number };
 export type ExportTask = {
   id: string; createdAt: string; finishedAt?: string;
   preview?: { segmentId: string; input: string; subtitleIssue?: string };
@@ -103,6 +105,7 @@ export type ExportTask = {
   message: string; completed: number; total: number; segmentId?: string;
   issues: ExportIssue[]; warnings: ExportIssue[];
   segmentBoundaries?: ExportSegmentBoundary[];
+  technicalChecks?: { loudnessBefore: ExportLoudness; loudnessAfter: ExportLoudness; blackIntervals: ExportBlackInterval[] };
   output?: { path: string; url: string; previewUrl?: string };
 };
 export type ExportTasksStatus = { locked: boolean; tasks: ExportTask[] };

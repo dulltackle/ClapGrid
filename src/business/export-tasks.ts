@@ -5,6 +5,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import type { ContactSheetRequest, ExportTask, ExportTasksStatus, ExportStatus, Snapshot, SpeechStatus } from '../shared/contracts.js';
 import { validateImage, validateVideo } from './video-media.js';
 import { exportFiles } from './export-files.js';
+import { blackIntervalWarnings, exportLoudnessWarning, isSilentExportAudio } from './export-checks.js';
 import { createContactSheet } from './contact-sheet.js';
 import { assembleExport, prepareExportAudio, renderExportSegment, renderExportPreview, type RenderSegment } from './export-render.js';
 
@@ -82,7 +83,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
       running = (async () => {
         await new Promise<void>(resolve => setImmediate(resolve));
         const outputFiles = files.open(task, signal);
-        let segmentBoundaries: ExportTask['segmentBoundaries'];
+        let assembled: Awaited<ReturnType<typeof assembleExport>> | undefined;
         try {
           signal.throwIfAborted();
           task.state = 'validating'; task.message = '正在汇总导出问题'; save(task);
@@ -130,6 +131,9 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
                 const source = inputs.audio(current.taskId);
                 const copied = await outputFiles.copy('speech', index, source);
                 const audio = await prepareExportAudio(copied, workspace, index, signal);
+                if (!previewSegmentId && await isSilentExportAudio(audio.audio, signal)) {
+                  task.issues.push({ ...location, field: 'speech', message: '配音为静音，请重新生成' });
+                }
                 if (visualInputs.length === references.length && (visualInputs.length || plan?.layers.some(layer => layer.kind === 'page'))) {
                   if (plan && Math.abs(plan.duration - audio.duration) > 0.001) task.issues.push({ ...location, field: 'video', message: `编排时长 ${plan.duration} 秒与配音 ${audio.duration} 秒不一致，请更新编排` });
                   render.push({ segment, videos: visualInputs, plan, projectDirectory: snapshot.project.directory, styleId: snapshot.projectStyle?.styleId, assetMimes: Object.fromEntries(snapshot.assets.map(asset => [asset.id, asset.mime ?? (asset.kind === 'image' ? 'image/png' : 'video/mp4')])), ...audio });
@@ -150,12 +154,14 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
             await renderExportSegment(input, snapshot.exportSettings, workspace, index, signal);
             task.completed++; save(task);
           }
-          delete task.segmentId; task.message = '正在拼接并验证成片'; save(task);
-          const result = await assembleExport(render, snapshot.exportSettings, workspace, signal);
+          delete task.segmentId; task.message = previewSegmentId ? '正在拼接并验证片段合成预览' : '正在拼接成片并标准化响度'; save(task);
+          const result = await assembleExport(render, snapshot.exportSettings, workspace, signal, previewSegmentId ? undefined : {
+            onVerifying: () => { task.message = '正在检查成片响度与黑场'; save(task); },
+          });
           task.message = '正在生成播放预览'; save(task);
           const preview = await renderExportPreview(workspace, signal);
           await outputFiles.publish(result.path, preview);
-          segmentBoundaries = result.segmentBoundaries;
+          assembled = result;
         } catch (error) {
           task.message = signal.aborted ? '导出已取消' : (error as Error).message;
           if (task.segmentId) task.issues.push({ segmentId: task.segmentId, order: snapshot.segments.find(segment => segment.id === task.segmentId)?.order, field: 'video', message: task.message });
@@ -167,7 +173,13 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
           else if (output) {
             task.state = 'succeeded'; task.message = task.preview ? task.preview.subtitleIssue ?? '合成成功' : '导出成功';
             task.output = output;
-            task.segmentBoundaries = segmentBoundaries;
+            task.segmentBoundaries = assembled?.segmentBoundaries;
+            if (assembled?.technicalChecks) {
+              task.technicalChecks = assembled.technicalChecks;
+              const warning = exportLoudnessWarning(task.technicalChecks.loudnessAfter);
+              if (warning) task.warnings.push(warning);
+              task.warnings.push(...blackIntervalWarnings(task.technicalChecks.blackIntervals, assembled.segmentBoundaries));
+            }
             task.finishedAt = new Date().toISOString();
           } else { task.state = 'failed'; task.message = resultMessage; }
           save(task); active = undefined; controller = undefined; release();

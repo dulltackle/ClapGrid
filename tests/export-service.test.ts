@@ -15,13 +15,13 @@ import { request } from 'node:http';
 import { existsSync } from 'node:fs';
 import { queryExports, submitExport, modifyBatch, importVideo, querySpeech } from '../src/shared/client.js';
 
-test('绑定地址下成片与兼容预览链接带当前绑定前缀，可读取对应媒体且去前缀后拒绝访问', { timeout: 60000 }, async ({ createDirectory, execBytes, startService, onTestFinished }) => {
+test('绑定地址下可读取响度标准化后的成片与兼容预览，去掉绑定前缀后拒绝访问', { timeout: 60000 }, async ({ createDirectory, execBytes, execCommand, startService, onTestFinished }) => {
   const root = createDirectory(join(tmpdir(), 'clapgrid-bound-export-'));
   const workspace = join(root, 'workspace'); mkdirSync(workspace);
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
   const video = join(root, 'video.mp4'); const audio = join(root, 'speech.mp3');
   await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:r=10:d=0.4', '-c:v', 'libx264', video]);
-  await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=0.4', '-ar', '24000', audio]);
+  await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=0.8', '-af', 'volume=-8dB', '-ar', '24000', audio]);
   const payload = readFileSync(audio).toString('base64');
   const threadId = randomUUID(); const host = join(root, 'host.cjs');
   writeFileSync(host, `#!/usr/bin/env node\nrequire('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.method==='initialize')console.log(JSON.stringify({id:r.id,result:{}}));if(r.method==='thread/read')console.log(JSON.stringify({id:r.id,result:{thread:${JSON.stringify({ id: threadId, cwd: workspace })}}}));});`, { mode: 0o700 });
@@ -62,6 +62,18 @@ test('绑定地址下成片与兼容预览链接带当前绑定前缀，可读�
   assert.equal(task?.state, 'succeeded', JSON.stringify(task));
   assert.ok(task?.output, '导出任务必须提供成片');
   assert.ok(task.output.previewUrl, '导出任务必须提供兼容预览链接');
+  const { stderr } = await execCommand('ffmpeg', ['-hide_banner', '-nostats', '-i', task.output.path, '-vn', '-af', 'ebur128=peak=true', '-f', 'null', '-']);
+  const summary = stderr.split('Summary:').at(-1)!;
+  const integrated = Number(summary.match(/I:\s+(-?[\d.]+) LUFS/)?.[1]);
+  const peak = Number(summary.match(/Peak:\s+(-?[\d.]+) dBFS/)?.[1]);
+  expect(integrated).toBeGreaterThanOrEqual(-15);
+  expect(integrated).toBeLessThanOrEqual(-13);
+  expect(peak).toBeLessThanOrEqual(-1);
+
+  expect(task).toMatchObject({ technicalChecks: {
+    loudnessBefore: { integratedLufs: expect.closeTo(-30, 0), truePeakDbtp: expect.any(Number), rangeLu: expect.any(Number) },
+    loudnessAfter: { integratedLufs: integrated, truePeakDbtp: peak, rangeLu: expect.any(Number) },
+  } });
   for (const [outputUrl, contentType] of [[task.output.url, 'video/mp4'], [task.output.previewUrl, 'video/webm']] as const) {
     assert.ok(outputUrl.startsWith(`${prefix}/`), `输出链接必须带当前绑定前缀：${outputUrl}`);
     const response = await fetch(new URL(outputUrl, origin));
@@ -72,6 +84,9 @@ test('绑定地址下成片与兼容预览链接带当前绑定前缀，可读�
     assert.equal(unbound.status, 409);
     await unbound.body?.cancel();
   }
+  const preview = await execCommand('ffmpeg', ['-hide_banner', '-nostats', '-i', new URL(task.output.previewUrl, origin).href, '-vn', '-af', 'ebur128=peak=true', '-f', 'null', '-']);
+  const previewIntegrated = Number(preview.stderr.split('Summary:').at(-1)?.match(/I:\s+(-?[\d.]+) LUFS/)?.[1]);
+  expect(Math.abs(previewIntegrated - integrated)).toBeLessThan(1);
 });
 
 for (const owner of ['user', 'codex'] as const) test(`${owner} 编辑期间 HTTP 和 MCP 均拒绝导出，状态仍显示原修改权`, async ({ createDirectory, openConnection, startService }) => {
