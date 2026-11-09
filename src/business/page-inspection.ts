@@ -1,12 +1,13 @@
 import { mkdir, mkdtemp, readFile, realpath, rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { ExportSettings, PageFrames } from '../shared/contracts.js';
+import type { ExportSettings, PageFrames, SpeechTimestamp } from '../shared/contracts.js';
 import { samplingTimes } from './frame-sampling.js';
 import { pageGeometry, pageOutputTransform, runPageWorker, type PageLayer, type PageWorkerInput } from './page-worker-input.js';
-import type { PixelBox } from './page-diagnostics.js';
+import { checkPageCues, type PixelBox } from './page-diagnostics.js';
 
 export async function inspectPages(input: {
   projectDirectory: string; segmentId: string; styleId?: string; settings: ExportSettings;
+  text: string; timestamps?: SpeechTimestamp[]; speechIssue?: string;
   layers: { layer: PageLayer; layerIndex: number }[];
   asset: (id: string) => { path: string; mime: string }; sampling?: PageFrames['sampling']; signal: AbortSignal;
 }) {
@@ -50,7 +51,9 @@ export async function inspectPages(input: {
       const output = join(directory, `report-${layerIndex}.json`);
       await run(layer, output, { kind: 'check', ...pageOutputTransform(layer), subtitle: box }, layerIndex);
       const report = JSON.parse(await readFile(output, 'utf8'));
-      results.push({ pageId: layer.pageId, layerIndex, from: layer.from, to: layer.to, text: report.text, determinism: report.determinism });
+      results.push({ pageId: layer.pageId, layerIndex, from: layer.from, to: layer.to, text: report.text, determinism: report.determinism,
+        cueAlignment: checkPageCues(report.cues, layer, input),
+      });
     }
     return { segmentId: input.segmentId, subtitle: box ? { status: 'checked', box } : { status: 'not-checked', reason: '未设置项目风格' }, layers: results };
   } finally {
