@@ -43,9 +43,11 @@ test('当前片段合成预览的接触印样保留页面、素材和字幕，�
   const preview = await p.task();
   expect(preview).toMatchObject({ state: 'succeeded', current: true });
   const review = await reviewTools(p.service.url, openConnection);
-  expect(await review.tasks('clapgrid_visual_previews')).toContainEqual(expect.objectContaining({
+  const [previewTask] = await review.tasks('clapgrid_visual_previews');
+  expect(previewTask).toMatchObject({
     id: preview.id, current: true, segmentBoundaries: [{ order: 1, segmentId: p.segmentId, start: 0, duration: 1, visualStart: 0 }],
-  }));
+  });
+  expect(previewTask).not.toHaveProperty('technicalChecks');
 
   const before = await queryStatus(p.service.url);
   const edit = await beginEdit(p.service.url);
@@ -103,6 +105,8 @@ test('成片接触印样按导出时的片段边界排列，旧成片仍可按�
 
   const review = await reviewTools(p.service.url, openConnection);
   const [task] = await review.tasks('clapgrid_export_status');
+  expect(task?.technicalChecks).toEqual(exported.technicalChecks);
+  expect(task?.technicalChecks).toMatchObject({ loudnessBefore: { rangeLu: expect.any(Number) }, loudnessAfter: { rangeLu: expect.any(Number) }, blackIntervals: [] });
   expect(task).toMatchObject({ id: exported.id, segmentBoundaries: [
     { order: 1, segmentId: p.segmentId, start: 0, duration: 1.03, visualStart: 0 },
     { order: 2, segmentId: second.id, start: 1.03, duration: 1.03, visualStart: 1.04 },
@@ -137,10 +141,13 @@ test('成片接触印样按导出时的片段边界排列，旧成片仍可按�
   await p.service.close();
   // 构造上线前已经成功的导出记录，产物仍是上述真实成片。
   const legacy = new DatabaseSync(database);
-  try { legacy.prepare("UPDATE export_tasks SET value = json_remove(value, '$.segmentBoundaries', '$.finishedAt') WHERE id = ?").run(exported.id); }
+  try { legacy.prepare("UPDATE export_tasks SET value = json_remove(value, '$.segmentBoundaries', '$.finishedAt', '$.technicalChecks') WHERE id = ?").run(exported.id); }
   finally { legacy.close(); }
   const reopened = await startService(p.options);
   const oldReview = await reviewTools(reopened.url, openConnection);
+  const [oldTask] = await oldReview.tasks('clapgrid_export_status');
+  expect(oldTask).toMatchObject({ id: exported.id, state: 'succeeded', output: exported.output });
+  expect(oldTask).not.toHaveProperty('technicalChecks');
   const old = await oldReview.sample(exported.id, { times: [1.2] });
   expect(old.isError, JSON.stringify(old)).not.toBe(true);
   const oldSheet = old.structuredContent as ContactSheet;
