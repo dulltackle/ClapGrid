@@ -1,5 +1,5 @@
 import { inspectPages } from './page-inspection.js';
-import { type CheckPage, type PageFrames } from '../shared/contracts.js';
+import { type CheckPage, type PageFrames, type SpeechTimestamp } from '../shared/contracts.js';
 import { styleStore } from './styles.mjs';
 import { pageStore } from './pages.js';
 import { layerAssets } from '../shared/contracts.js';
@@ -288,11 +288,11 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       verify();
       const snapshot = getSnapshot(); const segment = snapshot.segments.find(segment => segment.id === segmentId);
       if (!segment) throw new Error('口播片段不存在');
-      const audio = speech.getCurrentSpeechAudio(segmentId);
-      const duration = await decodedSpeechDuration(audio, signal);
+      const audio = speech.getCurrentSpeech(segmentId);
+      const duration = await decodedSpeechDuration(audio.path, signal);
       const latest = getSnapshot().segments.find(item => item.id === segmentId);
-      if ((getProjectStyle()?.styleId ?? null) !== (snapshot.projectStyle?.styleId ?? null) || JSON.stringify(latest) !== JSON.stringify(segment) || speech.getCurrentSpeechAudio(segmentId) !== audio) throw new Error('制作输入已变化，请重新查询');
-      return { projectStyle: snapshot.projectStyle, page: { canvas: { width: 1920, height: 1080 }, fps: snapshot.exportSettings.fps, assetUrls: Object.fromEntries(segmentMaterials(segment).map(id => [id, `/assets/${id}`])), limits: { files: 256, bytes: 33554432 }, readyTimeoutSeconds: 120, style: { moduleUrl: '/style/lib/', importTool: 'clapgrid_import_style', setTool: 'clapgrid_set_project_style', limits: { files: 256, bytes: 33554432 } } }, segment, assets: snapshot.assets.filter(asset => segmentMaterials(segment).includes(asset.id)), duration, compositionCurrent: !!segment.composition && segment.composition.inputVersion === segment.visualVersion };
+      if ((getProjectStyle()?.styleId ?? null) !== (snapshot.projectStyle?.styleId ?? null) || JSON.stringify(latest) !== JSON.stringify(segment) || speech.getCurrentSpeechAudio(segmentId) !== audio.path) throw new Error('制作输入已变化，请重新查询');
+      return { projectStyle: snapshot.projectStyle, page: { canvas: { width: 1920, height: 1080 }, fps: snapshot.exportSettings.fps, assetUrls: Object.fromEntries(segmentMaterials(segment).map(id => [id, `/assets/${id}`])), limits: { files: 256, bytes: 33554432 }, readyTimeoutSeconds: 120, style: { moduleUrl: '/style/lib/', importTool: 'clapgrid_import_style', setTool: 'clapgrid_set_project_style', limits: { files: 256, bytes: 33554432 } } }, segment, assets: snapshot.assets.filter(asset => segmentMaterials(segment).includes(asset.id)), duration, timestamps: audio.timestamps ?? null, compositionCurrent: !!segment.composition && segment.composition.inputVersion === segment.visualVersion };
     },
     async inspectPage(input: CheckPage | PageFrames, signal: AbortSignal) {
       verify();
@@ -309,7 +309,14 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
         if (!layers.length) throw new Error('当前编排中没有匹配的页面图层');
         const sampling = 'sampling' in input ? input.sampling : undefined;
         if (sampling && layers.length !== 1) throw new Error('编排包含多个页面图层，请指定 layerIndex 后抽帧');
-        return await inspectPages({ projectDirectory, segmentId: segment.id, styleId: snapshot.projectStyle?.styleId, settings: snapshot.exportSettings, layers, sampling, signal,
+        let timestamps: SpeechTimestamp[] | undefined;
+        let speechIssue: string | undefined;
+        if (!sampling) {
+          try { timestamps = speech.getCurrentSpeech(segment.id).timestamps; }
+          catch (error) { speechIssue = `无可用于对齐的配音：${(error as Error).message}`; }
+        }
+        return await inspectPages({ projectDirectory, segmentId: segment.id, text: segment.text, timestamps, speechIssue,
+          styleId: snapshot.projectStyle?.styleId, settings: snapshot.exportSettings, layers, sampling, signal,
           asset(id) {
             const asset = snapshot.assets.find(asset => asset.id === id);
             if (!asset) throw new Error('页面声明的素材缺失');

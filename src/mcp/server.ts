@@ -150,7 +150,7 @@ export function createBusinessMcp(url?: string) {
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   server.registerTool('clapgrid_check_page', {
-    description: '对当前口播片段的页面图层执行制作者自检，返回文字停留、出框、字幕遮挡和跨实例确定性警告。layerIndex 是编排 layers 的零基下标，省略则检查所有页面图层。时间以图层起点为零；无 TEXTS(t) 时文字未检查。结果不属于审阅证据。',
+    description: '对当前口播片段的页面图层执行制作者自检，返回文字停留、出框、字幕遮挡和跨实例确定性警告。layerIndex 是编排 layers 的零基下标，省略则检查所有页面图层。文字和确定性检查的时间以图层起点为零，无 TEXTS(t) 时文字未检查。每层 cueAlignment 核对可选 CUES 的关键动作，t 为图层局部秒数，segmentTime 和 speechTime 为片段内秒数，delta 为动作减配音的偏差，绝对值超过 0.2 秒时警告。自检不阻止预览，结果不属于审阅证据。',
     inputSchema: checkPageSchema,
   }, async (input, extra) => {
     try { const result = await checkPage(await connection(extra._meta), input, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }
@@ -179,7 +179,7 @@ export function createBusinessMcp(url?: string) {
     catch (error) { return { isError: true, content: [{ type: 'text', text: (error as Error).message }] }; }
   });
   server.registerTool('clapgrid_visual_context', {
-    description: '返回页面画布 1920×1080、导出帧率、/assets/<assetId> 原件地址及导入上限；返回项目风格身份与来源；以 /style/lib/ 导入项目风格模块。页面视口按图层尺寸取偶数，render(t) 使用图层局部时间，DUR 等于 to-from。查询指定片段当前文案、说明、素材、已保存编排及有效配音的精确解码时长（秒）。先完成配音，再据此 duration 提交编排；缺失或待更新的配音会明确拒绝。',
+    description: '返回页面画布 1920×1080、导出帧率、/assets/<assetId> 原件地址及导入上限；返回项目风格身份与来源；以 /style/lib/ 导入项目风格模块。页面视口按图层尺寸取偶数，render(t) 使用图层局部时间，DUR 等于 to-from。查询指定片段当前文案、说明、素材、已保存编排及有效配音的精确解码时长（秒）。timestamps 返回供应商字级时间戳（相对片段起点的秒数），null 表示无时间戳。先完成配音，再据此 duration 提交编排；缺失或待更新的配音会明确拒绝。',
     inputSchema: z.object({ segmentId: z.uuid() }).strict(),
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async (input, extra) => {

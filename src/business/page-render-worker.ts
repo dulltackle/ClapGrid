@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { pageBrowserExecutable, pageBrowserVersion } from './page-browser.js';
 import { styleStore } from './styles.mjs';
 import { mediaProcess } from './media-process.js';
-import { pageTexts, trackPageTexts } from './page-diagnostics.js';
+import { pageCueLimits, pageTexts, trackPageTexts } from './page-diagnostics.js';
 import type { PageWorkerInput } from './page-worker-input.js';
 import { pageStore } from './pages.js';
 
@@ -173,6 +173,24 @@ try {
         await screenshot(tab, join(input.output, `frame-${index}.png`));
       }
     } else {
+      const cues = await guard(tab.evaluate(({ count, wordLength }) => {
+        try {
+          const raw = (window as Window & { CUES?: unknown }).CUES;
+          if (raw === undefined) return undefined;
+          if (!Array.isArray(raw)) return null;
+          const length = raw.length;
+          if (!Number.isSafeInteger(length) || length < 0 || length > count) return null;
+          const cues: { t: number | null; word: string | null }[] = [];
+          for (let index = 0; index < length; index++) {
+            const { t, word } = raw[index] ?? {};
+            cues[index] = {
+              t: typeof t === 'number' ? t : null,
+              word: typeof word === 'string' && word.length <= wordLength ? word : null,
+            };
+          }
+          return cues;
+        } catch { return null; }
+      }, pageCueLimits));
       // 两个独立页面实例使用不同顺序；比较解码后的 RGBA 像素。
       const samples = [...new Set([Math.floor(frames / 2), 0, frames - 1])];
       const hashes: Map<number, string>[] = [];
@@ -205,6 +223,7 @@ try {
         }
       }
       await writeFile(input.output, JSON.stringify({
+        cues,
         text: available ? tracker.result() : { status: 'not-checked', issues: [], reason: '页面没有提供 TEXTS(t)' },
         determinism: { sampledTimes: [...samples].sort((a, b) => a - b).map(frame => frame / input.fps), mismatchedTimes,
           warnings: mismatchedTimes.length ? ['跨实例乱序渲染像素不一致，成片可能随机闪烁或跳帧。请检查无种子随机数、当前时间或依赖上一帧状态的代码。'] : [] },
