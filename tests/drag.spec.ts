@@ -5,6 +5,7 @@ import type { Page } from '@playwright/test';
 
 async function begin(page: Page, id: string) {
   const handle = page.locator(`[row-id="${id}"] [aria-label^="拖动片段 "]`);
+  await expect(handle).toBeEnabled();
   await handle.hover();
   let box: Awaited<ReturnType<typeof handle.boundingBox>>;
   await expect.poll(async () => { box = await handle.boundingBox(); return box !== null; }).toBe(true);
