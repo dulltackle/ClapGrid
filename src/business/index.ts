@@ -3,14 +3,13 @@ import { type CheckPage, type PageFrames } from '../shared/contracts.js';
 import { styleStore } from './styles.mjs';
 import { pageStore } from './pages.js';
 import { layerAssets } from '../shared/contracts.js';
-import { mediaProcess } from './media-process.js';
 import { SERVICE_CLEANUP_MS, beforeServiceDeadline, ServiceCleanupError } from '../service-cleanup.js';
 import { projectAccess } from './project-access.js';
 import { exportTasks } from './export-tasks.js';
 import { verifyExportMedia } from './export-media.js';
 import { defaultExportSettings, exportSettingsSchema, projectStyleSchema, setProjectStyleSchema, type SetProjectStyle, exportOutput, updateExportSettingsSchema, type UpdateExportSettings, type ExportStatus } from '../shared/contracts.js';
 import { speechTasks } from './speech-tasks.js';
-import type { SpeechRuntime } from './speech.js';
+import { decodedSpeechDuration, type SpeechRuntime } from './speech.js';
 import { setImmediate } from 'node:timers/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
@@ -290,10 +289,7 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       const snapshot = getSnapshot(); const segment = snapshot.segments.find(segment => segment.id === segmentId);
       if (!segment) throw new Error('口播片段不存在');
       const audio = speech.getCurrentSpeechAudio(segmentId);
-      const { stdout } = await mediaProcess('ffprobe', ['-v', 'error', '-protocol_whitelist', 'file,pipe', '-format_whitelist', 'mp3,wav', '-select_streams', 'a:0', '-show_frames', '-show_entries', 'stream=sample_rate:frame=nb_samples', '-of', 'json', audio], { signal });
-      const decoded = JSON.parse(stdout); const rate = Number(decoded.streams?.[0]?.sample_rate);
-      const duration = decoded.frames?.reduce((sum: number, frame: { nb_samples: number }) => sum + Number(frame.nb_samples), 0) / rate;
-      if (!(duration > 0 && Number.isFinite(duration))) throw new Error('无法确认配音时长');
+      const duration = await decodedSpeechDuration(audio, signal);
       const latest = getSnapshot().segments.find(item => item.id === segmentId);
       if ((getProjectStyle()?.styleId ?? null) !== (snapshot.projectStyle?.styleId ?? null) || JSON.stringify(latest) !== JSON.stringify(segment) || speech.getCurrentSpeechAudio(segmentId) !== audio) throw new Error('制作输入已变化，请重新查询');
       return { projectStyle: snapshot.projectStyle, page: { canvas: { width: 1920, height: 1080 }, fps: snapshot.exportSettings.fps, assetUrls: Object.fromEntries(segmentMaterials(segment).map(id => [id, `/assets/${id}`])), limits: { files: 256, bytes: 33554432 }, readyTimeoutSeconds: 120, style: { moduleUrl: '/style/lib/', importTool: 'clapgrid_import_style', setTool: 'clapgrid_set_project_style', limits: { files: 256, bytes: 33554432 } } }, segment, assets: snapshot.assets.filter(asset => segmentMaterials(segment).includes(asset.id)), duration, compositionCurrent: !!segment.composition && segment.composition.inputVersion === segment.visualVersion };
@@ -330,6 +326,7 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
     cancelExport: exports.cancelExport,
     getExportFile: exports.getExportFile,
     getSpeechAudio: speech.getSpeechAudio,
+    getCurrentSpeech: speech.getCurrentSpeech,
     getCurrentSpeechAudio: speech.getCurrentSpeechAudio,
     getSnapshot,
     acquire: access.acquire, release: access.release, retainEdit: access.retainEdit,

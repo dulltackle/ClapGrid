@@ -9,7 +9,8 @@ test('跨网络分块拼接 SSE，只有完成标记后才返回完整音频', a
   const bytes = new TextEncoder().encode('data: {"code":0,"data":"SUQz"}\r\n\r\ndata: {"code":0,"data":"YWJj"}\n\ndata: {"code":20000000}\n\n');
   let index = 0;
   const response = new Response(new ReadableStream({ pull(controller) { if (index === bytes.length) controller.close(); else controller.enqueue(bytes.slice(index, ++index)); } }));
-  assert.equal((await run(response)).toString(), 'ID3abc');
+  const { audio } = await run(response);
+  assert.equal(audio.toString(), 'ID3abc');
 });
 for (const [status, reason] of [[401, /鉴权/], [402, /余额/], [429, /限流/], [503, /服务错误.*结果未知，可能已计费/]] as const) {
   test(`HTTP ${status} 返回原因与下一步且不泄露响应正文`, async () => {

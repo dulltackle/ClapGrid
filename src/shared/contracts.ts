@@ -198,6 +198,7 @@ export const defaultVoice = { speaker: 'zh_female_vv_uranus_bigtts', speechRate:
 export const submitSpeechSchema = z.object({ requestId: z.uuid(), segmentId: z.uuid() }).strict();
 export type Voice = z.infer<typeof voiceSchema>;
 export type SpeechInput = { text: string; voice: Voice };
+export type SpeechTimestamp = { word: string; startTime: number; endTime: number; confidence: number };
 export type SpeechTask = { id: string; requestId: string; segmentId: string; input: SpeechInput; state: 'accepted' | 'running' | 'succeeded' | 'failed' | 'unknown'; message: string; createdAt: string; succeededAt?: string; audioRemoved?: boolean };
 export type SpeechStatus = { configured: boolean; configPath: string; locked: boolean; operations: SpeechBatchResult[]; voice: Voice; tasks: SpeechTask[]; audio: { taskId: string; segmentId: string; input: SpeechInput; createdAt: string; valid: boolean; url: string }[] };
 
