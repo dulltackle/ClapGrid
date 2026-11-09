@@ -1,6 +1,6 @@
 ---
 id: iso-infographic
-version: "2"
+version: "3"
 ---
 # 等距信息图
 
@@ -18,7 +18,7 @@ version: "2"
 
 ## 字体与字幕
 
-标题 68 px、700，标签 32–42 px、400/700。字幕首选 Noto Sans CJK SC，400、52 px、行距 66 px，按画布测量换行，超长文案在保留区内缩排。宿主将整句绘制于左对齐深青底卡上，首 0.24 秒从 82% 淡入，保留到片段末帧。字幕保留区为 x=104、y=880、1712×164。Noto Sans CJK SC 采用 SIL OFL 1.1，由 Linux 运行组件按需补齐。使用其他系统中文字体的环境回退到 sans-serif，700 在仅装常规体的环境由浏览器合成。[字体来源](https://github.com/notofonts/noto-cjk/blob/main/Sans/LICENSE)
+标题 68 px、700，标签 32–42 px、400/700。字幕首选 Noto Sans CJK SC，400、52 px、行距 66 px，绘制于左对齐深青底卡上，片段开头从 82% 淡入，最长 0.24 秒。超过两行的文案按标点和可用宽度分页，优先按配音字级时间戳换页，无可用时间戳时按字数分配时长。字幕保留区为 x=104、y=880、1712×164。Noto Sans CJK SC 采用 SIL OFL 1.1，由 Linux 运行组件按需补齐。使用其他系统中文字体的环境回退到 sans-serif，700 在仅装常规体的环境由浏览器合成。[字体来源](https://github.com/notofonts/noto-cjk/blob/main/Sans/LICENSE)
 
 ## 运动质感
 

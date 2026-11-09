@@ -5,6 +5,23 @@ import { tmpdir } from 'node:os';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fullPage, pageProject } from './helpers/page-project.js';
 
+test.for([false, true])('字幕模块收到片段配音的字级时间戳数组（供应商返回时间戳：%s）', { timeout: 60000 }, async (hasTimestamps, { createDirectory, execBytes, startService }) => {
+  const words = hasTimestamps ? [{ word: '风。', startTime: 0.1, endTime: 0.6, confidence: 0.9 }] : undefined;
+  const p = await pageProject({ createDirectory, execBytes, startService }, 1, false, '风。', words);
+  const expected = hasTimestamps ? [{ text: '风。', start: 0.1, end: 0.6 }] : [];
+  writeFileSync(join(p.styleDirectory, 'lib/subtitle.js'), `
+    export const subtitleRegion = { x: 80, y: 900, width: 1760, height: 132 };
+    export function drawSubtitle(ctx, text, t, duration, words) {
+      if (JSON.stringify(words) !== ${JSON.stringify(JSON.stringify(expected))}) throw new Error('字幕收到的时间戳不符：' + JSON.stringify(words));
+    }
+  `);
+  await p.setStyle(p.styleDirectory);
+  const pageId = await p.importPage('window.render=()=>{};window.READY=true');
+  await p.save([fullPage(pageId, p.duration)]);
+  const task = await p.task();
+  expect(task, JSON.stringify(task)).toMatchObject({ state: 'succeeded', current: true });
+});
+
 test('页面背景与字幕逐帧合成，文案变化仅重渲字幕层', async ({ createDirectory, execBytes, execText, startService, onTestFinished }) => {
   const ffmpeg = (await execText('which', ['ffmpeg'], { encoding: 'utf8' })).trim();
   const bin = createDirectory(join(tmpdir(), 'clapgrid-render-observer-'));

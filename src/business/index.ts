@@ -124,7 +124,7 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
   const speech = speechTasks(db, mediaDirectory, speechRuntime, getSnapshot, verify, access, (scope, owner) => business.querySegments(scope, owner));
   const exports = exportTasks(db, {
     snapshot: getSnapshot, settings: getExportStatus, speech: speech.getSpeechStatus,
-    verify, video: id => business.getMedia(id, 'source'), audio: speech.getSpeechAudio,
+    verify, video: id => business.getMedia(id, 'source'), audio: speech.getSpeechRecording,
     access,
   });
   const tables = new Map<string, { owner?: string; ids: string[] }>();

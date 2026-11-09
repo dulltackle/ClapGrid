@@ -9,7 +9,9 @@ export type PageWorkerInput = {
   projectDirectory: string; styleId?: string; assets: Record<string, { path: string; mime: string }>;
   width: number; height: number; duration: number; fps: number; transparent: boolean; output: string;
   diagnostic?: { kind: 'check'; x: number; y: number; scaleX: number; scaleY: number; subtitle?: PixelBox } | { kind: 'frames'; times: number[] } | { kind: 'subtitle-region' };
-} & ({ pageId: string; subtitleText?: never } | { pageId?: never; subtitleText: string });
+} & ({ pageId: string; subtitleText?: never; subtitleWords?: never } | {
+  pageId?: never; subtitleText: string; subtitleWords?: { text: string; start: number; end: number }[];
+});
 
 export function pageGeometry(layer: PageLayer) {
   return {

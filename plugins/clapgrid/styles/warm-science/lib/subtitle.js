@@ -1,28 +1,16 @@
 import { ease, font, palette } from './visual.js';
+import { subtitleLines } from './subtitle-pages.js';
 
 export const subtitleRegion = Object.freeze({ x: 112, y: 873, width: 1696, height: 166 });
 
-const graphemes = new Intl.Segmenter('zh-CN', { granularity: 'grapheme' });
-
-export function drawSubtitle(ctx, text, t, duration) {
+export function drawSubtitle(ctx, text, t, duration, words) {
   if (!text.trim()) return;
   const { x, y, width, height } = subtitleRegion;
   const maxWidth = width - 72;
   const lineHeight = 64;
   ctx.save();
   ctx.font = `400 54px ${font}`;
-  const lines = [];
-  for (const paragraph of text.trim().split(/\r?\n/)) {
-    let line = '';
-    for (const { segment } of graphemes.segment(paragraph)) {
-      if (line && ctx.measureText(line + segment).width > maxWidth) {
-        lines.push(line.trimEnd());
-        line = '';
-      }
-      if (line || segment.trim()) line += segment;
-    }
-    lines.push(line);
-  }
+  const lines = subtitleLines(ctx, text, maxWidth, t, duration, words);
   const scale = Math.min(1, (height - 28) / (lineHeight * lines.length));
   const widestLine = lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0) * scale;
   const cardWidth = Math.min(width, Math.max(420, widestLine + 72));

@@ -6,12 +6,12 @@ import { pageStore } from './pages.js';
 import { styleStore } from './styles.mjs';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { ExportSegmentBoundary, ExportSettings, ExportTask, Segment, VisualPlan } from '../shared/contracts.js';
+import type { ExportSegmentBoundary, ExportSettings, ExportTask, Segment, SpeechTimestamp, VisualPlan } from '../shared/contracts.js';
 import { exportEncodingArguments } from './export-media.js';
 import { checkExport, measureExportAudio } from './export-checks.js';
 import { mediaProcess } from './media-process.js';
 
-export type RenderSegment = { segment: Segment; projectDirectory: string; styleId?: string; assetMimes?: Record<string, string>; videos: { path: string; start: number; assetId?: string; kind?: 'image' | 'video' }[]; plan?: VisualPlan; audio: string; duration: number };
+export type RenderSegment = { segment: Segment; projectDirectory: string; styleId?: string; assetMimes?: Record<string, string>; videos: { path: string; start: number; assetId?: string; kind?: 'image' | 'video' }[]; plan?: VisualPlan; audio: string; duration: number; timestamps?: SpeechTimestamp[] };
 const localInput = ['-protocol_whitelist', 'file,pipe'];
 
 export async function prepareExportAudio(source: string, directory: string, index: number, signal: AbortSignal) {
@@ -73,6 +73,7 @@ export async function renderExportSegment(input: RenderSegment, settings: Export
     const output = join(directory, `subtitle-${index}.mkv`);
     const path = await renderCachedPage({
       projectDirectory, styleId, subtitleText: input.segment.text, assets: {}, width: 1920, height: 1080,
+      subtitleWords: input.timestamps?.map(({ word, startTime, endTime }) => ({ text: word, start: startTime, end: endTime })) ?? [],
       duration: input.duration, fps: settings.fps, transparent: true, output,
     }, {}, join(directory, `subtitle-${index}.json`), signal);
     filters.push(`[${visual}][${sources.length}:v:0]overlay=eof_action=pass:repeatlast=0[out]`);
