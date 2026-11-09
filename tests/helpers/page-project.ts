@@ -5,15 +5,16 @@ import { randomUUID } from 'node:crypto';
 import { expect } from 'vitest';
 import { queryStatus, queryVisualContext } from '../../src/shared/client.js';
 import type { ResourceFixtures } from './resource-test.js';
-import type { ExportTask, VisualPlan } from '../../src/shared/contracts.js';
+import type { ExportTask, SpeechTimestamp, VisualPlan } from '../../src/shared/contracts.js';
 
-export async function pageProject(resources: Pick<ResourceFixtures, 'createDirectory' | 'execBytes' | 'startService'>, audioDuration = 1, styled = false, text = '页面合成') {
+export async function pageProject(resources: Pick<ResourceFixtures, 'createDirectory' | 'execBytes' | 'startService'>, audioDuration = 1, styled = false, text = '页面合成', words?: SpeechTimestamp[]) {
   const root = resources.createDirectory(join(tmpdir(), 'clapgrid-page-render-'));
   const audio = join(root, 'voice.mp3');
   await resources.execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', `sine=duration=${audioDuration}`, '-c:a', 'libmp3lame', audio]);
   const bytes = readFileSync(audio).toString('base64');
   const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'panel');
-  const options = { projectDirectory: join(root, 'project'), panelDirectory, port: 0, speechRuntime: { configPath: '.env', key: () => 'test', fetch: (async () => new Response(`data: {"code":0,"data":"${bytes}"}\n\ndata: {"code":20000000}\n\n`)) as typeof fetch } };
+  const speechFrames = [{ code: 0, data: bytes, ...(words && { sentence: { words } }) }, { code: 20000000 }];
+  const options = { projectDirectory: join(root, 'project'), panelDirectory, port: 0, speechRuntime: { configPath: '.env', key: () => 'test', fetch: (async () => new Response(speechFrames.map(frame => `data: ${JSON.stringify(frame)}\n\n`).join(''))) as typeof fetch } };
   const service = await resources.startService(options);
   const post = async (path: string, input: unknown) => {
     const r = await fetch(service.url + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) });

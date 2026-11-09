@@ -39,14 +39,23 @@ export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: S
   };
   const recordings = (all = tasks()) => all.filter(task => task.state === 'succeeded' && !task.audioRemoved)
     .sort((a, b) => (a.succeededAt ?? a.createdAt).localeCompare(b.succeededAt ?? b.createdAt));
+  const readRecording = (task: StoredSpeechTask) => {
+    const path = audioPath(task.id); verifyMedia(path);
+    return { path, timestamps: task.timestamps };
+  };
+  const getSpeechRecording = (id: string) => {
+    verify();
+    const task = recordings().find(task => task.id === id && snapshot().segments.some(segment => segment.id === task.segmentId));
+    if (!task) throw new Error('完整音频不存在');
+    return readRecording(task);
+  };
   const currentSpeech = (segmentId: string) => {
     access.assertAllowed('current-speech'); verify();
     if (!snapshot().segments.some(segment => segment.id === segmentId)) throw new Error('口播片段不存在');
     const available = recordings().filter(task => task.segmentId === segmentId);
     const current = available.filter(inputMatcher()).at(-1);
     if (!current) throw new Error(available.length ? '配音待更新，不可用于导出' : '配音缺失，不可用于导出');
-    const path = audioPath(current.id); verifyMedia(path);
-    return { path, timestamps: current.timestamps };
+    return readRecording(current);
   };
   const prune = (segmentId: string) => {
     const newest = recordings().filter(task => task.segmentId === segmentId).reverse();
@@ -210,10 +219,8 @@ export function speechTasks(db: DatabaseSync, mediaDirectory: string, runtime: S
       if (release) run(pending, key, release);
       return result(operation);
     },
-    getSpeechAudio(id: string) {
-      verify(); if (!recordings().some(task => task.id === id && snapshot().segments.some(segment => segment.id === task.segmentId))) throw new Error('完整音频不存在');
-      const path = audioPath(id); verifyMedia(path); return path;
-    },
+    getSpeechRecording,
+    getSpeechAudio: (id: string) => getSpeechRecording(id).path,
     getCurrentSpeech: currentSpeech,
     getCurrentSpeechAudio: (segmentId: string) => currentSpeech(segmentId).path,
     async close() { closed = true; controller.abort(); await running; },

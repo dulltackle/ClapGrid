@@ -2,7 +2,7 @@ import { segmentMaterials, segmentVideos } from '../shared/contracts.js';
 import type { ProjectAccess } from './project-access.js';
 import { randomUUID } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
-import type { ContactSheetRequest, ExportTask, ExportTasksStatus, ExportStatus, Snapshot, SpeechStatus } from '../shared/contracts.js';
+import type { ContactSheetRequest, ExportTask, ExportTasksStatus, ExportStatus, Snapshot, SpeechStatus, SpeechTimestamp } from '../shared/contracts.js';
 import { validateImage, validateVideo } from './video-media.js';
 import { exportFiles } from './export-files.js';
 import { blackIntervalWarnings, exportLoudnessWarning, isSilentExportAudio } from './export-checks.js';
@@ -15,7 +15,7 @@ type ExportInputs = {
   access: ProjectAccess;
   speech: () => SpeechStatus;
   video: (id: string) => string;
-  audio: (id: string) => string;
+  audio: (id: string) => { path: string; timestamps?: SpeechTimestamp[] };
   verify: () => void;
 };
 
@@ -128,7 +128,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
             if (!current) task.issues.push({ ...location, field: 'speech', message: recordings.length ? '配音待更新' : '配音缺失' });
             else {
               try {
-                const source = inputs.audio(current.taskId);
+                const { path: source, timestamps } = inputs.audio(current.taskId);
                 const copied = await outputFiles.copy('speech', index, source);
                 const audio = await prepareExportAudio(copied, workspace, index, signal);
                 if (!previewSegmentId && await isSilentExportAudio(audio.audio, signal)) {
@@ -136,7 +136,7 @@ export function exportTasks(db: DatabaseSync, inputs: ExportInputs) {
                 }
                 if (visualInputs.length === references.length && (visualInputs.length || plan?.layers.some(layer => layer.kind === 'page'))) {
                   if (plan && Math.abs(plan.duration - audio.duration) > 0.001) task.issues.push({ ...location, field: 'video', message: `编排时长 ${plan.duration} 秒与配音 ${audio.duration} 秒不一致，请更新编排` });
-                  render.push({ segment, videos: visualInputs, plan, projectDirectory: snapshot.project.directory, styleId: snapshot.projectStyle?.styleId, assetMimes: Object.fromEntries(snapshot.assets.map(asset => [asset.id, asset.mime ?? (asset.kind === 'image' ? 'image/png' : 'video/mp4')])), ...audio });
+                  render.push({ segment, videos: visualInputs, plan, projectDirectory: snapshot.project.directory, styleId: snapshot.projectStyle?.styleId, assetMimes: Object.fromEntries(snapshot.assets.map(asset => [asset.id, asset.mime ?? (asset.kind === 'image' ? 'image/png' : 'video/mp4')])), ...audio, timestamps });
                   if (visualInputs.some(video => video.duration - video.start < (plan ? Math.max(0, ...plan.layers.filter(layer => layer.kind !== 'page' && layer.assetId === video.assetId).map(layer => layer.to - layer.from + (layer.kind === 'page' ? 0 : layer.start))) : audio.duration))) task.warnings.push({ ...location, field: 'video', message: '视频剩余时长不足，末帧将冻结补足配音时长' });
                 }
               } catch (error) { task.issues.push({ ...location, field: 'speech', message: `配音不可读或不可解码：${(error as Error).message}` }); }

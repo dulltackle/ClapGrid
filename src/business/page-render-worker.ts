@@ -61,7 +61,7 @@ const subtitleHost = Buffer.from(`<!doctype html>
 <canvas width="1920" height="1080"></canvas>
 <script type="module">
   import * as style from '/style/lib/subtitle.js';
-  if (typeof style.drawSubtitle !== 'function') throw new Error('字幕模块必须导出 drawSubtitle(ctx, text, t, duration)');
+  if (typeof style.drawSubtitle !== 'function') throw new Error('字幕模块必须导出 drawSubtitle(ctx, text, t, duration, words)');
   const box = style.subtitleRegion;
   if (!box || typeof box !== 'object' || Array.isArray(box) ||
       Object.keys(box).length !== 4 || !['x','y','width','height'].every(key => Number.isFinite(box[key])) ||
@@ -70,9 +70,9 @@ const subtitleHost = Buffer.from(`<!doctype html>
   }
   const ctx = document.querySelector('canvas').getContext('2d');
   window.subtitleRegion = { x: box.x, y: box.y, width: box.width, height: box.height };
-  window.setupSubtitle = (text, duration) => {
+  window.setupSubtitle = (text, duration, words) => {
     window.DUR = duration;
-    window.render = t => { ctx.reset(); return style.drawSubtitle(ctx, text, t, duration); };
+    window.render = t => { ctx.reset(); return style.drawSubtitle(ctx, text, t, duration, words); };
   };
   await document.fonts.ready;
   window.READY = true;
@@ -147,7 +147,9 @@ try {
     await guard(tab.goto(`${origin}${documentPath}`, { waitUntil: 'domcontentloaded', timeout: remaining() }));
     try { await guard(tab.waitForFunction(() => (window as any).READY === true, undefined, { timeout: remaining() })); }
     catch { throw new Error(failure?.message ?? `页面 READY 等待超时（${readyTimeoutMs / 1000} 秒）`); }
-    if (!page) await guard(tab.evaluate(({ text, duration }) => (window as any).setupSubtitle(text, duration), { text: input.subtitleText, duration: input.duration }));
+    if (!page) await guard(tab.evaluate(({ text, duration, words }) => (window as any).setupSubtitle(text, duration, words), {
+      text: input.subtitleText, duration: input.duration, words: input.subtitleWords ?? [],
+    }));
     const valid = await tab.evaluate(duration => typeof (window as any).render === 'function' && Number.isFinite((window as any).DUR) && Math.abs((window as any).DUR - duration) <= 0.001, input.duration);
     if (!valid) throw new Error(`页面 DUR 必须等于图层区间 ${input.duration} 秒（误差 ≤1 ms），并暴露 render(t)`);
     return tab;
