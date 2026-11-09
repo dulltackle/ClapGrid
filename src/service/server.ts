@@ -14,6 +14,7 @@ import { readFileSync, readdirSync, openSync, fstatSync, createReadStream, const
 import { dirname, extname, join } from 'node:path';
 import { claimProjectService } from '../business/service-ownership.js';
 import { openBusiness } from '../business/index.js';
+import { setBackgroundMusicSchema } from '../shared/contracts.js';
 import { checkPageSchema, pageFramesSchema, contactSheetSchema, importPageSchema, setProjectStyleSchema, submitExportSchema, exportTaskRequestSchema, renameMaterialSchema, importMaterialSchema, importVideoSchema, addSegmentSchema, editSegmentSchema, batchSchema, segmentQuerySchema, selectionSchema, scopedOperationSchema, type ServiceStatus } from '../shared/contracts.js';
 
 /** 心跳复用宿主工作空间核对结果的最长时间。 */
@@ -162,12 +163,13 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
       if (request.headers.host !== host || (request.headers.origin && request.headers.origin !== `http://${host}`)) {
         reject(403, '仅允许本机同源访问。'); return;
       }
-      let path: string;
+      let url: URL;
       try {
-        path = new URL(request.url ?? '/', `http://${host}`).pathname;
+        url = new URL(request.url ?? '/', `http://${host}`);
       } catch {
         reject(400, '请求路径无效。'); return;
       }
+      let path = url.pathname;
       let bindingPrefix = '';
       let tableOwner: string | undefined;
       let verifyBinding = async (_read = readHostWorkspace) => {};
@@ -384,6 +386,25 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
       }
       if (path === '/api/edit-session/release') {
         modification.releaseSession(modificationContext);
+        return;
+      }
+      if (path === '/api/background-music' || path === '/api/codex/background-music') {
+        const codex = path.startsWith('/api/codex/');
+        const upload = !codex && request.headers['content-type']?.split(';')[0]?.trim() === 'application/octet-stream';
+        await modification.handle(modificationContext, codex ? 'codex' : 'user', async (token, input) => {
+          try {
+            if (upload) {
+              const expected = url.searchParams.get('expected');
+              const name = url.searchParams.get('name');
+              if (expected === null || !name) throw new Error('请提供当前背景乐身份与文件名');
+              const backgroundMusic = await business.setBackgroundMusic(token, expected || null, { name, bytes: request });
+              return { data: { backgroundMusic } };
+            }
+            const { expected, sourcePath } = setBackgroundMusicSchema.parse(input);
+            if (!codex && sourcePath !== null) throw new Error('请在面板中选择背景乐文件');
+            return { data: { backgroundMusic: await business.setBackgroundMusic(token, expected, sourcePath) } };
+          } catch (error) { return { status: 400, error: (error as Error).message }; }
+        }, upload ? 'application/octet-stream' : 'application/json');
         return;
       }
       if (path === '/api/codex/project-style' || path === '/api/project-style' || path === '/api/codex/import-style' || path === '/api/style/import' || path === '/api/codex/import-page' || path === '/api/page/import' || (path === '/api/export-settings' && request.method !== 'GET') || path === '/api/codex/export-settings' || path === '/api/material/rename' || path === '/api/codex/rename-material' || path === '/api/material/import' || path === '/api/codex/import-material' || path === '/api/video/import' || path === '/api/codex/import-video' || path === '/api/segments/add' || path === '/api/segments/edit' || path === '/api/codex/modify' || path === '/api/segments/modify' || path === '/api/codex/process') {

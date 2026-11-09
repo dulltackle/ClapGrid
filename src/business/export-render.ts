@@ -10,6 +10,7 @@ import type { ExportSegmentBoundary, ExportSettings, ExportTask, Segment, Speech
 import { exportEncodingArguments } from './export-media.js';
 import { checkExport, measureExportAudio } from './export-checks.js';
 import { mediaProcess } from './media-process.js';
+import { mixExportAudio } from './export-mix.js';
 
 export type RenderSegment = { segment: Segment; projectDirectory: string; styleId?: string; assetMimes?: Record<string, string>; videos: { path: string; start: number; assetId?: string; kind?: 'image' | 'video' }[]; plan?: VisualPlan; audio: string; duration: number; timestamps?: SpeechTimestamp[] };
 const localInput = ['-protocol_whitelist', 'file,pipe'];
@@ -84,7 +85,7 @@ export async function renderExportSegment(input: RenderSegment, settings: Export
     '-c:v', 'ffv1', '-level', '3', '-pix_fmt', 'yuv420p', '-threads', '2', '-c:a', 'pcm_s16le', '-f', 'matroska', `clip-${index}.mkv`], { cwd: directory, signal });
 }
 
-export async function assembleExport(segments: RenderSegment[], settings: ExportSettings, directory: string, signal: AbortSignal, checks?: { onVerifying: () => void }): Promise<{ path: string; segmentBoundaries: ExportSegmentBoundary[]; technicalChecks?: ExportTask['technicalChecks'] }> {
+export async function assembleExport(segments: RenderSegment[], settings: ExportSettings, directory: string, signal: AbortSignal, checks?: { backgroundMusic?: string; onVerifying: () => void }): Promise<{ path: string; segmentBoundaries: ExportSegmentBoundary[]; technicalChecks?: ExportTask['technicalChecks'] }> {
   let start = 0;
   const segmentBoundaries: ExportSegmentBoundary[] = segments.map(({ segment, duration }) => {
     // 拼接器先把起点对齐到 Matroska 的毫秒时间戳，fps 滤镜再取最近的输出帧。
@@ -97,9 +98,10 @@ export async function assembleExport(segments: RenderSegment[], settings: Export
   await writeFile(join(directory, 'clips.txt'), segmentBoundaries.map(({ duration }, index) => `file clip-${index}.mkv\nduration ${duration}`).join('\n'), { flag: 'wx' });
   signal.throwIfAborted();
   const input = ['-f', 'concat', '-safe', '1', '-i', 'clips.txt'];
-  const measured = checks && await measureExportAudio(input, directory, signal);
+  const mix = checks?.backgroundMusic && await mixExportAudio(input, checks.backgroundMusic, directory, signal);
+  const measured = checks && await measureExportAudio(mix || input, directory, signal);
   const audioFilter = measured ? `asetpts=N/SR/TB,${measured.filter}` : 'asetpts=N/SR/TB';
-  await mediaProcess('ffmpeg', ['-v', 'error', '-nostdin', '-xerror', ...input, '-map', '0:v:0', '-map', '0:a:0',
+  await mediaProcess('ffmpeg', ['-v', 'error', '-nostdin', '-xerror', ...input, ...(mix || []), '-map', '0:v:0', '-map', mix ? '1:a:0' : '0:a:0',
     '-vf', `fps=${settings.fps}:round=near`, '-af', audioFilter, '-ar', '48000', ...exportEncodingArguments(settings), '-threads', '2', '-c:a', 'aac', '-movflags', '+faststart', 'result.mp4'], { cwd: directory, signal });
   const result = { path: join(directory, 'result.mp4'), segmentBoundaries };
   if (checks && measured) {

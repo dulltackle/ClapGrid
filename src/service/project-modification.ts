@@ -69,12 +69,12 @@ export function projectModification(business: Business, status: () => ServiceSta
       releaseSession(token);
       json(response, { released: true });
     },
-    async handle({ request, response, binding, verifyBinding }: Context, owner: 'user' | 'codex', process: (token: string, input: unknown) => Promise<Result>) {
+    async handle({ request, response, binding, verifyBinding }: Context, owner: 'user' | 'codex', process: (token: string, input: unknown) => Promise<Result>, contentType = 'application/json') {
       if (request.method !== 'POST') {
         response.setHeader('Allow', 'POST'); reject(response, 405, '请使用 POST 提交编辑。'); return;
       }
-      if (request.headers['content-type']?.split(';')[0]?.trim() !== 'application/json') {
-        reject(response, 415, '编辑请求必须使用 application/json。'); return;
+      if (request.headers['content-type']?.split(';')[0]?.trim() !== contentType) {
+        reject(response, 415, `编辑请求必须使用 ${contentType}。`); return;
       }
       let token: string;
       try {
@@ -92,28 +92,34 @@ export function projectModification(business: Business, status: () => ServiceSta
       const operation = { binding, cancel: release };
       pending.add(operation);
       response.on('close', () => { if (!response.writableFinished) release(); });
-      const timeout = setTimeout(() => { release(); request.destroy(); }, 10000);
+      const isJson = contentType === 'application/json';
+      const timeout = setTimeout(() => { release(); request.destroy(); }, isJson ? 10000 : 60000);
+      const received = () => clearTimeout(timeout);
+      if (!isJson) request.once('end', received);
       let finished = false;
       const finish = () => {
         if (finished) return;
         finished = true;
-        clearTimeout(timeout);
+        received();
+        request.off('end', received);
         if (owner === 'codex') release();
         pending.delete(operation);
         completeEdit();
       };
       try {
-        const chunks: Buffer[] = [];
-        let size = 0;
-        for await (const chunk of request) {
-          size += chunk.length;
-          if (size > 8 * 1024 * 1024) { reject(response, 413, '请求内容过大。'); return; }
-          chunks.push(Buffer.from(chunk));
-        }
-        clearTimeout(timeout);
         let input: unknown;
-        try { input = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
-        catch { reject(response, 400, '编辑请求格式无效。'); return; }
+        if (isJson) {
+          const chunks: Buffer[] = [];
+          let size = 0;
+          for await (const chunk of request) {
+            size += chunk.length;
+            if (size > 8 * 1024 * 1024) { reject(response, 413, '请求内容过大。'); return; }
+            chunks.push(Buffer.from(chunk));
+          }
+          received();
+          try { input = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
+          catch { reject(response, 400, '编辑请求格式无效。'); return; }
+        }
         await verifyBinding();
         if (!business.owns(token, owner)) {
           reject(response, 409, '修改权已失效，请重新读取项目后编辑。'); return;

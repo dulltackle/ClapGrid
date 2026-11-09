@@ -4,7 +4,7 @@ import type { TestContext } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { expect, vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync, truncateSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import fs from 'node:fs/promises';
@@ -59,6 +59,38 @@ test('汇总逐片段缺失视频和配音，不自动配音或跳过片段', as
   assert.equal(business.getSpeechStatus().tasks.length, 0);
 });
 
+test('全片预检汇总背景乐缺失和片段问题，任务占用期间不能修改背景乐', async ({ createDirectory, execBytes, openBusiness }) => {
+  const directory = createDirectory(join(tmpdir(), 'clapgrid-music-validation-'));
+  const business = openBusiness(directory);
+  await selectTestStyle(business);
+  business.addSegment('缺少画面与配音');
+  const sourcePath = join(directory, 'music.wav');
+  await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=0.2', sourcePath]);
+  const token = business.acquire('codex');
+  const backgroundMusic = await business.setBackgroundMusic(token, null, sourcePath);
+  business.release(token);
+  assert.ok(backgroundMusic);
+  const media = business.getSnapshot().storage.mediaDirectory;
+  const files = readdirSync(media);
+  assert.equal(files.length, 1);
+  unlinkSync(join(media, files[0]!));
+
+  const accepted = business.submitExport();
+  assert.throws(() => business.acquire('user'), /导出进行中/);
+  assert.throws(() => business.acquire('codex'), /导出进行中/);
+  await assert.rejects(business.setBackgroundMusic(token, backgroundMusic.id, null), /修改权/);
+  const task = await finished(business, accepted.id);
+  assert.equal(task.state, 'failed');
+  assert.equal(task.completed, 0);
+  expect(task.issues).toEqual(expect.arrayContaining([
+    { field: 'settings', message: expect.stringMatching(/music.wav.*背景乐不可读或不可解码/) },
+    expect.objectContaining({ field: 'speech', order: 1 }),
+    expect.objectContaining({ field: 'video', order: 1 }),
+  ]));
+  assert.equal(task.issues.filter(issue => issue.message.includes('背景乐')).length, 1);
+  assert.deepEqual(business.getSnapshot().backgroundMusic, backgroundMusic);
+});
+
 for (const owner of ['user', 'codex'] as const) test(`${owner} 持有修改权时拒绝导出，不创建任务且原编辑可以继续`, async ({ createDirectory, openBusiness }) => {
   const directory = createDirectory(join(tmpdir(), 'clapgrid-export-editing-'));
   const business = openBusiness(directory);
@@ -78,11 +110,11 @@ for (const owner of ['user', 'codex'] as const) test(`${owner} 持有修改权�
   assert.equal((await finished(business, task.id)).state, 'failed');
 });
 
-async function ready(t: Pick<Resources, 'createDirectory' | 'execBytes' | 'openBusiness'>, options: { duration?: number; sar?: number } = {}) {
+async function ready(t: Pick<Resources, 'createDirectory' | 'execBytes' | 'openBusiness'>, options: { duration?: number; sar?: number; speechSource?: string } = {}) {
   const root = t.createDirectory(join(tmpdir(), 'clapgrid-render-'));
   const source = join(root, 'source.mp4'); const audio = join(root, 'speech.mp3');
   (await t.execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=96x96:r=25:d=0.4', '-f', 'lavfi', '-i', 'color=c=blue:s=96x96:r=25:d=0.6', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=1', '-filter_complex', `[0:v][1:v]concat=n=2:v=1:a=0,setsar=${options.sar ?? 1}[v]`, '-map', '[v]', '-map', '2:a', '-c:v', 'libx264', '-c:a', 'aac', source]));
-  (await t.execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', `sine=frequency=440:duration=${options.duration ?? 0.8}`, '-ar', '24000', audio]));
+  (await t.execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', options.speechSource ?? `sine=frequency=440:duration=${options.duration ?? 0.8}`, '-ar', '24000', audio]));
   let failSpeech = false;
   const payload = readFileSync(audio).toString('base64');
   const directory = join(root, 'project');
@@ -126,6 +158,82 @@ async function ready(t: Pick<Resources, 'createDirectory' | 'execBytes' | 'openB
 async function probe(t: Pick<Resources, 'execText'>, path: string) { return JSON.parse((await t.execText('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', path], { encoding: 'utf8' }))); }
 function frame(t: Pick<Resources, 'execBytes'>, path: string, seconds: number) { return t.execBytes('ffmpeg', ['-v', 'error', '-ss', String(seconds), '-i', path, '-frames:v', '1', '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-'], { maxBuffer: 8 * 1024 * 1024 }); }
 function pixel(data: Buffer, x: number, y: number) { return [...data.subarray((y * 1920 + x) * 3, (y * 1920 + x) * 3 + 3)]; }
+
+test('全片背景乐循环或截断、随配音压低并淡出，片段合成预览保留原配音', { timeout: 60000 }, async ({ createDirectory, execBytes, execText, openBusiness }) => {
+  const { business, root, first } = await ready({ createDirectory, execBytes, openBusiness }, {
+    speechSource: "aevalsrc=exprs='if(between(t,0.35,0.85),0,0.15*sin(2*PI*440*t))':s=24000:d=1.25",
+  });
+  const sourcePath = join(root, 'music.wav');
+  await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=1000:sample_rate=48000:duration=0.32', '-af', 'volume=4', sourcePath]);
+  const token = business.acquire('user');
+  await business.setBackgroundMusic(token, null, sourcePath);
+  business.release(token);
+
+  const decode = (path: string) => execBytes('ffmpeg', ['-v', 'error', '-i', path, '-map', '0:a:0', '-ac', '1', '-ar', '48000', '-f', 'f32le', '-']);
+  const audioDuration = async (path: string) => {
+    const metadata = await probe({ execText }, path);
+    return Number(metadata.streams.find((stream: { codec_type: string }) => stream.codec_type === 'audio').duration);
+  };
+  const level = (audio: Buffer, frequency: number, from: number, to: number) => {
+    let real = 0; let imaginary = 0;
+    const start = Math.round(from * 48000); const end = Math.round(to * 48000);
+    for (let i = start; i < end; i++) {
+      const sample = audio.readFloatLE(i * 4);
+      const phase = 2 * Math.PI * frequency * i / 48000;
+      real += sample * Math.cos(phase); imaginary += sample * Math.sin(phase);
+    }
+    return 20 * Math.log10(2 * Math.hypot(real, imaginary) / (end - start));
+  };
+
+  const submitted = business.submitPreview(first.id);
+  let preview: ExportTask | undefined;
+  await expect.poll(() => {
+    preview = business.getVisualPreviews().tasks.find(task => task.id === submitted.id);
+    return preview?.state;
+  }, { timeout: 30000 }).toMatch(/succeeded|failed/);
+  assert.equal(preview?.state, 'succeeded', JSON.stringify(preview));
+  const previewAudio = await decode(preview.output!.path);
+  expect(level(previewAudio, 1000, 0.1, 0.25)).toBeLessThan(-60);
+  expect(level(previewAudio, 440, 0.1, 0.25)).toBeCloseTo(-16.5, 0);
+
+  const result = await finished(business, business.submitExport().id);
+  assert.equal(result.state, 'succeeded', JSON.stringify(result));
+  expect(result.technicalChecks?.loudnessAfter.integratedLufs).toBeCloseTo(-14, 0);
+  const audio = await decode(result.output!.path);
+  const speechLevel = level(audio, 440, 0.1, 0.25);
+  const musicLevel = level(audio, 1000, 0.1, 0.25);
+  expect(speechLevel - musicLevel).toBeGreaterThan(9);
+  expect(speechLevel - musicLevel).toBeLessThan(11);
+  expect(level(audio, 1000, 0.72, 0.82)).toBeGreaterThan(musicLevel + 4);
+  expect(level(audio, 1000, 1.4, 1.55)).toBeGreaterThan(musicLevel - 2);
+  expect(level(audio, 1000, 2.46, 2.49)).toBeLessThan(musicLevel - 15);
+  expect(await audioDuration(result.output!.path)).toBeCloseTo(2.5, 2);
+
+  const longTrack = join(root, 'long-music.wav');
+  await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=700:duration=3.2', '-af', 'volume=4', longTrack]);
+  const previous = business.getSnapshot().backgroundMusic;
+  assert.ok(previous);
+  const replacement = business.acquire('codex');
+  const current = await business.setBackgroundMusic(replacement, previous.id, longTrack);
+  business.release(replacement);
+  assert.ok(current);
+  expect(business.getVisualPreviews().tasks.find(task => task.id === submitted.id)?.current).toBe(true);
+  const truncated = await finished(business, business.submitExport().id);
+  assert.equal(truncated.state, 'succeeded', JSON.stringify(truncated));
+  const truncatedAudio = await decode(truncated.output!.path);
+  expect(level(truncatedAudio, 700, 0.1, 0.25)).toBeGreaterThan(-40);
+  expect(await audioDuration(truncated.output!.path)).toBeCloseTo(2.5, 2);
+
+  const media = business.getSnapshot().storage.mediaDirectory;
+  const stored = readdirSync(media).find(file => file.startsWith(current.id));
+  assert.ok(stored);
+  // 保留成片需要的前 2.5 秒，只破坏未混入的尾部，预检仍须完整解码。
+  truncateSync(join(media, stored), readFileSync(longTrack).length - 2049);
+  const invalid = await finished(business, business.submitExport().id);
+  assert.equal(invalid.state, 'failed');
+  assert.equal(invalid.completed, 0);
+  expect(invalid.issues).toEqual([{ field: 'settings', message: expect.stringMatching(/long-music.wav.*背景乐不可读或不可解码/) }]);
+});
 
 test('预览发布后成片目标冲突：撤销本次预览，不覆盖或删除原有文件', { timeout: 60000 }, async ({ createDirectory, execBytes, openBusiness }) => {
   const t = { createDirectory, execBytes, openBusiness };

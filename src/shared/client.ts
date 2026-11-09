@@ -1,4 +1,5 @@
 import { statusSchema, type ServiceStatus, type Batch, type BatchResult, queryResultSchema, type SegmentScope, type ScopedOperation } from './contracts.js';
+import type { BackgroundMusic, SetBackgroundMusic } from './contracts.js';
 
 export async function queryStatus(baseUrl: string): Promise<ServiceStatus> {
   const response = await fetch(`${baseUrl}/api/status`, { signal: AbortSignal.timeout(3000), redirect: 'error' });
@@ -202,6 +203,22 @@ export async function saveExportSettings(baseUrl: string, input: import('./contr
   const body = await response.json();
   if (!response.ok) throw new Error(body.error ?? '导出设置保存失败，请重新查询确认结果');
   return { settings: body.settings, status: statusSchema.parse(body.status) };
+}
+
+export async function setBackgroundMusic(baseUrl: string, input: SetBackgroundMusic | { expected: string | null; file: File }, token?: string, signal?: AbortSignal): Promise<{ backgroundMusic: BackgroundMusic | null; status: ServiceStatus }> {
+  let body;
+  if ('file' in input) {
+    const query = new URLSearchParams({ expected: input.expected ?? '', name: input.file.name });
+    const response = await fetch(`${baseUrl}/api/background-music?${query}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'X-Edit-Token': token ?? '' },
+      body: input.file, signal, redirect: 'error',
+    });
+    body = await response.json();
+    if (!response.ok) throw new Error(body.error ?? '背景乐导入失败');
+  } else {
+    body = await postJson(baseUrl, `/api/${token ? '' : 'codex/'}background-music`, input, token, signal ?? null);
+  }
+  return { backgroundMusic: body.backgroundMusic, status: statusSchema.parse(body.status) };
 }
 
 export async function submitSpeechBatch(baseUrl: string, input: import('./contracts.js').SpeechBatchRequest): Promise<import('./contracts.js').SpeechBatchResult> {

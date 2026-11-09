@@ -2,7 +2,7 @@ import { selectTestStyle } from './helpers/project-style.js';
 import { test } from './helpers/resource-test.js';
 import { expect } from 'vitest';
 import assert from 'node:assert/strict';
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -14,6 +14,65 @@ import { randomUUID } from 'node:crypto';
 import { request } from 'node:http';
 import { existsSync } from 'node:fs';
 import { queryExports, submitExport, modifyBatch, importVideo, querySpeech } from '../src/shared/client.js';
+
+test('MCP 与面板均可设置项目背景乐，重开恢复设置且保留素材', async ({ createDirectory, execBytes, openConnection, startService }) => {
+  const root = createDirectory(join(tmpdir(), 'clapgrid-music-settings-'));
+  const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'test');
+  const options = { projectDirectory: join(root, 'project'), panelDirectory, port: 0 };
+  let service = await startService(options);
+  const sourcePath = join(root, '背景乐.wav');
+  await execBytes('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=0.2', sourcePath]);
+  const mcp = openConnection(() => createBusinessMcp(service.url));
+  const client = openConnection(() => new Client({ name: '背景乐验证', version: '1' }));
+  const [a, b] = InMemoryTransport.createLinkedPair(); await mcp.connect(b); await client.connect(a);
+  const set = (expected: string | null, sourcePath: string | null) => client.callTool({ name: 'clapgrid_set_background_music', arguments: { expected, sourcePath } });
+  const imported = await set(null, sourcePath);
+  assert.notEqual(imported.isError, true, JSON.stringify(imported.content));
+  const { backgroundMusic: original } = await queryExportSettings(service.url);
+  assert.ok(original);
+  assert.equal(original.name, '背景乐.wav');
+  assert.equal((await set(null, sourcePath)).isError, true);
+  const replaced = await set(original.id, sourcePath);
+  assert.notEqual(replaced.isError, true, JSON.stringify(replaced.content));
+  const { backgroundMusic: first } = await queryExportSettings(service.url);
+  assert.ok(first);
+  assert.notEqual(first.id, original.id);
+
+  const edit = await beginEdit(service.url);
+  const upload = (bytes: Uint8Array<ArrayBuffer>) => fetch(`${service.url}/api/background-music?expected=${first.id}&name=${encodeURIComponent('第二首.wav')}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'X-Edit-Token': edit.token }, body: bytes,
+  });
+  const invalid = await upload(new Uint8Array([0]));
+  assert.equal(invalid.status, 400); assert.match(await invalid.text(), /背景乐.*不可解码/);
+  const replacement = await upload(new Uint8Array(readFileSync(sourcePath)));
+  assert.equal(replacement.status, 200, await replacement.clone().text());
+  const { backgroundMusic: second } = await replacement.json();
+  assert.notEqual(second.id, first.id);
+  assert.equal(second.name, '第二首.wav');
+  await edit.close();
+  const mcpRemoved = await set(second.id, null);
+  assert.notEqual(mcpRemoved.isError, true, JSON.stringify(mcpRemoved.content));
+  expect(mcpRemoved.structuredContent).toMatchObject({ backgroundMusic: null });
+  const reimported = await set(null, sourcePath);
+  assert.notEqual(reimported.isError, true, JSON.stringify(reimported.content));
+  const { backgroundMusic: current } = await queryExportSettings(service.url);
+  assert.ok(current);
+
+  await service.close(); service = await startService(options);
+  assert.deepEqual((await queryExportSettings(service.url)).backgroundMusic, current);
+  const removal = await beginEdit(service.url);
+  const removed = await fetch(`${service.url}/api/background-music`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Edit-Token': removal.token },
+    body: JSON.stringify({ expected: current.id, sourcePath: null }),
+  });
+  assert.equal(removed.status, 200);
+  assert.equal((await removed.json()).backgroundMusic, null);
+  await removal.close();
+  const media = (await queryStatus(service.url)).snapshot.storage.mediaDirectory;
+  const files = readdirSync(media);
+  assert.equal(files.length, 4);
+  for (const file of files) assert.deepEqual(readFileSync(join(media, file)), readFileSync(sourcePath));
+});
 
 test('绑定地址下可读取响度标准化后的成片与兼容预览，去掉绑定前缀后拒绝访问', { timeout: 60000 }, async ({ createDirectory, execBytes, execCommand, startService, onTestFinished }) => {
   const root = createDirectory(join(tmpdir(), 'clapgrid-bound-export-'));
