@@ -2,6 +2,7 @@ import { selectTestStyle } from './helpers/project-style.js';
 import { test, expect } from './helpers/project.js';
 import { holdResponse } from './helpers/response-gate.js';
 import { readFileSync } from 'node:fs';
+import { basename } from 'node:path';
 
 test('导出设置查看不占修改权，原生选择器自动保存并在重开保留', async ({ page, project }) => {
   await project.seed(['A']); await page.goto(project.url);
@@ -114,15 +115,18 @@ test('设置加载失败保留说明，窄矮视口控件可滚动到达', async
 });
 
 
-test('面板显示项目风格，未设置时显示原因并禁用全片导出', async ({ page, project }) => {
+test('项目风格随项目常驻顶栏，未设置时说明并禁用全片导出', async ({ page, project }) => {
   await page.goto(project.url);
-  await expect(page.getByLabel('项目风格')).toHaveText('未设置项目风格，无法导出');
-  const exportButton = page.getByRole('button', { name: '导出全片', exact: true });
+  const header = page.locator('header');
+  const title = header.getByRole('heading', { level: 1 });
+  await expect(header.getByText('未设置项目风格，无法导出', { exact: true })).toBeVisible();
+  const exportButton = header.getByRole('button', { name: '导出全片', exact: true });
   await expect(exportButton).toBeDisabled();
   await selectTestStyle(project.url);
-  await expect(page.getByLabel('项目风格')).toHaveText('项目风格 test-color · 1');
+  const name = basename(project.directory);
+  await expect(title).toHaveText(`${name} · test-color`);
   await expect(exportButton).toBeEnabled();
   await page.setViewportSize({ width: 420, height: 360 });
-  await page.getByRole('button', { name: '更多', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: '更多操作' })).toContainText('项目风格 test-color · 1');
+  await expect(title).toBeInViewport();
+  await expect(title).toHaveText(`${name} · test-color`);
 });
