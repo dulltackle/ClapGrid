@@ -50,7 +50,7 @@ test('单击文案进入编辑，通过真实服务保存并在重载后保留',
   await page.locator(`[row-id="${id}"] [data-segment-script]`).click();
   await page.getByLabel('文案全文', { exact: true }).fill('已保存的新文案');
   await page.getByLabel('文案全文', { exact: true }).press('Control+Enter');
-  await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+  await expect(page.locator('[data-save-status]')).toHaveCount(0);
   await page.reload();
   await expect(page.locator(`[row-id="${id}"] .text-summary`)).toHaveText('已保存的新文案');
   expect((await project.status()).snapshot.segments[0]!.text).toBe('已保存的新文案');
@@ -93,20 +93,19 @@ test('保存草稿期间连续点击文案只提交一次并进入最后点击�
 
 for (const width of [780, 420]) test(`原位编辑保留行高、画面上下文和内嵌操作 ${width}`, async ({ page, project }) => {
   const [id, next] = await project.seed(['原文', '下一条']);
-  const snapshot = (await project.status()).snapshot;
-  await project.modify({ changes: [{ kind: 'edit', expected: snapshot.segments[0]!, visualNote: '保留画面说明' }] });
   await page.setViewportSize({ width, height: 579 });
   await page.goto(project.url);
   const row = page.locator(`[row-id="${id}"]`);
+  const initialHeight = (await row.boundingBox())!.height;
   await row.locator('[data-segment-script]').dblclick();
   const editor = row.locator('[data-inline-editor]');
   const input = page.getByLabel('文案全文', { exact: true });
-  await expect(row).toHaveCSS('height', '102px');
-  await expect(editor.locator('[data-segment-support]')).toContainText('保留画面说明');
+  await expect(row).toHaveCSS('height', `${initialHeight}px`);
+  await expect(editor.getByRole('button', { name: '片段 1 画面素材（0）' })).toBeInViewport();
   await expect(editor.getByRole('button', { name: '保存修改', exact: true })).toBeVisible();
   await expect.poll(async () => {
     const bounds = (await editor.boundingBox())!, support = (await editor.locator('[data-segment-support]').boundingBox())!;
-    return bounds.height <= 102 && support.y + support.height <= bounds.y + bounds.height + 1;
+    return bounds.height <= initialHeight && support.y + support.height <= bounds.y + bounds.height + 1;
   }).toBe(true);
   await expect(input).toHaveCSS('outline-style', 'none');
   await expect.poll(async () => {
@@ -119,7 +118,7 @@ for (const width of [780, 420]) test(`原位编辑保留行高、画面上下文
   await editor.getByRole('button', { name: '保存修改', exact: true }).click();
   await expect(editor).toHaveCount(0);
   await expect.poll(async () => (await project.status()).snapshot.segments[0]!.text).toBe('第一行\n第二行');
-  await expect(row).toHaveCSS('height', '102px');
+  await expect(row).toHaveCSS('height', `${initialHeight}px`);
   await row.locator('[data-segment-script]').dblclick();
   await input.fill('不保存的草稿');
   await editor.getByRole('button', { name: '取消修改', exact: true }).click();
@@ -217,7 +216,7 @@ test('相邻双击等待原行保存后进入新行，连接先关闭仍显示�
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
   await expect(page.getByLabel('文案全文', { exact: true })).toHaveValue('B');
   await expect(page.getByLabel('文案全文', { exact: true })).toBeFocused();
-  await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+  await expect(page.locator('[data-save-status]')).toHaveCount(0);
   expect(gate.calls).toBe(1);
 });
 

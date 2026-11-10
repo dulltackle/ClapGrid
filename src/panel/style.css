@@ -60,12 +60,12 @@ html, body, #root { height: 100%; overflow: hidden; }
 :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 
 /* AG Grid 无层单元格规则需要同层适配，避免覆盖 Tailwind 的正文对齐。 */
-.ag-cell:is([col-id="text"], [col-id="visualNote"]) { display: flex; align-items: center; }
+.ag-cell[col-id="text"] { display: flex; align-items: center; }
 /* 原位编辑使用自有输入边框，移除 Quartz 叠加的编辑单元格装饰。 */
-.segment-grid .ag-row .ag-cell.ag-cell-inline-editing:is([col-id="text"], [col-id="visualNote"]) { border: 0 !important; border-radius: 0; box-shadow: none; padding: 0; }
+.segment-grid .ag-row .ag-cell.ag-cell-inline-editing[col-id="text"] { border: 0 !important; border-radius: 0; box-shadow: none; padding: 0; }
 .segment-grid [data-inline-editor] textarea:focus { outline: none; box-shadow: none; }
 
-/* 勾选以左侧细条标记整句，独立于展开说明和原位编辑；不占用单元格宽度。 */
+/* 勾选以左侧细条标记整句，独立于原位编辑；不占用单元格宽度。 */
 .segment-grid .ag-row.ag-row-selected::after {
   content: "";
   position: absolute;

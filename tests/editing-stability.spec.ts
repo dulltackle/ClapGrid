@@ -7,7 +7,7 @@ async function recordTransition(page: Page, action: () => Promise<void>) {
     const captureState = { done: false };
     (window as typeof window & { editingCapture?: typeof captureState }).editingCapture = captureState;
     const capture = () => {
-      const nodes = [...document.querySelectorAll<HTMLElement>('header, footer, .segment-grid, .ag-grid-viewport, [data-segment-support], [col-id="order"] button, [data-segment-speech] > button, header button, footer button, [data-note-summary]')];
+      const nodes = [...document.querySelectorAll<HTMLElement>('header, footer, .segment-grid, .ag-grid-viewport, [data-segment-support], [col-id="order"] button, [data-segment-speech] > button, header button, footer button')];
       return nodes.filter(node => node.getClientRects().length && getComputedStyle(node).visibility !== 'hidden' && node.getAttribute('aria-label') !== '回到草稿').map(node => {
         const rect = node.getBoundingClientRect(), style = getComputedStyle(node);
         const row = node.closest('[row-id]')?.getAttribute('row-id') ?? '';
@@ -44,20 +44,6 @@ test('编辑切换保留素材区与配音区的现有 DOM', async ({ page, proj
   await expect(page.getByLabel('文案全文', { exact: true })).toBeEditable();
   expect(await support!.evaluate(node => node.isConnected)).toBe(true);
   expect(await speech!.evaluate(node => node.isConnected)).toBe(true);
-});
-
-test('画面说明进入和退出编辑时不改变展开区高度', async ({ page, project }) => {
-  await project.seed(['口播文案']);
-  await page.goto(project.url);
-  await page.getByRole('button', { name: '展开片段 1 的画面说明', exact: true }).click();
-  const region = page.getByRole('region', { name: '片段 1 画面说明', exact: true });
-  const before = await region.boundingBox();
-  await region.getByRole('button', { name: '编辑说明', exact: true }).click();
-  await expect(page.getByLabel('画面说明全文', { exact: true })).toBeEditable();
-  expect(await region.boundingBox()).toEqual(before);
-  await page.getByLabel('画面说明全文', { exact: true }).press('Escape');
-  await expect(page.getByLabel('画面说明全文', { exact: true })).toHaveCount(0);
-  expect(await region.boundingBox()).toEqual(before);
 });
 
 test('退出部分可见片段的编辑时不把整行滚入视口', async ({ page, project }) => {

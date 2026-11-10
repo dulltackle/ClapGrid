@@ -3,8 +3,7 @@ import type { Segment } from '../shared/contracts.js';
 import type { FocusIntent, FocusReturn, segmentFocusCoordinator } from './dialog-focus.js';
 import type { ProjectEditing } from './project-editing.js';
 
-export type SegmentTextField = 'text' | 'visualNote';
-export type SegmentDestination = { id: string; mode: 'locate' | 'inline'; field?: SegmentTextField; clearSearch?: boolean; preventScroll?: boolean } | null;
+export type SegmentDestination = { id: string; mode: 'locate' | 'inline'; clearSearch?: boolean; preventScroll?: boolean } | null;
 type Focus = Pick<ReturnType<typeof segmentFocusCoordinator>, 'intent' | 'close' | 'captureSegment' | 'acceptGridUpdate'>;
 
 /** 口播片段导航事务：快照始终接收，只有当前票据可以提交定位与来源。 */
@@ -12,7 +11,7 @@ export function segmentNavigation({ grid, editing, focus, clearSearch, inline, f
   grid: () => GridApi<Segment> | null;
   editing: Pick<ProjectEditing, 'getState' | 'subscribe' | 'cancel'>;
   focus: Focus; clearSearch: () => void;
-  inline: (id: string, field: SegmentTextField, intent: FocusIntent) => Promise<void>;
+  inline: (id: string, intent: FocusIntent) => Promise<void>;
   failed: (cause: Error) => void;
 }) {
   let sequence = 0;
@@ -50,13 +49,12 @@ export function segmentNavigation({ grid, editing, focus, clearSearch, inline, f
         if (destination.clearSearch) { clearSearch(); grid()?.setFilterModel(null); }
         const row = grid()?.getRowNode(destination.id);
         if (row?.rowIndex == null) { cancel(); failed(new Error('口播片段已删除，请选择其他片段。')); return; }
-        const field = destination.field ?? 'text';
         if (!destination.preventScroll) {
           grid()?.ensureColumnVisible('text'); grid()?.ensureIndexVisible(row.rowIndex, 'middle');
         }
         ended = true; pending = undefined;
         origin?.cancel();
-        if (destination.mode === 'inline') await inline(destination.id, field, { valid });
+        if (destination.mode === 'inline') await inline(destination.id, { valid });
       },
       fail() {
         if (ended) return;

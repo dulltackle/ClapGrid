@@ -1,4 +1,4 @@
-import { DragHandleDots2Icon, ChevronDownIcon, DotsHorizontalIcon, ImageIcon, PlusIcon, Cross2Icon, MinusIcon, EnterFullScreenIcon, PlayIcon, Pencil1Icon } from '@radix-ui/react-icons';
+import { DragHandleDots2Icon, DotsHorizontalIcon, ImageIcon, PlusIcon, Cross2Icon, MinusIcon, EnterFullScreenIcon, PlayIcon, Pencil1Icon } from '@radix-ui/react-icons';
 import { useRef, type ComponentProps, type ReactNode } from 'react';
 import { Button, Popover, PopoverTrigger, PopoverContent, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/index.js';
 import { segmentMaterials } from '../shared/contracts.js';
@@ -12,7 +12,7 @@ import { SearchText } from './text-search.js';
 
 type SpeechProps = Omit<ComponentProps<typeof SegmentSpeech>, 'segment' | 'generate' | 'history' | 'draftText' | 'actions'> & {
   actionsFor: (segment: Segment) => SegmentActions;
-  generate: (id: string) => void; history: (id: string, trigger: HTMLElement) => void;
+  generate: (id: string, trigger: HTMLElement) => void; history: (id: string, trigger: HTMLElement) => void;
 };
 type VisualProps = {
   segmentEditingBusy?: boolean;
@@ -20,11 +20,10 @@ type VisualProps = {
   trayId: string | null; toggleTray: (id: string) => void;
   previews: ExportTask[]; composed: (task: ExportTask, trigger: HTMLButtonElement) => void;
   rename: (asset: ServiceStatus['snapshot']['assets'][number], trigger: HTMLElement) => void;
-  associate: (id: string, trigger: HTMLElement, index?: number) => void; unlink: (segment: Segment, index?: number) => void;
+  associate: (id: string, trigger: HTMLElement) => void; unlink: (segment: Segment, index?: number) => void;
 };
-type NoteProps = { expandedId: string | null; toggleNote: (id: string) => void };
 
-export function SegmentRowCell({ data, draft, query, activeId, visit, rowHeight, editorFor, cancelEdit, generate, history, actionsFor, ...rest }: SpeechProps & VisualProps & NoteProps & {
+export function SegmentRowCell({ data, draft, query, activeId, visit, rowHeight, editorFor, cancelEdit, generate, history, actionsFor, ...rest }: SpeechProps & VisualProps & {
   data?: Segment; draft?: { id: string; text: string } | null; editorFor?: (segment: Segment) => ReactNode;
   query: string; activeId: string | null; visit: number; rowHeight: number; cancelEdit?: () => void;
 }) {
@@ -32,40 +31,39 @@ export function SegmentRowCell({ data, draft, query, activeId, visit, rowHeight,
   const editor = editorFor?.(data);
   return <div data-inline-editor={editor ? '' : undefined} onKeyDown={event => {
     if (editor && event.key === 'Escape' && !event.defaultPrevented && !event.nativeEvent.isComposing) { event.preventDefault(); event.stopPropagation(); cancelEdit?.(); }
-  }} className="flex h-full w-full min-w-0 flex-col pb-1">
-    <div className="flex min-h-0 flex-1 items-center gap-4 border-0 border-b border-solid border-input/60 text-[15px]">
-      {editor || <div data-segment-script title="单击编辑口播文案" onMouseDown={event => event.preventDefault()} className="flex h-full min-w-0 flex-1 cursor-text items-start rounded-md border border-solid border-transparent pl-2 pr-[88px] transition-colors hover:bg-muted hover:inset-ring hover:inset-ring-input motion-reduce:transition-none">
-        <SearchText text={data.text} query={query} current={data.id === activeId} visit={visit} rowHeight={rowHeight - 44} />
-      </div>}
-      <SegmentSpeech {...rest} actions={actionsFor(data)} segment={data} draftText={draft?.id === data.id ? draft.text : undefined} generate={() => generate(data.id)} history={trigger => history(data.id, trigger)} />
-    </div>
+  }} className="flex h-full w-full min-w-0 items-center gap-1.5 py-1">
+    {editor || <div data-segment-script title="单击编辑口播文案" onMouseDown={event => event.preventDefault()} className="flex h-full min-w-0 flex-1 cursor-text items-start rounded-md border border-solid border-transparent px-1 pt-0.5 text-[15px] hover:bg-muted hover:inset-ring hover:inset-ring-input">
+      <SearchText text={data.text} query={query} current={data.id === activeId} visit={visit} rowHeight={rowHeight} />
+    </div>}
     <SegmentRowSupport {...rest} data={data} actions={actionsFor(data)} />
+    <SegmentSpeech {...rest} actions={actionsFor(data)} segment={data} draftText={draft?.id === data.id ? draft.text : undefined} generate={trigger => generate(data.id, trigger)} history={trigger => history(data.id, trigger)} />
   </div>;
 }
 
-export function SegmentRowSupport({ data, assets, preview, expandedId, toggleNote, associate, rename, unlink, actions, trayId, toggleTray, previews, composed, segmentEditingBusy }: VisualProps & NoteProps & {
+function SegmentRowSupport({ data, assets, preview, associate, rename, unlink, actions, trayId, toggleTray, previews, composed, segmentEditingBusy }: VisualProps & {
   data: Segment; actions: SegmentActions;
 }) {
   const trayTrigger = useRef<HTMLButtonElement>(null);
   const materials = segmentMaterials(data);
   const expanded = trayId === data.id;
-  const task = previews.filter(task => task.preview?.segmentId === data.id).at(-1);
-  const message = task ? task.state === 'succeeded' ? task.current ? task.preview?.subtitleIssue ?? '预览已就绪' : '预览待更新' : task.message : data.composition ? '尚未生成合成预览' : '等待 agent 编排';
-  return <Popover open={expanded} onOpenChange={open => { if (open !== expanded) toggleTray(data.id); }}><div data-segment-support className="flex min-w-0 shrink-0 flex-col">
-    <div className="flex h-[54px] min-w-0 items-center gap-2">
-      <PopoverTrigger asChild><Button ref={trayTrigger} variant="ghost" size="xs" className="h-10 shrink-0 gap-1 px-1" title={`${expanded ? '收起' : '展开'}本句画面素材，查看或添加图片和视频`} aria-label={`片段 ${data.order} 画面素材（${materials.length}）`}>
-        {materials.length ? <span className="relative block h-9 w-14" aria-hidden>
-          {materials.slice(0, 2).map((assetId, index) => <span key={assetId} className={`absolute flex h-8 w-12 items-center justify-center overflow-hidden rounded border border-solid border-input bg-muted ${index === 0 ? 'left-0 top-1 z-10' : 'left-2 top-0'}`}><ImageIcon className="size-4 text-muted-foreground" /><img src={`${panelServiceUrl()}/api/media/${assetId}/thumbnail`} alt="" className="absolute inset-0 h-full w-full object-cover" onError={event => { event.currentTarget.hidden = true; }} /></span>)}
-          <span className="absolute bottom-0 right-0 z-20 rounded border border-solid border-input bg-background px-1 text-[10px] leading-4 text-foreground">{materials.length}</span>
-        </span> : <span className="flex items-center gap-1 text-xs text-muted-foreground"><ImageIcon aria-hidden />添加素材</span>}
-        <ChevronDownIcon aria-hidden className={expanded ? 'rotate-180' : ''} />
-      </Button></PopoverTrigger>
-      <Button variant="ghost" size="xs" className="min-w-0 flex-1 justify-start overflow-hidden px-1 text-left text-[12px] font-normal text-muted-foreground" title={`${data.id === expandedId ? '收起' : '展开'}画面说明：查看本句的画面内容与拍摄建议`} data-note-summary aria-label={`${data.id === expandedId ? '收起' : '展开'}片段 ${data.order} 的画面说明`} aria-expanded={data.id === expandedId} aria-controls={data.id === expandedId ? `segment-note-${data.id}` : undefined} onClick={() => toggleNote(data.id)}><span className="shrink-0 font-medium">画面说明</span><ChevronDownIcon aria-hidden className={`shrink-0 ${data.id === expandedId ? 'rotate-180' : ''}`} /><span className="truncate">{data.visualNote || '暂无说明，点击展开'}</span></Button>
-    </div>
+  const tasks = previews.filter(task => task.preview?.segmentId === data.id);
+  const task = tasks.at(-1);
+  const result = tasks.filter(task => task.state === 'succeeded' && task.output).at(-1);
+  const ready = result?.current ? result : undefined;
+  const message = task ? task.state === 'succeeded' ? ready ? ready.preview?.subtitleIssue ?? '预览已就绪' : '预览待更新' : task.message : data.composition ? '尚未生成合成预览' : '等待 agent 编排';
+  return <Popover open={expanded} onOpenChange={open => { if (open !== expanded) toggleTray(data.id); }}><div data-segment-support className="relative flex shrink-0">
+    <PopoverTrigger asChild><Button ref={trayTrigger} data-row-entry="materials" variant="ghost" size="xs" className="relative h-10 w-16 gap-1 px-1" title="查看或添加本句画面素材" aria-label={`片段 ${data.order} 画面素材（${materials.length}）`}>
+      {materials.length ? <span className="relative block h-9 w-14" aria-hidden>
+        {materials.slice(0, 2).map((assetId, index) => <span key={assetId} className={`absolute flex h-8 w-12 items-center justify-center overflow-hidden rounded border border-solid border-input bg-muted ${index === 0 ? 'left-0 top-1 z-10' : 'left-2 top-0'}`}><ImageIcon className="size-4 text-muted-foreground" /><img src={`${panelServiceUrl()}/api/media/${assetId}/thumbnail`} alt="" className="absolute inset-0 h-full w-full object-cover" onError={event => { event.currentTarget.hidden = true; }} /></span>)}
+        {!result && <span className="absolute bottom-0 right-0 z-20 rounded border border-solid border-input bg-background px-1 text-[10px] leading-4 text-foreground">{materials.length}</span>}
+      </span> : <span className="flex items-center gap-0.5 text-[11px] text-muted-foreground"><ImageIcon aria-hidden />素材</span>}
+    </Button></PopoverTrigger>
+    {ready ? <Button variant="secondary" size="xs" data-row-entry="composed-preview" className="absolute right-0 bottom-0 z-20 h-[18px] gap-0.5 border border-solid border-input px-1 text-[10px]" aria-label={`播放片段 ${data.order} 合成预览，已就绪`} onClick={event => composed(ready, event.currentTarget)}><PlayIcon aria-hidden className="size-3" />已就绪</Button>
+      : result && <span className="pointer-events-none absolute right-0 bottom-0 z-20 rounded border border-solid border-input bg-background px-1 text-[10px] leading-4 text-foreground">待更新</span>}
     <PopoverContent aria-label={`片段 ${data.order} 素材面板`} className="w-[min(452px,calc(100vw-24px))] rounded-xl p-0"><section id={`materials-${data.id}`} aria-label={`片段 ${data.order} 的画面素材`} className="flex min-w-0 flex-col">
       <div className="flex min-w-0 items-center gap-2 px-4 pb-3 pt-3">
         <span className="mr-auto text-sm font-medium">画面素材 <span className="ml-1 text-xs font-normal text-muted-foreground">{materials.length}</span></span>
-        <Button variant="ghost" size="xs" className={`text-primary ${segmentEditingBusy ? 'disabled:opacity-100' : ''}`} disabled={!actions.associate.enabled} title={actions.associate.reason} aria-label={`为片段 ${data.order} 添加画面素材`} onClick={event => associate(data.id, event.currentTarget, materials.length)}><PlusIcon aria-hidden />添加</Button>
+        <Button variant="ghost" size="xs" className={`text-primary ${segmentEditingBusy ? 'disabled:opacity-100' : ''}`} disabled={!actions.associate.enabled} title={actions.associate.reason} aria-label={`为片段 ${data.order} 添加画面素材`} onClick={event => associate(data.id, event.currentTarget)}><PlusIcon aria-hidden />添加</Button>
         <Button variant="ghost" size="xs" className="size-6 p-0 text-muted-foreground" aria-label="关闭素材面板" onClick={() => toggleTray(data.id)}><Cross2Icon aria-hidden /></Button>
       </div>
       <div className="grid min-w-0 grid-cols-2 gap-3 px-4 pb-4" tabIndex={0} aria-label="本句素材列表">
@@ -86,7 +84,7 @@ export function SegmentRowSupport({ data, assets, preview, expandedId, toggleNot
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 border-0 border-t border-solid border-input bg-muted/50 px-4 py-3">
         <span role="status" className="min-w-0 truncate text-xs text-muted-foreground" title={message}>{message}</span>
-        <Button variant="outline" size="xs" disabled={!task?.current || !task.output} onClick={event => task && composed(task, event.currentTarget)}><PlayIcon aria-hidden />片段合成预览</Button>
+        <Button variant="outline" size="xs" disabled={!ready} onClick={event => ready && composed(ready, event.currentTarget)}><PlayIcon aria-hidden />片段合成预览</Button>
       </div>
     </section></PopoverContent>
   </div></Popover>;
@@ -102,7 +100,7 @@ export function SegmentRowActions({ data, actionsFor, open, remove, insert, chan
   const menu = segmentRowMenu(actions, data.order);
   return <div className="flex h-full items-center justify-center">
     <DropdownMenu modal={false} onOpenChange={changed}>
-      <DropdownMenuTrigger asChild><Button variant="ghost" size="xs" className="size-8 p-0" aria-label={`片段 ${data.order} 本行菜单`} onPointerDown={event => open(data, event.currentTarget)} onKeyDown={event => { if (['Enter', ' ', 'ArrowDown'].includes(event.key)) open(data, event.currentTarget); }}><DotsHorizontalIcon aria-hidden /></Button></DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild><Button variant="ghost" size="xs" className="size-8 p-0" data-row-entry="menu" aria-label={`片段 ${data.order} 本行菜单`} onPointerDown={event => open(data, event.currentTarget)} onKeyDown={event => { if (['Enter', ' ', 'ArrowDown'].includes(event.key)) open(data, event.currentTarget); }}><DotsHorizontalIcon aria-hidden /></Button></DropdownMenuTrigger>
       <DropdownMenuContent onCloseAutoFocus={event => { if (!restore()) event.preventDefault(); }} align="end" aria-label="口播片段操作" onClick={event => event.stopPropagation()}>
         <div className="px-2 py-1 text-xs text-muted-foreground">{menu.scope}</div>
         {menu.items.map(item => <DropdownMenuItem key={item.key} aria-label={item.label} aria-description={item.reason || undefined} disabled={!item.enabled} title={item.reason} onSelect={() => item.key === 'delete' ? remove() : insert(item.key)}>{item.label}{item.reason && <span className="text-xs text-muted-foreground"> · {item.reason}</span>}</DropdownMenuItem>)}

@@ -1,7 +1,7 @@
 import { test, expect } from './helpers/project.js';
 import { holdRequest } from './helpers/response-gate.js';
 
-test('普通片段弹窗从真实虚拟卸载来源返回并继续表格方向键', async ({ page, project }) => {
+test('普通片段弹窗从真实虚拟卸载来源返回配音菜单', async ({ page, project }) => {
   const ids = await project.seed(Array.from({ length: 80 }, (_, i) => `文案 ${i}`));
   await page.setViewportSize({ width: 420, height: 420 });
   await page.goto(project.url);
@@ -16,10 +16,9 @@ test('普通片段弹窗从真实虚拟卸载来源返回并继续表格方向�
   await page.locator('.ag-grid-viewport').evaluate(node => { node.scrollLeft = 0; node.scrollTop = node.scrollHeight; });
   await expect(page.locator(`[row-id="${ids[0]}"] [col-id="text"]`)).toHaveCount(0);
   await history.getByRole('button', { name: '关闭', exact: true }).click();
-  const origin = page.locator(`[row-id="${ids[0]}"] [col-id="text"]`);
-  await expect(origin).toBeFocused();
-  await page.keyboard.press('ArrowDown');
-  await expect(page.locator(`[row-id="${ids[1]}"] [col-id="text"]`)).toBeFocused();
+  await expect(more).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('menuitem', { name: '历史', exact: true })).toBeVisible();
   expect((await project.status()).snapshot.segments.map(s => s.text)).toEqual(Array.from({ length: 80 }, (_, i) => `文案 ${i}`));
 });
 
@@ -34,7 +33,7 @@ test('历史弹窗关闭按稳定身份处理重排、删除与空表', async ({
   await open(1);
   await project.modify({ changes: [{ kind: 'reorder', expectedIds: [a!, b!, c!], ids: [b!, c!, a!] }] });
   await expect(page.locator(`[row-id="${a}"]`)).toHaveAttribute('row-index', '2');
-  await close(); await expect(page.locator(`[row-id="${a}"] [col-id="text"]`)).toBeFocused();
+  await close(); await expect(page.locator(`[row-id="${a}"]`).getByRole('button', { name: '片段 3 配音更多操作' })).toBeFocused();
   await open(2);
   await project.modify({ changes: [{ kind: 'delete', expected: (await project.status()).snapshot.segments[1]! }] });
   await expect(page.locator(`[row-id="${c}"]`)).toHaveCount(0);

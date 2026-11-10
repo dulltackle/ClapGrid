@@ -64,6 +64,9 @@ test('HTTP 完成编辑才返回已提交快照，数据库占用时保存失败
   assert.equal(added.status, 200);
   const initial = statusSchema.parse(await added.json());
   const id = initial.snapshot.segments[0]!.id;
+  assert.equal((await post('/api/segments/add', { text: '旧格式', visualNote: '已退役' })).status, 400);
+  assert.equal((await post('/api/segments/edit', { id, text: '旧格式', visualNote: '已退役' })).status, 400);
+  assert.ok(!('visualNote' in initial.snapshot.segments[0]!));
   const edited = await post('/api/segments/edit', { id, text: '已保存文案' });
   assert.equal(edited.status, 200);
   assert.equal(statusSchema.parse(await edited.json()).snapshot.segments[0]!.text, '已保存文案');

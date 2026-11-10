@@ -22,7 +22,7 @@ schema 2 保留完整包身份，额外标识运行时、面板资源及协议�
 2. 从干净的目标提交执行 `npm run plugin:update -- --revision <提交> --marketplace-root <市场根目录> --cache-root <Codex 插件缓存根目录> --workspace <当前工作空间> --thread <当前聊天ID>`。参数必须来自当前宿主与安装信息。此命令构建完整包、校验指纹、保存恢复包、通过 `codex plugin add` 安装并正常重启空闲服务。
 3. 有任务或编辑占用时保持服务，等待用户结束后再更新。失败以返回的 `backup`、`rollback`、`rollbackError` 为准；`needs-attention` 时保留现场和恢复目录。更新仅操作插件包和服务生命周期，不迁移、删除或重建 `clapgrid/` 项目。
 4. 安装成功返回 `host: reload-required`、`complete: false`。重载以第 2 步的返回为门槛：`installed` 与 `service` 均为 `verified`，且 `identity.source.commit` 等于目标提交；任一不满足时按第 3 步处理，不请求重载。满足后使用宿主支持的插件重载入口；若当前工具无法重载，告知用户“安装已完成，宿主仍需重载”，同时写明目标提交和重载后待验的第 5 步动作。用户回复已重载后，先调用实际 `clapgrid_host_context` 核对已加载身份属于目标提交，仍为旧身份时再次请求重载，不进入第 5 步。不能用另起一个 MCP 测试进程代替实际调用证据。
-5. 重新调用实际 `clapgrid_host_context` 和 `clapgrid_status`，打开真实面板的“连接诊断”，核对目标构建、安装包、MCP、服务及面板指纹，以及工作空间、服务实例。保存本次实际观察后运行 `npm run plugin:verify -- --build <构建包> --installed <安装包> --workspace <工作空间> --service-url <服务根地址> --mcp-evidence <宿主证据> --panel-evidence <面板证据>`。按[证据格式](#证据格式)检查来源和有效期，并核对各方身份一致。
+5. 重新调用实际 `clapgrid_host_context` 和 `clapgrid_status`，在实际 Codex 面板中观察表格并采集浏览器证据，核对目标构建、安装包、MCP、服务及面板指纹，以及工作空间、服务实例。保存本次实际观察后运行 `npm run plugin:verify -- --build <构建包> --installed <安装包> --workspace <工作空间> --service-url <服务根地址> --mcp-evidence <宿主证据> --panel-evidence <面板证据>`。按[证据格式](#证据格式)检查来源和有效期，并核对各方身份一致。
 6. 最终报告分别列出源码提交／合并状态、本机安装版本、实际宿主验证结果。仅第 5 步退出 0 才称“已更新可用”；其余状态报告尚未完成的具体环节和恢复位置。
 
 ## 证据格式
@@ -33,6 +33,6 @@ schema 2 保留完整包身份，额外标识运行时、面板资源及协议�
 
 宿主可达时使用 `{ "source": "actual-host", "observedAt": "ISO时间", "status": "reachable", "response": <实际clapgrid_host_context结构化结果>, "serviceStatus": <实际clapgrid_status结构化结果> }`。`serviceStatus` 用于正式交付中关联实际服务。
 
-面板可达时使用 `{ "source": "actual-browser", "observedAt": "ISO时间", "status": "reachable", "response": { "buildIdentity": <已加载页面自身的__CLAPGRID_BUILD_IDENTITY__>, "instanceId": <面板诊断显示的服务实例>, "workspace": <已核对的工作空间> } }`。同时保留诊断截图；通过 DOM 可见内容核对实例及版本，不能只请求服务接口冒充面板。
+面板可达时使用 `{ "source": "actual-browser", "observedAt": "ISO时间", "status": "reachable", "response": { "buildIdentity": <已加载页面的 window.__clapgridBuildIdentity>, "instanceId": <该面板绑定地址下 /api/status 响应的 instanceId>, "workspace": <已核对的工作空间> } }`。同时保留表格截图。用面板加载的脚本身份核对面板版本，用该页面正常读取的状态响应核对实例和项目目录。两项证据均在实际浏览器采集。
 
 更新收据位于 `${XDG_DATA_HOME:-$HOME/.local/share}/clapgrid/plugin-update.json`，供新版打开入口和 MCP 检查已加载版本是否过期；从指定源码提交更新时还记录来源仓库，后续已提交的插件代码变化会触发更新提示（纯合并且文件不变不误报）。收据不是宿主成功证据。恢复包默认位于同目录的 `updates/` 下，结果含精确路径。更新锁残留时先检查原更新进程及结果，确认恢复策略后再处理，不自动抢占锁。

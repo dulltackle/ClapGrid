@@ -2,7 +2,7 @@ import { Button, AlertDialog, AlertDialogContent, AlertDialogCancel, AlertDialog
 import type { useSegmentInteraction } from './segment-interaction.js';
 type Controller = ReturnType<typeof useSegmentInteraction>;
 
-/** 放弃提示同时服务文案和画面说明，Esc 只关闭这一层。 */
+/** 放弃提示保留文案草稿，Esc 只关闭这一层。 */
 export function SegmentDraftPrompt({ controller, busy }: { controller: Controller; busy: boolean }) {
   return <AlertDialog open={controller.pending} onOpenChange={open => { if (!open && !busy) controller.continueEditing(); }}>
     <AlertDialogContent onCloseAutoFocus={event => event.preventDefault()} onEscapeKeyDown={event => { event.preventDefault(); event.stopPropagation(); if (!event.isComposing && !busy) controller.continueEditing(); }}>

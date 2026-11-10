@@ -110,7 +110,7 @@ for (const unknown of [false, true]) test(`删除${unknown ? '已提交响应未
     else await route.fulfill({ status: 500, json: { error: '本例删除失败' } });
   });
   await dialog(page).getByRole('button', { name: '删除', exact: true }).click();
-  await expect(dialog(page)).toHaveCount(0); await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+  await expect(dialog(page)).toHaveCount(0); await expect(page.locator('[data-save-status]')).toHaveCount(0);
   await expect(page.getByLabel('操作异常', { exact: true })).toContainText(unknown ? 'Failed to fetch' : '本例删除失败');
   await expect.poll(async () => (await project.status()).modification).toBeNull();
   expect((await project.status()).snapshot.segments.map(s => s.id)).toEqual(unknown ? [b] : [a, b]); expect(calls).toBe(1);
@@ -133,16 +133,19 @@ for (const next of ['查找', '原片段'] as const) test(`等待删除响应取
   expect(gate.calls).toBe(1); expect((await project.status()).snapshot.segments.map(s => s.id)).toEqual([b, c]);
 });
 
-test('删除确认从本行菜单入口交接不提前回表格，取消后继续方向键', async ({ page, project }) => {
-  const [a, b, c] = await project.seed(['A', 'B', 'C']); await page.goto(project.url);
+test('删除确认从本行菜单入口交接不提前回表格，取消后回到本行菜单按钮', async ({ page, project }) => {
+  const [a, b] = await project.seed(['A', 'B', 'C']); await page.goto(project.url);
   await page.locator(`[row-id="${b}"] [aria-label$="本行菜单"]`).click({ button: 'right' });
   await page.evaluate(() => { document.body.dataset.intermediateTableFocus = 'false'; document.addEventListener('focusin', event => { if ((event.target as Element).closest('[row-id]')) document.body.dataset.intermediateTableFocus = 'true'; }); });
   await page.keyboard.press('Home'); await page.keyboard.press('Enter');
   await expect(dialog(page).getByRole('button', { name: '取消', exact: true })).toBeFocused();
   await expect(page.locator('body')).toHaveAttribute('data-intermediate-table-focus', 'false');
   await dialog(page).getByRole('button', { name: '取消', exact: true }).click();
-  await expect(page.locator(`[row-id="${b}"] [col-id="noteToggle"]`)).toBeFocused();
-  await page.keyboard.press('ArrowDown'); await expect(page.locator(`[row-id="${c}"] [role="gridcell"]:focus`)).toHaveCount(1);
+  const menu = page.locator(`[row-id="${b}"]`).getByRole('button', { name: '片段 2 本行菜单' });
+  await expect(menu).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('menuitem', { name: '删除本片段' })).toBeVisible();
+  await page.keyboard.press('Escape');
   await page.locator(`[row-id="${a}"] [data-segment-script]`).click({ button: 'right' }); await page.keyboard.press('Escape');
   await expect(page.locator(`[row-id="${a}"] [col-id="text"]`)).toBeFocused();
 });
@@ -178,7 +181,7 @@ for (const outcome of ['成功', '失败'] as const) test(`迟到删除${outcome
   } finally { release(); }
   await expect(page.getByRole('button', { name: '新增口播片段', exact: true })).toBeEnabled();
   if (outcome === '失败') await expect(page.getByLabel('操作异常', { exact: true })).toContainText('本例迟到删除失败');
-  await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+  await expect(page.locator('[data-save-status]')).toHaveCount(0);
   await expect(page.getByLabel('查找文案', { exact: true })).toBeFocused(); await expect(page.getByLabel('查找文案', { exact: true })).toHaveValue('保留');
   expect(await page.locator('.ag-grid-viewport').evaluate(node => node.scrollTop)).toBe(scroll);
   // 勾选所在行可能已经虚拟卸载；通过重新回到行位置读取其稳定身份。

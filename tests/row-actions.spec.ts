@@ -2,25 +2,18 @@ import { test, expect } from './helpers/project.js';
 
 for (const environment of ['wide', 'compact', 'touch'] as const) test.describe(environment, () => {
   test.use({ viewport: environment === 'wide' ? { width: 1200, height: 800 } : { width: 780, height: 579 }, hasTouch: environment === 'touch', isMobile: environment === 'touch' });
-  test('行内说明保存交接，本行菜单和页脚删除不依赖悬停与右键', async ({ page, project }) => {
+  test('文案保存后，本行菜单和页脚删除不依赖悬停与右键', async ({ page, project }) => {
     const [a, b] = await project.seed(['第一句', '第二句']); await page.goto(project.url);
     const first = page.locator(`[row-id="${a}"]`);
     await expect(first.getByRole('button', { name: '片段 1 本行菜单', exact: true })).toBeVisible();
     await expect(first.getByRole('button', { name: '拖动片段 1', exact: true })).toHaveCSS('opacity', '1');
     await expect(page.getByLabel('口播片段详情', { exact: true })).toHaveCount(0);
-    await first.getByRole('button', { name: '展开片段 1 的画面说明', exact: true }).press('Enter');
-    const note = page.getByRole('region', { name: '片段 1 画面说明', exact: true });
-    await note.getByRole('button', { name: '编辑说明', exact: true }).press('Enter');
-    const input = page.getByLabel('画面说明全文', { exact: true }); await input.fill('拍摄产品特写');
     await first.locator('[col-id="text"]').press('F2');
-    await expect(page.getByLabel('文案全文', { exact: true })).toBeFocused();
-    expect((await project.status()).snapshot.segments[0]!.visualNote).toBe('拍摄产品特写');
-    await page.getByLabel('文案全文', { exact: true }).fill('新的第一句');
-    await note.getByRole('button', { name: '编辑说明', exact: true }).press('Enter');
-    await expect(input).toBeFocused();
-    expect((await project.status()).snapshot.segments[0]!.text).toBe('新的第一句');
-    await input.press('Escape');
+    const input = page.getByLabel('文案全文', { exact: true });
+    await input.fill('新的第一句');
+    await input.press('Control+Enter');
     await expect(input).toHaveCount(0);
+    expect((await project.status()).snapshot.segments[0]!.text).toBe('新的第一句');
     await first.getByRole('button', { name: /片段 1 画面素材/ }).press('Enter');
     await page.getByRole('dialog', { name: '片段 1 素材面板', exact: true }).getByRole('button', { name: '为片段 1 添加画面素材', exact: true }).press('Enter');
     await expect(page.getByRole('dialog', { name: '添加画面素材', exact: true })).toBeVisible();
@@ -49,21 +42,20 @@ test('拖动手柄以 Enter 拾取、方向键定位，Esc 取消或 Enter 提�
   await expect.poll(async () => (await project.status()).snapshot.segments.map(item => item.id)).toEqual([b, a]);
 });
 
-for (const viewport of [{ width: 1200, height: 800 }, { width: 780, height: 579 }]) test(`原生 Tab 经过各行文案、配音、画面、展开说明和本行菜单 ${viewport.width}`, async ({ page, project }) => {
+for (const viewport of [{ width: 1200, height: 800 }, { width: 780, height: 579 }]) test(`原生 Tab 经过各行文案、画面、配音和本行菜单 ${viewport.width}`, async ({ page, project }) => {
   await page.setViewportSize(viewport); await project.seed(['A', 'B']); await page.goto(project.url);
-  await page.getByRole('button', { name: '展开片段 1 的画面说明', exact: true }).press('Enter');
-  await page.keyboard.press('Tab'); await expect(page.getByRole('button', { name: '编辑说明', exact: true })).toBeFocused();
-  await page.keyboard.press('Enter'); await expect(page.getByLabel('画面说明全文', { exact: true })).toBeFocused();
-  await page.keyboard.press('Escape'); await expect(page.getByLabel('画面说明全文', { exact: true })).toHaveCount(0);
+  await page.locator('[row-index="0"] [col-id="text"]').focus();
   const visited: string[] = [];
   for (let step = 0; step < 30; step++) {
     await page.keyboard.press('Tab');
-    const label = await page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? document.activeElement?.textContent ?? '');
+    const label = await page.evaluate(() => document.activeElement instanceof HTMLButtonElement ? document.activeElement.getAttribute('aria-label') ?? document.activeElement.textContent ?? '' : '');
     visited.push(label);
-    if (label === '展开片段 2 的画面说明') break;
+    if (label === '片段 2 本行菜单') break;
   }
-  expect(visited).toEqual(expect.arrayContaining(['片段 1 本行菜单', '生成配音', '片段 2 配音更多操作', '片段 2 画面素材（0）', '展开片段 2 的画面说明']));
-  await page.keyboard.press('Shift+Tab'); await expect(page.locator('[row-index="1"]').getByRole('button', { name: '片段 2 画面素材（0）', exact: true })).toBeFocused();
+  expect(visited.filter(label => /画面素材|生成配音|配音更多操作|本行菜单/.test(label))).toEqual([
+    '片段 1 画面素材（0）', '生成配音', '片段 1 配音更多操作', '片段 1 本行菜单',
+    '片段 2 画面素材（0）', '生成配音', '片段 2 配音更多操作', '片段 2 本行菜单',
+  ]);
 });
 
 test.describe('真实触控输入', () => {

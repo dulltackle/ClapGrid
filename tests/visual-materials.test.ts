@@ -123,12 +123,10 @@ test('MCP 保存编排并真实合成透明叠加，查询过期状态及重开�
   await post('/api/exports/cancel', { taskId: cancelled.id });
   await expect.poll(async () => (await (await fetch(service.url + '/api/visual-previews')).json()).tasks.find((t: any) => t.id === cancelled.id)?.state, { timeout: 60000 }).toBe('cancelled');
   segment = (await queryStatus(service.url)).snapshot.segments[0]!;
-  await post('/api/codex/modify', { changes: [{ kind: 'edit', expected: segment, visualNote: '角色向右移动' }] });
+  await post('/api/codex/modify', { changes: [{ kind: 'edit', expected: segment, text: '角色向右移动' }] });
   expect((await (await fetch(service.url + '/api/visual-previews')).json()).tasks[0].current).toBe(false);
   const conflict = await post('/api/codex/modify', { changes: [{ kind: 'composition', expected: segment, plan }] });
   expect(conflict.summary.changed).toBe(1);
-  const staleTask = await post('/api/visual-previews/submit', { segmentId: segment.id });
-  await expect.poll(async () => (await (await fetch(service.url + '/api/visual-previews')).json()).tasks.find((t: any) => t.id === staleTask.id)?.state, { timeout: 60000 }).toBe('failed');
   await service.close(); service = await startService({ ...options, port: Number(new URL(service.url).port) });
   expect((await queryStatus(service.url)).snapshot.segments[0]?.composition?.layers).toHaveLength(4);
   expect((await queryStatus(service.url)).snapshot.assets).toHaveLength(3);

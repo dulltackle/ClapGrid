@@ -1,14 +1,11 @@
 import { test, expect } from './helpers/project.js';
 import { holdRequest, holdResponse } from './helpers/response-gate.js';
 
-for (const entry of ['顶部', '底部', '更多'] as const) test(`${entry}普通新增清除查找并原位编辑，退出回新片段`, async ({ page, project }) => {
+test('顶栏新增清除查找并原位编辑，退出回新片段', async ({ page, project }) => {
   await project.seed(['A', 'B']); await page.goto(project.url);
   await page.getByRole('button', { name: '查找', exact: true }).click();
   await page.getByLabel('查找文案', { exact: true }).fill('A');
-  if (entry === '更多') {
-    await page.getByRole('button', { name: '更多', exact: true }).click();
-    await page.getByRole('dialog').getByRole('button', { name: '新增口播片段', exact: true }).click();
-  } else await page.getByRole('button', { name: entry === '底部' ? '新增口播片段（表格底部）' : '新增口播片段', exact: true }).click();
+  await page.getByRole('button', { name: '新增口播片段', exact: true }).click();
   const draft = page.getByLabel('文案全文', { exact: true });
   await expect(draft).toBeEditable(); await expect(draft).toBeFocused();
   await expect(page.getByLabel('查找文案', { exact: true })).toHaveCount(0);
@@ -32,7 +29,7 @@ for (const placement of ['上方添加', '下方添加'] as const) test(`相对$
   const input = page.getByLabel('文案全文', { exact: true });
   await expect(input).toBeFocused(); await expect(input).toBeInViewport();
   await input.fill('插入文案'); await input.press('Control+Enter');
-  await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+  await expect(page.locator('[data-save-status]')).toHaveCount(0);
   const segments = (await project.status()).snapshot.segments;
   expect(segments.map(segment => segment.text)).toEqual(placement === '上方添加' ? ['插入文案', 'A', 'B'] : ['A', '插入文案', 'B']);
   expect(segments.filter(segment => segment.id === a || segment.id === b)).toHaveLength(2);
@@ -56,7 +53,7 @@ for (const kind of ['普通', '相对'] as const) test(`${kind}新增迟到成�
   } finally { gate.release(); }
   await gate.delivered;
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
-  await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+  await expect(page.locator('[data-save-status]')).toHaveCount(0);
   await expect(page.getByLabel('查找文案', { exact: true })).toBeFocused();
   await expect(page.getByLabel('查找文案', { exact: true })).toHaveValue('B');
   await expect(page.locator(`[row-id="${a}"]`)).toHaveAttribute('aria-selected', 'true');
@@ -118,7 +115,7 @@ for (const kind of ['普通', '相对'] as const) test(`${kind}新增明确失�
     await page.getByLabel('查找文案', { exact: true }).fill('A');
   } finally { fail(); }
   await expect(page.getByLabel('操作异常', { exact: true })).toContainText('本例新增失败');
-  await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+  await expect(page.locator('[data-save-status]')).toHaveCount(0);
   await expect(page.getByLabel('查找文案', { exact: true })).toBeFocused();
   await expect(page.getByLabel('查找文案', { exact: true })).toHaveValue('A');
   expect((await project.status()).snapshot.segments.map(segment => segment.text)).toEqual(['A']);
@@ -133,7 +130,7 @@ test('相对插入保留菜单打开时锚点，外部修改冲突不误插入',
   await project.modify({ changes: [{ kind: 'edit', expected: first, text: '外部改变 A' }] });
   await page.getByRole('menuitem', { name: '上方添加', exact: true }).click();
   await expect(page.getByLabel('操作异常', { exact: true })).toContainText('锚点');
-  await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+  await expect(page.locator('[data-save-status]')).toHaveCount(0);
   expect((await project.status()).snapshot.segments.map(segment => segment.text)).toEqual(['外部改变 A', 'B']);
   await expect(page.locator(`[row-id="${a}"] [col-id="text"]`)).toBeFocused();
   await page.keyboard.press('ArrowDown');
@@ -161,7 +158,7 @@ test('已提交但响应未知的新增不自动重试，真实数据仍只有�
   await page.route('**/api/segments/modify', async route => { calls++; await route.fetch(); await route.abort('failed'); });
   await page.getByRole('button', { name: '新增口播片段', exact: true }).click();
   await expect(page.getByLabel('操作异常', { exact: true })).toContainText('Failed to fetch');
-  await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+  await expect(page.locator('[data-save-status]')).toHaveCount(0);
   await expect.poll(async () => (await project.status()).modification).toBeNull();
   expect((await project.status()).snapshot.segments.map(segment => segment.text)).toEqual(['A', '']);
   await expect(page.getByLabel('文案全文', { exact: true })).toHaveCount(0);
@@ -193,7 +190,7 @@ for (const outcome of ['成功', '失败'] as const) test(`离页后旧新增${o
   } finally { release(); }
   await completed;
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
-  await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+  await expect(page.locator('[data-save-status]')).toHaveCount(0);
   await expect(page.getByLabel('文案全文', { exact: true })).toBeFocused();
   expect((await project.status()).modification?.owner).toBe('user');
   expect((await project.status()).snapshot.segments).toHaveLength(outcome === '成功' ? 3 : 2);

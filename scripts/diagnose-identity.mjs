@@ -84,7 +84,7 @@ try {
   if (mcp.status === 'mismatch') nextSteps.push('先核对安装包，再由用户重载插件，重新调用宿主 clapgrid_host_context 并留存证据。');
   if (mcp.status === 'unknown' || mcp.status === 'unreachable') nextSteps.push('从当前聊天实际宿主调用 clapgrid_host_context，保存调用时间和结构化结果；入口不可达时保留未验证。');
   if (service.status === 'mismatch') nextSteps.push('确认当前工作空间无运行任务后，由用户决定是否重启现存服务，再核对身份。');
-  if (panel.status !== 'match') nextSteps.push('打开实际面板的连接诊断，核对加载版本并保存本次浏览器证据。');
+  if (panel.status !== 'match') nextSteps.push('在实际面板中核对已加载版本与表格归属，保存本次浏览器证据。');
   if (service.status === 'unreachable') nextSteps.push('核实现存服务地址；本命令不会启动服务。');
   console.log(JSON.stringify({ schemaVersion: 1, observedAt: new Date().toISOString(),
     build: { ...compare(build, build), role: 'reference' }, installed, mcp, service, panel, complete, nextSteps }, null, 2));

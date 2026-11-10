@@ -39,7 +39,7 @@ for (const width of [1600, 420]) test(`真实指针拖动多选范围且保留�
   await page.locator(`[row-id="${ids[1]}"] input[type="checkbox"]`).click(); await page.locator(`[row-id="${ids[3]}"] input[type="checkbox"]`).click();
   await begin(page, ids[3]!); await target(page, ids[4]!); await page.mouse.up();
   await expect.poll(async () => (await project.status()).snapshot.segments.map(s => s.id)).toEqual([ids[0], ids[2], ids[4], ids[1], ids[3], ids[5]]);
-  await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+  await expect(page.locator('[data-save-status]')).toHaveCount(0);
   await expect(page.locator('.ag-row[aria-selected="true"]')).toHaveCount(2);
 });
 
@@ -50,7 +50,7 @@ test('拖未选中行仅移动自身，Escape及自身目标或不变顺序不�
   await begin(page, ids[5]!); await target(page, ids[0]!, false); await page.mouse.up();
   await expect.poll(async () => (await project.status()).snapshot.segments.map(s => s.id)).toEqual([ids[5], ...ids.slice(0, 5)]);
   await expect(page.locator('.ag-row[aria-selected="true"]')).toHaveCount(2); await expect(page.locator(`[row-id="${ids[5]}"]`)).toHaveAttribute('aria-selected', 'false');
-  await expect(page.locator('[data-save-status]')).toHaveText('已保存'); const saved = calls;
+  await expect(page.locator('[data-save-status]')).toHaveCount(0); const saved = calls;
   await begin(page, ids[5]!); await target(page, ids[0]!, false); await page.mouse.up();
   await expect(page.getByLabel('口播片段插入位置', { exact: true })).toHaveCount(0); expect(calls).toBe(saved);
   await begin(page, ids[5]!); await target(page, ids[4]!); await page.keyboard.press('Escape'); await page.mouse.up();
@@ -64,18 +64,18 @@ test('松手立即预览，真实取得修改权与保存等待不覆盖预览�
   const acquire = await holdRequest(page, '/api/edit-session'); const save = await holdResponse(page, '/api/segments/modify');
   try {
     await begin(page, a!); await target(page, b!); await page.mouse.up(); await acquire.received;
-    await expect(page.locator(`[row-id="${a}"]`)).toHaveAttribute('row-index', '1'); await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+    await expect(page.locator(`[row-id="${a}"]`)).toHaveAttribute('row-index', '1'); await expect(page.locator('[data-save-status]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: '新增口播片段', exact: true })).toBeDisabled();
     expect((await project.status()).snapshot.segments.map(s => s.id)).toEqual([a, b]);
     acquire.release(); await save.received;
     await expect(page.locator(`[row-id="${a}"]`)).toHaveAttribute('row-index', '1');
   } finally { acquire.release(); save.release(); }
-  await save.delivered; await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+  await save.delivered; await expect(page.locator('[data-save-status]')).toHaveCount(0);
   expect((await project.status()).snapshot.segments.map(s => s.id)).toEqual([b, a]);
   await page.unroute('**/api/segments/modify');
   await page.route('**/api/segments/modify', route => route.fulfill({ status: 500, json: { error: '本例重排保存失败' } }));
   await begin(page, a!); await target(page, b!, false); await page.mouse.up();
-  await expect(page.locator('[data-save-status]')).toHaveText('已保存'); await expect(page.locator('footer')).toContainText('本例重排保存失败');
+  await expect(page.locator('[data-save-status]')).toHaveCount(0); await expect(page.locator('footer')).toContainText('本例重排保存失败');
   await expect(page.locator(`[row-id="${a}"]`)).toHaveAttribute('row-index', '1');
   expect((await project.status()).snapshot.segments.map(s => s.id)).toEqual([b, a]);
 });
