@@ -30,6 +30,6 @@ main 的 GitHub 分支保护要求通过 PR 合并，`check` 与 `process-trace`
 
 [Dockerfile](../../scripts/ci/test-image/Dockerfile) 以固定摘要的 Ubuntu 24.04 Playwright 官方镜像为基础，加入 Node、Chrome for Testing、FFmpeg/ffprobe、Fontconfig、Noto CJK 与 strace。Playwright 基础镜像版本与 `package-lock.json` 中的 `playwright-core` 一致，Node 版本与 `.node-version` 一致。面板继续使用固定版本的 Chrome for Testing，页面渲染继续使用锁文件对应的 Chromium Headless Shell。
 
-只有构建镜像时访问 Ubuntu 软件源。检查作业按摘要从 GHCR 拉取镜像，使用只读包权限；在当前源码上运行 `npm ci`，并试启动镜像里的渲染浏览器。只有 `process-trace` 作业授予 `SYS_PTRACE`，它仍执行真实进程追踪与 FFmpeg 正向对照。
+只有构建镜像时访问 Ubuntu 软件源。检查作业按摘要从 GHCR 拉取镜像，使用只读包权限；在当前源码上运行 `npm ci`，并试启动镜像里的渲染浏览器。Vitest 以与托管 runner 工作区 UID 一致的普通用户运行，以保留只读文件等权限断言。只有 `process-trace` 作业授予 `SYS_PTRACE`，它仍执行真实进程追踪与 FFmpeg 正向对照。
 
 升级依赖时，先更新 Dockerfile 中对应的版本和摘要。将镜像定义推到仓库内 `ci-image/` 分支以构建，或从 `main` 手动运行[镜像发布工作流](../../.github/workflows/test-image.yml)。构建通过浏览器、媒体工具、字体和 strace 检查后发布；用运行摘要给出的 `ghcr.io/…@sha256:…` 同步替换两个检查工作流里的镜像引用。最后在 PR 的同一候选提交确认 `check` 与 `process-trace` 均通过。PR 本身不构建或写入注册表。

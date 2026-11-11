@@ -54,7 +54,8 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-      options: --init --shm-size=1g
+      # 与托管 Ubuntu runner 的工作区 UID 一致；只读文件的测试必须以普通用户运行。
+      options: --init --shm-size=1g --user 1001:1001
     timeout-minutes: 30
     strategy:
       fail-fast: false
