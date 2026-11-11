@@ -17,7 +17,7 @@ export default defineConfig({
       },
       {
         extends: true,
-        // 此专项用 500ms 故障期限验证取消和退出原因；CPU 争用会让测试期限抢先于命令期限触发。
+        // 此专项观察短期限触发的取消和资源退出；避免与并行 project 争用 CPU。
         // 目录和进程已隔离，放宽期限会改变保障；最后独占执行，避免与并行 project 争用 CPU。
         test: { name: 'deadline', include: ['tests/bounded-run.test.ts'], fileParallelism: false, sequence: { groupOrder: 1 } },
       },

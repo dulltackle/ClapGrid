@@ -161,6 +161,13 @@ export function useSegmentInteraction({ editing, status, accept, acceptSpeech, c
     if (dirtyDraft(current.current)) {
       promptSource.current = input;
       input?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      // 原生滚动只考虑表格视口，滚回来的草稿仍可能被固定表头挡住。
+      const viewport = input?.closest<HTMLElement>('.ag-grid-viewport');
+      const header = viewport?.querySelector('.ag-header');
+      if (input && viewport && header) {
+        const covered = header.getBoundingClientRect().bottom - input.getBoundingClientRect().top;
+        if (covered > 0) viewport.scrollTop -= Math.ceil(covered);
+      }
       const bounds = input?.getBoundingClientRect();
       const above = bounds?.top ?? 0;
       const below = window.innerHeight - (bounds?.bottom ?? 0);

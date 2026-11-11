@@ -3,6 +3,9 @@ import { test, expect } from './helpers/media-project.js';
 import { querySpeech, submitSpeech } from '../src/shared/client.js';
 import { holdResponse } from './helpers/response-gate.js';
 
+// Chrome 131 的交集矩形会取整；允许亚像素误差，整像素裁切仍会失败。
+const fullyVisible = { ratio: 0.999 };
+
 test('逐句保存后光标落在下一句末尾，末句保存后回到本行', async ({ page, project }) => {
   const [first, last] = await project.seed(['第一句', '最后一句']);
   await page.goto(project.url);
@@ -57,11 +60,11 @@ for (const [width, platform, key] of [[780, 'MacIntel', '⌘↵'], [601, 'Linux 
     for (const [name, label] of [['取消修改', '取消 Esc'], ['保存修改', `保存 ${key}`]]) {
       const button = actions.getByRole('button', { name, exact: true });
       await expect(button).toHaveText(label!);
-      await expect(button).toBeInViewport({ ratio: 1 });
+      await expect(button).toBeInViewport(fullyVisible);
       expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(32);
     }
     const help = actions.getByText('保存并编辑下一句 · Alt+↵ 仅保存');
-    await expect(help).toBeInViewport({ ratio: 1 });
+    await expect(help).toBeInViewport(fullyVisible);
     const input = page.getByRole('textbox', { name: '文案全文' });
     await expect(input).toBeFocused();
     expect(await input.evaluate(node => {
@@ -200,10 +203,12 @@ for (const width of [420, 780]) test(`放弃确认不遮挡草稿，继续编辑
   await page.keyboard.press('Escape');
   const prompt = page.getByRole('alertdialog', { name: '放弃未保存的修改？' });
   await expect(prompt).toBeVisible();
-  await expect(input).toBeInViewport({ ratio: 1 });
+  await expect(input).toBeInViewport(fullyVisible);
   await expect.poll(async () => {
     const editorBounds = (await input.boundingBox())!, promptBounds = (await prompt.boundingBox())!;
-    return editorBounds.y + editorBounds.height <= promptBounds.y || promptBounds.y + promptBounds.height <= editorBounds.y;
+    const headerBounds = (await page.getByRole('columnheader', { name: '文案', exact: true, includeHidden: true }).boundingBox())!;
+    return editorBounds.y >= headerBounds.y + headerBounds.height
+      && (editorBounds.y + editorBounds.height <= promptBounds.y || promptBounds.y + promptBounds.height <= editorBounds.y);
   }).toBe(true);
   await page.getByRole('button', { name: '继续编辑' }).click();
   await expect(input).toBeFocused();

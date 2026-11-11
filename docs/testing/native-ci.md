@@ -12,7 +12,7 @@
 
 分片使用框架原生 `--shard`，按文件路径哈希均分文件数，各片负载不均；不按历史耗时自建分配。各 job 内 Vitest 使用 50% workers（CI 4 vCPU 为 2 workers），Playwright 使用 3 workers（[#215](https://github.com/dulltackle/ClapGrid/issues/215)）。
 
-`bounded-run.test.ts` 用 500ms 故障期限检查取消、命令超时和资源退出。并行时 CPU 调度竞争会让测试期限先于预期的命令超时到达；调整资源命名无法消除，放宽期限又改变故障窗口，因此该文件单独作为 `deadline` project 在其他文件结束后独占执行（[#212](https://github.com/dulltackle/ClapGrid/issues/212)）。分片后它只出现在其中一片，仍在该片其他文件结束后独占执行。
+`bounded-run.test.ts` 检查测试取消、命令超时和资源退出。依赖 Vitest 超时触发的夹具保留各自的故障期限；命令超时夹具由命令自己的期限触发，外层测试期限还须容纳 TERM 等待和 KILL 退出确认。该文件单独作为 `deadline` project，在同一分片的其他文件结束后独占执行，减少 CPU 调度竞争（[#212](https://github.com/dulltackle/ClapGrid/issues/212)）。
 
 CI 4 workers 仅比 2 workers 快约 7 秒，却出现真实媒体导出超出期限等更多失败，因此 workflow 不加 4 workers 覆盖。
 

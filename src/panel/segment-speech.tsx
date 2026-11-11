@@ -66,7 +66,7 @@ export function SegmentSpeechCell({ data, actionsFor, segmentEditingBusy, playin
     onKeyDown={event => {
       if (!active || event.key !== 'Escape' || event.nativeEvent.isComposing || event.defaultPrevented || !event.target || !event.currentTarget.contains(event.target as Node)) return;
       event.preventDefault(); event.stopPropagation();
-      (problem ? menu.current : listenButton.current)?.focus({ preventScroll: true });
+      (pending || problem ? menu.current : listenButton.current)?.focus({ preventScroll: true });
       stop();
     }}>
     {recording && <>

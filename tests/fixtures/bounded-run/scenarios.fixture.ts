@@ -11,7 +11,9 @@ const directory = join(root, 'project');
 const record = (name: string, value: unknown) => writeFileSync(join(root, name), JSON.stringify(value));
 const known = JSON.parse(process.env.CLAPGRID_FOREIGN_OWNER ?? 'null');
 
-test(`独立异常：${mode}`, { timeout: mode.startsWith('startup-') || mode === 'cancel' || mode === 'command-cleanup-failure' ? 2500 : 500 }, async ({ command, createDirectory, openBusiness, openConnection, ownProcess, startService, signal, onTestFinished }) => {
+// 命令故障由自己的期限触发；外层需要留出 TERM 等待及 KILL 退出确认的时间。
+const commandTimeoutCase = mode === 'refuse-term' || mode === 'command-cleanup-failure';
+test(`独立异常：${mode}`, { timeout: mode.startsWith('startup-') || mode === 'cancel' || commandTimeoutCase ? 2500 : 500 }, async ({ command, createDirectory, openBusiness, openConnection, ownProcess, startService, signal, onTestFinished }) => {
   onTestFinished(() => record('observed.json', { directoryExists: existsSync(directory), cancelled: signal.aborted, reason: String(signal.reason) }));
   createDirectory(() => { mkdirSync(directory); return directory; });
   const kill = process.kill.bind(process);
