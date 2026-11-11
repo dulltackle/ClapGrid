@@ -232,7 +232,7 @@ export function App() {
   }));
   useEffect(() => focusReturns.listen(), [focusReturns]);
   const rememberOrigin = (trigger: HTMLElement, detail: keyof typeof returnFocus.current) => {
-    returnFocus.current[detail] = focusReturns.capture(trigger, { entryFallback: trigger.dataset.rowEntry === 'composed-preview' ? 'materials' : undefined });
+    returnFocus.current[detail] = focusReturns.capture(trigger, { replacementColumn: 'text', entryFallback: trigger.dataset.rowEntry === 'composed-preview' ? 'materials' : undefined });
   };
   const openDetail = (next: typeof detail, trigger: HTMLElement) => { rememberOrigin(trigger, 'detail'); setDetail(next); };
   const closeDetail = () => focusReturns.close(returnFocus.current.detail, () => setDetail(null));

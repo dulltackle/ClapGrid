@@ -8,7 +8,7 @@ type Destination = { id: string; column?: string; entry?: string };
 type Origin = Partial<Destination> & { index: number; trigger?: HTMLElement; parent?: HTMLElement };
 export type FocusIntent = { valid: () => boolean };
 export type FocusReturn = (() => void) & { cancel: () => void };
-type ReturnOptions = { fallback?: 'segment' | 'menu'; preventScroll?: boolean; entryFallback?: string };
+type ReturnOptions = { fallback?: 'segment' | 'menu'; preventScroll?: boolean; entryFallback?: string; replacementColumn?: string };
 
 const layers = () => [...document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"], [role="alertdialog"][aria-modal="true"]')]
   .filter(layer => layer.dataset.state !== 'closed' && available(layer));
@@ -116,7 +116,7 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
           const index = original?.rowIndex ?? Math.min(origin.index, api.getDisplayedRowCount() - 1);
           const row = index >= 0 ? api.getDisplayedRowAtIndex(index) : undefined;
           if (row?.id) {
-            const column = row.id === origin.id || !api.getColumn('text') ? origin.column : 'text';
+            const column = row.id === origin.id ? origin.column : options.replacementColumn ?? origin.column;
             const selector = `[row-id="${CSS.escape(row.id)}"] [col-id="${CSS.escape(column)}"]`;
             const range = api.getVerticalPixelRange();
             const top = row.rowTop ?? 0;

@@ -161,8 +161,13 @@ for (const width of [1600, 420]) test(`长文案完整显示原文，全文编�
   expect((await project.status()).snapshot.segments[0]!.text).toBe(text);
   await editor.press('Control+Enter');
   await expect.poll(async () => (await project.status()).snapshot.segments[0]!.text).toBe(text + '末尾');
-  await first.locator('[col-id="text"]').focus(); await page.keyboard.press('Enter');
-  await expect(editor).toHaveValue(text + '末尾'); await editor.press('Escape');
+  // 服务已写入文案后，面板仍需等修改权释放才完成保存并接受下一次编辑。
+  await expect(editor).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '新增口播片段', exact: true })).toBeEnabled();
+  await first.locator('[col-id="text"]').press('Enter');
+  await expect(editor).toHaveValue(text + '末尾');
+  await expect(editor).toBeInViewport();
+  await editor.press('Escape');
   await first.locator('[col-id="text"]').focus();await page.keyboard.press('x');
   await expect(editor).toHaveCount(0); expect((await project.status()).snapshot.segments[0]!.text).toBe(text+'末尾');
 });
