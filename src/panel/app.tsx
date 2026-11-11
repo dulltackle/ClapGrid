@@ -556,7 +556,7 @@ export function App() {
   const columns: ColDef<Segment>[] = [
     { headerName: '序号', field: 'order', width: orderWidth, cellClass: 'px-1!', headerClass: 'px-1!', cellRenderer: SegmentOrderCell,
       cellRendererParams: { suppressMouseEventHandling: cellControlMouse, actionsFor, drag, segmentEditingBusy: segmentEditingBusy || !!speechLock } },
-    { headerName: '文案', field: 'text', flex: 1, minWidth: compact ? 72 : 48, autoHeight: true, cellClass: 'px-1!', headerClass: 'px-2!',
+    { headerName: '文案', field: 'text', flex: 1, minWidth: compact ? 104 : 48, autoHeight: true, cellClass: 'px-1!', headerClass: 'px-2!',
       cellRenderer: SegmentScriptCell,
       cellRendererParams: { query: searchOpen ? query : '', activeId: activeMatch, speechLock,
         editorFor: (data: Segment) => segmentDetail.draft?.id === data.id ? <TextEditor key={data.id} value={segmentDetail.draft.text} data={data} busy={editState.busy || segmentDetail.finishing}
