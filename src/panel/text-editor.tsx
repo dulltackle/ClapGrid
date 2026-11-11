@@ -52,7 +52,7 @@ export function TextEditor({ value, data, change, commit, cancel, busy }: { valu
   }} className="flex h-full w-full min-w-0 flex-1 flex-col">
     <div className="flex min-h-0 flex-1 items-center gap-3">
       <div data-inline-text-box className="relative h-full min-w-0 flex-1">
-        <textarea className="m-0 block h-full min-h-0 w-full resize-none overflow-hidden rounded-md border border-solid border-input bg-background px-1 pt-0.5 pb-6 font-[inherit] text-[15px] leading-[22px] text-foreground outline-none" ref={input} aria-label="文案全文" value={text}
+        <textarea className="m-0 block h-full min-h-0 w-full resize-none overflow-hidden rounded-md border border-solid border-input bg-background px-1 pt-0.5 pb-6 font-[inherit] text-base text-foreground outline-none" ref={input} aria-label="文案全文" value={text}
           readOnly={busy} onChange={event => { setText(event.target.value); change(event.target.value); }} onKeyDownCapture={keys} />
         <div role="group" aria-label="文案编辑操作" className="absolute right-1 bottom-0.5 flex gap-0.5 rounded-md bg-background">
           <Button variant="ghost" size="xs" className="size-6 p-0 text-muted-foreground" aria-label="取消修改" title="取消修改（Esc）" onMouseDown={event => event.preventDefault()} disabled={busy} onClick={cancel}><ResetIcon aria-hidden className="size-4" /></Button>
@@ -72,7 +72,7 @@ export function TextEditor({ value, data, change, commit, cancel, busy }: { valu
           <DialogTitle className="m-0 text-lg font-semibold">编辑口播文案 · 片段 {data?.order}</DialogTitle>
           <Button variant="ghost" size="sm" aria-label="缩小编辑" onClick={collapse}><ExitFullScreenIcon aria-hidden />缩小</Button>
         </div>
-        <textarea ref={enlargedInput} aria-label="放大文案全文" className="m-0 block h-[min(48dvh,320px)] min-h-[100px] max-h-[calc(100dvh-180px)] w-full resize-none rounded-md border border-solid border-input bg-background p-3 font-[inherit] text-base leading-7 text-foreground" value={text} readOnly={busy} onChange={event => { setText(event.target.value); change(event.target.value); }} onKeyDownCapture={keys} />
+        <textarea ref={enlargedInput} aria-label="放大文案全文" className="m-0 block h-[min(48dvh,320px)] min-h-[100px] max-h-[calc(100dvh-180px)] w-full resize-none rounded-md border border-solid border-input bg-background p-3 font-[inherit] text-base text-foreground" value={text} readOnly={busy} onChange={event => { setText(event.target.value); change(event.target.value); }} onKeyDownCapture={keys} />
         <div className="flex flex-wrap items-center justify-end gap-3">
           <span id="enlarged-editor-help" className="mr-auto text-xs text-muted-foreground">Esc 缩小 · Ctrl／⌘+Enter 保存</span>
           <Button variant="outline" size="sm" disabled={busy} onClick={cancel}>取消修改</Button>

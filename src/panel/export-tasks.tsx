@@ -71,7 +71,7 @@ export function TaskDetails({ progress, speechProblems, exportProblems, exportTa
     {progress.length > 0 && <section aria-label="进行中" className="space-y-2">
       <h3 className="m-0 text-sm font-semibold">进行中</h3>
       {progress.map(({ label, task }) => <div key={task?.id ?? 'speech'} className="flex items-center justify-between gap-2">
-        <span role="status">{label}{task?.state === 'cleaning' && ' · 正在清理'}</span>
+        <span role="status" className="text-running">{label}{task?.state === 'cleaning' && ' · 正在清理'}</span>
         {task && task.state !== 'cleaning' && <Button variant="outline" size="xs" disabled={cancelBusy} onClick={() => cancel(task.id)}>{task.preview ? '取消合成' : '取消导出'}</Button>}
       </div>)}
     </section>}
@@ -104,7 +104,7 @@ export function TaskDetails({ progress, speechProblems, exportProblems, exportTa
         <summary className="cursor-pointer font-medium">导出成功 · {new Date(task.createdAt).toLocaleString()}</summary>
         {task.technicalChecks?.loudnessAfter && <p>成片响度 {formatLoudnessValue(task.technicalChecks.loudnessAfter.integratedLufs)} LUFS · 真峰值 {formatLoudnessValue(task.technicalChecks.loudnessAfter.truePeakDbtp)} dBTP</p>}
         {task.warnings.length > 0 && <ul aria-label="导出警告" className="my-2 list-disc pl-5 text-muted-foreground">{task.warnings.map((issue, index) => <li key={index}>{issue.order === undefined ? '全片' : `片段 ${issue.order}`}：{issue.message}</li>)}</ul>}
-        {task.output && <p><a className="text-primary underline underline-offset-2" href={task.output.previewUrl ?? task.output.url} target="_blank" rel="noreferrer">打开成片</a> · <a className="text-primary underline underline-offset-2" href={task.output.url} download>下载 MP4 原片</a><small className="text-muted-foreground">（浏览器播放使用兼容预览）</small></p>}
+        {task.output && <p><a className="text-primary underline underline-offset-2" href={task.output.previewUrl ?? task.output.url} target="_blank" rel="noreferrer">打开成片</a> · <a className="text-primary underline underline-offset-2" href={task.output.url} download>下载 MP4 原片</a><small className="text-xs text-muted-foreground">（浏览器播放使用兼容预览）</small></p>}
       </details>)}
     </section>}
   </>;

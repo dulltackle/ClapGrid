@@ -28,7 +28,7 @@ export function VoicePanel({ speech, disabled, busy, error, onChange, onClose, r
           {Array.from({ length: 151 }, (_, index) => index - 50).map(rate => <option key={rate} value={rate}>{(1 + rate / 100).toFixed(2)} 倍</option>)}
         </NativeSelect>
       </label>
-      <span className="text-[12px] text-muted-foreground">TokenDance 凭据：{speech.configured ? '已配置' : '未配置'}</span>
+      <span className="text-xs text-muted-foreground">TokenDance 凭据：{speech.configured ? '已配置' : '未配置'}</span>
     </div>
     {error && <p role="alert" className="m-0 text-sm text-destructive">{error}</p>}
     <Button variant="outline" size="sm" className="shrink-0 self-start border-input text-foreground" disabled={busy} onClick={close}>关闭声音设置</Button>

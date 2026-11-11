@@ -2,6 +2,7 @@ import { test, expect } from './helpers/project.js';
 import type { Page } from '@playwright/test';
 import { beginEdit } from '../src/shared/client.js';
 import { holdResponse } from './helpers/response-gate.js';
+import { expectPanelFocus, panelTheme } from './helpers/theme-contract.js';
 
 async function openDelete(page: Page, id: string, details = false) {
   await page.locator(`[row-id="${id}"] ${details ? '[aria-label$="本行菜单"]' : '[data-segment-script]'}`).click({ button: 'right' });
@@ -15,17 +16,17 @@ for (const width of [1600, 420]) test(`行菜单固定选择范围，删除确�
   const [a, b, c] = await project.seed(['A', 'B', 'C']); await page.goto(project.url);
   await page.locator(`[row-id="${a}"] input[type="checkbox"]`).click(); await page.locator(`[row-id="${b}"] input[type="checkbox"]`).click();
   await page.locator(`[row-id="${a}"] [data-segment-script]`).click({ button: 'right' });
-  const menu = page.getByRole('menu'); await expect(menu).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  await expect(menu).toHaveCSS('border-top-color', 'rgb(227, 228, 231)');
+  const menu = page.getByRole('menu'); await expect(menu).toHaveCSS('background-color', panelTheme.color.surface);
+  await expect(menu).toHaveCSS('border-top-color', panelTheme.color.border);
   await page.keyboard.press('Home'); await page.keyboard.press('Enter');
   await expect(dialog(page)).toContainText('2 个口播片段');
   const cancel = dialog(page).getByRole('button', { name: '取消', exact: true });
   const confirm = dialog(page).getByRole('button', { name: '删除', exact: true });
   await expect(cancel).toBeFocused(); await expect(cancel).toHaveCSS('border-top-style', 'solid');
-  await expect(confirm).toHaveCSS('background-color', 'rgb(164, 38, 44)');
+  await expect(confirm).toHaveCSS('background-color', panelTheme.color.error);
   for (const node of [cancel, confirm]) { await expect(node).toBeInViewport(); expect((await node.boundingBox())!.height).toBeGreaterThanOrEqual(32); }
   await page.keyboard.press('Tab'); await expect(confirm).toBeFocused();
-  await expect(confirm).toHaveCSS('outline-color', 'rgb(8, 117, 209)');
+  await expectPanelFocus(confirm);
   await page.keyboard.press('Tab'); await expect(cancel).toBeFocused();
   await page.keyboard.press('Shift+Tab'); await expect(confirm).toBeFocused();
   await cancel.click(); await expect(dialog(page)).toHaveCount(0);

@@ -58,7 +58,7 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose, restor
   const issues = details?.issues ?? [];
   return <Dialog open onOpenChange={open => { if (!open) void close(); }}>
     <DialogContent className="gap-3 [overflow-wrap:anywhere] [&>*]:shrink-0" onCloseAutoFocus={event => { event.preventDefault(); restoreFocus(); }}>
-    <DialogTitle className="m-0 text-[18px] font-semibold">全片导出设置</DialogTitle>
+    <DialogTitle className="m-0 text-lg font-semibold">全片导出设置</DialogTitle>
     <p className="m-0">适用于全片 · 16:9 · 1920×1080 · MP4</p>
     <DialogDescription className="m-0">修改设置不会生成配音或更改已有成片，下一次导出采用当前设置。</DialogDescription>
     <label className="flex min-w-0 flex-col gap-1">编码<NativeSelect aria-label="导出编码" disabled={disabled} value={settings.codec} onChange={event => { void save({ ...draft, codec: event.target.value as ExportSettings['codec'] }); }}>
