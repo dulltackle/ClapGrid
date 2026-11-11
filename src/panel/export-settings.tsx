@@ -78,7 +78,7 @@ export function ExportSettingsPanel({ editing, status, onStatus, onClose, restor
       </label>
       {music && <Button variant="outline" size="sm" disabled={disabled} onClick={() => { void saveMusic(null); }}>移除背景乐</Button>}
     </div>
-    <p className="m-0">{status.snapshot.projectStyle ? `项目风格 ${status.snapshot.projectStyle.id} · ${status.snapshot.projectStyle.version}` : '未设置项目风格，无法导出'}</p>
+    <p className="m-0">{status.snapshot.projectStyle ? `项目风格 ${status.snapshot.projectStyle.id} · ${status.snapshot.projectStyle.version}` : '未设置项目风格，暂不能导出'}</p>
     {!!issues.length && <ul className="m-0 list-disc pl-5" aria-label="导出设置待解决项">{issues.map(issue => <li key={issue}>{issue}</li>)}</ul>}
     <p className="m-0" role="status">{message}</p>
     <div className="flex flex-wrap items-center gap-2">

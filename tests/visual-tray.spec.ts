@@ -3,6 +3,37 @@ import { importMaterial, querySpeech, queryVisualContext, submitSpeech } from '.
 import { execCommand } from './helpers/command.js';
 import { join } from 'node:path';
 
+test('画面素材入口横排最多三张缩略图并显示总数', async ({ page, project }) => {
+  await project.seed(['多份素材', '暂无素材']);
+  const assetIds: string[] = [];
+  for (const color of ['red', 'blue', 'green', 'purple']) {
+    const image = join(project.directory, `${color}.png`);
+    await execCommand('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', `color=${color}:s=64x64`, '-frames:v', '1', image]);
+    assetIds.push((await importMaterial(project.url, image)).asset.id);
+  }
+  await project.modify({ changes: [{ kind: 'materials', expected: (await project.status()).snapshot.segments[0]!, assetIds }] });
+  await page.goto(project.url);
+  const entry = page.getByRole('button', { name: '片段 1 画面素材（4）' });
+  const count = entry.getByText('4', { exact: true });
+  const empty = page.getByRole('button', { name: '片段 2 画面素材（0）' });
+  const thumbnails = entry.locator('img');
+  for (const viewport of [{ width: 1280, height: 800 }, { width: 780, height: 579 }]) {
+    await page.setViewportSize(viewport);
+    await expect(thumbnails).toHaveCount(3);
+    await expect.poll(() => thumbnails.evaluateAll(images => images.every(image => (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
+    const bounds = await Promise.all((await thumbnails.all()).map(image => image.boundingBox()));
+    for (const [index, thumb] of bounds.entries()) {
+      expect(thumb!.y).toBe(bounds[0]!.y);
+      if (index > 0) expect(thumb!.x).toBeGreaterThanOrEqual(bounds[index - 1]!.x + bounds[index - 1]!.width);
+    }
+    expect((await count.boundingBox())!.x).toBeGreaterThanOrEqual(bounds[2]!.x + bounds[2]!.width);
+    await expect(empty).toHaveText('素材');
+    await expect(empty.locator('svg')).toBeVisible();
+  }
+  await entry.click();
+  await expect(page.getByRole('dialog', { name: '片段 1 素材面板' }).getByRole('button', { name: /^查看原件/ })).toHaveCount(4);
+});
+
 for (const viewport of [{ width: 780, height: 579 }, { width: 420, height: 360 }]) test(`片段素材托盘只编辑本句归属并查看图片原件 ${viewport.width}`, async ({ page, project, mediaFiles }) => {
   await page.setViewportSize(viewport);
   await project.seed(['第一句', '第二句']);

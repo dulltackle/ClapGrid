@@ -46,13 +46,18 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 780, height: 579 
     const short = row(page, b!);
     const headers = grid.getByRole('columnheader');
     await expect(headers).toHaveCount(5);
-    for (const [index, name] of ['勾选', '序号', '文案', '画面素材', '配音'].entries()) {
-      await expect(headers.nth(index)).toContainText(name);
+    await expect(headers.first()).toHaveText('');
+    const selectAll = headers.first().getByRole('checkbox', { name: '勾选', exact: true });
+    for (const [index, name] of ['序号', '文案', '画面素材', '配音'].entries()) {
+      await expect(headers.nth(index + 1)).toContainText(name);
     }
     const lastLine = first.locator('[data-segment-script]');
     await expect(lastLine).toContainText('最后一行');
     const original = (await first.boundingBox())!;
-    expect(original.height).toBeGreaterThan((await short.boundingBox())!.height);
+    const shortHeight = (await short.boundingBox())!.height;
+    expect(shortHeight).toBeGreaterThanOrEqual(48);
+    expect(shortHeight).toBeLessThanOrEqual(52);
+    expect(original.height).toBeGreaterThan(shortHeight);
     const geometry = async (id: string) => row(page, id).evaluate(element => {
       const text = element.querySelector('[data-segment-script] .text-summary')!;
       const line = text.getBoundingClientRect().top + parseFloat(getComputedStyle(text).lineHeight) / 2;
@@ -65,10 +70,14 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 780, height: 579 
     expect(controls.map(({ x }) => x)).toEqual((await geometry(b!)).map(({ x }) => x));
     for (const { centerOffset } of controls) expect(Math.abs(centerOffset)).toBeLessThanOrEqual(1);
     const checkbox = first.getByRole('checkbox');
-    await headers.first().getByText('勾选', { exact: true }).click();
+    for (const control of [selectAll, checkbox]) {
+      const box = (await control.boundingBox())!;
+      expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(32);
+    }
+    await selectAll.click();
     await expect(first.getByRole('checkbox')).toBeChecked();
     await expect(short.getByRole('checkbox')).toBeChecked();
-    await headers.first().getByText('勾选', { exact: true }).click();
+    await selectAll.click();
     await expect(checkbox).not.toBeChecked();
     const cell = checkbox.locator('xpath=ancestor::*[@role="gridcell"]');
     await cell.click({ position: { x: 3, y: original.height - 5 } });
@@ -85,7 +94,9 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 780, height: 579 
       const box = (await control.boundingBox())!;
       expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(32);
     }
-    await expect(page.getByRole('button', { name: '任务详情' })).toHaveCSS('height', '32px');
+    const details = page.getByRole('button', { name: '任务详情' });
+    await expect(details).toHaveCSS('height', '32px');
+    await expect(details).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     await first.getByRole('button', { name: /片段 1 画面素材/ }).click();
     await expect(page.getByRole('dialog', { name: '片段 1 素材面板' })).toBeVisible();
     await page.keyboard.press('Escape');
@@ -178,7 +189,10 @@ for (const width of [1600, 420]) test(`页头主题、查找键盘与模态边�
   await expect(add).toHaveCSS('background-color', panelTheme.color.focus);
   await expect(add).toHaveCSS('color', panelTheme.color.surface);
   await expect(add).toHaveCSS('height', '32px');
+  await expect(add.locator('svg')).toBeVisible();
   const more = page.getByRole('button', { name: '更多', exact: true });
+  await expect(more).toHaveText('');
+  await expect(more.locator('svg')).toBeVisible();
   await more.hover();
   await expect(more).toHaveCSS('background-color', panelTheme.color.hover);
   await more.click(); await page.getByRole('button', { name: '导出设置', exact: true }).click();
@@ -234,6 +248,7 @@ test('鼠标定位单元格不显示焦点框，键盘导航仍显示焦点', as
   await expect(next).toBeFocused();
   await expect(next).toHaveCSS('border-top-style', 'solid');
   await expect(next).toHaveCSS('border-top-color', panelTheme.color.focus);
+  await expect.poll(() => next.evaluate(cell => getComputedStyle(cell.closest('[row-id]')!, '::after').width)).toBe('2px');
 });
 
 test('三位序号与虚拟末行不裁切', async ({ page, project }) => {
@@ -285,13 +300,14 @@ test('鼠标取消勾选后恢复普通行背景且保留键盘焦点可见性',
     return { width: s.width, background: s.backgroundColor };
   });
   const baselineMarker = await marker();
+  const box = first.locator('.ag-checkbox-input-wrapper');
+  await expect(box).toHaveCSS('border-radius', '2px');
+  await expect(box).toHaveCSS('border-top-color', panelTheme.color.secondary);
   await checkbox.click();
   await expect(checkbox).toBeChecked();
   await expect(first).toHaveClass(/ag-row-selected/);
-  await expect.poll(() => first.evaluate(e => {
-    const marker = getComputedStyle(e, '::after');
-    return { width: marker.width, color: marker.backgroundColor, pointerEvents: marker.pointerEvents };
-  })).toEqual({ width: '3px', color: panelTheme.color.focus, pointerEvents: 'none' });
+  await expect.poll(marker).toEqual(baselineMarker);
+  await expect(box).toHaveCSS('background-color', panelTheme.color.focus);
   await page.mouse.move(1, 1);
   expect(await first.evaluate(e => getComputedStyle(e.querySelector('.ag-grid-scrolling-cells')!, '::before').backgroundColor)).toBe(panelTheme.color.selected);
   await checkbox.click();
@@ -336,6 +352,10 @@ for(const [width,height] of [[780,579],[541,579],[420,360]])test(`五类配音�
    await expect(button).toHaveCSS('border-top-style','solid');
  }
  expect(await button.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
+ const menu = await region.getByRole('button', { name: `片段 ${i + 1} 配音更多操作` }).boundingBox();
+ const action = (await button.boundingBox())!;
+ expect(menu!.x - action.x - action.width).toBeGreaterThanOrEqual(0);
+ expect(menu!.x - action.x - action.width).toBeLessThanOrEqual(8);
  const script=await row(page,ids[i]!).locator('[data-segment-script]').boundingBox();
  const support=await row(page,ids[i]!).locator('[data-segment-support]').boundingBox();
  const speech=await region.boundingBox();
@@ -345,7 +365,13 @@ for(const [width,height] of [[780,579],[541,579],[420,360]])test(`五类配音�
  expect(await row(page,ids[i]!).evaluate(e=>e.getBoundingClientRect().height)).toBeLessThanOrEqual(width! <= 480 ? 82 : 72);
  }
  await expect(row(page,ids[2]!).getByRole('button',{name:'生成中…',exact:true})).toBeDisabled();
- await expect(page.getByLabel('操作异常')).toHaveCSS('background-color', panelTheme.color.errorSurface);
+ await expect(page.getByLabel('操作异常')).toHaveCount(0);
+ const summary = page.getByRole('button', { name: /配音异常 1 项/ });
+ await expect(summary).toHaveCSS('color', panelTheme.color.error);
+ const details = page.getByRole('button', { name: '任务详情' });
+ expect((await summary.boundingBox())!.y).toBe((await details.boundingBox())!.y);
+ await summary.click();
+ await expect(page.getByRole('dialog', { name: '任务记录' })).toBeVisible();
  expect((await project.status()).modification).toBeNull();
 });
 

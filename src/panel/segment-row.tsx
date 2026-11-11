@@ -26,10 +26,10 @@ export function SegmentScriptCell({ data, query, activeId, editorFor, speechLock
   // 编辑器覆盖正文，正文继续参与测量，避免修改权切换和输入改变行高。
   return <div className="relative w-full min-w-0">
     <div data-segment-script title={speechLock || '单击编辑口播文案'} aria-disabled={speechLock ? true : undefined} onMouseDown={event => event.preventDefault()}
-      className={`min-h-14 max-[720px]:min-h-[70px] max-[480px]:min-h-[80px] min-[601px]:max-[640px]:min-h-[80px] rounded-md px-1 py-3 text-base ${speechLock ? '' : 'cursor-text hover:bg-muted hover:inset-ring hover:inset-ring-input'} ${editor ? 'invisible' : ''}`}>
+      className={`min-h-12 max-[720px]:min-h-[70px] max-[480px]:min-h-[80px] min-[601px]:max-[640px]:min-h-[80px] rounded-md px-1 py-3 text-base ${speechLock ? '' : 'cursor-text hover:bg-muted hover:inset-ring hover:inset-ring-input'} ${editor ? 'invisible' : ''}`}>
       <SearchText text={data.text} query={query} current={data.id === activeId} />
     </div>
-    {editor && <div data-inline-editor className="absolute inset-x-0 top-1 bottom-1 max-[720px]:inset-y-0 max-h-[min(50dvh,320px)]">{editor}</div>}
+    {editor && <div data-inline-editor className="absolute inset-x-0 top-1 bottom-0 max-[720px]:inset-y-0 max-h-[min(50dvh,320px)]">{editor}</div>}
   </div>;
 }
 
@@ -46,12 +46,12 @@ export function SegmentMaterialsCell({ data, assets, preview, associate, rename,
   const result = tasks.filter(task => task.state === 'succeeded' && task.output).at(-1);
   const ready = result?.current ? result : undefined;
   const message = task ? task.state === 'succeeded' ? ready ? ready.preview?.subtitleIssue ?? '预览已就绪' : '预览待更新' : task.message : data.composition ? '尚未生成合成预览' : '等待 agent 编排';
-  return <Popover open={expanded} onOpenChange={open => { if (open !== expanded) toggleTray(data.id); }}><div data-segment-support className="flex items-center gap-0.5 pt-1">
-    <PopoverTrigger asChild><Button ref={trayTrigger} data-row-entry="materials" variant="ghost" size="sm" className="relative h-10 w-16 gap-1 px-1 max-[600px]:w-[52px]" title="查看或添加本句画面素材" aria-label={`片段 ${data.order} 画面素材（${materials.length}）`}>
-      {materials.length ? <span className="relative block h-9 w-14 max-[600px]:w-11" aria-hidden>
-        {materials.slice(0, 2).map((assetId, index) => <span key={assetId} className={`absolute flex h-8 w-12 max-[600px]:w-9 items-center justify-center overflow-hidden rounded border border-solid border-input bg-muted ${index === 0 ? 'left-0 top-1 z-10' : 'left-2 top-0'}`}><ImageIcon className="size-4 text-muted-foreground" /><img src={`${panelServiceUrl()}/api/media/${assetId}/thumbnail`} alt="" className="absolute inset-0 h-full w-full object-cover" onError={event => { event.currentTarget.hidden = true; }} /></span>)}
-        {!result && <span className="absolute bottom-0 right-0 z-20 rounded border border-solid border-input bg-background px-1 text-xs leading-4 text-foreground">{materials.length}</span>}
-      </span> : <span className="flex items-center gap-0.5 text-xs text-muted-foreground"><ImageIcon aria-hidden />素材</span>}
+  return <Popover open={expanded} onOpenChange={open => { if (open !== expanded) toggleTray(data.id); }}><div data-segment-support className="flex items-center gap-0.5 pt-2">
+    <PopoverTrigger asChild><Button ref={trayTrigger} data-row-entry="materials" variant="ghost" size="sm" className="min-w-8 px-1 text-muted-foreground max-[600px]:px-0.5" title="查看或添加本句画面素材" aria-label={`片段 ${data.order} 画面素材（${materials.length}）`}>
+      {materials.length ? <span className="flex items-center gap-1.5 max-[600px]:gap-0.5" aria-hidden>
+        <span className="flex gap-0.5">{materials.slice(0, 3).map((assetId, index) => <span key={`${index}-${assetId}`} className="relative flex size-6 items-center justify-center overflow-hidden rounded-sm border border-solid border-input bg-muted max-[600px]:h-4 max-[600px]:w-3"><ImageIcon className="size-3 text-muted-foreground" /><img src={`${panelServiceUrl()}/api/media/${assetId}/thumbnail`} alt="" className="absolute inset-0 h-full w-full object-cover" onError={event => { event.currentTarget.hidden = true; }} /></span>)}</span>
+        <span className="text-xs tabular-nums">{materials.length}</span>
+      </span> : <span className="flex items-center gap-1 text-xs"><PlusIcon aria-hidden />素材</span>}
     </Button></PopoverTrigger>
     {ready ? <Button variant="ghost" size="icon-sm" data-row-entry="composed-preview" className="text-ok hover:text-ok max-[600px]:hidden" title="片段合成预览已就绪" aria-label={`播放片段 ${data.order} 合成预览，已就绪`} onClick={event => composed(ready, event.currentTarget)}><PlayIcon aria-hidden /></Button>
       : result && <span className="pointer-events-none rounded bg-warning-surface px-0.5 text-xs leading-4 text-warning max-[600px]:hidden">待更新</span>}

@@ -119,7 +119,7 @@ test('项目风格随项目常驻顶栏，未设置时说明并禁用全片导�
   await page.goto(project.url);
   const header = page.locator('header');
   const title = header.getByRole('heading', { level: 1 });
-  await expect(header.getByText('未设置项目风格，无法导出', { exact: true })).toBeVisible();
+  await expect(header.getByText('未设置项目风格，暂不能导出', { exact: true })).toBeVisible();
   const exportButton = header.getByRole('button', { name: '导出全片', exact: true });
   await expect(exportButton).toBeDisabled();
   await selectTestStyle(project.url);
