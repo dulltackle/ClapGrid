@@ -18,7 +18,7 @@ function Listening({ player, playing, toggle, stop }: { player: RefObject<HTMLAu
   return <div aria-label="配音试听进度" className="flex w-[210px] items-center gap-1">
     <Button variant="ghost" size="xs" aria-label={playing ? '暂停试听' : '继续试听'} onClick={toggle}>{playing ? <PauseIcon aria-hidden /> : <TriangleRightIcon aria-hidden />}</Button>
     <input aria-label="配音进度" type="range" min={0} max={duration || 1} step={0.1} value={Math.min(time, duration)} className="min-w-0 flex-1 accent-primary" onChange={event => { const next = Number(event.target.value); if (player.current) player.current.currentTime = next; setTime(next); }} />
-    <span className="text-[10px] tabular-nums">{time.toFixed(0)}/{duration.toFixed(0)}秒</span>
+    <span className="text-xs tabular-nums">{time.toFixed(0)}/{duration.toFixed(0)}秒</span>
     <Button variant="ghost" size="xs" aria-label="停止试听" onClick={stop}><StopIcon aria-hidden /></Button>
   </div>;
 }
@@ -37,13 +37,17 @@ export function SegmentSpeech({ segment, actions, draftText, segmentEditingBusy,
   const pending = latest?.state === 'accepted' || latest?.state === 'running';
   const problem = latest?.state === 'failed' || latest?.state === 'unknown';
   const canListen = !pending && !problem && audio?.valid;
+  const statusColor = problem ? ''
+    : pending ? 'text-running disabled:opacity-100'
+    : canListen ? 'text-ok hover:text-ok'
+    : audio ? 'bg-warning-surface text-warning hover:bg-warning-surface hover:text-warning' : '';
   const playingAudio = listening?.segmentId === segment.id ? listening : null;
   // 修改权短暂切换时禁用生成，保持控件外观稳定。
   const keepGenerateAppearance = segmentEditingBusy && !pending && !problem && !canListen && !!(draftText ?? segment.text).trim();
   return <section data-segment-speech aria-label={`片段 ${segment.order} 配音`} className="flex shrink-0 items-center gap-0.5">
     <Popover open={!!playingAudio} onOpenChange={open => { if (!open && playingAudio) stop(); }}>
       <PopoverTrigger asChild>
-        <Button ref={primary} data-row-entry="speech" variant={problem ? 'destructive' : canListen || pending ? 'outline' : 'default'} size="xs" className={`h-7 px-2 ${keepGenerateAppearance ? 'disabled:opacity-100' : ''}`}
+        <Button ref={primary} data-row-entry="speech" variant={problem ? 'destructive' : pending || audio ? 'outline' : 'default'} size="xs" className={`h-7 px-2 ${statusColor} ${keepGenerateAppearance ? 'disabled:opacity-100' : ''}`}
           aria-label={problem ? `${primaryLabel}，查看错误说明` : primaryLabel}
           aria-haspopup={problem || canListen || playingAudio ? 'dialog' : undefined} aria-expanded={canListen || playingAudio ? !!playingAudio : undefined}
           title={problem ? '查看错误说明' : canListen ? '试听配音' : actions.generate.reason || primaryLabel}

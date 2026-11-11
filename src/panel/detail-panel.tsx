@@ -20,8 +20,8 @@ export function DetailPanel({ title, label, description, className, onClose, res
       event.preventDefault();
       restorePanelFocus(restoreFocus, restoreWithinLayer);
     }}>
-      <DialogTitle className="m-0 text-[18px] font-semibold">{title}</DialogTitle>
-      {description && <DialogDescription className="m-0 text-[12px] text-muted-foreground">{description}</DialogDescription>}
+      <DialogTitle className="m-0 text-lg font-semibold">{title}</DialogTitle>
+      {description && <DialogDescription className="m-0 text-xs text-muted-foreground">{description}</DialogDescription>}
       {children}
     </DialogContent>
   </Dialog>;

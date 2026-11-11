@@ -1,7 +1,34 @@
 import { test, expect } from './helpers/project.js';
 import type { Locator, Page } from '@playwright/test';
+import { expectPanelFocus, panelTheme } from './helpers/theme-contract.js';
 
 const row = (page: Page, id: string) => page.locator(`[row-id="${id}"]`);
+
+test('根字体与四级字号覆盖表格、控件、弹窗和口播文案', async ({ page, project }) => {
+  const [id] = await project.seed(['第一行中文文案\n第二行中文文案']);
+  await page.goto(project.url);
+  await expect(page.locator('html')).toHaveCSS('font-family', panelTheme.fontFamily);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveCSS('font-size', panelTheme.fontSize.heading);
+  const header = page.getByRole('columnheader', { name: '口播片段' });
+  await expect(header).toHaveCSS('font-size', panelTheme.fontSize.control);
+  await expect(header).toHaveCSS('color', panelTheme.color.secondary);
+  await expect.poll(() => header.evaluate(node => getComputedStyle(node.closest('.ag-header-row')!, '::after').backgroundColor)).toBe(panelTheme.color.subtle);
+  await expect(page.locator('html')).toHaveCSS('color', panelTheme.color.ink);
+  await expect(page.getByLabel('项目状态')).toHaveCSS('font-size', panelTheme.fontSize.auxiliary);
+
+  const script = row(page, id!).locator('[data-segment-script]');
+  await expect(script.locator('.text-summary')).toHaveCSS('font-size', panelTheme.fontSize.body);
+  await expect(script.locator('.text-summary')).toHaveCSS('line-height', panelTheme.scriptLineHeight);
+  await script.dblclick();
+  const inline = page.getByRole('textbox', { name: '文案全文', exact: true });
+  await expect(inline).toHaveCSS('font-size', panelTheme.fontSize.body);
+  await expect(inline).toHaveCSS('line-height', panelTheme.scriptLineHeight);
+  await page.getByRole('button', { name: '放大编辑' }).click();
+  const enlarged = page.getByRole('textbox', { name: '放大文案全文', exact: true });
+  await expect(enlarged).toHaveCSS('font-size', panelTheme.fontSize.body);
+  await expect(enlarged).toHaveCSS('line-height', panelTheme.scriptLineHeight);
+  await expect(page.getByRole('dialog').getByRole('heading')).toHaveCSS('font-size', panelTheme.fontSize.heading);
+});
 async function inside(locator: Locator, width: number, height: number) {
   await expect(locator).toBeVisible();
   await expect.poll(async () => {
@@ -83,15 +110,17 @@ for (const width of [1600, 420]) test(`长文案摘要保留原文，全文编�
 for (const width of [1600, 420]) test(`页头主题、查找键盘与模态边界 ${width}`, async ({ page, project }) => {
   await page.setViewportSize({ width, height: 360 }); await project.seed(['文案']); await page.goto(project.url);
   const add = page.getByRole('button', { name: '新增口播片段', exact: true }).first();
-  await expect(add).toHaveCSS('background-color', 'rgb(8, 117, 209)');
-  await expect(add).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expect(add).toHaveCSS('background-color', panelTheme.color.focus);
+  await expect(add).toHaveCSS('color', panelTheme.color.surface);
   await expect(add).toHaveCSS('height', '32px');
   const more = page.getByRole('button', { name: '更多', exact: true });
+  await more.hover();
+  await expect(more).toHaveCSS('background-color', panelTheme.color.hover);
   await more.click(); await page.getByRole('button', { name: '导出设置', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '全片导出设置', exact: true });
   await inside(dialog, width, 360);
-  await expect(dialog).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  await expect(dialog).toHaveCSS('border-top-color', 'rgb(227, 228, 231)');
+  await expect(dialog).toHaveCSS('background-color', panelTheme.color.surface);
+  await expect(dialog).toHaveCSS('border-top-color', panelTheme.color.border);
   await expect(page.getByRole('heading', { name: '更多操作', exact: true })).toHaveCount(0);
   await expect(dialog).toHaveAttribute('aria-describedby', /.+/);
   for (const key of ['Tab','Tab','Shift+Tab','Shift+Tab','Tab']) {
@@ -103,8 +132,7 @@ for (const width of [1600, 420]) test(`页头主题、查找键盘与模态边�
   await page.getByRole('button', { name: '关闭设置', exact: true }).focus();
   await page.keyboard.press('Escape');
   await expect(more).toBeFocused();
-  await expect(more).toHaveCSS('outline-style', 'solid');
-  await expect(more).toHaveCSS('outline-color', 'rgb(8, 117, 209)');
+  await expectPanelFocus(more);
   expect((await project.status()).modification).toBeNull();
 });
 
@@ -129,7 +157,7 @@ test('选框与序号在普通行及展开素材后保持垂直居中', async ({
 
 });
 
-test('鼠标定位单元格不显示蓝框，键盘导航仍显示焦点', async ({ page, project }) => {
+test('鼠标定位单元格不显示焦点框，键盘导航仍显示焦点', async ({ page, project }) => {
   const ids = await project.seed(['鼠标点击', '键盘导航']);
   await page.goto(project.url);
   const first = row(page, ids[0]!).locator('[col-id="text"]');
@@ -139,7 +167,8 @@ test('鼠标定位单元格不显示蓝框，键盘导航仍显示焦点', async
   await page.keyboard.press('ArrowDown');
   const next = row(page, ids[1]!).locator('[col-id="text"]');
   await expect(next).toBeFocused();
-  await expect(next).not.toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)');
+  await expect(next).toHaveCSS('border-top-style', 'solid');
+  await expect(next).toHaveCSS('border-top-color', panelTheme.color.focus);
 });
 
 test('三位序号与虚拟末行不裁切', async ({ page, project }) => {
@@ -165,7 +194,7 @@ for (const count of [2,7]) test(`笔和鼠标悬浮不改变行底色且保留�
  await row(page,ids[0]!).locator('input[type="checkbox"]').check();await move(ids[0]!,'pen');
  await expect(row(page,ids[0]!)).toHaveClass(/ag-row-selected/);
  const selectedBackground=await background(ids[0]!);
- expect(selectedBackground.color).toBe('rgb(246, 250, 255)');
+ expect(selectedBackground.color).toBe(panelTheme.color.selected);
  for(const type of ['pen','mouse'] as const){await move(ids[0]!,type);await expect.poll(()=>background(ids[0]!)).toEqual(selectedBackground);}
  await page.mouse.move(1,1);await expect.poll(()=>background(ids[0]!)).toEqual(selectedBackground);
  expect(await row(page,ids[0]!).evaluate(e=>getComputedStyle(e.querySelector('.ag-grid-scrolling-cells')!,'::before').backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
@@ -197,9 +226,9 @@ test('鼠标取消勾选后恢复普通行背景且保留键盘焦点可见性',
   await expect.poll(() => first.evaluate(e => {
     const marker = getComputedStyle(e, '::after');
     return { width: marker.width, color: marker.backgroundColor, pointerEvents: marker.pointerEvents };
-  })).toEqual({ width: '3px', color: 'rgb(8, 117, 209)', pointerEvents: 'none' });
+  })).toEqual({ width: '3px', color: panelTheme.color.focus, pointerEvents: 'none' });
   await page.mouse.move(1, 1);
-  expect(await first.evaluate(e => getComputedStyle(e.querySelector('.ag-grid-scrolling-cells')!, '::before').backgroundColor)).toBe('rgb(246, 250, 255)');
+  expect(await first.evaluate(e => getComputedStyle(e.querySelector('.ag-grid-scrolling-cells')!, '::before').backgroundColor)).toBe(panelTheme.color.selected);
   await checkbox.click();
   await expect(checkbox).not.toBeChecked();
   await expect(first).not.toHaveClass(/ag-row-selected/);
@@ -209,10 +238,10 @@ test('鼠标取消勾选后恢复普通行背景且保留键盘焦点可见性',
   await expect(first.locator('.ag-checkbox-input-wrapper')).toHaveCSS('box-shadow', 'none');
   await checkbox.press(' ');
   await expect(checkbox).toBeChecked();
-  await expect(first.locator('.ag-checkbox-input-wrapper')).not.toHaveCSS('box-shadow', 'none');
+  await expect(first.locator('.ag-checkbox-input-wrapper')).toHaveCSS('box-shadow', `${panelTheme.color.focus} 0px 0px 0px 2px`);
   await checkbox.press(' ');
   await expect(checkbox).not.toBeChecked();
-  await expect(first.locator('.ag-checkbox-input-wrapper')).not.toHaveCSS('box-shadow', 'none');
+  await expect(first.locator('.ag-checkbox-input-wrapper')).toHaveCSS('box-shadow', `${panelTheme.color.focus} 0px 0px 0px 2px`);
 });
 
 for(const [width,height] of [[780,579],[541,579],[420,360]])test(`五类配音状态下按钮与文字完整可见 ${width}×${height}`,async({page,project})=>{
@@ -223,7 +252,16 @@ for(const [width,height] of [[780,579],[541,579],[420,360]])test(`五类配音�
  const region=page.getByRole('region',{name:`片段 ${i+1} 配音`,exact:true});await region.scrollIntoViewIfNeeded();
  const button=region.getByRole('button',{name:label,exact:true});await expect(button).toBeVisible();
  await expect(region.getByRole('status')).toHaveCount(0);
- if(i===4) await expect(button).toHaveCSS('background-color','rgb(164, 38, 44)');
+ if(i===0) await expect(button).toHaveCSS('color', panelTheme.color.ok);
+ if(i===1) {
+   await expect(button).toHaveCSS('color', panelTheme.color.warning);
+   await expect(button).toHaveCSS('background-color', panelTheme.color.warningSurface);
+ }
+ if(i===2) {
+   await expect(button).toHaveCSS('color', panelTheme.color.running);
+   await expect(button).toHaveCSS('opacity', '1');
+ }
+ if(i===4) await expect(button).toHaveCSS('background-color',panelTheme.color.error);
  expect(await button.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
  const script=await row(page,ids[i]!).locator('[data-segment-script]').boundingBox();
  const support=await row(page,ids[i]!).locator('[data-segment-support]').boundingBox();
@@ -236,6 +274,7 @@ for(const [width,height] of [[780,579],[541,579],[420,360]])test(`五类配音�
  expect(await row(page,ids[i]!).evaluate(e=>e.getBoundingClientRect().height)).toBeLessThan(72);
  }
  await expect(row(page,ids[2]!).getByRole('button',{name:'生成中',exact:true})).toBeDisabled();
+ await expect(page.getByLabel('操作异常')).toHaveCSS('background-color', panelTheme.color.errorSurface);
  expect((await project.status()).modification).toBeNull();
 });
 

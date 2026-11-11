@@ -39,11 +39,13 @@ const theme = themeQuartz.withParams({
   backgroundColor: 'var(--color-surface)',
   foregroundColor: 'var(--color-ink)',
   borderColor: 'var(--color-border)',
-  headerBackgroundColor: 'color-mix(in srgb, var(--color-focus) 5%, white)',
+  headerBackgroundColor: 'var(--color-grid-header)',
   headerTextColor: 'var(--color-ink-secondary)',
-  selectedRowBackgroundColor: '#f6faff',
+  selectedRowBackgroundColor: 'var(--color-row-selected)',
+  rangeSelectionBorderColor: 'var(--color-focus)',
+  focusShadow: { spread: 2, color: 'var(--color-focus)' },
   fontFamily: 'var(--font-ui)',
-  fontSize: 'var(--font-size-ui)',
+  fontSize: 'var(--text-sm)',
   spacing: 'var(--space-1)',
   borderRadius: 'var(--radius-control)',
   wrapperBorderRadius: 'var(--radius-panel)',
@@ -556,18 +558,18 @@ export function App() {
   return <main style={{ '--project-status-height': `${footerHeight}px` } as import('react').CSSProperties} className="relative mx-auto flex h-dvh min-w-0 max-w-[1600px] flex-col gap-1 px-4 py-3 pb-2 max-[600px]:p-2">
     <header className="relative mb-1 flex min-h-8 flex-none items-center justify-between gap-x-3 gap-y-1 max-[600px]:flex-wrap">
       <div className="flex min-w-0 flex-1 items-center gap-2 max-[600px]:basis-full">
-        <h1 className="m-0 min-w-0 truncate text-base leading-normal font-semibold" title={projectLabel}>{projectLabel}</h1>
-        {status && !projectStyle && <span id="project-style" className="shrink-0 rounded bg-[var(--color-error-surface)] px-1.5 py-0.5 text-xs text-destructive">{missingStyle}</span>}
+        <h1 className="m-0 min-w-0 truncate text-lg leading-tight font-semibold" title={projectLabel}>{projectLabel}</h1>
+        {status && !projectStyle && <span id="project-style" className="shrink-0 rounded bg-error-surface px-1.5 py-0.5 text-xs text-destructive">{missingStyle}</span>}
       </div>
       {searchOpen && <section id="segment-search" className="search-popover absolute right-0 top-full mt-1 z-30 flex min-h-10 w-[560px] max-w-full items-center gap-1 rounded-lg border border-solid border-input bg-background p-2 shadow-lg" role="dialog" aria-modal="false" aria-label="查找口播片段">
-        <label className="min-w-[72px] flex-1"><Input className="h-6 px-1.5 py-0.5 text-[12px] md:text-[12px]" ref={searchInput} aria-label="查找文案" placeholder="查找文案" value={query}
+        <label className="min-w-[72px] flex-1"><Input className="h-6 px-1.5 py-0.5 text-xs" ref={searchInput} aria-label="查找文案" placeholder="查找文案" value={query}
           onChange={event => { setQuery(event.target.value); locate(event.target.value, 1, true); }}
           onKeyDown={event => { if (event.nativeEvent.isComposing) return; if (event.key === 'Escape') { event.preventDefault(); closeSearch(); } else if (event.key === 'Enter') { event.preventDefault(); locate(query, event.shiftKey ? -1 : 1); } }} /></label>
-        <span className="min-w-0 flex-[0_1_116px] overflow-hidden text-[11px] text-muted-foreground text-ellipsis whitespace-nowrap" role="status" aria-label={searchStatus} title={searchStatus}>{searchStatus}</span>
+        <span className="min-w-0 flex-[0_1_116px] overflow-hidden text-xs text-muted-foreground text-ellipsis whitespace-nowrap" role="status" aria-label={searchStatus} title={searchStatus}>{searchStatus}</span>
         <div className="flex flex-none flex-nowrap items-center gap-0.5">
-          <Button variant="outline" size="xs" className="border-input text-foreground px-1 py-0.5 text-[11px]" disabled={!matchedIds.length} onClick={() => locate(query, -1)}>上一个</Button>
-          <Button variant="outline" size="xs" className="border-input text-foreground px-1 py-0.5 text-[11px]" disabled={!matchedIds.length} onClick={() => locate(query, 1)}>下一个</Button>
-          <Button variant="outline" size="xs" className="border-input text-foreground px-1 py-0.5 text-[11px]" onClick={closeSearch}>关闭查找</Button>
+          <Button variant="outline" size="xs" className="border-input text-foreground px-1 py-0.5 text-xs" disabled={!matchedIds.length} onClick={() => locate(query, -1)}>上一个</Button>
+          <Button variant="outline" size="xs" className="border-input text-foreground px-1 py-0.5 text-xs" disabled={!matchedIds.length} onClick={() => locate(query, 1)}>下一个</Button>
+          <Button variant="outline" size="xs" className="border-input text-foreground px-1 py-0.5 text-xs" onClick={closeSearch}>关闭查找</Button>
         </div>
       </section>}
       <div className="flex flex-none flex-nowrap items-center gap-2 max-[600px]:gap-1">
@@ -723,13 +725,13 @@ export function App() {
     </ContextMenu>
     {segmentDetail.draft && segmentDetail.deleted && deletedDraftOpen && <DetailPanel title="已删除片段的草稿" onClose={() => focusReturns.close(returnFocus.current.draft, () => setDeletedDraftOpen(false))} restoreFocus={returnFocus.current.draft}><section aria-label="已删除片段的草稿" className="flex min-h-0 max-h-[45dvh] flex-col gap-2 overflow-y-auto rounded-md border border-solid border-input p-3 [&>textarea]:shrink-0 [&>button]:shrink-0">
       <p className="m-0 text-sm">片段已删除，草稿仍可选中复制；无法保存到已删除片段。</p>
-      <textarea aria-label="已删除片段的文案草稿" readOnly value={segmentDetail.draft.text} className="min-h-20 rounded-md border border-solid border-input p-2" />
+      <textarea aria-label="已删除片段的文案草稿" readOnly value={segmentDetail.draft.text} className="min-h-20 rounded-md border border-solid border-input p-2 text-base" />
       <Button variant="outline" onClick={() => { void navigator.clipboard.writeText(segmentDetail.draft!.text).catch(cause => failed(cause)); }}>复制草稿</Button>
       <Button variant="outline" onClick={() => { void segmentDetail.discard(); setDeletedDraftOpen(false); }}>放弃草稿</Button>
     </section></DetailPanel>}
     <SegmentDraftPrompt controller={segmentDetail} busy={editState.busy} />
-    <footer ref={statusFooter} className="flex-none border-0 border-t border-solid border-input pt-1 text-[12px] text-muted-foreground [&_p]:m-0 [&_p]:wrap-anywhere" aria-label="项目状态">
-      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+    <footer ref={statusFooter} className="flex-none border-0 border-t border-solid border-input pt-1 text-xs text-muted-foreground [&_p]:m-0 [&_p]:wrap-anywhere" aria-label="项目状态">
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5 max-[600px]:gap-x-1">
         {selectedIds.length > 0 && <>
           <span className="flex-none" aria-label="勾选范围">已勾选 {selectedIds.length} 条</span>
           <Button variant="ghost" size="xs" onClick={() => grid.current?.deselectAll()}>清空勾选</Button>
@@ -743,7 +745,7 @@ export function App() {
           if (segmentDetail.deleted) { rememberOrigin(event.currentTarget, 'draft'); setDeletedDraftOpen(true); }
           else segmentDetail.returnToDraft();
         }}>回到草稿</Button>}
-        {progress.length > 0 && <span role="status">{progress.map(task => task.label).join(' · ')}</span>}
+        {progress.length > 0 && <span role="status" className="text-running">{progress.map(task => task.label).join(' · ')}</span>}
         <Button variant="outline" size="xs" className="ml-auto border-input text-foreground" onClick={event => openDetail('tasks', event.currentTarget)}>任务详情</Button>
       </div>
       {panelNeedsRefresh(buildIdentity, status?.activePanelIdentity) && <p className="flex items-center gap-2 pt-1" role="status">
@@ -752,7 +754,7 @@ export function App() {
       </p>}
       {panelUpdateError && <p role="alert">{panelUpdateError}</p>}
       {versionIssue === '版本不一致，请更新插件并重新打开' && <p role="alert" className="text-destructive">{versionIssue}</p>}
-      {(error || segmentDetail.draftError || Object.values(operationErrors).some(Boolean) || exports.connectionError || exports.operationError || speechProblems.length > 0 || exportProblems.length > 0 || selectionState.includes('断开')) && <div className="max-h-[22dvh] overflow-auto bg-[var(--color-error-surface)] text-destructive" aria-label="操作异常">
+      {(error || segmentDetail.draftError || Object.values(operationErrors).some(Boolean) || exports.connectionError || exports.operationError || speechProblems.length > 0 || exportProblems.length > 0 || selectionState.includes('断开')) && <div className="max-h-[22dvh] overflow-auto bg-error-surface text-destructive" aria-label="操作异常">
         {error && <p role="alert">{error}</p>}
         {segmentDetail.draftError && <p role="alert">{segmentDetail.draftError}</p>}
         {Object.entries(operationErrors).filter(([, message]) => message).map(([kind, message]) => <p key={kind} role="alert">{message}</p>)}
@@ -760,7 +762,7 @@ export function App() {
         {exports.operationError && <p role="alert">{exports.operationError}</p>}
         {speechProblems.length > 0 && <p role="alert">配音异常 {speechProblems.length} 项{speechProblems.some(({ task }) => task.state === 'unknown') ? ' · 结果未知，可能已计费' : ' · 生成失败'}，请查看任务详情</p>}
         {exportProblems.length > 0 && <p role="alert">导出或合成异常 {exportProblems.length} 项，请查看任务详情</p>}
-        {selectionState.includes('断开') && <p role="alert">{selectionState} <Button variant="outline" size="xs" className="border-input text-foreground px-1.5 py-0.5 text-[12px]" onClick={() => setConnectionVersion(version => version + 1)}>重新连接勾选</Button></p>}
+        {selectionState.includes('断开') && <p role="alert">{selectionState} <Button variant="outline" size="xs" className="border-input text-foreground px-1.5 py-0.5 text-xs" onClick={() => setConnectionVersion(version => version + 1)}>重新连接勾选</Button></p>}
       </div>}
     </footer>
   </main>;

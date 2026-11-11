@@ -14,7 +14,7 @@ export function PastePanel({ value, busy, disabled, error, onChange, onSubmit, o
 }) {
   return <DetailPanel title="粘贴多行文案" onClose={() => { if (!busy) onClose(); }} restoreFocus={restoreFocus}>
     {error && <p role="alert" className="m-0 text-destructive">{error}</p>}
-    <Textarea aria-label="多行文案" className="shrink-0" value={value} disabled={busy} onChange={event => onChange(event.target.value)} placeholder="每个非空行创建一个口播片段" />
+    <Textarea aria-label="多行文案" className="shrink-0 text-base" value={value} disabled={busy} onChange={event => onChange(event.target.value)} placeholder="每个非空行创建一个口播片段" />
     <div className="flex flex-wrap items-center gap-2">
       <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={disabled || !value.trim()} onClick={onSubmit}>按非空行新增</Button>
       <Button variant="outline" size="sm" className="border-input text-foreground shrink-0" disabled={busy} onClick={onClose}>关闭</Button>

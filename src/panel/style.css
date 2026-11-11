@@ -5,10 +5,33 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme static {
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-base--line-height: 1.6;
+  --text-lg: 17px;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #fafafa;
+  --color-ink: #18181b;
+  --color-ink-secondary: #6b6b74;
+  --color-accent: #339cff;
+  --color-focus: #27272a;
+  --color-border: #e7e7ea;
+  --color-hover: #f4f4f5;
+  --color-ok: #3f6f4e;
+  --color-warning: #a15c07;
+  --color-warning-surface: #fdf6e7;
+  --color-running: #4f5bd5;
+  --color-error: #b42318;
+  --color-error-surface: #fdf1f0;
+  --color-row-selected: #f4f4f6;
+  --color-grid-header: var(--color-surface-subtle);
+}
+
 /* 根主题同时服务页面与 body 下的 Portal；表格强调色与控件悬停色分开。 */
 @theme inline {
   --spacing: var(--space-1);
-  --text-sm: 1rem;
   --color-popover: var(--color-surface);
   --color-popover-foreground: var(--color-ink);
   --color-background: var(--color-surface);
@@ -29,18 +52,7 @@
 
 :root {
   color-scheme: light;
-  --font-size-ui: 14px;
-  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --color-surface: #ffffff;
-  --color-surface-subtle: #f7f7f8;
-  --color-ink: #1a1c1f;
-  --color-ink-secondary: #60646c;
-  --color-accent: #339cff;
-  --color-focus: #0875d1;
-  --color-border: #e3e4e7;
-  --color-hover: #f0f1f3;
-  --color-error: #a4262c;
-  --color-error-surface: #fff3f3;
+  --font-ui: "PingFang SC", "Noto Sans CJK SC", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -49,7 +61,7 @@
   --radius-control: 6px;
   --radius-panel: 8px;
   font-family: var(--font-ui);
-  font-size: var(--font-size-ui);
+  font-size: var(--text-sm);
   line-height: 1.5;
   color: var(--color-ink);
   background: var(--color-surface);
@@ -78,7 +90,7 @@ html, body, #root { height: 100%; overflow: hidden; }
   z-index: 20;
 }
 
-/* Quartz 的 focus-within 会在鼠标取消勾选后保留蓝环；仅键盘焦点保留该提示。 */
+/* Quartz 的 focus-within 会在鼠标取消勾选后保留焦点环；仅键盘焦点保留该提示。 */
 .segment-grid .ag-checkbox-input-wrapper:focus-within:not(:has(:focus-visible)) { box-shadow: none; }
 
 /* 原位编辑由输入框呈现边界，不叠加单元格焦点框。 */

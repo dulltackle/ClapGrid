@@ -1,5 +1,6 @@
 import { test, expect } from './helpers/project.js';
 import { holdRequest, holdResponse } from './helpers/response-gate.js';
+import { panelTheme } from './helpers/theme-contract.js';
 
 for (const viewport of [{ width: 1600, height: 1000 }, { width: 420, height: 360 }]) test(`粘贴按非空行新增且键盘和关闭可达 ${viewport.width}`, async ({ page, project }) => {
   await page.setViewportSize(viewport); await page.goto(project.url);
@@ -13,7 +14,9 @@ for (const viewport of [{ width: 1600, height: 1000 }, { width: 420, height: 360
   await page.keyboard.press('Enter'); await page.keyboard.type('B');
   await expect(input).toHaveValue('A\n\nB');
   await page.keyboard.press('Tab'); await expect(submit).toBeFocused();
-  await expect(input).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(input).toHaveCSS('background-color', panelTheme.color.surface);
+  await expect(input).toHaveCSS('font-size', panelTheme.fontSize.body);
+  await expect(input).toHaveCSS('line-height', panelTheme.scriptLineHeight);
   await expect(input).toHaveCSS('border-top-style', 'solid');
   await submit.click();
   await expect(input).toHaveValue('');
