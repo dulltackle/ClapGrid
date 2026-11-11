@@ -116,7 +116,8 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
           const index = original?.rowIndex ?? Math.min(origin.index, api.getDisplayedRowCount() - 1);
           const row = index >= 0 ? api.getDisplayedRowAtIndex(index) : undefined;
           if (row?.id) {
-            const selector = `[row-id="${CSS.escape(row.id)}"] [col-id="${CSS.escape(origin.column)}"]`;
+            const column = row.id === origin.id || !api.getColumn('text') ? origin.column : 'text';
+            const selector = `[row-id="${CSS.escape(row.id)}"] [col-id="${CSS.escape(column)}"]`;
             const range = api.getVerticalPixelRange();
             const top = row.rowTop ?? 0;
             if (!options.preventScroll && (!document.querySelector(selector) || top < range.top || top + (row.rowHeight ?? 0) > range.bottom)) {
@@ -124,7 +125,7 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
               if (!valid()) { finish(); return; }
               flushSync(() => api.ensureIndexVisible(index));
             }
-            if (!options.preventScroll && origin.column && !document.querySelector(selector)) api.ensureColumnVisible(origin.column);
+            if (!options.preventScroll && !document.querySelector(selector)) api.ensureColumnVisible(column);
             if (row.id === origin.id) {
               const cell = document.querySelector<HTMLElement>(selector);
               const entry = origin.entry ? cell?.querySelector<HTMLElement>(`[data-row-entry="${CSS.escape(origin.entry)}"]`) : null;
@@ -132,7 +133,7 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
               if ((cell?.contains(origin.trigger ?? null) && focus(origin.trigger)) || focus(entry) || focus(alternate)) { finish(); return; }
             }
             if (focus(document.querySelector<HTMLElement>(selector))) {
-              if (origin.column) api.setFocusedCell(index, origin.column);
+              api.setFocusedCell(index, column);
               finish(); return;
             }
             if (remaining) { frame = requestAnimationFrame(() => attempt(remaining - 1)); return; }

@@ -27,11 +27,14 @@ for (const environment of ['wide', 'compact', 'touch'] as const) test.describe(e
     await expect(row.getByRole('button', { name: '片段 1 画面素材（0）', exact: true })).toBeVisible();
     await row.getByRole('button', { name: '片段 1 画面素材（0）', exact: true }).press('Enter');
     await expect(page.getByRole('dialog', { name: '片段 1 素材面板', exact: true })).toHaveCount(0);
-    await row.getByRole('button', { name: '试听', exact: true }).press('Enter');
+    const listen = row.getByRole('button', { name: '试听', exact: true });
+    await expect(listen).toHaveText(/\d+\.\d 秒/);
+    await listen.press('Enter');
     const player = page.locator('main > audio');
     await expect.poll(() => player.evaluate(node => (node as HTMLAudioElement).readyState)).toBeGreaterThan(0);
-    const pause = page.getByRole('button', { name: '暂停试听', exact: true });
-    const slider = page.getByRole('slider', { name: '配音进度', exact: true });
+    const pause = row.getByRole('button', { name: '暂停试听', exact: true });
+    const slider = row.getByRole('slider', { name: '配音进度', exact: true });
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(pause).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(slider).toBeFocused();
@@ -40,12 +43,16 @@ for (const environment of ['wide', 'compact', 'touch'] as const) test.describe(e
     await slider.press('Home'); await slider.press('ArrowRight');
     await expect.poll(() => player.evaluate(node => (node as HTMLAudioElement).currentTime)).toBeGreaterThan(0);
     const bounds = (await slider.boundingBox())!;
-    await page.mouse.click(bounds.x + bounds.width * .6, bounds.y + bounds.height / 2);
+    await page.mouse.move(bounds.x + bounds.width * .2, bounds.y + bounds.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(bounds.x + bounds.width * .6, bounds.y + bounds.height / 2, { steps: 5 });
+    await page.mouse.up();
     await expect.poll(() => player.evaluate(node => (node as HTMLAudioElement).currentTime)).toBeGreaterThan(.5);
     await page.locator(`[row-id="${b}"]`).getByRole('button', { name: '试听', exact: true }).press('Enter');
     await expect(player).toHaveAttribute('src', (await querySpeech(project.url)).audio.find(audio => audio.segmentId === b)!.url);
     await expect(page.getByRole('slider', { name: '配音进度', exact: true })).toHaveCount(1);
-    await page.getByRole('button', { name: '停止试听', exact: true }).press('Enter');
+    await expect(slider).toHaveCount(0);
+    await page.getByRole('slider', { name: '配音进度', exact: true }).press('Escape');
     await expect(page.getByRole('slider')).toHaveCount(0);
   });
 });
@@ -99,11 +106,31 @@ test('外部为正在试听的片段配音时仍可控制试听并从键盘退�
   speechControl.mode = 'pending';
   try {
     await submitSpeech(project.url, { requestId: randomUUID(), segmentId: id! });
-    await expect(page.getByRole('button', { name: '生成中', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: '生成中…', exact: true })).toBeDisabled();
     await expect(page.getByRole('button', { name: '继续试听', exact: true })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('slider', { name: '配音进度' })).toHaveCount(0);
     await expect(page.locator('main > audio')).toHaveCount(0);
     await expect(page.getByRole('button', { name: '片段 1 配音更多操作' })).toBeFocused();
   } finally { speechControl.release(); }
+});
+
+test('780px 下旧配音仍在试听时，失败说明和配音菜单均可点击', async ({ page, project, speechControl }) => {
+  const [id] = await project.seed(['保留试听']);
+  await submitSpeech(project.url, { requestId: randomUUID(), segmentId: id! });
+  await expect.poll(async () => (await querySpeech(project.url)).locked).toBe(false);
+  await page.setViewportSize({ width: 780, height: 579 }); await page.goto(project.url);
+  await page.getByRole('button', { name: '试听', exact: true }).press('Enter');
+  await page.getByRole('button', { name: '暂停试听', exact: true }).press('Enter');
+  speechControl.mode = 'failure';
+  await submitSpeech(project.url, { requestId: randomUUID(), segmentId: id! });
+  await expect(page.getByRole('button', { name: '生成失败，查看错误说明' })).toBeVisible();
+  await expect(page.getByRole('slider', { name: '配音进度' })).toBeVisible();
+  const menu = page.getByRole('button', { name: '片段 1 配音更多操作' });
+  expect(await menu.evaluate(button => {
+    const r = button.getBoundingClientRect();
+    return r.width >= 32 && button.contains(document.elementFromPoint(r.right - 1, r.top + r.height / 2));
+  })).toBe(true);
+  await menu.click();
+  await expect(page.getByRole('menuitem', { name: '配音记录与保留音频' })).toBeVisible();
 });

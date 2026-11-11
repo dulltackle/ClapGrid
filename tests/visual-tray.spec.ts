@@ -62,7 +62,7 @@ test('片段合成预览真实播放，内容变化后显示待更新且不能�
   await page.goto(project.url);
   await expect(page.getByRole('button', { name: '片段 1 画面素材（1）' })).toBeVisible();
   await expect(page.getByRole('button', { name: /合成预览，已就绪/ })).toHaveCount(0);
-  await expect(page.getByText('待更新', { exact: true })).toHaveCount(0);
+  await expect(page.locator('[data-segment-support]').getByText('待更新', { exact: true })).toHaveCount(0);
   await previewSegment(project.url, id!);
   await expect.poll(async () => (await queryVisualPreviews(project.url)).tasks[0]?.state, { timeout: 30000 }).toBe('succeeded');
   const ready = page.getByRole('button', { name: '播放片段 1 合成预览，已就绪' });
@@ -81,7 +81,7 @@ test('片段合成预览真实播放，内容变化后显示待更新且不能�
   await expect(ready).toHaveCount(0);
   const materials = page.getByRole('button', { name: /片段 1 画面素材/ });
   await expect(materials).toBeFocused();
-  await expect(page.getByText('待更新', { exact: true })).toBeVisible();
+  await expect(page.locator('[data-segment-support]').getByText('待更新', { exact: true })).toBeVisible();
   await materials.press('Enter');
   await expect(page.getByRole('button', { name: '片段合成预览', exact: true })).toBeDisabled();
 });

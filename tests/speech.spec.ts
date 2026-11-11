@@ -63,7 +63,7 @@ for (const viewport of [{ width: 1600, height: 1000 }, { width: 360, height: 320
   expect(await player.evaluate(node => (node as HTMLAudioElement).paused)).toBe(true);
   await page.getByRole('button', { name: '继续试听', exact: true }).click();
   await page.getByRole('button', { name: '片段 1 配音更多操作', exact: true }).press('Enter');
-  await page.getByRole('menuitem', { name: '历史', exact: true }).click();
+  await page.getByRole('menuitem', { name: '配音记录与保留音频', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '配音详情与保留音频', exact: true });
   await expect(dialog).toContainText('完整的配音文案');
   const audio = dialog.locator('audio'); await audio.focus(); await page.keyboard.press('Space');
@@ -104,6 +104,10 @@ test('最新失败由主按钮打开，保留音频与完整历史保持新到�
   expect(bounds.content).toBeLessThanOrEqual(bounds.available);
   await expect(history.locator('li').last()).toContainText('旧文案');
   await expect(history).toContainText('配音待更新'); await expect(history).toContainText('鉴权失败');
+  speechControl.mode = 'success';
+  await history.getByRole('button', { name: '重试配音' }).click();
+  await expect.poll(() => speechControl.requests.at(-1)?.text).toBe(fullText);
+  await expect(history.getByRole('button', { name: '重试配音' })).toHaveCount(0);
   await page.keyboard.press('Escape');
   segment = (await project.status()).snapshot.segments[0]!;
   await project.modify({ changes: [{ kind: 'edit', expected: segment, text: '再次改文案' }] });
@@ -112,7 +116,13 @@ test('最新失败由主按钮打开，保留音频与完整历史保持新到�
   await expect.poll(async () => (await querySpeech(project.url)).locked).toBe(false);
   const current = (await project.status()).snapshot.segments[0]!;
   await project.modify({ changes: [{ kind: 'edit', expected: current, text: '音频生成后再改文案' }] });
-  await expect(row.getByRole('button', { name: '更新配音' })).toBeVisible();
+  await row.getByRole('button', { name: '试听旧配音' }).click();
+  await expect(row.getByRole('slider', { name: '配音进度' })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await row.getByRole('slider').press('Escape');
+  await row.getByRole('button', { name: '待更新' }).click();
+  await expect.poll(() => speechControl.requests.at(-1)?.text).toBe('音频生成后再改文案');
+  await expect(row.getByRole('button', { name: '试听', exact: true })).toBeVisible();
 });
 
 test('未知提交复用原请求标识且不重复付费', async ({ page, project, speechControl }) => {
@@ -168,7 +178,7 @@ test('配音生成期间主按钮显示进度且重复入口禁用，完成后�
   await expect.poll(() => speechControl.requests.length).toBe(2);
   await page.getByRole('button', { name: '片段 1 配音更多操作', exact: true }).press('Enter');
   await expect(page.locator('[data-speech-generate]')).toHaveAttribute('aria-disabled', 'true');
-  await page.keyboard.press('Escape'); await expect(page.locator(`[row-id="${id}"]`).getByRole('button', { name: '生成中', exact: true })).toBeDisabled();
+  await page.keyboard.press('Escape'); await expect(page.locator(`[row-id="${id}"]`).getByRole('button', { name: '生成中…', exact: true })).toBeDisabled();
   speechControl.release(); await expect.poll(async () => (await querySpeech(project.url)).locked).toBe(false);
   expect(speechControl.requests).toHaveLength(2);
 });
@@ -206,7 +216,7 @@ test('结果未知仍保留旧有效音频，完整计费警告可从历史访�
   await page.goto(project.url); const row = page.locator(`[row-id="${id}"]`);
   await expect(row.getByRole('button', { name: '结果未知，查看错误说明' })).toBeEnabled();
   await page.getByRole('button', { name: '片段 1 配音更多操作', exact: true }).press('Enter');
-  await page.getByRole('menuitem', { name: '历史', exact: true }).click();
+  await page.getByRole('menuitem', { name: '配音记录与保留音频', exact: true }).click();
   const history = page.getByRole('dialog', { name: '配音详情与保留音频', exact: true });
   await expect(history).toContainText('可能已计费');
   await expect(history.getByLabel('试听 A')).toBeVisible();

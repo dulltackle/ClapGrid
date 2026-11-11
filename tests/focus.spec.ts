@@ -9,7 +9,7 @@ test('普通片段弹窗从真实虚拟卸载来源返回配音菜单', async ({
   const more = page.getByLabel('片段 1 配音更多操作', { exact: true });
   await more.focus();
   await more.press('Enter');
-  await page.getByRole('menuitem', { name: '历史', exact: true }).click();
+  await page.getByRole('menuitem', { name: '配音记录与保留音频', exact: true }).click();
   const history = page.getByRole('dialog', { name: '配音详情与保留音频', exact: true });
   await expect(history).toBeVisible();
   // 安排真实 AG Grid 虚拟卸载；不是用 DOM 替身代替表格。
@@ -18,7 +18,7 @@ test('普通片段弹窗从真实虚拟卸载来源返回配音菜单', async ({
   await history.getByRole('button', { name: '关闭', exact: true }).click();
   await expect(more).toBeFocused();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('menuitem', { name: '历史', exact: true })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: '配音记录与保留音频', exact: true })).toBeVisible();
   expect((await project.status()).snapshot.segments.map(s => s.text)).toEqual(Array.from({ length: 80 }, (_, i) => `文案 ${i}`));
 });
 
@@ -27,7 +27,7 @@ test('历史弹窗关闭按稳定身份处理重排、删除与空表', async ({
   const [a, b, c] = await project.seed(['A', 'B', 'C']); await page.goto(project.url);
   const open = async (order: number) => {
     await page.getByRole('button', { name: `片段 ${order} 配音更多操作`, exact: true }).press('Enter');
-    await page.getByRole('menuitem', { name: '历史', exact: true }).press('Enter');
+    await page.getByRole('menuitem', { name: '配音记录与保留音频', exact: true }).press('Enter');
   };
   const close = () => page.getByRole('dialog').getByRole('button', { name: '关闭', exact: true }).click();
   await open(1);
@@ -48,7 +48,7 @@ test('历史关闭的待返回帧让位于新查找与新弹窗', async ({ page,
   await project.seed(['A', 'B']); await page.goto(project.url);
   const open = async (order: number) => {
     await page.getByRole('button', { name: `片段 ${order} 配音更多操作`, exact: true }).press('Enter');
-    await page.getByRole('menuitem', { name: '历史', exact: true }).press('Enter');
+    await page.getByRole('menuitem', { name: '配音记录与保留音频', exact: true }).press('Enter');
   };
   await open(1);
   await page.clock.install(); await page.clock.pauseAt(new Date(Date.now() + 1000));
