@@ -18,8 +18,9 @@ runs:
       run: |
         set -euo pipefail
         mkdir -p "$CLAPGRID_CI_LOG_DIR"
-        # 容器中的用户与 GitHub runner 挂载的检出目录归属不同；仅信任当前工作区。
-        git -c safe.directory="$GITHUB_WORKSPACE" rev-parse HEAD | tee "$CLAPGRID_CI_LOG_DIR/source-commit.log"
+        # 检出目录归宿主用户所有；也让随后调用 Git 的文档检查只信任当前工作区。
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        git rev-parse HEAD | tee "$CLAPGRID_CI_LOG_DIR/source-commit.log"
         {
           test "$(node -p 'process.versions.node')" = "$(cat .node-version)" || { echo 'CI 镜像的 Node 版本与 .node-version 不符'; exit 1; }
           node --version
