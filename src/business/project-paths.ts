@@ -1,7 +1,7 @@
 import { closeSync, constants, existsSync, lstatSync, mkdirSync, openSync, readSync, realpathSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 
-export const projectFormatVersion = 1;
+export const projectFormatVersion = 2;
 
 /** 用户指定根目录可使用别名；项目内部的存储入口不能链接至其他位置。 */
 export function projectPaths(directory: string) {
@@ -29,7 +29,7 @@ export function projectPaths(directory: string) {
     try { readSync(fd, header, 0, header.length, 0); } finally { closeSync(fd); }
     if (header.toString('ascii', 0, 16) !== 'SQLite format 3\0') throw new Error('项目数据库格式无效');
     const version = header.readUInt32BE(60);
-    if (version < projectFormatVersion) throw new Error('项目格式过旧，请新建项目');
+    if (version < 1) throw new Error('项目格式过旧，请新建项目');
     if (version > projectFormatVersion) throw new Error('项目格式更新，请升级 ClapGrid');
   }
   return { projectDirectory, database, mediaDirectory: join(projectDirectory, 'media'), verify };

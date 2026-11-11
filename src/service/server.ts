@@ -454,11 +454,15 @@ async function startOwnedService(options: ServiceOptions, guardian: Awaited<Retu
             if (!parsed.success) return { status: 400, error: '批量修改格式无效；修改和删除必须提供查询时的目标快照。' };
             return { data: await business.modifyBatch(token, parsed.data) };
           } else {
-            const parsed = (path.endsWith('/add') ? addSegmentSchema : editSegmentSchema).safeParse(input);
-            if (!parsed.success) return { status: 400, error: '请提供有效的片段身份及文案或画面说明，不允许修改其他状态。' };
-            const data = parsed.data;
-            if ('id' in data) business.updateSegment(data.id, data, token);
-            else business.addSegment(data.text, token, data.visualNote);
+            if (path.endsWith('/add')) {
+              const parsed = addSegmentSchema.safeParse(input);
+              if (!parsed.success) return { status: 400, error: '请提供文案，不允许提交其他字段。' };
+              business.addSegment(parsed.data.text, token);
+            } else {
+              const parsed = editSegmentSchema.safeParse(input);
+              if (!parsed.success) return { status: 400, error: '请提供有效的片段身份及文案，不允许修改其他状态。' };
+              business.editSegment(parsed.data.id, parsed.data.text, token);
+            }
             return {};
           }
         });

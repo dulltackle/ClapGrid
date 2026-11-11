@@ -30,10 +30,12 @@ for (const viewport of [{ width: 1600, height: 1000 }, { width: 420, height: 360
   const task = (await queryExports(project.url)).tasks[0]!;
   expect(task.issues.filter(issue => issue.segmentId).map(issue => issue.segmentId)).toContain((await project.status()).snapshot.segments[1]!.id);
   await page.getByRole('button', { name: '更多', exact: true }).click(); await page.getByRole('button', { name: '任务记录', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: '任务记录', exact: true })).toContainText(task.id);
+  const tasks = page.getByRole('dialog', { name: '任务记录' });
+  await expect(tasks.getByRole('region', { name: '待处理问题' })).toContainText('导出失败');
+  await expect(tasks).not.toContainText(task.id);
 });
 
-test('真实成片的兼容预览在 Chrome 播放，下载原片一致，任务到诊断保持键盘链', async ({ page, project, mediaFiles }, testInfo) => {
+test('真实成片的兼容预览在 Chrome 播放，下载原片一致，关闭任务记录后恢复键盘焦点', async ({ page, project, mediaFiles }, testInfo) => {
   test.slow();
   const [id] = await project.seed(['真实成片']); const { asset } = await importVideo(project.url, mediaFiles.video);
   await project.modify({ changes: [{ kind: 'video', expected: (await project.status()).snapshot.segments[0]!, assetId: asset.id, start: 1 }] });
@@ -52,6 +54,7 @@ test('真实成片的兼容预览在 Chrome 播放，下载原片一致，任务
   const dialog = page.getByRole('dialog', { name: '任务记录', exact: true });
   await dialog.locator('summary').filter({ hasText: '导出成功' }).click();
   const open = page.getByRole('link', { name: '打开成片', exact: true }); const download = page.getByRole('link', { name: '下载 MP4 原片', exact: true });
+  await expect(dialog).not.toContainText(task.id);
   await expect(open).toHaveCSS('text-decoration-line', 'underline');
   const previewUrl = new URL(task.output!.previewUrl!, project.url).href;
   const popupPromise = page.waitForEvent('popup');
@@ -72,10 +75,8 @@ test('真实成片的兼容预览在 Chrome 播放，下载原片一致，任务
   const [actual, expected] = await Promise.all([readFile(downloadedPath), readFile(task.output!.path)]);
   expect(actual.byteLength).toBe(expected.byteLength);
   expect(createHash('sha256').update(actual).digest('hex')).toBe(createHash('sha256').update(expected).digest('hex'));
-  await page.getByRole('button', { name: '连接诊断', exact: true }).click();
-  const diagnostics = page.getByRole('dialog', { name: '连接诊断', exact: true });
-  for (const label of ['面板版本', '服务版本', '版本核对', '项目路径', '服务实例', 'PID']) await expect(diagnostics.locator('dt').filter({ hasText: label })).toHaveCount(1);
-  await expect(diagnostics).toContainText(project.directory); await page.keyboard.press('Escape');
+  await expect(dialog.getByRole('button', { name: '连接诊断' })).toHaveCount(0);
+  await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: '更多', exact: true })).toBeFocused();
 });
 
@@ -84,8 +85,8 @@ test('只有成功的全片导出任务显示成片响度，并区分全片和�
   const measured = { integratedLufs: -14.02, truePeakDbtp: -1.58, rangeLu: 3 };
   const technicalChecks = { loudnessBefore: measured, loudnessAfter: measured, blackIntervals: [] };
   await page.route('**/api/exports', route => route.fulfill({ json: { locked: false, tasks: [
-    { ...base, id: '旧导出' },
-    { ...base, id: '新导出', technicalChecks, warnings: [{ field: 'project', message: '响度偏离目标' }, { order: 1, field: 'video', message: '检测到黑场' }] },
+    { ...base, id: '旧导出', output: { path: '旧成片.mp4', url: '/old.mp4' } },
+    { ...base, id: '新导出', output: { path: '新成片.mp4', url: '/new.mp4' }, technicalChecks, warnings: [{ field: 'project', message: '响度偏离目标' }, { order: 1, field: 'video', message: '检测到黑场' }] },
   ] } }));
   await page.route('**/api/visual-previews', route => route.fulfill({ json: { locked: false, tasks: [
     { ...base, id: '预览', current: true, preview: { segmentId: '预览片段', input: '' } },
@@ -94,15 +95,18 @@ test('只有成功的全片导出任务显示成片响度，并区分全片和�
   await page.getByRole('button', { name: '更多', exact: true }).click();
   await page.getByRole('button', { name: '任务记录', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '任务记录', exact: true });
-  const current = dialog.locator('details').filter({ hasText: '任务 新导出' });
-  const legacy = dialog.locator('details').filter({ hasText: '任务 旧导出' });
-  const preview = dialog.locator('details').filter({ hasText: '预览片段' });
-  for (const card of [current, legacy, preview]) await card.locator('summary').click();
+  const completed = dialog.getByRole('region', { name: '已完成成片' });
+  const current = completed.locator('details').first();
+  const legacy = completed.locator('details').last();
+  await expect(completed.locator('summary')).toHaveCount(2);
+  for (const card of [current, legacy]) await card.locator('summary').click();
+  await expect(current.getByRole('link', { name: '打开成片' })).toHaveAttribute('href', '/new.mp4');
+  await expect(legacy.getByRole('link', { name: '打开成片' })).toHaveAttribute('href', '/old.mp4');
+  await expect(dialog).not.toContainText('预览片段');
   await expect(current.getByText('成片响度 −14.0 LUFS · 真峰值 −1.6 dBTP', { exact: true })).toBeVisible();
   await expect(current.getByText('全片：响度偏离目标', { exact: true })).toBeVisible();
   await expect(current.getByText('片段 1：检测到黑场', { exact: true })).toBeVisible();
   await expect(legacy.getByText('成片响度')).toHaveCount(0);
-  await expect(preview.getByText('成片响度')).toHaveCount(0);
 });
 
 import { submitExport } from '../src/shared/client.js';
@@ -119,7 +123,7 @@ test('取消错误跨详情和连接恢复保留，重试期间禁用并在成�
   });
   await page.goto(project.url); await page.getByRole('button', { name: '任务详情', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '任务记录', exact: true });
-  await expect(page.getByRole('progressbar', { name: '导出进度', exact: true })).toHaveAttribute('value', '1');
+  await expect(dialog.getByRole('region', { name: '进行中' })).toContainText('导出 1/2');
   await page.route('**/api/exports/cancel', route => route.fulfill({ status: 500, json: { error: '本例取消导出失败' } }));
   await page.getByRole('button', { name: '取消导出', exact: true }).click();
   await expect(dialog.getByRole('alert')).toContainText('本例取消导出失败');

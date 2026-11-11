@@ -3,7 +3,7 @@ import type { Segment, SpeechStatus } from '../shared/contracts.js';
 import { segmentTargets } from './segment-targets.js';
 import { segmentSpeech } from './speech-state.js';
 
-type Area = 'script' | 'note' | 'visual' | 'speech' | 'row' | 'footer';
+type Area = 'script' | 'visual' | 'speech' | 'row' | 'footer';
 export type SegmentAction = { area: Area; ids: string[]; enabled: boolean; reason: string };
 /** 所有入口共享动作归属、稳定身份范围及不可用原因；服务仍负责最终冲突检查。 */
 export function segmentActions({ segment, segments, checkedIds = [], speech, reason = '', draftText }: {
@@ -16,8 +16,8 @@ export function segmentActions({ segment, segments, checkedIds = [], speech, rea
   const mutable = (area: Area, cause = '', ids?: string[]) => action(area, reason || cause, ids);
   const insertReason = targets.length !== 1 ? '仅能在单个口播片段上方或下方添加' : '';
   return {
-    ...state, primaryLabel: pending ? state.state : state.audio ? '试听' : state.latest?.state === 'failed' || state.latest?.state === 'unknown' ? '重试' : '生成配音',
-    editText: mutable('script'), editNote: mutable('note'), associate: mutable('visual'), changeVisual: mutable('visual'),
+    ...state, primaryLabel: pending || state.latest?.state === 'failed' || state.latest?.state === 'unknown' ? state.state : state.audio?.valid ? '试听' : state.audio ? '更新配音' : '生成配音',
+    editText: mutable('script'), associate: mutable('visual'), changeVisual: mutable('visual'),
     unlink: mutable('visual', segmentMaterials(segment).length ? '' : '尚未关联画面'), preview: action('visual', segmentMaterials(segment).length ? '' : '尚未关联画面'),
     generate: mutable('speech', pending ? '配音任务进行中，请等待完成' : !(draftText ?? segment.text).trim() ? '请先填写文案' : ''),
     listen: action('speech', state.audio ? '' : '尚无可试听的配音'), history: action('speech'),

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { test as base, expect } from './helpers/media-project.js';
 import { startService } from '../src/service/server.js';
 import { bindWorkspace } from '../src/workspace-service.js';
@@ -59,6 +59,7 @@ test('工作空间绑定面板完成文案保存、刷新和本地视频播放',
   await modifyBatch(url, { changes: [{ kind: 'add', text: '原文' }] });
   const segment = (await queryStatus(url)).snapshot.segments[0]!;
   await page.goto(url);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(basename(dirname(directory)));
 
   await test.step('从绑定地址编辑文案，刷新后仍读取已保存内容', async () => {
     await page.locator(`[row-id="${segment.id}"] [data-segment-script]`).dblclick();
@@ -68,7 +69,7 @@ test('工作空间绑定面板完成文案保存、刷新和本地视频播放',
     const saved = page.waitForResponse(response => response.url() === `${url}/api/segments/edit` && response.request().method() === 'POST');
     await editor.press('Control+Enter');
     expect((await saved).ok()).toBe(true);
-    await expect(page.locator('[data-save-status]')).toHaveText('已保存');
+    await expect(page.locator('[data-save-status]')).toHaveCount(0);
     await page.reload();
     await expect(page).toHaveURL(url);
     await expect(page.locator(`[row-id="${segment.id}"] .text-summary`)).toHaveText('工作空间项目中已保存的文案');
@@ -78,18 +79,13 @@ test('工作空间绑定面板完成文案保存、刷新和本地视频播放',
   });
 
   await test.step('通过面板导入项目素材并关联到口播片段', async () => {
-    await page.getByRole('button', { name: '更多', exact: true }).click();
-    await page.getByRole('button', { name: '导入项目素材', exact: true }).click();
-    await page.getByLabel('本地素材绝对路径', { exact: true }).fill(mediaFiles.video);
-    await page.getByRole('button', { name: '导入并复制', exact: true }).click();
-    await expect(page.getByRole('dialog', { name: '导入项目素材', exact: true })).toHaveCount(0);
-    const asset = (await queryStatus(url)).snapshot.assets[0]!;
     await page.getByRole('button', { name: /片段 1 画面素材/ }).click();
     await page.getByRole('button', { name: '为片段 1 添加画面素材', exact: true }).click();
-    await page.getByLabel('项目素材', { exact: true }).selectOption(asset.id);
+    await page.getByLabel('本地素材绝对路径', { exact: true }).fill(mediaFiles.video);
     await page.getByRole('button', { name: '加入本句', exact: true }).click();
     await expect(page.getByRole('dialog', { name: '添加画面素材', exact: true })).toHaveCount(0);
-    expect((await queryStatus(url)).snapshot.segments[0]!.materials).toEqual([asset.id]);
+    const { snapshot } = await queryStatus(url);
+    expect(snapshot.segments[0]!.materials).toEqual([snapshot.assets[0]!.id]);
   });
 
   await test.step('绑定地址下的缩略图可解码，真实视频播放时间持续前进', async () => {

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { segmentActions } from '../src/panel/segment-actions.js';
 import type { Segment } from '../src/shared/contracts.js';
-const segments: Segment[] = ['a', 'b', 'c'].map((id, index) => ({ id, order: index + 1, text: id, visualNote: '', video: null }));
+const segments: Segment[] = ['a', 'b', 'c'].map((id, index) => ({ id, order: index + 1, text: id, video: null }));
 describe('口播片段操作呈现', () => {
   test('本行已勾选时删除固定勾选集合，相对插入解释单片段限制', () => {
     const actions = segmentActions({ segment: segments[0]!, segments, checkedIds: ['a', 'c'] });
@@ -13,7 +13,7 @@ describe('口播片段操作呈现', () => {
 
 test('项目占用对行内、本行菜单和页脚给出同一禁用原因，试听与历史仍可用', () => {
   const actions = segmentActions({ segment: segments[1]!, segments, checkedIds: ['a'], reason: 'Codex 正在修改' });
-  for (const key of ['editText', 'editNote', 'associate', 'generate', 'delete', 'insertBefore', 'deleteChecked', 'drag'] as const) {
+  for (const key of ['editText', 'associate', 'generate', 'delete', 'insertBefore', 'deleteChecked', 'drag'] as const) {
     expect(actions[key]).toMatchObject({ enabled: false, reason: 'Codex 正在修改' });
   }
   expect(actions.delete.ids).toEqual(['b']);
@@ -22,17 +22,17 @@ test('项目占用对行内、本行菜单和页脚给出同一禁用原因，�
 });
 
 import type { SpeechStatus } from '../src/shared/contracts.js';
-for (const [state, label] of [['accepted', '排队中'], ['running', '生成中'], ['failed', '重试'], ['unknown', '重试']] as const) test(`${state} 配音主动作及任务禁用原因`, () => {
+for (const [state, label] of [['accepted', '排队中'], ['running', '生成中'], ['failed', '生成失败'], ['unknown', '结果未知']] as const) test(`${state} 配音主动作及任务禁用原因`, () => {
   const speech = { tasks: [{ segmentId: 'a', state }], audio: [] } as unknown as SpeechStatus;
   const actions = segmentActions({ segment: segments[0]!, segments, speech });
   expect(actions.primaryLabel).toBe(label);
   expect(actions.generate.enabled).toBe(!['accepted', 'running'].includes(state));
   if (state === 'accepted' || state === 'running') expect(actions.generate.reason).toBe('配音任务进行中，请等待完成');
 });
-for (const valid of [false, true]) test(`已有${valid ? '有效' : '待更新'}配音优先试听且允许更新`, () => {
+for (const valid of [false, true]) test(`已有${valid ? '有效' : '待更新'}配音按有效性提供主动作`, () => {
   const speech = { tasks: [], audio: [{ segmentId: 'a', taskId: 'audio', valid }] } as unknown as SpeechStatus;
   const actions = segmentActions({ segment: segments[0]!, segments, speech });
-  expect(actions.primaryLabel).toBe('试听'); expect(actions.listen.enabled).toBe(true); expect(actions.generate.enabled).toBe(true);
+  expect(actions.primaryLabel).toBe(valid ? '试听' : '更新配音'); expect(actions.listen.enabled).toBe(true); expect(actions.generate.enabled).toBe(true);
   expect(actions.state).toBe(valid ? '有效配音' : '配音待更新');
 });
 

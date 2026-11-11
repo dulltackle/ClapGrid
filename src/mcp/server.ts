@@ -92,7 +92,7 @@ export function createBusinessMcp(url?: string) {
       'materials 操作携带 {expected,assetIds}，只确认本句素材，不指定时间。composition 操作携带 {expected,plan:{duration,layers}}，duration 须与本句有效配音的精确时长一致（秒）。',
       '图层共有 role（background/overlay）、from/to（相对本句起点的秒数）、x/y/width/height（相对 1920×1080 画布的比例）和 z（背景为 0，叠加为正数）。素材图层使用 kind=asset（旧编排可省略）、assetId 和 start（源起点秒）。页面图层使用 kind=page、pageId 和 assetIds，无 start。页面声明的 assetIds 必须是本句素材，并计入本句素材覆盖校验。',
       '背景连续覆盖配音时长，全部本句素材须被使用。透明角色用原生透明 PNG，叠加区间按本句内容确定，不默认均分、贯穿或跨句。普通制作请求须继续生成合成预览，先准备素材时停在归属阶段。',
-      'edit 可提供 text（文案）、visualNote（画面说明）或两者，省略字段保持原值，空字符串清空。画面说明供编排参考，不改变配音；说明变化后需更新编排与预览。',
+      'edit 必须提供 text（文案），空字符串清空。',
       'videos 操作携带完整 expected 和按顺序排列的 videos: [{assetId,start}]，空数组解除全部关联。快照的 video 保存第一份素材，additionalVideos 保存其余素材。旧 video 操作替换全部关联，携带完整 expected、assetId 和 start（秒）；assetId 为 null 解除关联，使用同一 assetId 可只调整起点。两种兼容写入口都确认素材归属并清空旧编排，须继续显式 composition 后才能制作。',
       'paste 按非空行创建片段。reorder 必须提供查询时项目顺序 expectedIds 和全部身份的新顺序 ids。修改或删除必须携带查询所得完整 expected 片段快照。用户编辑时立即拒绝，目标变化或删除逐项跳过。以最终结果确认提交，断线后先查询，不自动重试。',
     ].join(' '),
@@ -107,7 +107,7 @@ export function createBusinessMcp(url?: string) {
     }
   });
   server.registerTool('clapgrid_query_segments', {
-    description: '按 all、明确 ids、文案包含条件 query 或表格当前勾选 selected 查询片段。返回项目顺序、稳定身份、文案、画面说明（visualNote）及当前对话面板的勾选。selected 没有选择、关联缺失或已断开返回 unavailable；当前对话多个面板返回 ambiguous。关联不明时请用户明确指定片段，不能猜测其他对话面板；tableId 仍须属于当前对话。不会扩大为全项目。',
+    description: '按 all、明确 ids、文案包含条件 query 或表格当前勾选 selected 查询片段。返回项目顺序、稳定身份、文案及当前对话面板的勾选。selected 没有选择、关联缺失或已断开返回 unavailable；当前对话多个面板返回 ambiguous。关联不明时请用户明确指定片段，不能猜测其他对话面板；tableId 仍须属于当前对话。不会扩大为全项目。',
     inputSchema: segmentQuerySchema,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async (input, extra) => {
@@ -119,7 +119,7 @@ export function createBusinessMcp(url?: string) {
     }
   });
   server.registerTool('clapgrid_process_segments', {
-    description: '按明确范围修改文案、画面说明或删除片段。edit 可提供 text、visualNote 或两者，省略字段保持原值，空字符串清空；说明不改变配音或导出。必须携带查询得到的 expected 片段快照；提交时固定目标，后续勾选变化不影响操作。空选择/断开拒绝，新增勾选未查询过则拒绝；内容过时逐项跳过。不会自动扩大范围或重试。',
+    description: '按明确范围修改文案或删除片段。edit 必须提供 text，空字符串清空。必须携带查询得到的 expected 片段快照；提交时固定目标，后续勾选变化不影响操作。空选择/断开拒绝，新增勾选未查询过则拒绝；内容过时逐项跳过。不会自动扩大范围或重试。',
     inputSchema: scopedOperationSchema,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
   }, async (input, extra) => {

@@ -33,7 +33,7 @@ description: 打开当前本地工作空间固定项目的 ClapGrid 口播片段
 
 用户明确要求迁入旧项目时，先走下方完整流程的迁入步骤。其他打开请求首先调用实际宿主的 `clapgrid_prepare_panel`，无需先执行 shell 检查或读取 Linux 准备流程。
 
-- `state: ready`：工具已核对当前聊天、工作空间、项目、服务实例和已加载插件版本。直接用返回的完整 `url` 调用 `open_in_codex`（`placement: right`，`target.type: browser`），保留 `/binding/…` 路径。实际读到表格及“本地服务已连接”或用户确认后，简短报告已打开。日常重开到此结束，无需重复组件检查、`workspace-status`、`clapgrid_status` 或展开连接诊断。
+- `state: ready`：工具已核对当前聊天、工作空间、项目、服务实例和已加载插件版本。直接用返回的完整 `url` 调用 `open_in_codex`（`placement: right`，`target.type: browser`），保留 `/binding/…` 路径。实际读到表格或用户确认后，简短报告已打开。日常重开到此结束，无需重复组件检查、`workspace-status`、`clapgrid_status`。
 - `state: needs-start`：只有此结果表示明确离线；使用返回的 workspace/thread 进入下方完整流程。
 - 工具错误：按具体原因处理过期插件、版本不一致或身份异常，停止快速路径；不以异常为由自动启动或更换服务。
 - 工具未加载：重载插件；组件缺失导致 MCP 无法加载时读取 Linux 准备流程。不得用命令行模拟 MCP 成功。
@@ -48,7 +48,7 @@ description: 打开当前本地工作空间固定项目的 ClapGrid 口播片段
 4. 经宿主执行审批运行 `node <插件根目录>/dist/runtime.js open --workspace <宿主工作空间绝对路径> --thread <当前聊天ID>`。它会核对宿主当前目录，在固定 `clapgrid/` 子目录创建或恢复项目，并自动发现或启动服务；服务端口无需配置。审批拒绝时报告拒绝原因并停止，不更换路径绕过拒绝。启动未确认时检查日志，不自动重复启动。若提示插件过期，先重载宿主插件；若提示服务版本不一致，执行项目仓库的插件更新流程，保留运行任务，不把旧服务在线当作新版已打开。
 5. 在独立调用中执行 `workspace-status`，使用相同 workspace/thread 参数。只有它返回成功才声明在线；核对返回的 workspace、snapshot.project.directory、项目 ID 和 instanceId。数据库、素材、配音及成片保存在该工作空间的 `clapgrid/` 中。
 6. 使用 `open_in_codex`，`placement: right`、`target.type: browser`，URL 为刚核对的完整 `url`（保留 `/binding/…` 路径）。返回 queued 时继续检查内置浏览器；只有实际读到表格或用户确认看到才算打开成功。
-7. 调用实际加载的 `clapgrid_status`，核对它的项目 ID、项目目录及 instanceId 与面板一致，同时比较 `clapgrid_host_context.buildIdentity`、状态的 `buildIdentity` 和面板“连接诊断”中的版本指纹。版本缺失或不一致时报告未验证／需更新，不宣称已更新可用。业务 MCP 自动读取请求中的宿主聊天身份并发现当前工作空间服务；不得配置 `CLAPGRID_SERVICE_URL`。工具未加载时说明需重载插件，不能以命令行协议测试代替实际宿主验证。
+7. 调用实际加载的 `clapgrid_status`，核对它的项目 ID、项目目录及 instanceId 与面板一致，同时比较 `clapgrid_host_context.buildIdentity`、状态的 `buildIdentity` 和实际页面中 `window.__clapgridBuildIdentity` 的版本指纹。版本缺失或不一致时报告未验证／需更新，不宣称已更新可用。业务 MCP 自动读取请求中的宿主聊天身份并发现当前工作空间服务；不得配置 `CLAPGRID_SERVICE_URL`。工具未加载时说明需重载插件，不能以命令行协议测试代替实际宿主验证。
 
 打开不发起配音、导出或片段写入。关闭面板或 MCP 不终止已受理任务；重开先查询，不重发制作请求。宿主工作空间改变后，关闭旧面板并重新执行打开流程；旧项目后台任务继续，旧面板业务请求会因工作空间不符而拒绝。身份无法核对、地址复用或断线时停止操作，不自动重试制作。
 

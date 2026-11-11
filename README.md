@@ -49,7 +49,7 @@ npm run start -- --project /绝对路径/验证项目
 
 ## 画面素材与编排
 
-在表格中打开本句的素材托盘，可导入素材或从项目选取。通过对话请 Codex 编排画面，再审阅片段合成预览。表格操作见[面板规范](docs/panel-style.md#表格信息组织)，制作流程见[画面编排制作约定](plugins/clapgrid/skills/open-clapgrid/references/composition.md)，风格编写见[内置风格](plugins/clapgrid/styles/README.md)。
+在表格中打开本句的素材托盘，可导入素材或从项目选取。通过对话请 Codex 编排画面，再审阅片段合成预览。表格操作见[审阅与决策台](docs/ui-components.md#审阅与决策台)，制作流程见[画面编排制作约定](plugins/clapgrid/skills/open-clapgrid/references/composition.md)，风格编写见[内置风格](plugins/clapgrid/styles/README.md)。
 
 ## 内置风格示例
 

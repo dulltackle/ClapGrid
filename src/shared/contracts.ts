@@ -30,7 +30,7 @@ export function layerAssets(layer: z.infer<typeof visualLayerSchema>) {
 export const visualPlanSchema = z.object({ duration: z.number().positive().max(3600), layers: z.array(visualLayerSchema).min(1).max(32) }).strict();
 export type VisualPlan = z.infer<typeof visualPlanSchema>;
 export const segmentSchema = z.object({
-  id: z.uuid(), order: z.number().int().positive(), text: z.string(), visualNote: z.string().default(''),
+  id: z.uuid(), order: z.number().int().positive(), text: z.string(),
   video: z.object({ assetId: z.uuid(), start: z.number().nonnegative() }).nullable().default(null),
   additionalVideos: z.array(videoReferenceSchema).optional(),
   materials: z.array(z.uuid()).optional(),
@@ -45,10 +45,8 @@ export function segmentVideos(segment: Segment) {
 export function segmentMaterials(segment: Segment): string[] {
   return segment.materials ?? [...new Set(segmentVideos(segment).map(reference => reference.assetId))];
 }
-export const addSegmentSchema = z.object({ text: z.string(), visualNote: z.string().optional() }).strict();
-const segmentEditFields = { text: z.string().optional(), visualNote: z.string().optional() };
-const hasSegmentEdit = (input: { text?: string; visualNote?: string }) => input.text !== undefined || input.visualNote !== undefined;
-export const editSegmentSchema = z.object({ id: z.uuid(), ...segmentEditFields }).strict().refine(hasSegmentEdit, '请提供文案或画面说明');
+export const addSegmentSchema = z.object({ text: z.string() }).strict();
+export const editSegmentSchema = z.object({ id: z.uuid(), text: z.string() }).strict();
 
 const derivationSchema = z.object({
   inputs: z.array(z.uuid()),
@@ -148,12 +146,12 @@ export type ServiceStatus = z.infer<typeof statusSchema>;
 
 // 目标快照来自普通查询；服务取得修改权后逐项重读并比较。
 export const batchChangeSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('add'), text: z.string(), visualNote: z.string().optional(), relative: z.object({
+  z.object({ kind: z.literal('add'), text: z.string(), relative: z.object({
     anchor: segmentSchema.strict(), placement: z.enum(['before', 'after']), expectedIds: z.array(z.uuid()),
   }).strict().optional() }).strict(),
   z.object({ kind: z.literal('paste'), text: z.string() }).strict(),
   z.object({ kind: z.literal('reorder'), expectedIds: z.array(z.uuid()), ids: z.array(z.uuid()) }).strict(),
-  z.object({ kind: z.literal('edit'), expected: segmentSchema.strict(), ...segmentEditFields }).strict().refine(hasSegmentEdit, '请提供文案或画面说明'),
+  z.object({ kind: z.literal('edit'), expected: segmentSchema.strict(), text: z.string() }).strict(),
   z.object({ kind: z.literal('delete'), expected: segmentSchema.strict() }).strict(),
   z.object({ kind: z.literal('video'), expected: segmentSchema.strict(), assetId: z.uuid().nullable(), start: z.number().nonnegative() }).strict(),
   z.object({ kind: z.literal('materials'), expected: segmentSchema.strict(), assetIds: z.array(z.uuid()).max(64) }).strict(),
@@ -185,7 +183,7 @@ export const scopedOperationSchema = z.object({
   scope: scopeSchema,
   expected: z.array(segmentSchema.strict()),
   action: z.discriminatedUnion('kind', [
-    z.object({ kind: z.literal('edit'), ...segmentEditFields }).strict().refine(hasSegmentEdit, '请提供文案或画面说明'),
+    z.object({ kind: z.literal('edit'), text: z.string() }).strict(),
     z.object({ kind: z.literal('delete') }).strict(),
   ]),
 }).strict();

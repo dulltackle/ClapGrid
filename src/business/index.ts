@@ -42,15 +42,13 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
     PRAGMA busy_timeout = 1000;
     PRAGMA synchronous = FULL;
     BEGIN IMMEDIATE;
-    PRAGMA user_version = ${projectFormatVersion};
     CREATE TABLE IF NOT EXISTS project_style (singleton INTEGER PRIMARY KEY CHECK (singleton = 1), value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS export_settings (singleton INTEGER PRIMARY KEY CHECK (singleton = 1), value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS background_music (singleton INTEGER PRIMARY KEY CHECK (singleton = 1), value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS segments (
       id TEXT PRIMARY KEY,
       position INTEGER NOT NULL UNIQUE CHECK (position > 0),
-      text TEXT NOT NULL,
-      visual_note TEXT NOT NULL DEFAULT ''
+      text TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS video_assets (
       id TEXT PRIMARY KEY, name TEXT NOT NULL, duration REAL NOT NULL
@@ -69,9 +67,17 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       id TEXT NOT NULL,
       created_at TEXT NOT NULL
     );
-    COMMIT;
-    PRAGMA journal_mode = WAL;
   `);
+  // 与建表、格式升级共享写事务，重复打开时不会再次删除列。
+  if (db.prepare('PRAGMA table_info(segments)').all().some(column => column.name === 'visual_note')) {
+    db.exec('ALTER TABLE segments DROP COLUMN visual_note');
+    if (db.prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'export_tasks'").get()) {
+      // 旧预览的输入快照也含说明。保留任务与产物，只清掉用于判断当前性的旧输入。
+      db.exec(`UPDATE export_tasks SET value = json_set(value, '$.preview.input', '')
+        WHERE json_type(value, '$.preview') = 'object'`);
+    }
+  }
+  db.exec(`PRAGMA user_version = ${projectFormatVersion}; COMMIT; PRAGMA journal_mode = WAL;`);
   db.prepare('INSERT OR IGNORE INTO project_identity VALUES (1, ?, ?)')
     .run(randomUUID(), new Date().toISOString());
   function getProjectStyle() {
@@ -86,7 +92,7 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       exportSettings: getExportSettings(),
       backgroundMusic: getBackgroundMusic(),
       projectStyle: getProjectStyle(),
-      segments: db.prepare('SELECT id, ROW_NUMBER() OVER (ORDER BY position) AS "order", text, visual_note AS visualNote FROM segments ORDER BY position').all().map(segment => {
+      segments: db.prepare('SELECT id, ROW_NUMBER() OVER (ORDER BY position) AS "order", text FROM segments ORDER BY position').all().map(segment => {
         const video = db.prepare('SELECT asset_id AS assetId, start FROM segment_video WHERE segment_id = ?').get(segment.id!);
         const additionalVideos = db.prepare('SELECT asset_id AS assetId, start FROM segment_additional_videos WHERE segment_id = ? ORDER BY position').all(segment.id!);
         const legacy = { ...segment, video: video ?? null, ...(additionalVideos.length ? { additionalVideos } : {}) };
@@ -94,7 +100,7 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
         if (!visuals) return legacy;
         const materials = JSON.parse(String(visuals.materials));
         // 文案变化使配音和预览过时；时长一致时保留现有画面编排。
-        const visualVersion = createHash('sha256').update(JSON.stringify([segment.visualNote, materials])).digest('hex');
+        const visualVersion = createHash('sha256').update(JSON.stringify({ materials })).digest('hex');
         return { ...legacy, materials, visualVersion, ...(visuals.composition ? { composition: JSON.parse(String(visuals.composition)) } : {}) };
       }),
       assets: [...db.prepare('SELECT id, name, duration FROM video_assets ORDER BY rowid').all(), ...db.prepare('SELECT value FROM visual_assets ORDER BY rowid').all().map(row => JSON.parse(String(row.value)))],
@@ -384,22 +390,22 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
       return { modification, taskLocked: task !== null };
     },
     owns: access.owns,
-    addSegment(text: string, token?: string, visualNote = ''): Snapshot {
+    addSegment(text: string, token?: string): Snapshot {
       access.assertWritable(token);
-      addSegmentSchema.parse({ text, visualNote });
+      addSegmentSchema.parse({ text });
       return commit(() => {
-        db.prepare('INSERT INTO segments (id, position, text, visual_note) SELECT ?, COALESCE(MAX(position), 0) + 1, ?, ? FROM segments')
-          .run(randomUUID(), text, visualNote);
+        db.prepare('INSERT INTO segments (id, position, text) SELECT ?, COALESCE(MAX(position), 0) + 1, ? FROM segments')
+          .run(randomUUID(), text);
       }, token);
     },
     editSegment(id: string, text: string, token?: string): Snapshot {
       return business.updateSegment(id, { text }, token);
     },
-    updateSegment(id: string, fields: { text?: string; visualNote?: string }, token?: string): Snapshot {
+    updateSegment(id: string, fields: { text: string }, token?: string): Snapshot {
       access.assertWritable(token);
       const patch = editSegmentSchema.parse({ id, ...fields });
       return commit(() => {
-        const result = db.prepare('UPDATE segments SET text = COALESCE(?, text), visual_note = COALESCE(?, visual_note) WHERE id = ?').run(patch.text ?? null, patch.visualNote ?? null, id);
+        const result = db.prepare('UPDATE segments SET text = ? WHERE id = ?').run(patch.text, id);
         if (result.changes !== 1) throw new Error('口播片段不存在，请刷新后重试。');
       }, token);
     },
@@ -419,7 +425,7 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
           if (change.kind === 'video' || change.kind === 'videos') {
             const current = getSnapshot().segments.find(segment => segment.id === id);
             if (!current) { results.push({ index, id, outcome: 'deleted', message: '口播片段已删除，已跳过' }); continue; }
-            if (JSON.stringify([current.materials, current.composition, current.visualVersion]) !== JSON.stringify([change.expected.materials, change.expected.composition, change.expected.visualVersion]) || JSON.stringify(current.video) !== JSON.stringify(change.expected.video) || JSON.stringify(current.additionalVideos ?? []) !== JSON.stringify(change.expected.additionalVideos ?? []) || current.text !== change.expected.text || current.visualNote !== change.expected.visualNote || (submittedOrder.get(current.id) ?? current.order) !== change.expected.order) {
+            if (JSON.stringify([current.materials, current.composition, current.visualVersion]) !== JSON.stringify([change.expected.materials, change.expected.composition, change.expected.visualVersion]) || JSON.stringify(current.video) !== JSON.stringify(change.expected.video) || JSON.stringify(current.additionalVideos ?? []) !== JSON.stringify(change.expected.additionalVideos ?? []) || current.text !== change.expected.text || (submittedOrder.get(current.id) ?? current.order) !== change.expected.order) {
               results.push({ index, id, outcome: 'changed', message: '目标内容已变化，请重新查询', current }); continue;
             }
           }
@@ -477,13 +483,13 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
                 const offset = Number(db.prepare('SELECT COALESCE(MAX(position), 0) AS maximum FROM segments').get()!.maximum) + ids.length;
                 for (const [position, segment] of current.entries()) db.prepare('UPDATE segments SET position = ? WHERE id = ?').run(offset + position + 1, segment.id);
                 for (const [position, id] of ids.entries()) {
-                  if (id === newId) db.prepare('INSERT INTO segments (id, position, text, visual_note) VALUES (?, ?, ?, ?)').run(id, position + 1, change.text, change.visualNote ?? '');
+                  if (id === newId) db.prepare('INSERT INTO segments (id, position, text) VALUES (?, ?, ?)').run(id, position + 1, change.text);
                   else db.prepare('UPDATE segments SET position = ? WHERE id = ?').run(position + 1, id);
                 }
                 result.id = newId; return;
               }
-              db.prepare('INSERT INTO segments (id, position, text, visual_note) SELECT ?, COALESCE(MAX(position), 0) + 1, ?, ? FROM segments')
-                .run(newId, change.text, change.visualNote ?? '');
+              db.prepare('INSERT INTO segments (id, position, text) SELECT ?, COALESCE(MAX(position), 0) + 1, ? FROM segments')
+                .run(newId, change.text);
               result.id = newId;
               return;
             }
@@ -491,10 +497,10 @@ function initializeBusiness(db: DatabaseSync, { projectDirectory, database, medi
             if (!current) {
               result = { index, id, outcome: 'deleted', message: '口播片段已删除，已跳过' }; return;
             }
-            if (JSON.stringify([current.materials, current.composition, current.visualVersion]) !== JSON.stringify([change.expected.materials, change.expected.composition, change.expected.visualVersion]) || JSON.stringify(current.video) !== JSON.stringify(change.expected.video) || JSON.stringify(current.additionalVideos ?? []) !== JSON.stringify(change.expected.additionalVideos ?? []) || current.text !== change.expected.text || current.visualNote !== change.expected.visualNote || (submittedOrder.get(current.id) ?? current.order) !== change.expected.order) {
+            if (JSON.stringify([current.materials, current.composition, current.visualVersion]) !== JSON.stringify([change.expected.materials, change.expected.composition, change.expected.visualVersion]) || JSON.stringify(current.video) !== JSON.stringify(change.expected.video) || JSON.stringify(current.additionalVideos ?? []) !== JSON.stringify(change.expected.additionalVideos ?? []) || current.text !== change.expected.text || (submittedOrder.get(current.id) ?? current.order) !== change.expected.order) {
               result = { index, id, outcome: 'changed', message: '目标内容已变化，请核对最新内容后重新提交', current }; return;
             }
-            if (change.kind === 'edit') db.prepare('UPDATE segments SET text = COALESCE(?, text), visual_note = COALESCE(?, visual_note) WHERE id = ?').run(change.text ?? null, change.visualNote ?? null, id!);
+            if (change.kind === 'edit') db.prepare('UPDATE segments SET text = ? WHERE id = ?').run(change.text, id!);
             else if (change.kind === 'materials') {
               if (new Set(change.assetIds).size !== change.assetIds.length || change.assetIds.some(assetId => !getSnapshot().assets.some(asset => asset.id === assetId))) throw new Error('素材不存在或重复');
               db.prepare('INSERT INTO segment_visuals VALUES (?, ?, NULL) ON CONFLICT(segment_id) DO UPDATE SET materials = excluded.materials').run(id!, JSON.stringify(change.assetIds));

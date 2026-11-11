@@ -16,7 +16,7 @@ for (const viewport of [{ width: 780, height: 579 }, { width: 420, height: 360 }
   await tray.press('Enter');
   await expect(page.getByRole('dialog', { name: '片段 1 素材面板', exact: true })).toBeVisible();
   expect(await firstRow.evaluate(e => e.getBoundingClientRect().height)).toBe(initialHeight);
-  await page.getByRole('heading', { name: '口播片段', exact: true }).click();
+  await page.locator('header h1').click();
   await expect(page.getByRole('dialog', { name: '片段 1 素材面板', exact: true })).toHaveCount(0);
   await tray.click();
   await page.getByRole('button', { name: '为片段 1 添加画面素材', exact: true }).click();
@@ -29,8 +29,6 @@ for (const viewport of [{ width: 780, height: 579 }, { width: 420, height: 360 }
   const thumbnailEntry = page.getByRole('button', { name: '片段 1 画面素材（1）', exact: true });
   await expect(thumbnailEntry.locator('img')).toBeVisible();
   await expect.poll(() => thumbnailEntry.locator('img').evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-  await expect(page.locator('[data-note-summary]').first()).toContainText('画面说明');
-  await expect(page.locator('[data-note-summary]').first()).toHaveAttribute('title', /展开画面说明/);
   await page.getByRole('button', { name: '重命名素材 透明角色.png', exact: true }).click();
   await page.getByLabel('素材名称', { exact: true }).fill('');
   await expect(page.getByRole('button', { name: '保存名称', exact: true })).toBeDisabled();
@@ -53,7 +51,7 @@ for (const viewport of [{ width: 780, height: 579 }, { width: 420, height: 360 }
 
 test('片段合成预览真实播放，内容变化后显示待更新且不能冒充当前结果', async ({ page, project, mediaFiles }) => {
   const { previewSegment, queryVisualPreviews, saveExportSettings } = await import('../src/shared/client.js');
-  const [id] = await project.seed(['本句合成效果']);
+  const [id] = await project.seed(['本句合成效果', '等待编排']);
   const { asset } = await importMaterial(project.url, mediaFiles.video);
   await submitSpeech(project.url, { requestId: crypto.randomUUID(), segmentId: id! });
   await expect.poll(async () => (await querySpeech(project.url)).locked).toBe(false);
@@ -61,21 +59,30 @@ test('片段合成预览真实播放，内容变化后显示待更新且不能�
   const context = await queryVisualContext(project.url, id!);
   await project.modify({ changes: [{ kind: 'composition', expected: context.segment, plan: { duration: context.duration, layers: [{ assetId: asset.id, role: 'background', from: 0, to: context.duration, start: 0, x: 0, y: 0, width: 1, height: 1, z: 0 }] } }] });
   await saveExportSettings(project.url, { expected: (await project.status()).snapshot.exportSettings, settings: { codec: 'libx264', fps: 25 } });
+  await page.goto(project.url);
+  await expect(page.getByRole('button', { name: '片段 1 画面素材（1）' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /合成预览，已就绪/ })).toHaveCount(0);
+  await expect(page.getByText('待更新', { exact: true })).toHaveCount(0);
   await previewSegment(project.url, id!);
   await expect.poll(async () => (await queryVisualPreviews(project.url)).tasks[0]?.state, { timeout: 30000 }).toBe('succeeded');
-  await page.goto(project.url);
-  await page.getByRole('button', { name: '任务详情', exact: true }).click();
-  await expect(page.getByRole('region', { name: '全片导出', exact: true })).toContainText('暂无导出任务');
-  await expect(page.getByRole('region', { name: '片段合成任务', exact: true })).toContainText('合成成功');
+  const ready = page.getByRole('button', { name: '播放片段 1 合成预览，已就绪' });
+  await expect(page.getByRole('button', { name: /合成预览，已就绪/ })).toHaveCount(1);
+  await ready.press('Enter');
+  await expect(page.getByRole('dialog', { name: '片段合成预览', exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: /片段 1 画面素材/ }).click();
-  await page.getByRole('button', { name: '片段合成预览', exact: true }).click();
+  await expect(ready).toBeFocused();
+  await ready.click();
   const dialog = page.getByRole('dialog', { name: '片段合成预览', exact: true });
   await expect(dialog).toContainText('未设置项目风格，预览不含字幕');
   await expect.poll(() => dialog.locator('video').evaluate(node => (node as HTMLVideoElement).currentTime)).toBeGreaterThan(0);
-  await project.modify({ changes: [{ kind: 'edit', expected: (await project.status()).snapshot.segments[0]!, visualNote: '改为特写' }] });
+  await project.modify({ changes: [{ kind: 'edit', expected: (await project.status()).snapshot.segments[0]!, text: '改为特写' }] });
   await expect(dialog).toContainText('此预览待更新');
   await page.keyboard.press('Escape');
+  await expect(ready).toHaveCount(0);
+  const materials = page.getByRole('button', { name: /片段 1 画面素材/ });
+  await expect(materials).toBeFocused();
+  await expect(page.getByText('待更新', { exact: true })).toBeVisible();
+  await materials.press('Enter');
   await expect(page.getByRole('button', { name: '片段合成预览', exact: true })).toBeDisabled();
 });
 

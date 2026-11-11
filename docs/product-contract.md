@@ -2,7 +2,7 @@
 
 本文记录首版口播视频制作的产品规则、验收清单与交付门槛。术语见 [GLOSSARY.md](../GLOSSARY.md)；使用、开发与构建入口见 [README](../README.md)。本文描述应满足的契约，不表示产品已实现或验收通过。
 
-多素材、画面说明、画面编排、页面图层、风格与片段合成预览属于首版之后的扩展，规则见[画面编排制作约定](../plugins/clapgrid/skills/open-clapgrid/references/composition.md)、README 的[画面素材与编排](../README.md#画面素材与编排)、[面板规范](panel-style.md#表格信息组织)与 [ADR0015](adr/0015-page-rendering.md)。配音字级时间戳、风格字幕分页与项目级背景乐的范围见 [ADR0019](adr/0019-video-effect-extension-scope.md)。本文中以“关联视频”“视频起点”表述的规则按首版单视频关联编写，适用于旧单视频记录；多素材的时长匹配与导出验收尚未扩展进本文，不能直接视为已经确定。
+多素材、画面编排、页面图层、风格与片段合成预览属于首版之后的扩展，规则见[画面编排制作约定](../plugins/clapgrid/skills/open-clapgrid/references/composition.md)、README 的[画面素材与编排](../README.md#画面素材与编排)、[审阅与决策台](ui-components.md#审阅与决策台)与 [ADR0015](adr/0015-page-rendering.md)。配音字级时间戳、风格字幕分页与项目级背景乐的范围见 [ADR0019](adr/0019-video-effect-extension-scope.md)。本文中以“关联视频”“视频起点”表述的规则按首版单视频关联编写，适用于旧单视频记录；多素材的时长匹配与导出验收尚未扩展进本文，不能直接视为已经确定。
 
 ## 目标与范围
 

@@ -4,7 +4,7 @@ import { Button, Dialog, DialogContent, DialogTitle } from '@/components/ui/inde
 import type { Segment } from '../shared/contracts.js';
 
 /** 原位输入和放大视图共用表格草稿，切换尺寸不提交、不重新取得修改权。 */
-export function TextEditor({ value, field, data, change, commit, cancel, busy }: { value: string; field: 'text' | 'visualNote'; data: Segment; change: (value: string) => void; commit: () => void; cancel: () => void; busy: boolean }) {
+export function TextEditor({ value, data, change, commit, cancel, busy }: { value: string; data: Segment; change: (value: string) => void; commit: () => void; cancel: () => void; busy: boolean }) {
   // AG Grid 的 renderer 参数异步刷新；输入立即回显，同时同步到共享草稿。
   const [text, setText] = useState(value);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -12,7 +12,6 @@ export function TextEditor({ value, field, data, change, commit, cancel, busy }:
   const [expanded, setExpanded] = useState(false);
   const expandedRef = useRef(expanded); expandedRef.current = expanded;
   const selection = useRef({ start: 0, end: 0 });
-  const label = field === 'visualNote' ? '画面说明' : '文案';
   const initialized = useRef(false);
   useEffect(() => {
     if (busy || initialized.current || !input.current) return;
@@ -46,16 +45,16 @@ export function TextEditor({ value, field, data, change, commit, cancel, busy }:
     if (event.key === 'Tab' || event.key === ' ') event.stopPropagation();
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter'].includes(event.key)) event.stopPropagation();
   };
-  return <div data-inline-editor={field === 'visualNote' ? '' : undefined} onKeyDown={event => {
+  return <div onKeyDown={event => {
     if (event.key === 'Escape' && !event.defaultPrevented && !event.nativeEvent.isComposing && !expandedRef.current) {
       event.preventDefault(); event.stopPropagation(); cancel();
     }
-  }} className={`flex h-full w-full min-w-0 flex-1 flex-col ${field === 'visualNote' ? 'pb-1' : ''}`}>
+  }} className="flex h-full w-full min-w-0 flex-1 flex-col">
     <div className="flex min-h-0 flex-1 items-center gap-3">
       <div data-inline-text-box className="relative h-full min-w-0 flex-1">
-        <textarea className="m-0 block h-full min-h-0 w-full resize-none overflow-hidden rounded-md border border-solid border-input bg-background py-0 pl-2 pr-[88px] font-[inherit] text-[15px] leading-[22px] text-foreground outline-none" ref={input} aria-label={`${label}全文`} value={text}
+        <textarea className="m-0 block h-full min-h-0 w-full resize-none overflow-hidden rounded-md border border-solid border-input bg-background px-1 pt-0.5 pb-6 font-[inherit] text-[15px] leading-[22px] text-foreground outline-none" ref={input} aria-label="文案全文" value={text}
           readOnly={busy} onChange={event => { setText(event.target.value); change(event.target.value); }} onKeyDownCapture={keys} />
-        <div role="group" aria-label="文案编辑操作" className="absolute right-1 top-1.5 flex gap-0.5 rounded-md bg-background">
+        <div role="group" aria-label="文案编辑操作" className="absolute right-1 bottom-0.5 flex gap-0.5 rounded-md bg-background">
           <Button variant="ghost" size="xs" className="size-6 p-0 text-muted-foreground" aria-label="取消修改" title="取消修改（Esc）" onMouseDown={event => event.preventDefault()} disabled={busy} onClick={cancel}><ResetIcon aria-hidden className="size-4" /></Button>
           <Button variant="ghost" size="xs" className="size-6 bg-primary/10 p-0 text-primary hover:bg-primary/15" aria-label="保存修改" title="保存修改（Ctrl／⌘+Enter）" onMouseDown={event => event.preventDefault()} disabled={busy} onClick={commit}><CheckIcon aria-hidden className="size-4" /></Button>
           <Button variant="ghost" size="xs" className="size-6 p-0 text-muted-foreground" aria-label="放大编辑" title="放大编辑" onMouseDown={event => event.preventDefault()} onClick={expand}><EnterFullScreenIcon aria-hidden className="size-4" /></Button>
@@ -70,10 +69,10 @@ export function TextEditor({ value, field, data, change, commit, cancel, busy }:
           requestAnimationFrame(() => { focusInput(input.current); });
         }}>
         <div className="flex items-center justify-between gap-3">
-          <DialogTitle className="m-0 text-lg font-semibold">编辑{label === '文案' ? '口播文案' : label} · 片段 {data?.order}</DialogTitle>
+          <DialogTitle className="m-0 text-lg font-semibold">编辑口播文案 · 片段 {data?.order}</DialogTitle>
           <Button variant="ghost" size="sm" aria-label="缩小编辑" onClick={collapse}><ExitFullScreenIcon aria-hidden />缩小</Button>
         </div>
-        <textarea ref={enlargedInput} aria-label={`放大${label}全文`} className="m-0 block h-[min(48dvh,320px)] min-h-[100px] max-h-[calc(100dvh-180px)] w-full resize-none rounded-md border border-solid border-input bg-background p-3 font-[inherit] text-base leading-7 text-foreground" value={text} readOnly={busy} onChange={event => { setText(event.target.value); change(event.target.value); }} onKeyDownCapture={keys} />
+        <textarea ref={enlargedInput} aria-label="放大文案全文" className="m-0 block h-[min(48dvh,320px)] min-h-[100px] max-h-[calc(100dvh-180px)] w-full resize-none rounded-md border border-solid border-input bg-background p-3 font-[inherit] text-base leading-7 text-foreground" value={text} readOnly={busy} onChange={event => { setText(event.target.value); change(event.target.value); }} onKeyDownCapture={keys} />
         <div className="flex flex-wrap items-center justify-end gap-3">
           <span id="enlarged-editor-help" className="mr-auto text-xs text-muted-foreground">Esc 缩小 · Ctrl／⌘+Enter 保存</span>
           <Button variant="outline" size="sm" disabled={busy} onClick={cancel}>取消修改</Button>

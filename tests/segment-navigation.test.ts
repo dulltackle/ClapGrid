@@ -10,7 +10,7 @@ function fixture() {
   const listeners = new Set<() => void>();
   const row = { rowIndex: 3, setSelected: vi.fn() };
   const grid = { getRowNode: vi.fn(() => row), ensureColumnVisible: vi.fn(), ensureIndexVisible: vi.fn(), setFilterModel: vi.fn(), startEditingCell: vi.fn() };
-  const inline = vi.fn(async (_id: string, _field: string, _intent: { valid: () => boolean }) => {});
+  const inline = vi.fn(async (_id: string, _intent: { valid: () => boolean }) => {});
   const acceptGridUpdate = vi.fn((apply: () => void) => apply());
   const cancel = vi.fn(async () => true);
   const navigation = segmentNavigation({
@@ -82,8 +82,8 @@ test('普通新增清除查找后定位并开始原位文案编辑', async () =>
 
 test('原位导航将稳定身份和当前意图交给编辑入口', async () => {
   const f = fixture();
-  await f.navigation.request().arrive(() => {}, { id: 'a', mode: 'inline', field: 'text' });
-  const [id, field, intent] = f.inline.mock.calls[0]!;
-  expect(id).toBe('a'); expect(field).toBe('text'); expect(intent.valid()).toBe(true);
+  await f.navigation.request().arrive(() => {}, { id: 'a', mode: 'inline' });
+  const [id, intent] = f.inline.mock.calls[0]!;
+  expect(id).toBe('a'); expect(intent.valid()).toBe(true);
   f.interact(); expect(intent.valid()).toBe(false);
 });

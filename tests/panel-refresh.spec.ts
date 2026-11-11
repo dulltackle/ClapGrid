@@ -85,7 +85,7 @@ test('声音和导出设置失败结束后不阻止面板刷新，异常不改�
   await page.route('**/api/speech/voice', route => route.fulfill({ status: 500, json: { error: '声音操作故障' } }));
   await page.getByLabel('统一语速', { exact: true }).selectOption('20');
   await expect(page.getByLabel('操作异常', { exact: true })).toContainText('声音操作故障');
-  await expect(state).toHaveText('已保存');
+  await expect(state).toHaveCount(0);
   await page.getByRole('button', { name: '关闭声音设置', exact: true }).click();
   await expect(refresh).toBeEnabled();
   await page.getByRole('button', { name: '更多', exact: true }).click();
@@ -95,7 +95,7 @@ test('声音和导出设置失败结束后不阻止面板刷新，异常不改�
     ? route.fulfill({ status: 500, json: { error: '导出设置故障' } }) : route.continue());
   await page.getByLabel('导出帧率', { exact: true }).selectOption('60');
   await expect(page.getByLabel('操作异常', { exact: true })).toContainText('导出设置故障');
-  await expect(state).toHaveText('已保存');
+  await expect(state).toHaveCount(0);
   await page.getByRole('button', { name: '关闭设置', exact: true }).click();
   await expect(refresh).toBeEnabled();
 });

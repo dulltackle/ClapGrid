@@ -6,15 +6,15 @@ import { panelServiceUrl } from './service-url.js';
 import type { Segment, ServiceStatus } from '../shared/contracts.js';
 import type { FocusReturn, segmentFocusCoordinator } from './dialog-focus.js';
 import type { ProjectEditing } from './project-editing.js';
-import type { SegmentDestination, SegmentNavigation, SegmentTextField } from './segment-navigation.js';
+import type { SegmentDestination, SegmentNavigation } from './segment-navigation.js';
 
 export { segmentTargets } from './segment-targets.js';
 
-export type SegmentIntent = { id: string; inline?: boolean; field?: SegmentTextField; preventScroll?: boolean } | null;
+export type SegmentIntent = { id: string; preventScroll?: boolean } | null;
 
-type Draft = { id: string; base: string; text: string; baseVisualNote: string; visualNote: string; field: SegmentTextField };
+type Draft = { id: string; base: string; text: string };
 
-/** 勾选独立于编辑；文案与说明共用一份草稿及修改权交接。 */
+/** 勾选独立于编辑；文案草稿保留修改权交接。 */
 export function useSegmentInteraction({ editing, status, accept, canEdit, failed, navigation, focus, grid }: {
   editing: ProjectEditing; status: ServiceStatus | undefined; accept: (status: ServiceStatus) => void;
   canEdit: () => boolean; grid: () => GridApi<Segment> | null; failed: (error: Error) => void;
@@ -30,10 +30,10 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
   const [navigating, setNavigating] = useState(false);
   // 释放修改权后仍需确认服务状态，避免旧的“用户正在编辑”造成控件再禁用一帧。
   const [finishing, setFinishing] = useState(false);
-  const [failure, setFailure] = useState<{ text: string; visualNote: string; message: string } | null>(null);
+  const [failure, setFailure] = useState<{ text: string; message: string } | null>(null);
   const draftFailed = (cause: Error) => {
     const value = current.current;
-    if (value && dirtyDraft(value)) setFailure({ text: value.text, visualNote: value.visualNote, message: cause.message });
+    if (value && dirtyDraft(value)) setFailure({ text: value.text, message: cause.message });
     else failed(cause);
   };
   const sequence = useRef(0);
@@ -46,7 +46,7 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
     window.addEventListener('pagehide', leave);
     return () => { leave(); window.removeEventListener('pagehide', leave); };
   }, []);
-  const dirtyDraft = (value: Draft | null) => !!value && (value.text !== value.base || value.visualNote !== value.baseVisualNote);
+  const dirtyDraft = (value: Draft | null) => !!value && value.text !== value.base;
   const dirty = dirtyDraft(draft);
   const disconnected = () => draftFailed(new Error('编辑连接已断开，草稿已保留；请重新保存或放弃。'));
   const commit = (): Promise<boolean> => {
@@ -66,14 +66,14 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
           await editing.begin('segments', next => {
             const segment = next.snapshot.segments.find(item => item.id === value.id);
             if (!segment) throw new Error('口播片段已删除，草稿仍保留，请复制后放弃。');
-            if (segment.text !== value.base || (segment.visualNote ?? '') !== value.baseVisualNote) throw new Error('文案或画面说明已被其他操作修改，草稿仍保留；不能覆盖新内容。');
+            if (segment.text !== value.base) throw new Error('文案已被其他操作修改，草稿仍保留；不能覆盖新内容。');
             latest.current.accept(next); acquired = true;
           }, disconnected, draftFailed);
           if (!acquired || !valid()) return false;
         }
         let saved = false;
         await editing.save('segments', {}, async (token, action) => {
-          const next = await saveSegment(panelServiceUrl(), { id: value.id, text: value.text, visualNote: value.visualNote }, token);
+          const next = await saveSegment(panelServiceUrl(), { id: value.id, text: value.text }, token);
           action.apply(() => { focus.acceptGridUpdate(() => latest.current.accept(next)); saved = true; });
         }, cause => draftFailed(new Error(`保存失败：${cause.message}`)));
         if (!saved) return false;
@@ -111,8 +111,8 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
       }
     })();
   };
-  const begin = async (field: SegmentTextField = 'text', target: string | null = null, requested = navigation.intent()) => {
-    if (!target || current.current || editing.getState().editing || editing.getState().busy || !canEdit()) return Promise.resolve();
+  const begin = async (target: string, requested = navigation.intent()) => {
+    if (current.current || editing.getState().editing || editing.getState().busy || !canEdit()) return Promise.resolve();
     let cancelled: Promise<boolean> | undefined;
     await editing.begin('segments', next => {
       focus.acceptGridUpdate(() => accept(next));
@@ -120,7 +120,7 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
       const segment = next.snapshot.segments.find(item => item.id === target);
       if (!segment) throw new Error('口播片段已删除，请选择其他片段。');
       setFailure(null);
-      const value: Draft = { id: target, base: segment.text, text: segment.text, baseVisualNote: segment.visualNote ?? '', visualNote: segment.visualNote ?? '', field };
+      const value: Draft = { id: target, base: segment.text, text: segment.text };
       // 原位 renderer 必须在修改权就绪时读到草稿；调用方不再处理表格时序。
       flushSync(() => update(value));
     }, disconnected, failed);
@@ -132,7 +132,7 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
     ++sequence.current; setPending(false);
     const value = current.current;
     const version = lifetime.current;
-    const restore = value ? focus.captureSegment(value.field === 'visualNote' ? { id: value.id, note: true } : { id: value.id, column: 'text' }, { preventScroll: true }) : undefined;
+    const restore = value ? focus.captureSegment({ id: value.id, column: 'text' }, { preventScroll: true }) : undefined;
     setFinishing(true);
     try {
       await editing.cancel('segments');
@@ -160,8 +160,8 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
     try {
       if (await commit() && version === lifetime.current && actionRunning.current === action) await work(target => {
         // 只衔接这次已确认保存的字段；菜单快照中的其他差异继续交给业务冲突检查。
-        if (!value || value.id !== target.id || target.text !== value.base || target.visualNote !== value.baseVisualNote) return target;
-        return { ...target, text: value.text, visualNote: value.visualNote };
+        if (!value || value.id !== target.id || target.text !== value.base) return target;
+        return { ...target, text: value.text };
       });
     }
     finally { if (actionRunning.current === action) actionRunning.current = null; }
@@ -169,8 +169,8 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
   const deleted = !!draft && !!status && !status.snapshot.segments.some(segment => segment.id === draft.id);
   const activeFailure = dirty ? failure : null;
   const draftStatus = deleted ? '无法保存 · 片段已删除' : saving ? '保存中…' : activeFailure
-    ? (draft!.text !== activeFailure.text || draft!.visualNote !== activeFailure.visualNote ? '保存失败 · 未保存' : '保存失败')
-    : dirty ? '未保存' : '已保存';
+    ? (draft!.text !== activeFailure.text ? '保存失败 · 未保存' : '保存失败')
+    : dirty ? '未保存' : '';
   const returnToDraft = () => {
     const value = current.current;
     if (!value) return;
@@ -181,16 +181,15 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
     const requested = navigation.intent();
     requestAnimationFrame(() => {
       if (!requested.valid() || current.current !== value) return;
-      const input = deleted ? document.querySelector<HTMLTextAreaElement>(`[aria-label="已删除片段的${value.field === 'text' ? '文案' : '画面说明'}草稿"]`)
-        : document.querySelector<HTMLTextAreaElement>('[data-inline-editor] textarea');
+      const input = document.querySelector<HTMLTextAreaElement>('[data-inline-editor] textarea');
       input?.scrollIntoView({ block: 'nearest' }); input?.focus({ preventScroll: true });
     });
   };
   return { draft, dirty, deleted, saving, navigating, finishing, draftStatus, draftError: activeFailure?.message ?? '', returnToDraft, pending, navigate, begin,
-    change: (value: string, field: SegmentTextField = 'text') => {
+    change: (value: string) => {
       const previous = current.current;
       if (previous && !finishing && !flight.current) {
-        const next = { ...previous, [field]: value, field };
+        const next = { ...previous, text: value };
         if (!dirtyDraft(next)) setFailure(null);
         update(next);
       }
@@ -198,7 +197,7 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
     commit, perform, escape, discard,
     save: async () => {
       const value = current.current;
-      const restore = value ? focus.captureSegment(value.field === 'visualNote' ? { id: value.id, note: true } : { id: value.id, column: 'text' }, { preventScroll: true }) : undefined;
+      const restore = value ? focus.captureSegment({ id: value.id, column: 'text' }, { preventScroll: true }) : undefined;
       const requested = navigation.intent();
       if (await commit() && requested.valid()) restore?.(); else restore?.cancel();
     },
