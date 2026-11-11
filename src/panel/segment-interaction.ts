@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { GridApi } from 'ag-grid-community';
-import { queryStatus, saveSegment } from '../shared/client.js';
+import { querySpeech, queryStatus, saveSegment } from '../shared/client.js';
 import { panelServiceUrl } from './service-url.js';
-import type { Segment, ServiceStatus } from '../shared/contracts.js';
+import type { Segment, ServiceStatus, SpeechStatus } from '../shared/contracts.js';
 import type { FocusReturn, segmentFocusCoordinator } from './dialog-focus.js';
 import type { ProjectEditing } from './project-editing.js';
 import type { SegmentDestination, SegmentNavigation } from './segment-navigation.js';
@@ -15,15 +15,17 @@ export type SegmentIntent = { id: string; preventScroll?: boolean } | null;
 type Draft = { id: string; base: string; text: string };
 
 /** 勾选独立于编辑；文案草稿保留修改权交接。 */
-export function useSegmentInteraction({ editing, status, accept, canEdit, failed, navigation, focus, grid }: {
+export function useSegmentInteraction({ editing, status, accept, acceptSpeech, canEdit, failed, navigation, focus, grid }: {
   editing: ProjectEditing; status: ServiceStatus | undefined; accept: (status: ServiceStatus) => void;
+  acceptSpeech: (speech: SpeechStatus) => void;
   canEdit: () => boolean; grid: () => GridApi<Segment> | null; failed: (error: Error) => void;
   navigation: SegmentNavigation; focus: ReturnType<typeof segmentFocusCoordinator>;
 }) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const current = useRef(draft);
   const update = (value: Draft | null) => { current.current = value; setDraft(value); };
-  const [pending, setPending] = useState(false);
+  const [prompt, setPrompt] = useState<{ open: boolean; edge: 'top' | 'bottom'; maxHeight: number } | null>(null);
+  const closePrompt = () => setPrompt(current => current?.open ? { ...current, open: false } : current);
   const promptSource = useRef<HTMLElement | null>(null);
   const latest = useRef({ accept }); latest.current = { accept };
   const [saving, setSaving] = useState(false);
@@ -49,12 +51,12 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
   const dirtyDraft = (value: Draft | null) => !!value && value.text !== value.base;
   const dirty = dirtyDraft(draft);
   const disconnected = () => draftFailed(new Error('编辑连接已断开，草稿已保留；请重新保存或放弃。'));
-  const commit = (): Promise<boolean> => {
+  const commit = (keepEditing = false): Promise<boolean> => {
     if (flight.current) return flight.current;
-    if (finishing) return Promise.resolve(false);
     const value = current.current;
     if (!value) return Promise.resolve(!editing.getState().busy);
     if (editing.getState().busy) return Promise.resolve(false);
+    if (keepEditing && !dirtyDraft(value)) return Promise.resolve(true);
     const version = lifetime.current;
     const valid = () => version === lifetime.current && current.current === value;
     setFinishing(true);
@@ -72,11 +74,17 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
           if (!acquired || !valid()) return false;
         }
         let saved = false;
-        await editing.save('segments', {}, async (token, action) => {
+        await editing.save('segments', { retain: keepEditing }, async (token, action) => {
           const next = await saveSegment(panelServiceUrl(), { id: value.id, text: value.text }, token);
-          action.apply(() => { focus.acceptGridUpdate(() => latest.current.accept(next)); saved = true; });
+          // 持有修改权时不会轮询；从服务核对刚保存的文案对应的配音有效性。
+          const speech = await querySpeech(panelServiceUrl()).catch(() => undefined);
+          action.apply(() => {
+            focus.acceptGridUpdate(() => { latest.current.accept(next); if (speech) acceptSpeech(speech); });
+            if (keepEditing) { setFailure(null); update({ ...value, base: value.text }); }
+            saved = true;
+          });
         }, cause => draftFailed(new Error(`保存失败：${cause.message}`)));
-        if (!saved) return false;
+        if (!saved || keepEditing) return saved;
       } else await editing.cancel('segments');
       const released = await queryStatus(panelServiceUrl());
       if (!valid()) return false;
@@ -103,7 +111,10 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
         // 连续点击可替换目标，但要等上次申请或释放修改权结束，不能在忙态丢弃新目标。
         await previous;
         if (version !== sequence.current || !ticket.valid()) { origin?.cancel(); return; }
-        if (!await (pendingCommit ?? commit())) { ticket.fail(); return; }
+        if (pendingCommit && !await pendingCommit) { ticket.fail(); return; }
+        if (version !== sequence.current || !ticket.valid()) { origin?.cancel(); return; }
+        // 原位保存保留草稿和修改权，切换目标前仍需结束本次编辑。
+        if (!await commit()) { ticket.fail(); return; }
         if (version !== sequence.current || !ticket.valid()) { origin?.cancel(); return; }
         await ticket.arrive(() => {}, destination);
       } finally {
@@ -129,7 +140,7 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
   };
   const discard = async () => {
     if (finishing || flight.current || editing.getState().busy) return;
-    ++sequence.current; setPending(false);
+    ++sequence.current; closePrompt();
     const value = current.current;
     const version = lifetime.current;
     const restore = value ? focus.captureSegment({ id: value.id, column: 'text' }, { preventScroll: true }) : undefined;
@@ -145,9 +156,16 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
     } catch (cause) { restore?.cancel(); if (version === lifetime.current) draftFailed(cause instanceof Error ? cause : new Error('读取项目状态失败')); }
     finally { if (version === lifetime.current) setFinishing(false); }
   };
-  const escape = () => {
+  const escape = (input: HTMLTextAreaElement | null) => {
     if (finishing || flight.current || editing.getState().busy) return;
-    if (dirtyDraft(current.current)) { promptSource.current = document.activeElement as HTMLElement; setPending(true); }
+    if (dirtyDraft(current.current)) {
+      promptSource.current = input;
+      input?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      const bounds = input?.getBoundingClientRect();
+      const above = bounds?.top ?? 0;
+      const below = window.innerHeight - (bounds?.bottom ?? 0);
+      setPrompt({ open: true, edge: above > below ? 'top' : 'bottom', maxHeight: Math.max(0, Math.floor(Math.max(above, below)) - 16) });
+    }
     else if (current.current) void discard();
     else navigate(null);
   };
@@ -185,7 +203,7 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
       input?.scrollIntoView({ block: 'nearest' }); input?.focus({ preventScroll: true });
     });
   };
-  return { draft, dirty, deleted, saving, navigating, finishing, draftStatus, draftError: activeFailure?.message ?? '', returnToDraft, pending, navigate, begin,
+  return { draft, dirty, deleted, saving, navigating, finishing, draftStatus, draftError: activeFailure?.message ?? '', returnToDraft, prompt, navigate, begin,
     change: (value: string) => {
       const previous = current.current;
       if (previous && !finishing && !flight.current) {
@@ -195,17 +213,23 @@ export function useSegmentInteraction({ editing, status, accept, canEdit, failed
       }
     },
     commit, perform, escape, discard,
-    save: async () => {
+    save: async (mode: 'advance' | 'stay') => {
+      if (finishing || flight.current || editing.getState().busy) return;
+      if (mode === 'stay') { await commit(true); return; }
       const value = current.current;
+      const api = grid();
+      const index = value ? api?.getRowNode(value.id)?.rowIndex : null;
+      const next = index == null ? undefined : api?.getDisplayedRowAtIndex(index + 1)?.data;
+      if (next) { navigate({ id: next.id }); return; }
       const restore = value ? focus.captureSegment({ id: value.id, column: 'text' }, { preventScroll: true }) : undefined;
       const requested = navigation.intent();
       if (await commit() && requested.valid()) restore?.(); else restore?.cancel();
     },
     continueEditing: () => {
-      setPending(false);
+      closePrompt();
       requestAnimationFrame(() => {
-        if (promptSource.current?.isConnected) { promptSource.current.focus(); return; }
-        document.querySelector<HTMLTextAreaElement>('[data-inline-editor] textarea')?.focus();
+        const input = promptSource.current?.isConnected ? promptSource.current : document.querySelector<HTMLTextAreaElement>('[data-inline-editor] textarea');
+        input?.focus({ preventScroll: true });
       });
     },
   };

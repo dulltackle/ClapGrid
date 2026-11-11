@@ -18,18 +18,18 @@ type VisualProps = {
   associate: (id: string, trigger: HTMLElement) => void; unlink: (segment: Segment, index?: number) => void;
 };
 
-export function SegmentScriptCell({ data, query, activeId, editorFor }: {
-  data?: Segment; editorFor: (segment: Segment) => ReactNode; query: string; activeId: string | null;
+export function SegmentScriptCell({ data, query, activeId, editorFor, speechLock }: {
+  data?: Segment; editorFor: (segment: Segment) => ReactNode; query: string; activeId: string | null; speechLock: string;
 }) {
   if (!data) return null;
   const editor = editorFor(data);
   // 编辑器覆盖正文，正文继续参与测量，避免修改权切换和输入改变行高。
   return <div className="relative w-full min-w-0">
-    <div data-segment-script title="单击编辑口播文案" onMouseDown={event => event.preventDefault()}
-      className={`min-h-12 max-[600px]:min-h-[70px] cursor-text rounded-md px-1 py-3 text-base hover:bg-muted hover:inset-ring hover:inset-ring-input ${editor ? 'invisible' : ''}`}>
+    <div data-segment-script title={speechLock || '单击编辑口播文案'} aria-disabled={speechLock ? true : undefined} onMouseDown={event => event.preventDefault()}
+      className={`min-h-14 max-[720px]:min-h-[70px] max-[480px]:min-h-[80px] min-[601px]:max-[640px]:min-h-[80px] rounded-md px-1 py-3 text-base ${speechLock ? '' : 'cursor-text hover:bg-muted hover:inset-ring hover:inset-ring-input'} ${editor ? 'invisible' : ''}`}>
       <SearchText text={data.text} query={query} current={data.id === activeId} />
     </div>
-    {editor && <div data-inline-editor className="absolute inset-x-0 top-1 bottom-1 max-[600px]:bottom-0 max-h-[min(50dvh,320px)]">{editor}</div>}
+    {editor && <div data-inline-editor className="absolute inset-x-0 top-1 bottom-1 max-[720px]:inset-y-0 max-h-[min(50dvh,320px)]">{editor}</div>}
   </div>;
 }
 

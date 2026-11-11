@@ -85,7 +85,8 @@ for (const width of [780, 420]) for (const action of ['进入', '切换', '退�
       if (action === '退出') await editor.press('Escape');
       if (action === '保存') await editor.press('Control+Enter');
       if (action === '放弃') await page.getByRole('button', { name: '放弃修改', exact: true }).click();
-      if (action === '进入' || action === '切换') await expect(editor).toBeEditable();
+      if (action === '保存') await expect(editor).toHaveValue('第 2 条测试文案，检查编辑交接。');
+      else if (action === '进入' || action === '切换') await expect(editor).toBeEditable();
       else await expect(editor).toHaveCount(0);
     });
   });

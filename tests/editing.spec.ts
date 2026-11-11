@@ -116,11 +116,15 @@ for (const width of [780, 420]) test(`原位编辑保留行高、画面上下文
     return following.y >= current.y + current.height - 1;
   }).toBe(true);
   await input.fill('第一行'); await input.press('Enter'); await input.pressSequentially('第二行');
-  await expect(input).toHaveValue('第一行\n第二行');
+  await input.press('Enter'); await input.pressSequentially('第三行');
+  await expect(input).toHaveValue('第一行\n第二行\n第三行');
   await expect(editor).toBeVisible();
   await editor.getByRole('button', { name: '保存修改', exact: true }).click();
   await expect(editor).toHaveCount(0);
-  await expect.poll(async () => (await project.status()).snapshot.segments[0]!.text).toBe('第一行\n第二行');
+  await expect(input).toHaveValue('下一条');
+  await input.press('Escape');
+  await expect(input).toHaveCount(0);
+  await expect.poll(async () => (await project.status()).snapshot.segments[0]!.text).toBe('第一行\n第二行\n第三行');
   await expect.poll(async () => (await row.boundingBox())!.height).toBeGreaterThan(initialHeight);
   await row.locator('[data-segment-script]').dblclick();
   await input.fill('不保存的草稿');
@@ -128,7 +132,7 @@ for (const width of [780, 420]) test(`原位编辑保留行高、画面上下文
   await page.getByRole('button', { name: '放弃修改', exact: true }).click();
   await expect(editor).toHaveCount(0);
   await expect.poll(async () => (await project.status()).modification).toBeNull();
-  expect((await project.status()).snapshot.segments[0]!.text).toBe('第一行\n第二行');
+  expect((await project.status()).snapshot.segments[0]!.text).toBe('第一行\n第二行\n第三行');
 });
 
 for (const [width, height] of [[780, 579], [420, 360]]) test(`原位放大缩小保留草稿、焦点与修改权 ${width}×${height}`, async ({ page, project }) => {
@@ -169,9 +173,9 @@ for (const [width, height] of [[780, 579], [420, 360]]) test(`原位放大缩小
   expect((await project.status()).snapshot.segments[0]!.text).toBe('原文');
   await expand.click(); await expect(large).toBeFocused();
   await large.press('Escape');
-  await expect(dialog).toHaveCount(0); await expect(input).toBeFocused();
-  await expect(input).toHaveValue('放大后修改\n第二行');
-  await expand.click(); await expect(large).toBeFocused();
+  await page.getByRole('button', { name: '继续编辑', exact: true }).click();
+  await expect(large).toBeFocused();
+  await expect(large).toHaveValue('放大后修改\n第二行');
   await dialog.getByRole('button', { name: '保存修改', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect.poll(async () => (await project.status()).snapshot.segments[0]!.text).toBe('放大后修改\n第二行');

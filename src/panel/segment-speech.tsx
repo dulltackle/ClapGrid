@@ -56,25 +56,26 @@ export function SegmentSpeechCell({ data, actionsFor, segmentEditingBusy, playin
   const pending = latest?.state === 'accepted' || latest?.state === 'running';
   const problem = latest?.state === 'failed' || latest?.state === 'unknown';
   const active = listening?.segmentId === data.id ? listening : null;
-  const recording = active ?? (!pending && !problem ? audio : undefined);
+  const recording = active ?? (!problem ? audio : undefined);
   const valid = !!recording && !!audio?.valid && audio.taskId === recording.taskId;
   const isPlaying = !!active && playing === active.taskId;
+  const showDuration = valid && !active && !pending;
   const showStatus = !audio?.valid || pending || problem;
   const label = pending ? '生成中…' : primaryLabel;
   return <section data-segment-speech aria-label={`片段 ${data.order} 配音`} className="flex w-full items-center gap-0.5 pt-2"
     onKeyDown={event => {
       if (!active || event.key !== 'Escape' || event.nativeEvent.isComposing || event.defaultPrevented || !event.target || !event.currentTarget.contains(event.target as Node)) return;
       event.preventDefault(); event.stopPropagation();
-      (pending || problem ? menu.current : listenButton.current)?.focus({ preventScroll: true });
+      (problem ? menu.current : listenButton.current)?.focus({ preventScroll: true });
       stop();
     }}>
     {recording && <>
-      <Button ref={listenButton} data-row-entry="speech-listen" variant={valid && !active ? 'outline' : 'ghost'} size="icon-sm"
-        className={valid && !active ? 'w-auto gap-1 px-1.5 tabular-nums text-ok hover:text-ok' : undefined}
+      <Button ref={listenButton} data-row-entry="speech-listen" variant={showDuration ? 'outline' : 'ghost'} size="icon-sm"
+        className={showDuration ? 'w-auto gap-1 px-1.5 tabular-nums text-ok hover:text-ok' : undefined}
         aria-label={active ? isPlaying ? '暂停试听' : '继续试听' : valid ? '试听' : '试听旧配音'}
         title={valid ? '有效配音' : '试听旧配音'} onClick={() => listen(recording)}>
         {isPlaying ? <PauseIcon aria-hidden /> : <TriangleRightIcon aria-hidden />}
-        {valid && !active && <AudioDuration key={recording.url} url={recording.url} />}
+        {showDuration && <AudioDuration key={recording.url} url={recording.url} />}
       </Button>
       {active && <Seek key={active.taskId} player={player} recording={active} />}
     </>}
