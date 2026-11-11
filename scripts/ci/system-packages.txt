@@ -1,4 +1,0 @@
-ffmpeg
-fontconfig
-fonts-noto-cjk
-strace
