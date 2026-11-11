@@ -50,15 +50,15 @@ export function TextEditor({ value, data, change, commit, cancel, busy }: { valu
       event.preventDefault(); event.stopPropagation(); cancel();
     }
   }} className="flex h-full w-full min-w-0 flex-1 flex-col">
-    <div className="flex min-h-0 flex-1 items-center gap-3">
-      <div data-inline-text-box className="relative h-full min-w-0 flex-1">
-        <textarea className="m-0 block h-full min-h-0 w-full resize-none overflow-hidden rounded-md border border-solid border-input bg-background px-1 pt-0.5 pb-6 font-[inherit] text-base text-foreground outline-none" ref={input} aria-label="文案全文" value={text}
+    <div data-inline-text-box className="flex min-h-0 flex-1 items-start gap-2 max-[600px]:flex-col max-[600px]:gap-0">
+      <div className="h-full min-h-0 min-w-0 flex-1 max-[600px]:w-full">
+        <textarea className="m-0 block h-full min-h-0 w-full resize-none overflow-hidden rounded-md border border-solid border-input bg-background px-[3px] pt-[7px] font-[inherit] text-base text-foreground outline-none" ref={input} aria-label="文案全文" value={text}
           readOnly={busy} onChange={event => { setText(event.target.value); change(event.target.value); }} onKeyDownCapture={keys} />
-        <div role="group" aria-label="文案编辑操作" className="absolute right-1 bottom-0.5 flex gap-0.5 rounded-md bg-background">
-          <Button variant="ghost" size="xs" className="size-6 p-0 text-muted-foreground" aria-label="取消修改" title="取消修改（Esc）" onMouseDown={event => event.preventDefault()} disabled={busy} onClick={cancel}><ResetIcon aria-hidden className="size-4" /></Button>
-          <Button variant="ghost" size="xs" className="size-6 bg-primary/10 p-0 text-primary hover:bg-primary/15" aria-label="保存修改" title="保存修改（Ctrl／⌘+Enter）" onMouseDown={event => event.preventDefault()} disabled={busy} onClick={commit}><CheckIcon aria-hidden className="size-4" /></Button>
-          <Button variant="ghost" size="xs" className="size-6 p-0 text-muted-foreground" aria-label="放大编辑" title="放大编辑" onMouseDown={event => event.preventDefault()} onClick={expand}><EnterFullScreenIcon aria-hidden className="size-4" /></Button>
-        </div>
+      </div>
+      <div role="group" aria-label="文案编辑操作" className="mt-1 flex flex-none rounded-md bg-background max-[600px]:mt-0 max-[600px]:self-end">
+        <Button variant="ghost" size="xs" className="size-8 p-0 text-muted-foreground" aria-label="取消修改" title="取消修改（Esc）" onMouseDown={event => event.preventDefault()} disabled={busy} onClick={cancel}><ResetIcon aria-hidden className="size-4" /></Button>
+        <Button variant="ghost" size="xs" className="size-8 bg-primary/10 p-0 text-primary hover:bg-primary/15" aria-label="保存修改" title="保存修改（Ctrl／⌘+Enter）" onMouseDown={event => event.preventDefault()} disabled={busy} onClick={commit}><CheckIcon aria-hidden className="size-4" /></Button>
+        <Button variant="ghost" size="xs" className="size-8 p-0 text-muted-foreground" aria-label="放大编辑" title="放大编辑" onMouseDown={event => event.preventDefault()} onClick={expand}><EnterFullScreenIcon aria-hidden className="size-4" /></Button>
       </div>
     </div>
     <Dialog open={expanded} onOpenChange={open => { if (!open) collapse(); }}>
@@ -76,7 +76,7 @@ export function TextEditor({ value, data, change, commit, cancel, busy }: { valu
         <div className="flex flex-wrap items-center justify-end gap-3">
           <span id="enlarged-editor-help" className="mr-auto text-xs text-muted-foreground">Esc 缩小 · Ctrl／⌘+Enter 保存</span>
           <Button variant="outline" size="sm" disabled={busy} onClick={cancel}>取消修改</Button>
-          <Button size="sm" disabled={busy} onClick={commit}>保存修改</Button>
+          <Button variant="outline" size="sm" disabled={busy} onClick={commit}>保存修改</Button>
         </div>
       </DialogContent>}
     </Dialog>

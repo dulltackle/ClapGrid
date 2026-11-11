@@ -1,5 +1,3 @@
-import { useLayoutEffect, useRef } from 'react';
-
 /** 只折叠英文大小写，保留原文索引、空格及所有非英文字符。 */
 const fold = (text: string) => text.replace(/[A-Z]/g, character => character.toLowerCase());
 export function textMatches(text: string, query: string): [number, number][] {
@@ -14,19 +12,12 @@ export function textMatches(text: string, query: string): [number, number][] {
   return matches;
 }
 
-export function SearchText({ text, query, current, visit, rowHeight }: { text: string; query: string; current: boolean; visit: number; rowHeight: number }) {
-  const container = useRef<HTMLSpanElement>(null);
+export function SearchText({ text, query, current }: { text: string; query: string; current: boolean }) {
   const ranges = textMatches(text, query);
-  useLayoutEffect(() => {
-    const element = container.current;
-    if (!current || !element) return;
-    const mark = element.querySelector('mark');
-    if (mark) element.scrollTop = mark.offsetTop - 12;
-  }, [current, visit, rowHeight]);
   const parts = []; let end = 0;
   for (const [start, next] of ranges) {
     parts.push(text.slice(end, start), <mark className={current ? "bg-[#ffd35c] text-inherit" : "bg-[#fff0a6] text-inherit"} key={start}>{text.slice(start, next)}</mark>); end = next;
   }
   parts.push(text.slice(end));
-  return <span ref={container} style={current ? { maxHeight: rowHeight - 20 } : undefined} className={`text-summary w-full whitespace-pre-wrap wrap-anywhere text-base ${current ? 'text-search-current block max-h-[220px] overflow-y-auto relative' : 'line-clamp-2 max-h-[2lh]'}`}>{parts}</span>;
+  return <span className={`text-summary block whitespace-pre-wrap wrap-anywhere text-base ${current ? 'text-search-current' : ''}`}>{parts}</span>;
 }

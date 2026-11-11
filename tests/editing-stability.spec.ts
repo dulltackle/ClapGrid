@@ -74,7 +74,7 @@ for (const width of [780, 420]) for (const action of ['进入', '切换', '退�
     const script = (index: number) => page.locator(`[row-id="${ids[index]}"] [data-segment-script]`);
     const editor = page.getByLabel('文案全文', { exact: true });
     if (action !== '进入') { await script(0).click(); await expect(editor).toBeEditable(); }
-    if (action === '保存' || action === '放弃') await editor.fill('更新后的文案');
+    if (action === '保存' || action === '放弃') await editor.fill('第 1 条修改文案，检查编辑交接。');
     if (action === '放弃') {
       await editor.press('Escape');
       await page.getByRole('button', { name: '放弃修改', exact: true }).waitFor();

@@ -50,7 +50,7 @@ test('原位编辑保留勾选，历史及编辑键盘保留表格上下文', as
   await page.locator(`[row-id="${a}"] input[type="checkbox"]`).click();
   await page.locator(`[row-id="${b}"] [col-id="text"]`).press('F2');
   await expect.poll(() => selected(page)).toEqual([a]); await page.keyboard.press('Escape');
-  await page.getByLabel('片段 2 配音更多操作', { exact: true }).click(); await page.getByRole('menuitem', { name: '历史', exact: true }).click();
+  await page.getByLabel('片段 2 配音更多操作', { exact: true }).click(); await page.getByRole('menuitem', { name: '配音记录与保留音频', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible(); await expect.poll(() => selected(page)).toEqual([a]);
   await page.keyboard.press('Escape'); await expect(page.getByRole('dialog')).toHaveCount(0); await expect.poll(() => selected(page)).toEqual([a]);
   const tray = page.getByRole('button', { name: '片段 2 画面素材（0）' });

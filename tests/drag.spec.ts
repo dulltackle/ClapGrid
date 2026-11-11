@@ -100,12 +100,21 @@ for (const width of [1600, 420]) test(`虚拟滚轮后静止指针采用当前�
   const box = (await page.locator(`[row-id="${ids[4]}"] [col-id="order"]`).boundingBox())!;
   const x = box.x + box.width / 2, y = box.y + box.height * .8;
   await page.mouse.wheel(0, box.height * 40);
-  const current = () => page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[row-id]')?.getAttribute('row-id'), { x, y });
-  await expect.poll(current).not.toBe(ids[4]);
-  const id = (await current())!; expect(ids.indexOf(id)).toBeGreaterThan(30);
-  const line = page.getByLabel('口播片段插入位置', { exact: true }); await expect(line).toHaveAttribute('data-target-id', id); await expect(line).toHaveAttribute('data-placement', 'after');
+  const current = () => page.evaluate(({ x, y }) => {
+    const row = document.elementFromPoint(x, y)?.closest('[row-id]');
+    const bounds = row?.getBoundingClientRect();
+    return { id: row?.getAttribute('row-id'), after: !!bounds && y >= bounds.top + bounds.height / 2 };
+  }, { x, y });
+  await expect.poll(async () => ids.indexOf((await current()).id ?? '')).toBeGreaterThan(30);
+  const line = page.getByLabel('口播片段插入位置', { exact: true });
+  await expect.poll(async () => {
+    const { id, after } = await current();
+    return await line.getAttribute('data-target-id') === id
+      && await line.getAttribute('data-placement') === (after ? 'after' : 'before');
+  }).toBe(true);
+  const { id, after } = await current();
   await page.mouse.up();
-  await expect.poll(async () => { const order = (await project.status()).snapshot.segments.map(s => s.id); return order.indexOf(ids[0]!) - order.indexOf(id); }).toBe(1);
+  await expect.poll(async () => { const order = (await project.status()).snapshot.segments.map(s => s.id); return order.indexOf(ids[0]!) - order.indexOf(id!); }).toBe(after ? 1 : -1);
 });
 
 for (const edge of ['下', '上'] as const) test(`拖拽${edge}边缘自动滚动经过真实指针及虚拟行`, async ({ page, project }) => {

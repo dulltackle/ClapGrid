@@ -16,7 +16,7 @@ export function segmentActions({ segment, segments, checkedIds = [], speech, rea
   const mutable = (area: Area, cause = '', ids?: string[]) => action(area, reason || cause, ids);
   const insertReason = targets.length !== 1 ? '仅能在单个口播片段上方或下方添加' : '';
   return {
-    ...state, primaryLabel: pending || state.latest?.state === 'failed' || state.latest?.state === 'unknown' ? state.state : state.audio?.valid ? '试听' : state.audio ? '更新配音' : '生成配音',
+    ...state, primaryLabel: pending || state.latest?.state === 'failed' || state.latest?.state === 'unknown' ? state.state : state.audio?.valid ? '试听' : state.audio ? '待更新' : '生成配音',
     editText: mutable('script'), associate: mutable('visual'), changeVisual: mutable('visual'),
     unlink: mutable('visual', segmentMaterials(segment).length ? '' : '尚未关联画面'), preview: action('visual', segmentMaterials(segment).length ? '' : '尚未关联画面'),
     generate: mutable('speech', pending ? '配音任务进行中，请等待完成' : !(draftText ?? segment.text).trim() ? '请先填写文案' : ''),

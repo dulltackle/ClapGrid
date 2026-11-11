@@ -32,7 +32,7 @@ for (const [state, label] of [['accepted', '排队中'], ['running', '生成中'
 for (const valid of [false, true]) test(`已有${valid ? '有效' : '待更新'}配音按有效性提供主动作`, () => {
   const speech = { tasks: [], audio: [{ segmentId: 'a', taskId: 'audio', valid }] } as unknown as SpeechStatus;
   const actions = segmentActions({ segment: segments[0]!, segments, speech });
-  expect(actions.primaryLabel).toBe(valid ? '试听' : '更新配音'); expect(actions.listen.enabled).toBe(true); expect(actions.generate.enabled).toBe(true);
+  expect(actions.primaryLabel).toBe(valid ? '试听' : '待更新'); expect(actions.listen.enabled).toBe(true); expect(actions.generate.enabled).toBe(true);
   expect(actions.state).toBe(valid ? '有效配音' : '配音待更新');
 });
 

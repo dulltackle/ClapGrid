@@ -23,7 +23,7 @@ test('受控兼容面板提示保护编辑草稿、保存中、本行菜单、�
  try { await editor.press('Control+Enter');await gate.received;await expect(refresh).toBeDisabled(); } finally {gate.release();}
  await gate.delivered;await expect(refresh).toBeEnabled();
  await expect.poll(()=>activity.at(-1)).toBe(false);
- await page.getByRole('button',{name:'片段 1 本行菜单',exact:true}).click();await expect(refresh).toBeDisabled();
+ await page.locator('[row-index="0"] [data-segment-script]').click({button:'right'});await expect(refresh).toBeDisabled();
  await page.keyboard.press('Escape');await expect(refresh).toBeEnabled();
  await page.getByRole('button',{name:'更多',exact:true}).click();await expect(refresh).toBeDisabled();
  await page.keyboard.press('Escape');await expect(refresh).toBeEnabled();

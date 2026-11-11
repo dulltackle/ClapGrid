@@ -23,7 +23,10 @@ for (const text of ['短句。', '欢迎来到 ClapGrid！今天用一分钟，�
     const right = parseFloat(style.borderRightWidth) + parseFloat(style.paddingRight);
     return { x: rect.x + left, y: rect.y + parseFloat(style.borderTopWidth) + parseFloat(style.paddingTop), width: rect.width - left - right, fontSize: style.fontSize, lineHeight: style.lineHeight };
   });
-  expect(after).toEqual(before);
+  expect(after).toMatchObject({ x: before.x, y: before.y, fontSize: before.fontSize, lineHeight: before.lineHeight });
+  const buttons = (await row.getByRole('group', { name: '文案编辑操作' }).boundingBox())!;
+  expect(after.x + after.width).toBeLessThan(buttons.x);
+  expect(buttons.x + buttons.width).toBeLessThanOrEqual(before.x + before.width + 4);
   expect(await row.locator('[data-segment-support]').boundingBox()).toEqual(support);
   expect(await row.locator('[data-segment-speech]').boundingBox()).toEqual(speech);
 });
@@ -101,11 +104,11 @@ for (const width of [780, 420]) test(`原位编辑保留行高、画面上下文
   const editor = row.locator('[data-inline-editor]');
   const input = page.getByLabel('文案全文', { exact: true });
   await expect(row).toHaveCSS('height', `${initialHeight}px`);
-  await expect(editor.getByRole('button', { name: '片段 1 画面素材（0）' })).toBeInViewport();
+  await expect(row.getByRole('button', { name: '片段 1 画面素材（0）' })).toBeInViewport();
   await expect(editor.getByRole('button', { name: '保存修改', exact: true })).toBeVisible();
   await expect.poll(async () => {
-    const bounds = (await editor.boundingBox())!, support = (await editor.locator('[data-segment-support]').boundingBox())!;
-    return bounds.height <= initialHeight && support.y + support.height <= bounds.y + bounds.height + 1;
+    const bounds = (await editor.boundingBox())!, support = (await row.locator('[data-segment-support]').boundingBox())!;
+    return bounds.height <= initialHeight && support.x >= bounds.x + bounds.width;
   }).toBe(true);
   await expect(input).toHaveCSS('outline-style', 'none');
   await expect.poll(async () => {
@@ -118,7 +121,7 @@ for (const width of [780, 420]) test(`原位编辑保留行高、画面上下文
   await editor.getByRole('button', { name: '保存修改', exact: true }).click();
   await expect(editor).toHaveCount(0);
   await expect.poll(async () => (await project.status()).snapshot.segments[0]!.text).toBe('第一行\n第二行');
-  await expect(row).toHaveCSS('height', `${initialHeight}px`);
+  await expect.poll(async () => (await row.boundingBox())!.height).toBeGreaterThan(initialHeight);
   await row.locator('[data-segment-script]').dblclick();
   await input.fill('不保存的草稿');
   await editor.getByRole('button', { name: '取消修改', exact: true }).click();

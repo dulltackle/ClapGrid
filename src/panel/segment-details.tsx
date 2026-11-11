@@ -10,7 +10,7 @@ export function SegmentDraftPrompt({ controller, busy }: { controller: Controlle
       <AlertDialogDescription>放弃后恢复已保存内容，或继续编辑保留草稿。</AlertDialogDescription>
       <div className="flex flex-wrap justify-end gap-2">
         <AlertDialogCancel disabled={busy} onClick={controller.continueEditing}>继续编辑</AlertDialogCancel>
-        <Button disabled={busy} onClick={() => { void controller.discard(); }}>放弃修改</Button>
+        <Button variant="outline" disabled={busy} onClick={() => { void controller.discard(); }}>放弃修改</Button>
       </div>
     </AlertDialogContent>
   </AlertDialog>;
