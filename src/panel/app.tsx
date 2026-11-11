@@ -731,7 +731,7 @@ export function App() {
     </section></DetailPanel>}
     <SegmentDraftPrompt controller={segmentDetail} busy={editState.busy} />
     <footer ref={statusFooter} className="flex-none border-0 border-t border-solid border-input pt-1 text-xs text-muted-foreground [&_p]:m-0 [&_p]:wrap-anywhere" aria-label="项目状态">
-      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5 max-[600px]:gap-x-1">
         {selectedIds.length > 0 && <>
           <span className="flex-none" aria-label="勾选范围">已勾选 {selectedIds.length} 条</span>
           <Button variant="ghost" size="xs" onClick={() => grid.current?.deselectAll()}>清空勾选</Button>
