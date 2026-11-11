@@ -9,16 +9,18 @@ for (const width of [1600, 420]) test(`原位草稿页脚区分失败后的修�
   const input = page.getByLabel('文案全文', { exact: true });
   const footer = page.getByLabel('项目状态', { exact: true });
   const state = footer.locator('[data-save-status]');
+  const recover = footer.getByRole('button', { name: '回到草稿', exact: true });
   await expect(state).toHaveCount(0);
   await input.fill('第一版草稿');
-  await expect(state).toHaveText('未保存');
+  await expect(state).toHaveCount(0);
+  await expect(recover).toHaveCount(0);
   await page.route('**/api/segments/edit', route => route.fulfill({ status: 500, json: { error: '保存服务故障' } }));
   await input.press('Control+Enter');
   await expect(state).toHaveText('保存失败');
   await expect(page.getByLabel('操作异常', { exact: true })).toContainText('保存服务故障');
   await input.fill('第二版草稿');
   await expect(state).toHaveText('保存失败 · 未保存');
-  await footer.getByRole('button', { name: '回到草稿', exact: true }).click();
+  await recover.click();
   await expect(input).toBeFocused();
   await page.screenshot({ path: testInfo.outputPath('draft-status.png') });
   await expect(footer.getByRole('button', { name: /保存修改|放弃修改|重试/ })).toHaveCount(0);
@@ -26,7 +28,8 @@ for (const width of [1600, 420]) test(`原位草稿页脚区分失败后的修�
   await expect(state).toHaveCount(0);
   await expect(page.getByLabel('操作异常', { exact: true })).toHaveCount(0);
   await input.fill('第二版草稿');
-  await expect(state).toHaveText('未保存');
+  await expect(state).toHaveCount(0);
+  await expect(recover).toHaveCount(0);
   await page.unroute('**/api/segments/edit');
   const gate = await holdResponse(page, '/api/segments/edit');
   try {
@@ -35,7 +38,7 @@ for (const width of [1600, 420]) test(`原位草稿页脚区分失败后的修�
   } finally { gate.release(); }
   await gate.delivered;
   await expect(state).toHaveCount(0);
-  await expect(footer.getByRole('button', { name: '回到草稿', exact: true })).toHaveCount(0);
+  await expect(recover).toHaveCount(0);
   await expect(page.getByLabel('操作异常', { exact: true })).toHaveCount(0);
 });
 
@@ -90,10 +93,26 @@ test('原位草稿滚出虚拟表格后回到草稿并保留内容', async ({ pa
   await page.goto(project.url);
   await page.locator(`[row-id="${id}"] [data-segment-script]`).dblclick();
   const input = page.getByLabel('文案全文', { exact: true });
+  const recover = page.getByRole('button', { name: '回到草稿', exact: true });
+  const viewport = page.locator('.ag-grid-viewport');
   await input.fill('滚动前的草稿');
-  await page.locator('.ag-grid-viewport').evaluate(element => { element.scrollTop = element.scrollHeight; });
+  await expect(recover).toHaveCount(0);
+  // 草稿正文完全被固定表头挡住，底栏仍在视野内。
+  await viewport.evaluate(element => {
+    const editor = element.querySelector('[data-inline-text-box] textarea')!.getBoundingClientRect();
+    const header = element.querySelector('.ag-header')!.getBoundingClientRect();
+    element.scrollTop += Math.ceil(editor.bottom - header.bottom) + 1;
+  });
+  await expect(input).toBeAttached();
+  await expect(page.getByRole('button', { name: '保存修改' })).toBeInViewport();
+  await expect(recover).toBeVisible();
+  await viewport.evaluate(element => { element.scrollTop = 0; });
+  await expect(recover).toHaveCount(0);
+
+  await viewport.evaluate(element => { element.scrollTop = element.scrollHeight; });
   await expect(input).not.toBeInViewport();
-  await page.getByRole('button', { name: '回到草稿', exact: true }).click();
+  await recover.click();
   await expect(input).toBeInViewport(); await expect(input).toBeFocused();
   await expect(input).toHaveValue('滚动前的草稿');
+  await expect(recover).toHaveCount(0);
 });

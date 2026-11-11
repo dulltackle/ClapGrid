@@ -19,7 +19,8 @@ for (const entry of ['首次进入', '切换'] as const) test(`${entry}文案编
         .filter(element => element.querySelector('[data-segment-order]') || ['新增口播片段', '生成配音'].includes(element.textContent!.trim()));
       samples.push(buttons.map(element => {
         const rect = element.getBoundingClientRect();
-        return { opacity: getComputedStyle(element).opacity, x: rect.x, y: rect.y, width: rect.width, height: rect.height, label: element.textContent!.trim() };
+        const rowTop = element.closest('[row-id]')?.getBoundingClientRect().y ?? 0;
+        return { opacity: getComputedStyle(element).opacity, x: rect.x, y: rect.y - rowTop, width: rect.width, height: rect.height, label: element.textContent!.trim() };
       }));
       const focusedCell = document.querySelector('.ag-cell-focus');
       if (focusedCell) samples.at(-1)!.push({ opacity: '', x: 0, y: 0, width: 0, height: 0, label: '单元格', border: getComputedStyle(focusedCell).borderTopColor });

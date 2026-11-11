@@ -18,7 +18,7 @@ for (const width of [1600, 780, 420]) test(`勾选与浏览、编辑、菜单和
   await row(a!).locator('input[type="checkbox"]').click();
   await expect(input).toHaveValue('B 已修改');
   expect((await project.status()).snapshot.segments[1]!.text).toBe('B');
-  await expect(page.locator('[data-save-status]')).toHaveText('未保存');
+  await expect(page.getByRole('button', { name: '回到草稿' })).toHaveCount(0);
   await row(d!).locator('[col-id="text"]').press('F2');
   await expect(input).toHaveValue('D');
   expect((await project.status()).snapshot.segments[1]!.text).toBe('B 已修改');
@@ -201,7 +201,7 @@ for (const action of ['Esc', '切换', '新增'] as const) test(`旧${action}等
   } finally { gate.release(); }
   await gate.delivered;
   await expect(input).toHaveValue('新过程的 B 草稿');
-  await expect(page.locator('[data-save-status]')).toHaveText('未保存');
+  await expect(page.getByRole('button', { name: '回到草稿' })).toHaveCount(0);
   await expect(page.getByLabel('口播片段详情', { exact: true })).toHaveCount(0);
   expect((await project.status()).snapshot.segments.map(segment => segment.text)).toEqual(['A', 'B']);
 });

@@ -1,34 +1,54 @@
 import { test, expect } from './helpers/project.js';
 
-for (const text of ['短句。', '欢迎来到 ClapGrid！今天用一分钟，体验从文案到口播视频的制作流程。']) test(`切换文案编辑时文字区域和周边布局保持稳定：${text}`, async ({ page, project }) => {
+for (const [width, height] of [[1280, 800], [780, 579]] as const) test(`双层编辑框占满文案列且行高随草稿变化 ${width}×${height}`, async ({ page, project }) => {
+  const text = '欢迎来到 ClapGrid！今天用一分钟，体验从文案到口播视频的制作流程。\n接下来，我们来看怎样为口播片段准备文案和画面素材。';
   const [id] = await project.seed([text]);
-  await page.setViewportSize({ width: 780, height: 579 });
+  await page.setViewportSize({ width, height });
   await page.goto(project.url);
   const row = page.locator(`[row-id="${id}"]`);
   const script = row.locator('[data-segment-script]');
-  const before = await script.evaluate(element => {
-    const summary = element.querySelector('.text-summary')!;
-    const rect = summary.getBoundingClientRect();
-    const style = getComputedStyle(summary);
-    return { x: rect.x, y: rect.y, width: rect.width, fontSize: style.fontSize, lineHeight: style.lineHeight };
-  });
+  const column = (await script.boundingBox())!;
   const support = await row.locator('[data-segment-support]').boundingBox();
   const speech = await row.locator('[data-segment-speech]').boundingBox();
   await script.click();
   const input = page.getByLabel('文案全文', { exact: true });
   await expect(input).toBeFocused();
-  const after = await input.evaluate(element => {
-    const rect = element.getBoundingClientRect(), style = getComputedStyle(element);
-    const left = parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft);
-    const right = parseFloat(style.borderRightWidth) + parseFloat(style.paddingRight);
-    return { x: rect.x + left, y: rect.y + parseFloat(style.borderTopWidth) + parseFloat(style.paddingTop), width: rect.width - left - right, fontSize: style.fontSize, lineHeight: style.lineHeight };
-  });
-  expect(after).toMatchObject({ x: before.x, y: before.y, fontSize: before.fontSize, lineHeight: before.lineHeight });
-  const buttons = (await row.getByRole('group', { name: '文案编辑操作' }).boundingBox())!;
-  expect(after.x + after.width).toBeLessThan(buttons.x);
-  expect(buttons.x + buttons.width).toBeLessThanOrEqual(before.x + before.width + 4);
+  const editor = row.locator('[data-inline-text-box]');
+  await expect(editor).toHaveCSS('border-top-color', 'rgb(39, 39, 42)');
+  const box = (await editor.boundingBox())!;
+  expect(box.x).toBe(column.x);
+  expect(box.width).toBe(column.width);
+  const footer = editor.getByRole('group', { name: '文案编辑操作' });
+  const help = footer.getByText('Ctrl+↵ 保存并编辑下一句 · Alt+↵ 仅保存');
+  const inputBox = (await input.boundingBox())!;
+  const helpBox = (await help.boundingBox())!;
+  let right = helpBox.x + helpBox.width;
+  for (const name of ['放大编辑', '取消修改', '保存修改']) {
+    const button = footer.getByRole('button', { name, exact: true });
+    await expect(button).toBeInViewport({ ratio: 0.999 });
+    const bounds = (await button.boundingBox())!;
+    expect(bounds.y).toBeGreaterThanOrEqual(inputBox.y + inputBox.height);
+    expect(bounds.x).toBeGreaterThanOrEqual(right);
+    expect(Math.min(bounds.width, bounds.height)).toBeGreaterThanOrEqual(32);
+    right = bounds.x + bounds.width;
+  }
+  await expect(footer.getByRole('button', { name: '保存修改' })).toHaveCSS('background-color', 'rgb(39, 39, 42)');
   expect(await row.locator('[data-segment-support]').boundingBox()).toEqual(support);
   expect(await row.locator('[data-segment-speech]').boundingBox()).toEqual(speech);
+
+  const allLinesVisible = async () => {
+    await expect(input).toBeInViewport({ ratio: 0.999 });
+    expect(await input.evaluate(node => node.scrollTop === 0 && node.scrollHeight <= node.clientHeight + 1)).toBe(true);
+  };
+  await allLinesVisible();
+  const rowHeight = async () => (await row.boundingBox())!.height;
+  const originalHeight = await rowHeight();
+  await input.fill('再添加一行。\n'.repeat(14) + '最后一行。');
+  await expect.poll(rowHeight).toBeGreaterThan(originalHeight);
+  await allLinesVisible();
+  await input.fill('短句。');
+  await expect.poll(rowHeight).toBeLessThan(originalHeight);
+  await allLinesVisible();
 });
 
 test('单击进入文案编辑后光标位于末尾，不显示滚动条且输入保留原文', async ({ page, project }) => {
@@ -41,8 +61,7 @@ test('单击进入文案编辑后光标位于末尾，不显示滚动条且输�
     const textarea = node as HTMLTextAreaElement;
     return textarea.selectionStart === textarea.value.length && textarea.selectionEnd === textarea.value.length;
   })).toBe(true);
-  await expect(input).toHaveCSS('overflow-x', 'hidden');
-  await expect(input).toHaveCSS('overflow-y', 'hidden');
+  expect(await input.evaluate(node => node.scrollWidth <= node.clientWidth && node.scrollHeight <= node.clientHeight)).toBe(true);
   await input.pressSequentially('!');
   await expect(input).toHaveValue('保留这段原文!');
 });
@@ -94,7 +113,7 @@ test('保存草稿期间连续点击文案只提交一次并进入最后点击�
   expect((await project.status()).snapshot.segments.map(segment => segment.text)).toEqual(['A 草稿', 'B', 'C']);
 });
 
-for (const width of [780, 420]) test(`原位编辑保留行高、画面上下文和内嵌操作 ${width}`, async ({ page, project }) => {
+for (const width of [780, 420]) test(`原位编辑保留画面上下文并可用底栏保存或放弃 ${width}`, async ({ page, project }) => {
   const [id, next] = await project.seed(['原文', '下一条']);
   await page.setViewportSize({ width, height: 579 });
   await page.goto(project.url);
@@ -103,12 +122,11 @@ for (const width of [780, 420]) test(`原位编辑保留行高、画面上下文
   await row.locator('[data-segment-script]').dblclick();
   const editor = row.locator('[data-inline-editor]');
   const input = page.getByLabel('文案全文', { exact: true });
-  await expect(row).toHaveCSS('height', `${initialHeight}px`);
   await expect(row.getByRole('button', { name: '片段 1 画面素材（0）' })).toBeInViewport();
   await expect(editor.getByRole('button', { name: '保存修改', exact: true })).toBeVisible();
   await expect.poll(async () => {
     const bounds = (await editor.boundingBox())!, support = (await row.locator('[data-segment-support]').boundingBox())!;
-    return bounds.height <= initialHeight && support.x >= bounds.x + bounds.width;
+    return support.x >= bounds.x + bounds.width;
   }).toBe(true);
   await expect(input).toHaveCSS('outline-style', 'none');
   await expect.poll(async () => {
