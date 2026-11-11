@@ -16,41 +16,21 @@ jobs:
   process-trace:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ghcr.io/dulltackle/clapgrid-ci@sha256:9057c98d339c39d84719ee2d15a7930c77326d901699b0faedd3b1804796501b
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      # 仅进程追踪作业需要追踪容器内子进程。
+      options: --init --shm-size=1g --cap-add=SYS_PTRACE
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/test-environment
         with:
-          node-version: '22.23.4'
-          cache: npm
-      - name: 生成系统依赖缓存键
-        id: system-key
-        shell: bash
-        run: echo "key=system-debs-${ImageOS}-${ImageVersion}-$(sha256sum scripts/ci/system-packages.txt | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
-      - name: 恢复系统依赖缓存
-        id: system-cache
-        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: .cache/system-packages/*.deb
-          key: ${{ steps.system-key.outputs.key }}
-      - name: 准备媒体、字体及进程追踪依赖
-        shell: bash
-        timeout-minutes: 5
-        env:
-          CLAPGRID_APT_CACHE_HIT: ${{ steps.system-cache.outputs.cache-hit || 'false' }}
-          CLAPGRID_APT_LOG: .cache/process-trace/setup.log
-        run: scripts/ci/install-system-packages.sh ffmpeg fontconfig fonts-noto-cjk strace
-      - name: 保存系统依赖缓存
-        if: steps.system-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: .cache/system-packages/*.deb
-          key: ${{ steps.system-key.outputs.key }}
-      - name: 安装锁定依赖
-        run: |
-          set -o pipefail
-          npm ci 2>&1 | tee .cache/process-trace/npm-ci.log
-      - name: 安装固定版本页面渲染浏览器
-        run: node_modules/.bin/playwright install --with-deps chromium-headless-shell
+          log-directory: .cache/process-trace
       - name: 验证拒绝窗口及真实 FFmpeg 正向对照
         run: node scripts/verify-speech-export-processes.mjs .cache/process-trace
       - name: 发布结果摘要
@@ -58,7 +38,7 @@ jobs:
         run: |
           mkdir -p .cache/process-trace
           if [ ! -f .cache/process-trace/summary.md ]; then
-            printf '%s\n' '# Linux 导出拒绝进程追踪' '' '未执行：前置安装或工作流步骤失败；请检查作业日志和 setup.log/npm-ci.log。' '' '受控供应商测试，不作为真实供应商或宿主验收。' > .cache/process-trace/summary.md
+            printf '%s\n' '# Linux 导出拒绝进程追踪' '' '未执行：前置安装或工作流步骤失败；请检查作业日志和 environment.log/npm-ci.log。' '' '受控供应商测试，不作为真实供应商或宿主验收。' > .cache/process-trace/summary.md
           fi
           cat .cache/process-trace/summary.md >> "$GITHUB_STEP_SUMMARY"
       - name: 留存原始追踪、测试日志和结果摘要

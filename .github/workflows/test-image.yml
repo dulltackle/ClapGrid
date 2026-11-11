@@ -1,0 +1,45 @@
+name: 构建并发布 CI 测试镜像
+
+on:
+  push:
+    branches: ['ci-image/**']
+    paths: ['scripts/ci/test-image/**', '.github/workflows/test-image.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: github.repository == 'dulltackle/ClapGrid' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/ci-image/'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/dulltackle/clapgrid-ci
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: 构建并检查测试镜像
+        run: |
+          docker build --platform linux/amd64 --tag "$IMAGE:$GITHUB_SHA" scripts/ci/test-image
+          docker run --rm --init --cap-add=SYS_PTRACE "$IMAGE:$GITHUB_SHA" bash -euc '
+            set -o pipefail
+            ffmpeg -version
+            ffprobe -version
+            fc-list :lang=zh family | grep -F "Noto Sans CJK"
+            "$CHROME_BIN" --headless --no-sandbox --disable-dev-shm-usage --dump-dom "data:text/html,clapgrid" | grep -F clapgrid
+            "$PLAYWRIGHT_BROWSERS_PATH"/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell --no-sandbox --dump-dom "data:text/html,clapgrid" | grep -F clapgrid
+            strace -f -o /tmp/clapgrid.trace node -e ""
+          '
+      - name: 发布镜像并记录固定摘要
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          docker push "$IMAGE:$GITHUB_SHA"
+          digest=$(docker image inspect "$IMAGE:$GITHUB_SHA" --format '{{index .RepoDigests 0}}')
+          printf 'CI 测试镜像：`%s`\n' "$digest" | tee -a "$GITHUB_STEP_SUMMARY"

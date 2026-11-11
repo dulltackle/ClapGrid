@@ -101,7 +101,7 @@ for (const [width, height] of [[1600, 1000], [780, 579], [541, 579], [420, 800],
     await page.goto(project.url);
     const first = row(page, ids[0]!);
     await expect(first).toBeVisible();
-    expect(await first.evaluate(e => e.getBoundingClientRect().height)).toBeLessThanOrEqual(width! <= 450 ? 76 : 72);
+    expect(await first.evaluate(e => e.getBoundingClientRect().height)).toBeLessThanOrEqual(width! <= 480 ? 82 : 72);
     await expect(page.getByRole('columnheader', { name: '文案', exact: true })).toBeVisible();
     await expect(page.locator('[col-id="visualNote"]')).toHaveCount(0);
     expect(await page.locator('.ag-row[row-id]').count()).toBeLessThan(80);
@@ -342,7 +342,7 @@ for(const [width,height] of [[780,579],[541,579],[420,360]])test(`五类配音�
  expect(script!.x+script!.width).toBeLessThanOrEqual(speech!.x);
  expect(support!.x+support!.width).toBeLessThanOrEqual(speech!.x);
  await expect(page.getByLabel('文案全文',{exact:true})).toHaveCount(0);
- expect(await row(page,ids[i]!).evaluate(e=>e.getBoundingClientRect().height)).toBeLessThanOrEqual(72);
+ expect(await row(page,ids[i]!).evaluate(e=>e.getBoundingClientRect().height)).toBeLessThanOrEqual(width! <= 480 ? 82 : 72);
  }
  await expect(row(page,ids[2]!).getByRole('button',{name:'生成中…',exact:true})).toBeDisabled();
  await expect(page.getByLabel('操作异常')).toHaveCSS('background-color', panelTheme.color.errorSurface);

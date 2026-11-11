@@ -47,8 +47,14 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
   const listen = () => {
     // 不观察控件 focus/blur 和普通 scroll：卸载、轮询、恢复自身也会产生这些事件。
     const events = ['pointerdown', 'keydown', 'beforeinput', 'input', 'wheel', 'touchmove'] as const;
-    // Escape 可能被业务忙态拒绝；只有实际允许的关闭才在 close 中使旧意图失效。
-    const interaction = (event: Event) => { if (!(event instanceof KeyboardEvent && event.key === 'Escape')) cancelPending(); };
+    const interaction = (event: Event) => {
+      if (event instanceof KeyboardEvent) {
+        // 忙态可以忽略 Escape；长按保存键也不应撤销第一次保存请求的焦点交接。
+        if (event.key === 'Escape' || (event.repeat && event.key === 'Enter' && (event.ctrlKey || event.metaKey || event.altKey)
+          && event.target instanceof HTMLTextAreaElement)) return;
+      }
+      cancelPending();
+    };
     const leave = () => { present = false; cancelPending(); };
     const enter = () => { present = true; cancelPending(); };
     const visibility = () => { present = document.visibilityState !== 'hidden'; cancelPending(); };

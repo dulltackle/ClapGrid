@@ -34,6 +34,11 @@ import { panelCompatibility, panelNeedsRefresh, panelRestoreKey, readPanelRestor
 
 // 页面与表格共享语义变量；固定亮色，不跟随宿主主题。
 const segmentRowHeight = 50;
+const rowSelectionLabels = {
+  ariaRowToggleSelection: '在勾选框上按空格切换勾选',
+  ariaRowSelect: '在勾选框上按空格勾选本行',
+  ariaRowDeselect: '在勾选框上按空格取消勾选本行',
+};
 const compactPanel = window.matchMedia('(max-width: 600px)');
 const listenToPanelWidth = (change: () => void) => {
   compactPanel.addEventListener('change', change);
@@ -293,7 +298,7 @@ export function App() {
     inline: (id, intent) => navigationView.current!.begin(id, intent), failed,
   }));
   useEffect(() => () => navigation.dispose(), [navigation]);
-  const segmentDetail = useSegmentInteraction({ editing, status, accept: setStatus, failed, navigation, focus: focusReturns, grid: () => grid.current,
+  const segmentDetail = useSegmentInteraction({ editing, status, accept: setStatus, acceptSpeech: setSpeech, failed, navigation, focus: focusReturns, grid: () => grid.current,
     canEdit: () => !panelRestore && !!status && !status.taskLocked && !speech?.locked && !exports.exports?.locked,
   });
   navigationView.current = segmentDetail;
@@ -515,7 +520,10 @@ export function App() {
   const exportProblems = [...exportTasks.slice(-1), ...segments.flatMap(segment =>
     visualPreviews.filter(task => task.preview?.segmentId === segment.id).slice(-1))].filter(isTaskProblem);
   const progress = taskProgress(speech, exportTasks, visualPreviews);
-  const lock = speech?.locked ? '配音进行中，项目已锁定；可查询和试听' : exports.exports?.locked ? '导出进行中，项目已锁定' : status?.taskLocked ? '制作任务进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : '';
+  const activeSpeech = speech?.tasks.find(task => task.state === 'running') ?? speech?.tasks.find(task => task.state === 'accepted');
+  const speechOrder = segments.find(segment => segment.id === activeSpeech?.segmentId)?.order;
+  const speechLock = speech?.locked ? `${speechOrder == null ? '' : `片段 ${speechOrder} `}配音中，暂不能修改文案；可以继续阅读和试听` : '';
+  const lock = speechLock || (exports.exports?.locked ? '导出进行中，项目已锁定' : status?.taskLocked ? '制作任务进行中，项目已锁定' : status?.modification?.owner === 'codex' ? 'Codex 正在修改' : status?.modification?.owner === 'user' ? '用户正在编辑' : '');
   const historySegment = segments.find(segment => segment.id === audioHistory);
   const orderWidth = Math.max(compact ? 36 : 40, 20 + String(status?.snapshot.segments.length ?? 0).length * 8);
   const actionReason = disabled ? lock || (!status || !speech ? '正在连接项目' : '请先结束编辑或等待项目解除占用') : '';
@@ -540,12 +548,12 @@ export function App() {
   };
   const columns: ColDef<Segment>[] = [
     { headerName: '序号', field: 'order', width: orderWidth, cellClass: 'px-1!', headerClass: 'px-1!', cellRenderer: SegmentOrderCell,
-      cellRendererParams: { suppressMouseEventHandling: cellControlMouse, actionsFor, drag, segmentEditingBusy } },
+      cellRendererParams: { suppressMouseEventHandling: cellControlMouse, actionsFor, drag, segmentEditingBusy: segmentEditingBusy || !!speechLock } },
     { headerName: '文案', field: 'text', flex: 1, minWidth: compact ? 104 : 48, autoHeight: true, cellClass: 'px-1!', headerClass: 'px-2!',
       cellRenderer: SegmentScriptCell,
-      cellRendererParams: { query: searchOpen ? query : '', activeId: activeMatch,
+      cellRendererParams: { query: searchOpen ? query : '', activeId: activeMatch, speechLock,
         editorFor: (data: Segment) => segmentDetail.draft?.id === data.id ? <TextEditor key={data.id} value={segmentDetail.draft.text} data={data} busy={editState.busy || segmentDetail.finishing}
-          change={value => navigationView.current?.change(value)} commit={() => { void navigationView.current?.save(); }} cancel={() => navigationView.current?.escape()} /> : null,
+          change={value => navigationView.current?.change(value)} commit={mode => { void navigationView.current?.save(mode); }} cancel={input => navigationView.current?.escape(input)} /> : null,
         suppressMouseEventHandling: cellControlMouse },
       suppressKeyboardEvent: params => {
         if ((params.event.target as HTMLElement).closest('textarea, input')) return true;
@@ -591,6 +599,7 @@ export function App() {
         <Button variant="outline" size="sm" className="border-input text-foreground max-[600px]:px-2" ref={moreButton} aria-haspopup="dialog" aria-expanded={detail === 'more'} onClick={event => openDetail('more', event.currentTarget)}>更多</Button>
       </div>
     </header>
+    {speechLock && <p role="status" className="m-0 flex-none rounded-md bg-muted px-2 py-1 text-sm text-foreground">{speechLock}</p>}
     <p id="export-scope" className="sr-only">全片导出：查找与勾选不改变范围</p>
     {detail === 'more' && <DetailPanel title="更多操作" onClose={closeDetail} restoreFocus={returnFocus.current.detail}>
       <div className="flex flex-col gap-2 mb-1">
@@ -676,12 +685,27 @@ export function App() {
     <ContextMenuTrigger asChild>
     <div className="segment-grid w-full min-w-0 flex-1 min-h-0" ref={gridElement} onKeyDownCapture={event => {
       const target = event.target as HTMLElement;
-      if ((event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)) && !event.nativeEvent.isComposing
-        && target.matches('[role="gridcell"]') && target.closest('[row-id]') && !target.querySelector('[data-inline-editor]')) {
-        event.preventDefault(); event.stopPropagation();
-        const bounds = target.getBoundingClientRect();
-        target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: bounds.left + 8, clientY: bounds.top + 12 }));
-        return;
+      const id = target.matches('[role="gridcell"]') ? target.closest('[row-id]')?.getAttribute('row-id') : null;
+      const segment = id && grid.current?.getRowNode(id)?.data;
+      const draft = navigationView.current?.draft;
+      if (segment && !event.nativeEvent.isComposing) {
+        const { key, shiftKey, altKey, ctrlKey, metaKey } = event;
+        if ((key === 'ContextMenu' || (key === 'F10' && shiftKey)) && !target.querySelector('[data-inline-editor]')) {
+          event.preventDefault(); event.stopPropagation();
+          const bounds = target.getBoundingClientRect();
+          target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: bounds.left + 8, clientY: bounds.top + 12 }));
+          return;
+        }
+        if (!shiftKey && !altKey && !ctrlKey && !metaKey && (key === 'Enter' || key === 'F2' || (key === ' ' && !draft))) {
+          event.preventDefault(); event.stopPropagation();
+          if (!event.repeat) {
+            if (key === ' ') {
+              const audio = inlineAudio?.segmentId === segment.id ? inlineAudio : segmentSpeech(segment.id, speech).audio;
+              if (audio) toggleAudio(audio);
+            } else if (!speechLock) segmentDetail.navigate({ id: segment.id });
+          }
+          return;
+        }
       }
       rowControlTab(event);
     }} onClick={event => {
@@ -713,6 +737,7 @@ export function App() {
       readOnlyEdit suppressClickEdit popupParent={document.body}
       selectionColumnDef={{ headerName: '勾选', width: compact ? 52 : 56, headerClass: 'segment-check-header px-1!', cellClass: 'segment-check' }}
       rowSelection={{ mode: 'multiRow', selectAll: 'all', enableClickSelection: false, enableSelectionWithoutKeys: false }}
+      localeText={rowSelectionLabels}
       onSelectionChanged={event => {
         if (panelRestore && ['checkboxSelected', 'rowClicked', 'spaceKey', 'keyboardSelectAll', 'uiSelectAll', 'uiSelectAllFiltered', 'uiSelectAllCurrentPage'].includes(event.source)) {
           panelRestoreCancelled.current = true; setPanelRestore(null);
@@ -727,7 +752,7 @@ export function App() {
       }}
       onCellClicked={event => {
         const target = event.event?.target as HTMLElement | undefined;
-        if (event.colDef.field === 'text' && event.data && target?.closest('[data-segment-script]')) {
+        if (!speechLock && event.colDef.field === 'text' && event.data && target?.closest('[data-segment-script]')) {
           const viewport = gridElement.current?.querySelector('.ag-grid-viewport');
           const bounds = target.closest('[role="gridcell"]')?.getBoundingClientRect();
           if (viewport && bounds && bounds.height > viewport.clientHeight && bounds.top < viewport.getBoundingClientRect().top && event.rowIndex != null) {
@@ -735,11 +760,6 @@ export function App() {
           }
           segmentDetail.navigate({ id: event.data.id, preventScroll: true });
         }
-      }}
-      onCellKeyDown={event => {
-        if ((event.event?.target as HTMLElement)?.closest('button, input, textarea, [data-segment-support]')) return;
-        const key = (event.event as KeyboardEvent).key;
-        if ('colDef' in event && event.colDef.field === 'text' && event.data && !(event.event as KeyboardEvent).isComposing && (['Enter', 'F2'].includes(key))) segmentDetail.navigate({ id: event.data.id });
       }}
       getRowId={params => params.data.id}
 

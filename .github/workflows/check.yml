@@ -46,6 +46,16 @@ jobs:
   vitest:
     name: 全套 Vitest 逻辑与服务测试 (${{ matrix.shard }}/3)
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ghcr.io/dulltackle/clapgrid-ci@sha256:9057c98d339c39d84719ee2d15a7930c77326d901699b0faedd3b1804796501b
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      # 与托管 Ubuntu runner 的工作区 UID 一致；只读文件的测试必须以普通用户运行。
+      options: --init --shm-size=1g --user 1001:1001
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -83,6 +93,15 @@ jobs:
   playwright:
     name: 全套 Playwright 浏览器测试 (${{ matrix.shard }}/2)
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ghcr.io/dulltackle/clapgrid-ci@sha256:9057c98d339c39d84719ee2d15a7930c77326d901699b0faedd3b1804796501b
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --init --shm-size=1g
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -91,12 +110,10 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: ./.github/actions/test-environment
-        id: environment
       - name: 全套 Playwright 浏览器测试（分片）
         id: playwright
         env:
           CLAPGRID_PLAYWRIGHT_RUN_DIR: logs/playwright/ci
-          CHROME_BIN: ${{ steps.environment.outputs.chrome-path }}
         run: /usr/bin/time -v -o logs/playwright-resources.txt node_modules/.bin/playwright test --shard=${{ matrix.shard }}/2 2>&1 | tee logs/playwright.log
       - name: 核对 Playwright 必需报告已保存
         if: ${{ always() && steps.playwright.outcome != '' && steps.playwright.outcome != 'skipped' }}

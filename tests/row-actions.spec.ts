@@ -12,6 +12,8 @@ for (const environment of ['wide', 'compact', 'touch'] as const) test.describe(e
     const input = page.getByLabel('文案全文', { exact: true });
     await input.fill('新的第一句');
     await input.press('Control+Enter');
+    await expect(input).toHaveValue('第二句');
+    await input.press('Escape');
     await expect(input).toHaveCount(0);
     expect((await project.status()).snapshot.segments[0]!.text).toBe('新的第一句');
     await first.getByRole('button', { name: /片段 1 画面素材/ }).press('Enter');
