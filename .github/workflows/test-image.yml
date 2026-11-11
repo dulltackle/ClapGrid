@@ -32,6 +32,7 @@ jobs:
             ffprobe -version
             fc-list :lang=zh family | grep -F "Noto Sans CJK"
             "$CHROME_BIN" --headless --no-sandbox --disable-dev-shm-usage --dump-dom "data:text/html,clapgrid" | grep -F clapgrid
+            "$PLAYWRIGHT_BROWSERS_PATH"/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell --no-sandbox --dump-dom "data:text/html,clapgrid" | grep -F clapgrid
             strace -f -o /tmp/clapgrid.trace node -e ""
           '
       - name: 发布镜像并记录固定摘要

@@ -30,3 +30,16 @@ RUN set -eux; \
     rm /tmp/node.tar.xz /tmp/chrome.zip; \
     test "$(node -p 'process.versions.node')" = "$NODE_VERSION"; \
     "$CHROME_BIN" --version | grep -F "$CHROME_VERSION"
+
+# 基础镜像有时更新同一 revision 的补丁版；页面渲染要求锁定的实际浏览器版本。
+ARG HEADLESS_REVISION=1248
+ARG HEADLESS_VERSION=156.0.8078.4
+ARG HEADLESS_SHA256=c3e50596aef52c58f8fda3c6b3411c33d34c88b177b3ed1c2243359fd3b8ba20
+RUN set -eux; \
+    curl -fsSL --retry 3 -o /tmp/headless.zip "https://storage.googleapis.com/chrome-for-testing-public/${HEADLESS_VERSION}/linux64/chrome-headless-shell-linux64.zip"; \
+    echo "${HEADLESS_SHA256}  /tmp/headless.zip" | sha256sum -c -; \
+    directory="$PLAYWRIGHT_BROWSERS_PATH/chromium_headless_shell-${HEADLESS_REVISION}"; \
+    rm -rf "$directory"; \
+    unzip -q /tmp/headless.zip -d "$directory"; \
+    rm /tmp/headless.zip; \
+    "$directory/chrome-headless-shell-linux64/chrome-headless-shell" --version | grep -F "$HEADLESS_VERSION"
