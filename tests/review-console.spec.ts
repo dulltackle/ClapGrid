@@ -1,6 +1,7 @@
 import { basename } from 'node:path';
 import { test, expect } from './helpers/project.js';
 import { selectTestStyle } from './helpers/project-style.js';
+import { panelTheme } from './helpers/theme-contract.js';
 
 test('项目与风格常驻，空闲时页脚只显示任务详情，更多操作无重复入口', async ({ page, project }) => {
   await page.setViewportSize({ width: 420, height: 800 });
@@ -9,7 +10,9 @@ test('项目与风格常驻，空闲时页脚只显示任务详情，更多操�
   const header = page.locator('header');
   const projectName = basename(project.directory);
   await expect(header.getByRole('heading')).toHaveText(projectName);
-  await expect(header).toContainText('未设置项目风格，无法导出');
+  const warning = header.getByText('未设置项目风格，暂不能导出', { exact: true });
+  await expect(warning).toHaveCSS('color', panelTheme.color.warning);
+  await expect(warning).toHaveCSS('background-color', panelTheme.color.warningSurface);
   await expect(header.getByRole('button', { name: '导出全片' })).toBeDisabled();
   const footer = page.locator('footer');
   await expect(footer).toHaveText('任务详情');
