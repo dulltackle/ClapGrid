@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && [ -f package-lock.json ] && [ ! -d node_modules ] || exit 0; if npm ci --no-audit --no-fund >/dev/null 2>&1; then echo \"SessionStart 钩子：已按 package-lock.json 执行 npm ci 安装依赖。\"; else echo \"SessionStart 钩子：npm ci 失败，运行检查前先手动执行 npm ci 排查。\"; fi",
+            "timeout": 600,
+            "statusMessage": "安装锁定依赖（npm ci）"
+          }
+        ]
+      }
+    ]
+  }
+}
