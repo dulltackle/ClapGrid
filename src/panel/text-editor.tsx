@@ -71,24 +71,27 @@ export function TextEditor({ value, data, change, commit, cancel, busy, onVisibi
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter'].includes(event.key)) event.stopPropagation();
   };
   const modifier = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl';
-  const actions = (element: typeof input) => <>
-    <Button variant="ghost" size="sm" className="gap-1 px-1.5 text-xs" aria-label="取消修改" aria-keyshortcuts="Escape" onMouseDown={event => event.preventDefault()} disabled={busy} onClick={() => cancel(element.current)}>取消 <kbd aria-hidden className="text-[11px] opacity-70">Esc</kbd></Button>
-    <Button size="sm" className="gap-1 px-1.5 text-xs" aria-label="保存修改" aria-keyshortcuts="Control+Enter Meta+Enter" onMouseDown={event => event.preventDefault()} disabled={busy} onClick={() => commit('advance')}>保存 <kbd aria-hidden className="text-[11px] opacity-70">{modifier}↵</kbd></Button>
-  </>;
-  const help = <>{modifier}+↵ 保存并编辑下一句 · <span className="whitespace-nowrap">Alt+↵ 仅保存</span></>;
+  const help = `${modifier}+↵ 保存并编辑下一句 · Alt+↵ 仅保存`;
+  const actions = (element: typeof input, inline = false) => {
+    const style = inline ? 'w-8 px-0 text-xs transition-colors' : 'gap-1 px-1.5 text-xs';
+    return <>
+      <Button variant="ghost" size="sm" className={style} aria-label="取消修改" aria-keyshortcuts="Escape" title="取消修改（Esc）" onMouseDown={event => event.preventDefault()} disabled={busy} onClick={() => cancel(element.current)}>取消{!inline && <kbd aria-hidden className="text-[11px] opacity-70">Esc</kbd>}</Button>
+      <Button size="sm" className={style} aria-label="保存修改" aria-keyshortcuts="Control+Enter Meta+Enter" title={help} onMouseDown={event => event.preventDefault()} disabled={busy} onClick={() => commit('advance')}>保存{!inline && <kbd aria-hidden className="text-[11px] opacity-70">{modifier}↵</kbd>}</Button>
+    </>;
+  };
   return <div onKeyDown={event => {
     if (event.key === 'Escape' && !event.defaultPrevented && !event.nativeEvent.isComposing && !expandedRef.current) {
       event.preventDefault(); event.stopPropagation(); cancel(input.current);
     }
   }}>
-    <div ref={box} data-inline-text-box className="flex max-h-[calc(var(--inline-editor-height,100dvh)_-_var(--space-2))] w-full flex-col gap-1.5 rounded-md border border-solid border-input bg-background p-1.5 focus-within:border-focus">
+    <div ref={box} data-inline-text-box className="flex max-h-[calc(var(--inline-editor-height,100dvh)_-_var(--space-2))] w-full flex-col gap-1 rounded-md border border-solid border-input bg-background px-0.5 py-1 focus-within:border-focus">
       <textarea className="m-0 block min-h-[1lh] w-full resize-none overflow-x-hidden overflow-y-auto border-0 bg-transparent p-0 font-[inherit] text-base text-foreground outline-none [field-sizing:content]" ref={input} rows={1} aria-label="文案全文" aria-describedby={helpId} value={text}
         readOnly={busy} onChange={event => { setText(event.target.value); change(event.target.value); }} onKeyDownCapture={keys} />
-      <div role="group" aria-label="文案编辑操作" className="flex shrink-0 flex-wrap items-center justify-end gap-x-2 gap-y-1">
-        <p id={helpId} className="m-0 min-w-0 flex-[1_1_96px] text-xs leading-tight whitespace-normal text-muted-foreground">{help}</p>
-        <div className="flex max-w-full flex-wrap justify-end gap-1">
-          <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label="放大编辑" title="放大编辑" onMouseDown={event => event.preventDefault()} onClick={expand}><EnterFullScreenIcon aria-hidden /></Button>
-          {actions(input)}
+      <p id={helpId} className="sr-only">{help}</p>
+      <div role="group" aria-label="文案编辑操作" className="flex shrink-0 items-center gap-0.5">
+        <Button variant="ghost" size="icon-sm" className="text-muted-foreground transition-colors" aria-label="放大编辑" title="放大编辑" onMouseDown={event => event.preventDefault()} onClick={expand}><EnterFullScreenIcon aria-hidden /></Button>
+        <div className="ml-auto flex gap-0.5">
+          {actions(input, true)}
         </div>
       </div>
     </div>

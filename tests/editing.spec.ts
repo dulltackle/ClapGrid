@@ -19,16 +19,15 @@ for (const [width, height] of [[1280, 800], [780, 579]] as const) test(`双层�
   expect(box.x).toBe(column.x);
   expect(box.width).toBe(column.width);
   const footer = editor.getByRole('group', { name: '文案编辑操作' });
-  const help = footer.getByText('Ctrl+↵ 保存并编辑下一句 · Alt+↵ 仅保存');
   const inputBox = (await input.boundingBox())!;
-  const helpBox = (await help.boundingBox())!;
-  let right = helpBox.x + helpBox.width;
+  let right = box.x;
   for (const name of ['放大编辑', '取消修改', '保存修改']) {
     const button = footer.getByRole('button', { name, exact: true });
     await expect(button).toBeInViewport({ ratio: 0.999 });
     const bounds = (await button.boundingBox())!;
     expect(bounds.y).toBeGreaterThanOrEqual(inputBox.y + inputBox.height);
     expect(bounds.x).toBeGreaterThanOrEqual(right);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(box.x + box.width);
     expect(Math.min(bounds.width, bounds.height)).toBeGreaterThanOrEqual(32);
     right = bounds.x + bounds.width;
   }

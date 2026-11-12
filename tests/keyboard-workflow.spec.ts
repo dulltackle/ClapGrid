@@ -49,23 +49,28 @@ test('保存响应尚未返回时，长按快捷键也只保存并前进一次',
   expect(gate.calls).toBe(1);
 });
 
-for (const [width, platform, key] of [[780, 'MacIntel', '⌘↵'], [601, 'Linux x86_64', 'Ctrl↵'], [360, 'Linux x86_64', 'Ctrl↵']] as const) {
-  test(`文案编辑显示按钮、快捷键和用途说明 ${width}`, async ({ page, project }, testInfo) => {
+for (const [width, platform, key] of [[780, 'MacIntel', '⌘'], [601, 'Linux x86_64', 'Ctrl'], [360, 'Linux x86_64', 'Ctrl']] as const) {
+  test(`文案编辑操作单行显示并保留快捷键说明 ${width}`, async ({ page, project }, testInfo) => {
     await page.setViewportSize({ width, height: 360 });
     await page.addInitScript(value => { Object.defineProperty(navigator, 'platform', { value }); }, platform);
     await project.seed(['第一句', '第二句']);
     await page.goto(project.url);
     await page.getByText('第一句', { exact: true }).click();
     const actions = page.getByRole('group', { name: '文案编辑操作', exact: true });
-    for (const [name, label] of [['取消修改', '取消 Esc'], ['保存修改', `保存 ${key}`]]) {
+    const toolbar = (await actions.boundingBox())!;
+    for (const [name, label] of [['放大编辑', ''], ['取消修改', '取消'], ['保存修改', '保存']]) {
       const button = actions.getByRole('button', { name, exact: true });
       await expect(button).toHaveText(label!);
       await expect(button).toBeInViewport(fullyVisible);
-      expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(32);
+      const bounds = (await button.boundingBox())!;
+      expect(bounds.y).toBe(toolbar.y);
+      expect(Math.min(bounds.width, bounds.height)).toBeGreaterThanOrEqual(32);
+      expect(bounds.x + bounds.width).toBeLessThanOrEqual(toolbar.x + toolbar.width);
     }
-    const help = actions.getByText(`${platform === 'MacIntel' ? '⌘' : 'Ctrl'}+↵ 保存并编辑下一句 · Alt+↵ 仅保存`);
-    await expect(help).toBeInViewport(fullyVisible);
+    const help = `${key}+↵ 保存并编辑下一句 · Alt+↵ 仅保存`;
+    await expect(actions.getByRole('button', { name: '保存修改', exact: true })).toHaveAttribute('title', help);
     const input = page.getByRole('textbox', { name: '文案全文' });
+    await expect(input).toHaveAccessibleDescription(help);
     await expect(input).toBeFocused();
     expect(await input.evaluate(node => {
       const style = getComputedStyle(node);

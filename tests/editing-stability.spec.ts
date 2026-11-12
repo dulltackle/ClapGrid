@@ -1,13 +1,50 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from './helpers/project.js';
 
+// Chromium 无头模式默认隐藏滚动条，会掩盖滚动条改变可用列宽的问题。
+test.use({ launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'], executablePath: process.env.CHROME_BIN } });
+const sideColumns = '[role="columnheader"]:is([col-id="materials"], [col-id="speech"]), [data-segment-support], [data-segment-speech] > button';
+
+test('首行进入和退出编辑使表格跨过纵向滚动阈值时，素材和配音列保持位置', async ({ page, project }) => {
+  const ids = await project.seed([
+    '今天，我们来做一杯手冲咖啡。',
+    '先用热水润湿滤纸，顺便把分享壶温一下。',
+    '倒入咖啡粉，轻轻晃平。',
+    '从中心注入少量热水，让咖啡粉均匀湿透。等大约三十秒，看到表面的气泡慢慢变少，再开始下一次注水。',
+    '接下来把水流放细，从中心往外画小圈，快到滤纸边缘时就往回收。',
+    '等最后几滴咖啡落下，移开滤杯。先闻一闻，再趁温热尝一口。',
+  ]);
+  await page.setViewportSize({ width: 780, height: 578 });
+  await page.goto(project.url);
+  const first = page.locator(`[row-id="${ids[0]}"]`);
+  const last = page.locator(`[row-id="${ids.at(-1)}"]`);
+  const viewport = page.locator('.ag-grid-viewport');
+  await expect(last).toBeInViewport({ ratio: 0.999 });
+  const free = (await viewport.boundingBox())!.y + (await viewport.boundingBox())!.height - ((await last.boundingBox())!.y + (await last.boundingBox())!.height);
+  await page.setViewportSize({ width: 780, height: Math.round(578 - free + 12) });
+  const overflow = () => viewport.evaluate(element => element.scrollHeight > element.clientHeight);
+  await expect.poll(overflow).toBe(false);
+  const editor = first.getByRole('textbox', { name: '文案全文', exact: true });
+  await recordTransition(page, async () => {
+    await first.locator('[data-segment-script]').click();
+    await expect(editor).toBeFocused();
+    await expect.poll(overflow).toBe(true);
+    await expect(page.locator('.ag-body-vertical-scroll')).toBeVisible();
+  }, sideColumns, 16);
+  await recordTransition(page, async () => {
+    await editor.press('Escape');
+    await expect(editor).toHaveCount(0);
+    await expect.poll(overflow).toBe(false);
+  }, sideColumns);
+});
+
 /** 同时检查交接中的每一帧和结束后的布局，避免只验证最终静态页面。 */
-async function recordTransition(page: Page, action: () => Promise<void>) {
-  const recording = page.evaluate(async () => {
+async function recordTransition(page: Page, action: () => Promise<void>, selector = `header, footer, .segment-grid, .ag-grid-viewport, [col-id="order"] button, header button, footer button, ${sideColumns}`, settleFrames = 3) {
+  const recording = page.evaluate(async ({ selector, settleFrames }) => {
     const captureState = { done: false };
     (window as typeof window & { editingCapture?: typeof captureState }).editingCapture = captureState;
     const capture = () => {
-      const nodes = [...document.querySelectorAll<HTMLElement>('header, footer, .segment-grid, .ag-grid-viewport, [data-segment-support], [col-id="order"] button, [data-segment-speech] > button, header button, footer button')];
+      const nodes = [...document.querySelectorAll<HTMLElement>(selector)];
       return nodes.filter(node => node.getClientRects().length && getComputedStyle(node).visibility !== 'hidden' && node.getAttribute('aria-label') !== '回到草稿').map(node => {
         const rect = node.getBoundingClientRect(), style = getComputedStyle(node);
         const row = node.closest('[row-id]');
@@ -20,11 +57,11 @@ async function recordTransition(page: Page, action: () => Promise<void>) {
     const frames = [capture()];
     await new Promise<void>(resolve => {
       let settled = 0;
-      const frame = () => { frames.push(capture()); if (captureState.done) settled++; if (settled < 3) requestAnimationFrame(frame); else resolve(); };
+      const frame = () => { frames.push(capture()); if (captureState.done) settled++; if (settled < settleFrames) requestAnimationFrame(frame); else resolve(); };
       requestAnimationFrame(frame);
     });
     return frames;
-  });
+  }, { selector, settleFrames });
   try { await action(); }
   finally { await page.evaluate(() => { const state = (window as typeof window & { editingCapture?: { done: boolean } }).editingCapture; if (state) state.done = true; }); }
   const frames = await recording;
@@ -46,6 +83,44 @@ test('编辑切换保留素材区与配音区的现有 DOM', async ({ page, proj
   await expect(page.getByLabel('文案全文', { exact: true })).toBeEditable();
   expect(await support!.evaluate(node => node.isConnected)).toBe(true);
   expect(await speech!.evaluate(node => node.isConnected)).toBe(true);
+});
+
+test('窄面板展开编辑时操作栏保持单行，下方片段只移动一次', async ({ page, project }, testInfo) => {
+  const [target, following] = await project.seed(['先用热水润湿滤纸，顺便把分享壶温一下。', '倒入咖啡粉，轻轻晃平。']);
+  await page.setViewportSize({ width: 780, height: 578 });
+  await page.goto(project.url);
+  const row = page.locator(`[row-id="${target}"]`);
+  await expect(row.locator('[data-segment-script]')).toBeVisible();
+  const frames = page.evaluate(async ({ target, following }) => {
+    const row = document.querySelector(`[row-id="${target}"]`)!;
+    const next = document.querySelector(`[row-id="${following}"]`)!;
+    const offsets = [next.getBoundingClientRect().top - row.getBoundingClientRect().top];
+    const gaps: number[] = [];
+    let editFrames = 0;
+    const startedAt = performance.now();
+    while (editFrames < 8 && performance.now() - startedAt < 3000) {
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      const top = next.getBoundingClientRect().top - row.getBoundingClientRect().top;
+      if (top !== offsets.at(-1)) offsets.push(top);
+      const footer = row.querySelector('[role="group"]');
+      if (footer) {
+        editFrames++;
+        gaps.push(Math.round(next.getBoundingClientRect().top - footer.getBoundingClientRect().bottom));
+      }
+    }
+    return { offsets, editFrames, gaps };
+  }, { target, following });
+  await row.locator('[data-segment-script]').click();
+  const actions = row.getByRole('group', { name: '文案编辑操作' });
+  await expect(actions).toBeVisible();
+  const sample = await frames;
+  const height = (await actions.boundingBox())!.height;
+  await testInfo.attach('编辑展开几何', { body: JSON.stringify({ ...sample, height }), contentType: 'application/json' });
+  expect(sample.editFrames).toBe(8);
+  expect(sample.offsets.length).toBeLessThanOrEqual(2);
+  expect(height).toBe(32);
+  // requestAnimationFrame 的首次采样可能早于本帧的 ResizeObserver 通知。
+  expect(sample.gaps.slice(1).every(gap => gap >= 0)).toBe(true);
 });
 
 test('退出部分可见片段的编辑时不把整行滚入视口', async ({ page, project }) => {
