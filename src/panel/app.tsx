@@ -137,6 +137,7 @@ export function App() {
   const [audioHistory, setAudioHistory] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [deletedDraftOpen, setDeletedDraftOpen] = useState(false);
+  const [draftVisible, setDraftVisible] = useState(false);
   const [videoEditor, setVideoEditor] = useState<{ segment: Segment; assetId: string } | null>(null);
   const [assetRename, setAssetRename] = useState<{ asset: VideoAsset; name: string } | null>(null);
   const [renameError, setRenameError] = useState('');
@@ -309,6 +310,8 @@ export function App() {
     canEdit: () => !panelRestore && !!status && !status.taskLocked && !speech?.locked && !exports.exports?.locked,
   });
   navigationView.current = segmentDetail;
+  const showDraftRecovery = segmentDetail.deleted || !!segmentDetail.draftError || (segmentDetail.dirty && !draftVisible);
+  const footerDraftStatus = showDraftRecovery || segmentDetail.saving ? segmentDetail.draftStatus : '';
   const addSegment = () => segmentDetail.perform(async () => {
     const ticket = navigation.request();
     await editing.save('segments', { acquire: true }, async (token, action) => {
@@ -560,7 +563,7 @@ export function App() {
       cellRenderer: SegmentScriptCell,
       cellRendererParams: { query: searchOpen ? query : '', activeId: activeMatch, speechLock,
         editorFor: (data: Segment) => segmentDetail.draft?.id === data.id ? <TextEditor key={data.id} value={segmentDetail.draft.text} data={data} busy={editState.busy || segmentDetail.finishing}
-          change={value => navigationView.current?.change(value)} commit={mode => { void navigationView.current?.save(mode); }} cancel={input => navigationView.current?.escape(input)} /> : null,
+          change={value => navigationView.current?.change(value)} commit={mode => { void navigationView.current?.save(mode); }} cancel={input => navigationView.current?.escape(input)} onVisibilityChange={setDraftVisible} /> : null,
         suppressMouseEventHandling: cellControlMouse },
       suppressKeyboardEvent: params => {
         if ((params.event.target as HTMLElement).closest('textarea, input')) return true;
@@ -812,8 +815,8 @@ export function App() {
             setDeleteTargets({ targets: structuredClone(segments.filter(item => checkedAction?.ids.includes(item.id))), origin: focusReturns.capture(event.currentTarget) });
           }}>删除已勾选</Button>
         </>}
-        {segmentDetail.draftStatus && <span data-save-status role="status" className={segmentDetail.draftError || segmentDetail.deleted ? 'text-destructive' : undefined}>{segmentDetail.draftStatus}</span>}
-        {(segmentDetail.dirty || segmentDetail.draftError || segmentDetail.deleted) && <Button aria-label="回到草稿" variant="ghost" size="sm" onClick={event => {
+        {footerDraftStatus && <span data-save-status role="status" className={segmentDetail.draftError || segmentDetail.deleted ? 'text-destructive' : undefined}>{footerDraftStatus}</span>}
+        {showDraftRecovery && <Button aria-label="回到草稿" variant="ghost" size="sm" onClick={event => {
           if (segmentDetail.deleted) { rememberOrigin(event.currentTarget, 'draft'); setDeletedDraftOpen(true); }
           else segmentDetail.returnToDraft();
         }}>回到草稿</Button>}

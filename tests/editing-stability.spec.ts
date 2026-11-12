@@ -10,9 +10,11 @@ async function recordTransition(page: Page, action: () => Promise<void>) {
       const nodes = [...document.querySelectorAll<HTMLElement>('header, footer, .segment-grid, .ag-grid-viewport, [data-segment-support], [col-id="order"] button, [data-segment-speech] > button, header button, footer button')];
       return nodes.filter(node => node.getClientRects().length && getComputedStyle(node).visibility !== 'hidden' && node.getAttribute('aria-label') !== '回到草稿').map(node => {
         const rect = node.getBoundingClientRect(), style = getComputedStyle(node);
-        const row = node.closest('[row-id]')?.getAttribute('row-id') ?? '';
-        const key = `${row}:${node.tagName}:${node.getAttribute('aria-label') ?? node.getAttribute('data-segment-support') ?? node.className}:${node.tagName === 'BUTTON' ? node.textContent?.trim() : ''}`;
-        return { key, x: rect.x, y: rect.y, width: rect.width, height: rect.height, opacity: style.opacity };
+        const row = node.closest('[row-id]');
+        const key = `${row?.getAttribute('row-id') ?? ''}:${node.tagName}:${node.getAttribute('aria-label') ?? node.getAttribute('data-segment-support') ?? node.className}:${node.tagName === 'BUTTON' ? node.textContent?.trim() : ''}`;
+        // 草稿撑高所在行，后续行整体下移。行内控件相对于所在行应保持稳定。
+        const y = rect.y - (row?.getBoundingClientRect().y ?? 0);
+        return { key, x: rect.x, y, width: rect.width, height: rect.height, opacity: style.opacity };
       });
     };
     const frames = [capture()];

@@ -63,7 +63,7 @@ for (const [width, platform, key] of [[780, 'MacIntel', '⌘↵'], [601, 'Linux 
       await expect(button).toBeInViewport(fullyVisible);
       expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(32);
     }
-    const help = actions.getByText('保存并编辑下一句 · Alt+↵ 仅保存');
+    const help = actions.getByText(`${platform === 'MacIntel' ? '⌘' : 'Ctrl'}+↵ 保存并编辑下一句 · Alt+↵ 仅保存`);
     await expect(help).toBeInViewport(fullyVisible);
     const input = page.getByRole('textbox', { name: '文案全文' });
     await expect(input).toBeFocused();
@@ -85,7 +85,7 @@ test('Alt+Enter 原位保存；组合输入时不触发两种保存快捷键', a
   for (const modifiers of [{ ctrlKey: true }, { metaKey: true }, { altKey: true }]) {
     await input.dispatchEvent('keydown', { key: 'Enter', code: 'Enter', isComposing: true, ...modifiers });
   }
-  await expect(page.locator('[data-save-status]')).toHaveText('未保存');
+  await expect(input).toHaveValue('原位保存的草稿');
   await expect(input).toBeFocused();
   expect((await project.status()).snapshot.segments[0]!.text).toBe('第一句');
   await input.press('Alt+Enter');
