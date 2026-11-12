@@ -69,12 +69,18 @@ test('单击进入文案编辑后光标位于末尾，不显示滚动条且输�
 test('单击文案进入编辑，通过真实服务保存并在重载后保留', async ({ page, project }) => {
   const [id] = await project.seed(['原文']);
   await page.goto(project.url);
-  await page.locator(`[row-id="${id}"] [data-segment-script]`).click();
+  const row = page.locator(`[row-id="${id}"]`);
+  const background = () => row.evaluate(element => getComputedStyle(element.querySelector('.ag-grid-scrolling-cells')!, '::before').backgroundColor);
+  await expect(row).toBeVisible();
+  const initialBackground = await background();
+  await row.locator('[data-segment-script]').click();
   await page.getByLabel('文案全文', { exact: true }).fill('已保存的新文案');
   await page.getByLabel('文案全文', { exact: true }).press('Control+Enter');
+  await expect(row.locator('.text-summary')).toHaveText('已保存的新文案');
+  await expect.poll(background).toBe(initialBackground);
   await expect(page.locator('[data-save-status]')).toHaveCount(0);
   await page.reload();
-  await expect(page.locator(`[row-id="${id}"] .text-summary`)).toHaveText('已保存的新文案');
+  await expect(row.locator('.text-summary')).toHaveText('已保存的新文案');
   expect((await project.status()).snapshot.segments[0]!.text).toBe('已保存的新文案');
 });
 

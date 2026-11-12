@@ -71,21 +71,38 @@
 html, body, #root { height: 100%; overflow: hidden; }
 :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 
-/* AG Grid 的勾选组件默认在整行垂直居中；这里只对齐文案的第一行。 */
+/* 保留 AG Grid 原生勾选，命中区扩大到 32px，行内方框与文案首行对齐。 */
 .segment-grid :is(.segment-check, .segment-check-header) { cursor: pointer; }
-.segment-grid .segment-check .ag-selection-checkbox { position: absolute; inset-inline-start: 8px; top: calc(24px - var(--ag-icon-size) / 2); height: var(--ag-icon-size); line-height: var(--ag-icon-size); display: flex; }
+.segment-grid .segment-check-header { justify-content: center; }
+.segment-grid .segment-check-header .ag-header-cell-comp-wrapper { display: none; }
+.segment-grid .segment-check-header .ag-header-select-all { margin: 0; }
+.segment-grid .segment-check .ag-selection-checkbox {
+  position: absolute;
+  inset-inline-start: calc(50% - var(--ag-icon-size) / 2);
+  top: calc(24px - var(--ag-icon-size) / 2);
+  display: flex;
+  height: var(--ag-icon-size);
+  line-height: var(--ag-icon-size);
+  margin: 0;
+}
+.segment-grid .ag-checkbox-input-wrapper input[type="checkbox"] {
+  position: absolute;
+  inset: calc((var(--ag-icon-size) - 32px) / 2);
+  width: 32px;
+  height: 32px;
+}
 /* 原位编辑使用自有输入边框，移除 Quartz 叠加的编辑单元格装饰。 */
 .segment-grid .ag-row .ag-cell.ag-cell-inline-editing[col-id="text"] { border: 0 !important; border-radius: 0; box-shadow: none; padding: 0; }
 .segment-grid [data-inline-editor] textarea:focus { outline: none; box-shadow: none; }
 
-/* 勾选以左侧细条标记整句，独立于原位编辑；不占用单元格宽度。 */
-.segment-grid .ag-row.ag-row-selected::after {
+/* 当前行沿左侧标记，勾选底色由 AG Grid 独立呈现。 */
+.segment-grid .ag-row:has(:focus-visible, [data-segment-speech][data-playing])::after {
   content: "";
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
-  width: 3px;
+  width: 2px;
   background: var(--color-focus);
   pointer-events: none;
   z-index: 20;

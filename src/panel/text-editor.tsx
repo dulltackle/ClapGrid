@@ -85,7 +85,7 @@ export function TextEditor({ value, data, change, commit, cancel, busy, onVisibi
       <textarea className="m-0 block min-h-[1lh] w-full resize-none overflow-x-hidden overflow-y-auto border-0 bg-transparent p-0 font-[inherit] text-base text-foreground outline-none [field-sizing:content]" ref={input} rows={1} aria-label="文案全文" aria-describedby={helpId} value={text}
         readOnly={busy} onChange={event => { setText(event.target.value); change(event.target.value); }} onKeyDownCapture={keys} />
       <div role="group" aria-label="文案编辑操作" className="flex shrink-0 flex-wrap items-center justify-end gap-x-2 gap-y-1">
-        <p id={helpId} className="m-0 min-w-0 flex-[1_1_108px] text-xs leading-tight whitespace-normal text-muted-foreground">{help}</p>
+        <p id={helpId} className="m-0 min-w-0 flex-[1_1_96px] text-xs leading-tight whitespace-normal text-muted-foreground">{help}</p>
         <div className="flex max-w-full flex-wrap justify-end gap-1">
           <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label="放大编辑" title="放大编辑" onMouseDown={event => event.preventDefault()} onClick={expand}><EnterFullScreenIcon aria-hidden /></Button>
           {actions(input)}

@@ -3,6 +3,7 @@ import { SegmentSpeechCell } from './segment-speech.js';
 import { SegmentDraftPrompt } from './segment-details.js';
 import { PastePanel } from './paste-panel.js';
 import { Button, Input, NativeSelect, ContextMenu, ContextMenuTrigger, ContextMenuItem, AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel } from '@/components/ui/index.js';
+import { DotsHorizontalIcon, PlusIcon } from '@radix-ui/react-icons';
 import { buildIdentity } from '../build-identity.js';
 import { panelServiceUrl } from './service-url.js';
 import { RowMenu } from './row-menu.js';
@@ -35,6 +36,8 @@ import { panelCompatibility, panelNeedsRefresh, panelRestoreKey, readPanelRestor
 // 页面与表格共享语义变量；固定亮色，不跟随宿主主题。
 const segmentRowHeight = 50;
 const rowSelectionLabels = {
+  ariaHeaderSelection: '勾选',
+  ariaRowSelectAll: '按空格切换全选',
   ariaRowToggleSelection: '在勾选框上按空格切换勾选',
   ariaRowSelect: '在勾选框上按空格勾选本行',
   ariaRowDeselect: '在勾选框上按空格取消勾选本行',
@@ -53,6 +56,10 @@ const theme = themeQuartz.withParams({
   headerBackgroundColor: 'var(--color-grid-header)',
   headerTextColor: 'var(--color-ink-secondary)',
   selectedRowBackgroundColor: 'var(--color-row-selected)',
+  checkboxBorderRadius: 2,
+  checkboxUncheckedBorderColor: 'var(--color-ink-secondary)',
+  checkboxCheckedBackgroundColor: 'var(--color-focus)',
+  checkboxIndeterminateBackgroundColor: 'var(--color-focus)',
   rangeSelectionBorderColor: 'var(--color-focus)',
   focusShadow: { spread: 2, color: 'var(--color-focus)' },
   fontFamily: 'var(--font-ui)',
@@ -563,7 +570,7 @@ export function App() {
         if ((params.event.target as HTMLElement).closest('button')) return cellControlKeyboard(params);
         return ['Enter', 'F2', 'Backspace', 'Delete'].includes(params.event.key) || params.event.key.length === 1;
       } },
-    { headerName: '画面素材', colId: 'materials', width: compact ? 60 : 116, cellClass: 'px-1!', headerClass: 'px-2! max-[600px]:px-0.5!', cellRenderer: SegmentMaterialsCell,
+    { headerName: '画面素材', colId: 'materials', width: compact ? 76 : 152, cellClass: 'px-1!', headerClass: 'px-2!', cellRenderer: SegmentMaterialsCell,
       cellRendererParams: { ...visualControls, actionsFor, segmentEditingBusy, suppressMouseEventHandling: cellControlMouse } },
     { headerName: '配音', colId: 'speech', width: compact ? 142 : 200, cellClass: 'px-1!', headerClass: 'px-2!', cellRenderer: SegmentSpeechCell,
       cellRendererParams: { actionsFor, segmentEditingBusy, playing, listening: inlineAudio, player: audioPlayer, stop: stopAudio,
@@ -576,13 +583,13 @@ export function App() {
   // 工作空间绑定的服务将项目固定在工作空间下的 clapgrid/。
   const projectName = projectPath.at(window.location.pathname.startsWith('/binding/') ? -2 : -1) ?? '口播片段';
   const projectLabel = projectStyle ? `${projectName} · ${projectStyle.id}` : projectName;
-  const missingStyle = '未设置项目风格，无法导出';
+  const missingStyle = '未设置项目风格，暂不能导出';
   const versionIssue = panelCompatibility(buildIdentity, status?.buildIdentity, status?.activePanelIdentity);
   return <main style={{ '--project-status-height': `${footerHeight}px` } as import('react').CSSProperties} className="relative mx-auto flex h-dvh min-w-0 max-w-[1600px] flex-col gap-1 px-4 py-3 pb-2 max-[600px]:p-2 max-[450px]:px-1">
     <header className="relative mb-1 flex min-h-8 flex-none items-center justify-between gap-x-3 gap-y-1 max-[600px]:flex-wrap">
       <div className="flex min-w-0 flex-1 items-center gap-2 max-[600px]:basis-full">
         <h1 className="m-0 min-w-0 truncate text-lg leading-tight font-semibold" title={projectLabel}>{projectLabel}</h1>
-        {status && !projectStyle && <span id="project-style" className="shrink-0 rounded bg-error-surface px-1.5 py-0.5 text-xs text-destructive">{missingStyle}</span>}
+        {status && !projectStyle && <span id="project-style" className="shrink-0 rounded-full bg-warning-surface px-2 py-0.5 text-xs text-warning">{missingStyle}</span>}
       </div>
       {searchOpen && <section id="segment-search" className="search-popover absolute right-0 top-full mt-1 z-30 flex min-h-10 w-[560px] max-w-full items-center gap-1 rounded-lg border border-solid border-input bg-background p-2 shadow-lg" role="dialog" aria-modal="false" aria-label="查找口播片段">
         <label className="min-w-[72px] flex-1"><Input className="h-8 px-1.5 py-0.5 text-xs" ref={searchInput} aria-label="查找文案" placeholder="查找文案" value={query}
@@ -596,10 +603,10 @@ export function App() {
         </div>
       </section>}
       <div className="flex flex-none flex-nowrap items-center gap-2 max-[600px]:gap-1">
-        <Button size="sm" className={`max-[600px]:px-2 ${segmentEditingBusy ? 'disabled:opacity-100' : ''}`} disabled={disabled} onClick={() => { void addSegment(); }}>新增口播片段</Button>
+        <Button size="sm" className={`max-[600px]:has-[>svg]:px-2 ${segmentEditingBusy ? 'disabled:opacity-100' : ''}`} disabled={disabled} onClick={() => { void addSegment(); }}><PlusIcon aria-hidden />新增口播片段</Button>
         <Button variant="outline" size="sm" className="search-trigger border-input text-foreground max-[600px]:px-2" ref={tableFallback} aria-expanded={searchOpen} aria-controls="segment-search" onClick={() => { setSearchOpen(true); locate(query, 1, true); }}>查找</Button>
         <Button variant="outline" size="sm" className="border-input text-foreground max-[600px]:px-2" disabled={!status?.snapshot.projectStyle || !!error || exports.busy || !exports.exports || exports.exports.locked} aria-describedby={status && !projectStyle ? 'export-scope project-style' : 'export-scope'} onClick={() => { void exports.run(); }}>导出全片</Button>
-        <Button variant="outline" size="sm" className="border-input text-foreground max-[600px]:px-2" ref={moreButton} aria-haspopup="dialog" aria-expanded={detail === 'more'} onClick={event => openDetail('more', event.currentTarget)}>更多</Button>
+        <Button variant="outline" size="icon-sm" ref={moreButton} aria-label="更多" aria-haspopup="dialog" aria-expanded={detail === 'more'} onClick={event => openDetail('more', event.currentTarget)}><DotsHorizontalIcon aria-hidden /></Button>
       </div>
     </header>
     {speechLock && <p role="status" className="m-0 flex-none rounded-md bg-muted px-2 py-1 text-sm text-foreground">{speechLock}</p>}
@@ -738,7 +745,7 @@ export function App() {
     }}>{drag.indicator}<AgGridProvider modules={[AllCommunityModule]}><AgGridReact
       animateRows={false}
       readOnlyEdit suppressClickEdit popupParent={document.body}
-      selectionColumnDef={{ headerName: '勾选', width: compact ? 52 : 56, headerClass: 'segment-check-header px-1!', cellClass: 'segment-check' }}
+      selectionColumnDef={{ headerName: '', width: compact ? 36 : 44, headerClass: 'segment-check-header', cellClass: 'segment-check' }}
       rowSelection={{ mode: 'multiRow', selectAll: 'all', enableClickSelection: false, enableSelectionWithoutKeys: false }}
       localeText={rowSelectionLabels}
       onSelectionChanged={event => {
@@ -814,7 +821,14 @@ export function App() {
           else segmentDetail.returnToDraft();
         }}>回到草稿</Button>}
         {progress.length > 0 && <span role="status" className="text-running">{progress.map(task => task.label).join(' · ')}</span>}
-        <Button variant="outline" size="sm" className="ml-auto border-input text-foreground" onClick={event => openDetail('tasks', event.currentTarget)}>任务详情</Button>
+        <div className={`flex min-w-0 grow items-center justify-between gap-1 ${speechProblems.length ? 'basis-full' : ''}`}>
+          <div role="status" className="min-w-0">
+            {speechProblems.length > 0 && <Button variant="ghost" size="sm" className="min-w-8 max-w-full text-destructive hover:text-destructive" onClick={event => openDetail('tasks', event.currentTarget)}>
+              <span className="truncate">配音异常 {speechProblems.length} 项{speechProblems.some(({ task }) => task.state === 'unknown') ? ' · 结果未知，可能已计费' : ' · 生成失败'}</span>
+            </Button>}
+          </div>
+          <Button variant="ghost" size="sm" className="shrink-0 text-muted-foreground" onClick={event => openDetail('tasks', event.currentTarget)}>任务详情</Button>
+        </div>
       </div>
       {panelNeedsRefresh(buildIdentity, status?.activePanelIdentity) && <p className="flex items-center gap-2 pt-1" role="status">
         <span>{panelBusy ? '新版面板已准备，当前编辑或播放结束后可刷新。' : '新版面板已准备。'}</span>
@@ -822,13 +836,12 @@ export function App() {
       </p>}
       {panelUpdateError && <p role="alert">{panelUpdateError}</p>}
       {versionIssue === '版本不一致，请更新插件并重新打开' && <p role="alert" className="text-destructive">{versionIssue}</p>}
-      {(error || segmentDetail.draftError || Object.values(operationErrors).some(Boolean) || exports.connectionError || exports.operationError || speechProblems.length > 0 || exportProblems.length > 0 || selectionState.includes('断开')) && <div className="max-h-[22dvh] overflow-auto bg-error-surface text-destructive" aria-label="操作异常">
+      {(error || segmentDetail.draftError || Object.values(operationErrors).some(Boolean) || exports.connectionError || exports.operationError || exportProblems.length > 0 || selectionState.includes('断开')) && <div className="max-h-[22dvh] overflow-auto bg-error-surface text-destructive" aria-label="操作异常">
         {error && <p role="alert">{error}</p>}
         {segmentDetail.draftError && <p role="alert">{segmentDetail.draftError}</p>}
         {Object.entries(operationErrors).filter(([, message]) => message).map(([kind, message]) => <p key={kind} role="alert">{message}</p>)}
         {exports.connectionError && <p role="alert">{exports.connectionError}</p>}
         {exports.operationError && <p role="alert">{exports.operationError}</p>}
-        {speechProblems.length > 0 && <p role="alert">配音异常 {speechProblems.length} 项{speechProblems.some(({ task }) => task.state === 'unknown') ? ' · 结果未知，可能已计费' : ' · 生成失败'}，请查看任务详情</p>}
         {exportProblems.length > 0 && <p role="alert">导出或合成异常 {exportProblems.length} 项，请查看任务详情</p>}
         {selectionState.includes('断开') && <p role="alert">{selectionState} <Button variant="outline" size="sm" className="border-input text-foreground px-1.5 py-0.5 text-xs" onClick={() => setConnectionVersion(version => version + 1)}>重新连接勾选</Button></p>}
       </div>}

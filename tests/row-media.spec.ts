@@ -28,7 +28,9 @@ for (const environment of ['wide', 'compact', 'touch'] as const) test.describe(e
     await row.getByRole('button', { name: '片段 1 画面素材（0）', exact: true }).press('Enter');
     await expect(page.getByRole('dialog', { name: '片段 1 素材面板', exact: true })).toHaveCount(0);
     const listen = row.getByRole('button', { name: '试听', exact: true });
-    await expect(listen).toHaveText(/\d+\.\d 秒/);
+    await expect(listen).toHaveText('0:02');
+    const speech = row.getByRole('region', { name: '片段 1 配音' });
+    const speechWidth = (await speech.boundingBox())!.width;
     await listen.press('Enter');
     const player = page.locator('main > audio');
     await expect.poll(() => player.evaluate(node => (node as HTMLAudioElement).readyState)).toBeGreaterThan(0);
@@ -36,8 +38,15 @@ for (const environment of ['wide', 'compact', 'touch'] as const) test.describe(e
     const slider = row.getByRole('slider', { name: '配音进度', exact: true });
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(pause).toBeFocused();
+    await expect(pause).toHaveCSS('border-top-style', 'solid');
+    await expect(speech.getByText(/^0:0[01]$/)).toBeVisible();
+    expect((await speech.boundingBox())!.width).toBe(speechWidth);
+    await page.getByRole('button', { name: '查找', exact: true }).focus();
+    await expect.poll(() => row.evaluate(node => getComputedStyle(node, '::after').width)).toBe('2px');
+    await pause.focus();
     await page.keyboard.press('Tab');
     await expect(slider).toBeFocused();
+    await expect(slider).toHaveCSS('outline', 'rgb(39, 39, 42) solid 2px');
     await page.keyboard.press('Shift+Tab');
     await page.keyboard.press('Enter');
     await slider.press('Home'); await slider.press('ArrowRight');
