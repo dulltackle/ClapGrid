@@ -8,8 +8,9 @@ set -eu
 
 expected_node="$(tr -d '[:space:]' < .node-version)"
 actual_node="$(node -p 'process.versions.node')"
-if [ "$actual_node" != "$expected_node" ]; then
-  printf 'Node 版本不符：需要 %s，当前 %s\n' \
+if [ "${actual_node%.*}" != "${expected_node%.*}" ] ||
+  ! [ "${actual_node##*.}" -ge "${expected_node##*.}" ]; then
+  printf 'Node 版本不符：需要与 %s 主、次版本相同且补丁版本不低于它，当前 %s\n' \
     "$expected_node" "$actual_node" >&2
   exit 1
 fi
