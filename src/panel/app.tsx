@@ -35,6 +35,15 @@ import { panelCompatibility, panelNeedsRefresh, panelRestoreKey, readPanelRestor
 
 // 页面与表格共享语义变量；固定亮色，不跟随宿主主题。
 const segmentRowHeight = 50;
+function verticalScrollbarTakesSpace() {
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:absolute;width:100px;height:100px;overflow-y:scroll;visibility:hidden;';
+  document.body.append(probe);
+  const takesSpace = probe.offsetWidth > probe.clientWidth;
+  probe.remove();
+  return takesSpace;
+}
+
 const rowSelectionLabels = {
   ariaHeaderSelection: '勾选',
   ariaRowSelectAll: '按空格切换全选',
@@ -110,6 +119,7 @@ function rowControlTab(event: import('react').KeyboardEvent<HTMLDivElement>) {
 function EmptyProject({ message }: { message: string }) { return <span>{message}</span>; }
 
 export function App() {
+  const [reserveScrollbarSpace] = useState(verticalScrollbarTakesSpace);
   const compact = useSyncExternalStore(listenToPanelWidth, () => compactPanel.matches);
   const [editing] = useState(() => projectEditing(() => beginEdit(panelServiceUrl())));
   const editState = useSyncExternalStore(editing.subscribe, editing.getState);
@@ -745,8 +755,8 @@ export function App() {
       event.preventDefault();
     }}>{drag.indicator}<AgGridProvider modules={[AllCommunityModule]}><AgGridReact
       animateRows={false}
-      // 草稿撑高一行时也保留相同的可用列宽，避免滚动条挤动右侧两列。
-      alwaysShowVerticalScroll
+      // 仅为占宽的滚动条预留空间，避免覆盖式滚动条常驻在行内控件上。
+      alwaysShowVerticalScroll={reserveScrollbarSpace}
       readOnlyEdit suppressClickEdit popupParent={document.body}
       selectionColumnDef={{ headerName: '', width: compact ? 36 : 44, headerClass: 'segment-check-header', cellClass: 'segment-check' }}
       rowSelection={{ mode: 'multiRow', selectAll: 'all', enableClickSelection: false, enableSelectionWithoutKeys: false }}
