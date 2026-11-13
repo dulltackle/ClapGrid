@@ -23,10 +23,9 @@ test('根字体与四级字号覆盖表格、控件、弹窗和口播文案', as
   const inline = page.getByRole('textbox', { name: '文案全文', exact: true });
   await expect(inline).toHaveCSS('font-size', panelTheme.fontSize.body);
   await expect(inline).toHaveCSS('line-height', panelTheme.scriptLineHeight);
-  await page.getByRole('button', { name: '放大编辑' }).click();
-  const enlarged = page.getByRole('textbox', { name: '放大文案全文', exact: true });
-  await expect(enlarged).toHaveCSS('font-size', panelTheme.fontSize.body);
-  await expect(enlarged).toHaveCSS('line-height', panelTheme.scriptLineHeight);
+  await inline.press('Escape');
+  await expect(inline).toHaveCount(0);
+  await page.getByRole('button', { name: '任务详情', exact: true }).click();
   await expect(page.getByRole('dialog').getByRole('heading')).toHaveCSS('font-size', panelTheme.fontSize.heading);
 });
 async function inside(locator: Locator, width: number, height: number) {
@@ -152,7 +151,7 @@ for (const [width, height] of [[1600, 1000], [780, 579], [541, 579], [420, 800],
 
 }
 
-for (const width of [1600, 420]) test(`长文案完整显示原文，全文编辑可滚动、Tab 保留草稿且字符不启动编辑 ${width}`, async ({ page, project }) => {
+for (const width of [1600, 420]) test(`长文案完整显示原文，全文编辑可滚动、Tab 保存且字符不启动编辑 ${width}`, async ({ page, project }) => {
   const text = '长文案完整内容\n'.repeat(100);
   const [id] = await project.seed([text]);
   await page.setViewportSize({width,height:800});
@@ -169,8 +168,6 @@ for (const width of [1600, 420]) test(`长文案完整显示原文，全文编�
   await editor.press('Control+End');
   expect(await editor.evaluate(e => e.scrollTop)).toBeGreaterThan(0);
   await editor.fill(text + '末尾'); await editor.press('Tab');
-  expect((await project.status()).snapshot.segments[0]!.text).toBe(text);
-  await editor.press('Control+Enter');
   await expect.poll(async () => (await project.status()).snapshot.segments[0]!.text).toBe(text + '末尾');
   // 服务已写入文案后，面板仍需等修改权释放才完成保存并接受下一次编辑。
   await expect(editor).toHaveCount(0);

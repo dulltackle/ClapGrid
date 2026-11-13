@@ -29,7 +29,7 @@ export function SegmentScriptCell({ data, query, activeId, editorFor, speechLock
   useLayoutEffect(() => {
     const body = editorBody.current;
     if (!editing || !body) return;
-    // 自动行高会延后重排；编辑行在绘制前同步位置，避免操作栏先伸到下一行。
+    // 自动行高会延后重排；编辑行在绘制前同步位置，避免输入框伸到下一行。
     const syncHeight = () => {
       const cell = getComputedStyle(eGridCell);
       const height = body.offsetHeight + parseFloat(cell.paddingTop) + parseFloat(cell.paddingBottom)
@@ -44,12 +44,14 @@ export function SegmentScriptCell({ data, query, activeId, editorFor, speechLock
     return () => observer.disconnect();
   }, [editing, api, node, eGridCell]);
   if (!data) return null;
-  if (editor) return <div ref={editorBody} data-inline-editor className="w-full min-w-0 py-1">{editor}</div>;
-  return <div className="w-full min-w-0">
-    <div data-segment-script title={speechLock || '单击编辑口播文案'} aria-disabled={speechLock ? true : undefined} onMouseDown={event => event.preventDefault()}
-      className={`min-h-12 max-[720px]:min-h-[70px] max-[480px]:min-h-[80px] min-[601px]:max-[640px]:min-h-[80px] rounded-md px-1 py-3 text-base ${speechLock ? '' : 'cursor-text hover:bg-muted hover:inset-ring hover:inset-ring-input'}`}>
-      <SearchText text={data.text} query={query} current={data.id === activeId} />
-    </div>
+  // 阅读和编辑共用尺寸，切换状态时只改变边框颜色和内容。
+  return <div ref={editorBody} data-inline-editor={editing ? '' : undefined}
+    data-segment-script={editing ? undefined : ''} title={editing ? undefined : speechLock || '单击编辑口播文案'}
+    aria-disabled={!editing && speechLock ? true : undefined} onMouseDown={editing ? undefined : event => event.preventDefault()}
+    className={`w-full min-w-0 min-h-12 max-[720px]:min-h-[70px] max-[480px]:min-h-[80px] min-[601px]:max-[640px]:min-h-[80px] rounded-md border border-solid px-[3px] py-[11px] text-base ${editing
+      ? 'flex max-h-[calc(var(--inline-editor-height,100dvh)_-_var(--space-2))] flex-col border-input bg-background focus-within:border-focus'
+      : `border-transparent ${speechLock ? '' : 'cursor-text hover:bg-muted hover:inset-ring hover:inset-ring-input'}`}`}>
+    {editor ?? <SearchText text={data.text} query={query} current={data.id === activeId} />}
   </div>;
 }
 

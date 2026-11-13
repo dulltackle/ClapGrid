@@ -107,7 +107,7 @@ test('编辑与保存不改变已有勾选，编辑器空格也不切换勾选',
   await input.fill('更新'); await input.press('End'); await input.press('Space'); await input.pressSequentially('文案');
   await expect(input).toHaveValue('更新 文案');
   await expect(checkbox).not.toBeChecked();
-  await row.getByRole('button', { name: '保存修改', exact: true }).click();
+  await input.press('Enter');
   await expect.poll(async () => (await project.status()).snapshot.segments[1]!.text).toBe('更新 文案');
   await expect(selected).toBeChecked();
   await expect(checkbox).not.toBeChecked();

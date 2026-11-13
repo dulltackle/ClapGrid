@@ -1,26 +1,19 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { EnterFullScreenIcon, ExitFullScreenIcon } from '@radix-ui/react-icons';
-import { Button, Dialog, DialogContent, DialogTitle } from '@/components/ui/index.js';
-import type { Segment } from '../shared/contracts.js';
 
-/** 原位输入和放大视图共用表格草稿，切换尺寸不提交、不重新取得修改权。 */
-export function TextEditor({ value, data, change, commit, cancel, busy, onVisibilityChange }: {
-  value: string; data: Segment; change: (value: string) => void; commit: (mode: 'advance' | 'stay') => void;
-  cancel: (input: HTMLTextAreaElement | null) => void; busy: boolean; onVisibilityChange: (visible: boolean) => void;
+export type TextCommit = 'advance' | 'stay' | 'down' | 'right' | 'left';
+
+export function TextEditor({ value, change, commit, discard, busy, onVisibilityChange }: {
+  value: string; change: (value: string) => void; commit: (mode: TextCommit) => void;
+  discard: () => void; busy: boolean; onVisibilityChange: (visible: boolean) => void;
 }) {
   // AG Grid 的 renderer 参数异步刷新；输入立即回显，同时同步到共享草稿。
   const [text, setText] = useState(value);
-  const box = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
-  const enlargedInput = useRef<HTMLTextAreaElement>(null);
-  const [expanded, setExpanded] = useState(false);
   const helpId = useId();
-  const expandedRef = useRef(expanded); expandedRef.current = expanded;
-  const selection = useRef({ start: 0, end: 0 });
   const initialized = useRef(false);
   useLayoutEffect(() => {
-    const editor = box.current;
     const textarea = input.current;
+    const editor = textarea?.parentElement;
     const viewport = editor?.closest<HTMLElement>('.ag-grid-viewport');
     if (!editor || !textarea || !viewport) return;
     const headerHeight = viewport.querySelector('.ag-header')?.getBoundingClientRect().height ?? 0;
@@ -29,7 +22,7 @@ export function TextEditor({ value, data, change, commit, cancel, busy, onVisibi
     const resize = new ResizeObserver(fit);
     fit();
     resize.observe(viewport);
-    // 固定表头可能遮住全部草稿文字，此时即使底栏可见也需要恢复入口。
+    // 固定表头遮住草稿时，通过页脚恢复编辑位置。
     const observer = new IntersectionObserver(([entry]) => onVisibilityChange(!!entry?.isIntersecting), {
       root: viewport, rootMargin: `-${headerHeight}px 0px 0px`,
     });
@@ -44,21 +37,6 @@ export function TextEditor({ value, data, change, commit, cancel, busy, onVisibi
     element.setSelectionRange(element.value.length, element.value.length);
     element.scrollTop = element.scrollHeight;
   }, [busy]);
-  const rememberSelection = (element: HTMLTextAreaElement | null) => {
-    if (element) selection.current = { start: element.selectionStart, end: element.selectionEnd };
-  };
-  const focusInput = (element: HTMLTextAreaElement | null) => {
-    if (!element?.isConnected) return;
-    element.focus({ preventScroll: true });
-    element.setSelectionRange(selection.current.start, selection.current.end);
-  };
-  useEffect(() => {
-    if (!expanded) return;
-    const frame = requestAnimationFrame(() => { focusInput(enlargedInput.current); });
-    return () => cancelAnimationFrame(frame);
-  }, [expanded]);
-  const expand = () => { rememberSelection(input.current); setExpanded(true); };
-  const collapse = () => { rememberSelection(enlargedInput.current); setExpanded(false); };
   const keys = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.nativeEvent.isComposing || event.keyCode === 229) { event.stopPropagation(); return; }
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey || event.altKey)) {
@@ -66,52 +44,22 @@ export function TextEditor({ value, data, change, commit, cancel, busy, onVisibi
       if (!event.repeat) commit(event.ctrlKey || event.metaKey ? 'advance' : 'stay');
       return;
     }
-    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancel(event.currentTarget); return; }
-    if (event.key === 'Tab' || event.key === ' ') event.stopPropagation();
-    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter'].includes(event.key)) event.stopPropagation();
+    if ((event.key === 'Enter' && !event.shiftKey) || event.key === 'Tab') {
+      event.preventDefault(); event.stopPropagation();
+      if (!event.repeat) commit(event.key === 'Enter' ? 'down' : event.shiftKey ? 'left' : 'right');
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault(); event.stopPropagation();
+      discard();
+      return;
+    }
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter', ' '].includes(event.key)) event.stopPropagation();
   };
   const modifier = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl';
-  const help = `${modifier}+↵ 保存并编辑下一句 · Alt+↵ 仅保存`;
-  const actions = (element: typeof input, inline = false) => {
-    const style = inline ? 'w-8 px-0 text-xs transition-colors' : 'gap-1 px-1.5 text-xs';
-    return <>
-      <Button variant="ghost" size="sm" className={style} aria-label="取消修改" aria-keyshortcuts="Escape" title="取消修改（Esc）" onMouseDown={event => event.preventDefault()} disabled={busy} onClick={() => cancel(element.current)}>取消{!inline && <kbd aria-hidden className="text-[11px] opacity-70">Esc</kbd>}</Button>
-      <Button size="sm" className={style} aria-label="保存修改" aria-keyshortcuts="Control+Enter Meta+Enter" title={help} onMouseDown={event => event.preventDefault()} disabled={busy} onClick={() => commit('advance')}>保存{!inline && <kbd aria-hidden className="text-[11px] opacity-70">{modifier}↵</kbd>}</Button>
-    </>;
-  };
-  return <div onKeyDown={event => {
-    if (event.key === 'Escape' && !event.defaultPrevented && !event.nativeEvent.isComposing && !expandedRef.current) {
-      event.preventDefault(); event.stopPropagation(); cancel(input.current);
-    }
-  }}>
-    <div ref={box} data-inline-text-box className="flex max-h-[calc(var(--inline-editor-height,100dvh)_-_var(--space-2))] w-full flex-col gap-1 rounded-md border border-solid border-input bg-background px-0.5 py-1 focus-within:border-focus">
-      <textarea className="m-0 block min-h-[1lh] w-full resize-none overflow-x-hidden overflow-y-auto border-0 bg-transparent p-0 font-[inherit] text-base text-foreground outline-none [field-sizing:content]" ref={input} rows={1} aria-label="文案全文" aria-describedby={helpId} value={text}
-        readOnly={busy} onChange={event => { setText(event.target.value); change(event.target.value); }} onKeyDownCapture={keys} />
-      <p id={helpId} className="sr-only">{help}</p>
-      <div role="group" aria-label="文案编辑操作" className="flex shrink-0 items-center gap-0.5">
-        <Button variant="ghost" size="icon-sm" className="text-muted-foreground transition-colors" aria-label="放大编辑" title="放大编辑" onMouseDown={event => event.preventDefault()} onClick={expand}><EnterFullScreenIcon aria-hidden /></Button>
-        <div className="ml-auto flex gap-0.5">
-          {actions(input, true)}
-        </div>
-      </div>
-    </div>
-    <Dialog open={expanded} onOpenChange={open => { if (!open) collapse(); }}>
-      {expanded && <DialogContent className="ag-custom-component-popup gap-3" aria-describedby="enlarged-editor-help" onKeyDown={event => event.stopPropagation()}
-        onEscapeKeyDown={event => { event.preventDefault(); if (!event.isComposing) cancel(enlargedInput.current); }}
-        onCloseAutoFocus={event => {
-          event.preventDefault();
-          requestAnimationFrame(() => { focusInput(input.current); });
-        }}>
-        <div className="flex items-center justify-between gap-3">
-          <DialogTitle className="m-0 text-lg font-semibold">编辑口播文案 · 片段 {data?.order}</DialogTitle>
-          <Button variant="ghost" size="sm" aria-label="缩小编辑" onClick={collapse}><ExitFullScreenIcon aria-hidden />缩小</Button>
-        </div>
-        <textarea ref={enlargedInput} aria-label="放大文案全文" className="m-0 block h-[min(48dvh,320px)] min-h-[100px] max-h-[calc(100dvh-180px)] w-full resize-none rounded-md border border-solid border-input bg-background p-3 font-[inherit] text-base text-foreground" value={text} readOnly={busy} onChange={event => { setText(event.target.value); change(event.target.value); }} onKeyDownCapture={keys} />
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <span id="enlarged-editor-help" className="mr-auto text-xs text-muted-foreground">{help}</span>
-          {actions(enlargedInput)}
-        </div>
-      </DialogContent>}
-    </Dialog>
-  </div>;
+  return <>
+    <textarea className="m-0 block min-h-[1lh] w-full resize-none overflow-x-hidden overflow-y-auto whitespace-pre-wrap wrap-anywhere border-0 bg-transparent p-0 font-[inherit] text-base text-foreground outline-none [field-sizing:content]" ref={input} rows={1} aria-label="文案全文" aria-describedby={helpId} value={text}
+      readOnly={busy} onChange={event => { setText(event.target.value); change(event.target.value); }} onKeyDownCapture={keys} />
+    <p id={helpId} className="sr-only">Enter 保存并移到下一行，Tab 保存并移到相邻单元格，Shift+Enter 换行，Esc 撤销。{modifier}+↵ 保存并编辑下一句 · Alt+↵ 仅保存</p>
+  </>;
 }

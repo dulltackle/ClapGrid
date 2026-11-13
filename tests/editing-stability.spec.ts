@@ -5,7 +5,7 @@ import { test, expect } from './helpers/project.js';
 test.use({ launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'], executablePath: process.env.CHROME_BIN } });
 const sideColumns = '[role="columnheader"]:is([col-id="materials"], [col-id="speech"]), [data-segment-support], [data-segment-speech] > button';
 
-test('首行进入和退出编辑使表格跨过纵向滚动阈值时，素材和配音列保持位置', async ({ page, project }) => {
+test('草稿增高和退出编辑使表格跨过纵向滚动阈值时，素材和配音列保持位置', async ({ page, project }) => {
   const ids = await project.seed([
     '今天，我们来做一杯手冲咖啡。',
     '先用热水润湿滤纸，顺便把分享壶温一下。',
@@ -28,6 +28,7 @@ test('首行进入和退出编辑使表格跨过纵向滚动阈值时，素材�
   await recordTransition(page, async () => {
     await first.locator('[data-segment-script]').click();
     await expect(editor).toBeFocused();
+    await editor.fill('一行手冲咖啡文案\n'.repeat(6));
     await expect.poll(overflow).toBe(true);
     await expect(page.locator('.ag-body-vertical-scroll')).toBeVisible();
   }, sideColumns, 16);
@@ -85,42 +86,46 @@ test('编辑切换保留素材区与配音区的现有 DOM', async ({ page, proj
   expect(await speech!.evaluate(node => node.isConnected)).toBe(true);
 });
 
-test('窄面板展开编辑时操作栏保持单行，下方片段只移动一次', async ({ page, project }, testInfo) => {
-  const [target, following] = await project.seed(['先用热水润湿滤纸，顺便把分享壶温一下。', '倒入咖啡粉，轻轻晃平。']);
+test('窄面板在两行文案之间切换编辑时，正文与下方片段逐帧保持原位', async ({ page, project }, testInfo) => {
+  const [target, source, following] = await project.seed([
+    '准备器具：滤杯、滤纸、电子秤和手冲壶。',
+    '先用热水润湿滤纸，再倒掉滤杯下面的水。把咖啡粉倒进滤杯，轻轻晃平。',
+    '第一次注水约 30 mL。',
+  ]);
   await page.setViewportSize({ width: 780, height: 578 });
   await page.goto(project.url);
   const row = page.locator(`[row-id="${target}"]`);
-  await expect(row.locator('[data-segment-script]')).toBeVisible();
-  const frames = page.evaluate(async ({ target, following }) => {
+  await page.locator(`[row-id="${source}"] [data-segment-script]`).click();
+  await expect(page.getByRole('textbox', { name: '文案全文', exact: true })).toBeFocused();
+  const frames = page.evaluate(async ({ target, source, following }) => {
     const row = document.querySelector(`[row-id="${target}"]`)!;
-    const next = document.querySelector(`[row-id="${following}"]`)!;
-    const offsets = [next.getBoundingClientRect().top - row.getBoundingClientRect().top];
-    const gaps: number[] = [];
+    const oldRow = document.querySelector(`[row-id="${source}"]`)!;
+    const nextRow = document.querySelector(`[row-id="${following}"]`)!;
+    const measure = (segment: Element) => {
+      const text = segment.querySelector('.text-summary, textarea')!;
+      const { x, y, width, height } = text.getBoundingClientRect();
+      return { x, y, width, height, rowHeight: segment.getBoundingClientRect().height };
+    };
+    const sample = () => ({ target: measure(row), source: measure(oldRow), nextY: nextRow.getBoundingClientRect().top });
+    const baseline = sample();
+    const differences = new Map<string, ReturnType<typeof sample>>();
     let editFrames = 0;
     const startedAt = performance.now();
     while (editFrames < 8 && performance.now() - startedAt < 3000) {
       await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-      const top = next.getBoundingClientRect().top - row.getBoundingClientRect().top;
-      if (top !== offsets.at(-1)) offsets.push(top);
-      const footer = row.querySelector('[role="group"]');
-      if (footer) {
-        editFrames++;
-        gaps.push(Math.round(next.getBoundingClientRect().top - footer.getBoundingClientRect().bottom));
-      }
+      const current = sample();
+      const key = JSON.stringify(current);
+      if (key !== JSON.stringify(baseline)) differences.set(key, current);
+      if (row.querySelector('textarea')) editFrames++;
     }
-    return { offsets, editFrames, gaps };
-  }, { target, following });
+    return { baseline, editFrames, differences: [...differences.values()] };
+  }, { target, source, following });
   await row.locator('[data-segment-script]').click();
-  const actions = row.getByRole('group', { name: '文案编辑操作' });
-  await expect(actions).toBeVisible();
+  await expect(row.getByRole('textbox', { name: '文案全文', exact: true })).toBeFocused();
   const sample = await frames;
-  const height = (await actions.boundingBox())!.height;
-  await testInfo.attach('编辑展开几何', { body: JSON.stringify({ ...sample, height }), contentType: 'application/json' });
+  await testInfo.attach('切换编辑布局', { body: JSON.stringify(sample), contentType: 'application/json' });
   expect(sample.editFrames).toBe(8);
-  expect(sample.offsets.length).toBeLessThanOrEqual(2);
-  expect(height).toBe(32);
-  // requestAnimationFrame 的首次采样可能早于本帧的 ResizeObserver 通知。
-  expect(sample.gaps.slice(1).every(gap => gap >= 0)).toBe(true);
+  expect(sample.differences).toEqual([]);
 });
 
 test('退出部分可见片段的编辑时不把整行滚入视口', async ({ page, project }) => {
@@ -152,16 +157,11 @@ for (const width of [780, 420]) for (const action of ['进入', '切换', '退�
     const editor = page.getByLabel('文案全文', { exact: true });
     if (action !== '进入') { await script(0).click(); await expect(editor).toBeEditable(); }
     if (action === '保存' || action === '放弃') await editor.fill('第 1 条修改文案，检查编辑交接。');
-    if (action === '放弃') {
-      await editor.press('Escape');
-      await page.getByRole('button', { name: '放弃修改', exact: true }).waitFor();
-    }
     await recordTransition(page, async () => {
       if (action === '进入') await script(0).click();
       if (action === '切换') await script(1).click();
-      if (action === '退出') await editor.press('Escape');
+      if (action === '退出' || action === '放弃') await editor.press('Escape');
       if (action === '保存') await editor.press('Control+Enter');
-      if (action === '放弃') await page.getByRole('button', { name: '放弃修改', exact: true }).click();
       if (action === '保存') await expect(editor).toHaveValue('第 2 条测试文案，检查编辑交接。');
       else if (action === '进入' || action === '切换') await expect(editor).toBeEditable();
       else await expect(editor).toHaveCount(0);

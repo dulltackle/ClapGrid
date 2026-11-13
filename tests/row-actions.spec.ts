@@ -129,8 +129,4 @@ test('在序号、正文与行空白处打开本行菜单，右键控件和编�
   await editor.click({ button: 'right' });
   await expect(menu).toHaveCount(0);
   await expect(editor).toHaveValue('首行\n第二行\n第三行');
-  for (const button of await row.getByRole('group', { name: '文案编辑操作' }).getByRole('button').all()) {
-    const size = (await button.boundingBox())!;
-    expect(Math.min(size.width, size.height)).toBeGreaterThanOrEqual(32);
-  }
 });

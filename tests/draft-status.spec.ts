@@ -97,14 +97,13 @@ test('原位草稿滚出虚拟表格后回到草稿并保留内容', async ({ pa
   const viewport = page.locator('.ag-grid-viewport');
   await input.fill('滚动前的草稿');
   await expect(recover).toHaveCount(0);
-  // 草稿正文完全被固定表头挡住，底栏仍在视野内。
+  // 草稿刚被固定表头挡住时，虚拟行仍然挂载。
   await viewport.evaluate(element => {
-    const editor = element.querySelector('[data-inline-text-box] textarea')!.getBoundingClientRect();
+    const editor = element.querySelector('[data-inline-editor] textarea')!.getBoundingClientRect();
     const header = element.querySelector('.ag-header')!.getBoundingClientRect();
     element.scrollTop += Math.ceil(editor.bottom - header.bottom) + 1;
   });
   await expect(input).toBeAttached();
-  await expect(page.getByRole('button', { name: '保存修改' })).toBeInViewport();
   await expect(recover).toBeVisible();
   await viewport.evaluate(element => { element.scrollTop = 0; });
   await expect(recover).toHaveCount(0);

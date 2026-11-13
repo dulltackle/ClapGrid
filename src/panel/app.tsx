@@ -1,6 +1,5 @@
 import { SegmentScriptCell, SegmentMaterialsCell, SegmentOrderCell } from './segment-row.js';
 import { SegmentSpeechCell } from './segment-speech.js';
-import { SegmentDraftPrompt } from './segment-details.js';
 import { PastePanel } from './paste-panel.js';
 import { Button, Input, NativeSelect, ContextMenu, ContextMenuTrigger, ContextMenuItem, AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel } from '@/components/ui/index.js';
 import { DotsHorizontalIcon, PlusIcon } from '@radix-ui/react-icons';
@@ -16,7 +15,7 @@ import { TaskDetails, taskProgress, isTaskProblem, useExportTasks } from './expo
 import { ExportSettingsPanel } from './export-settings.js';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
-import { AllCommunityModule, themeQuartz, type ColDef, type GridApi } from 'ag-grid-community';
+import { AllCommunityModule, SELECTION_COLUMN_ID, themeQuartz, type ColDef, type GridApi } from 'ag-grid-community';
 import { AgGridProvider, AgGridReact } from 'ag-grid-react';
 import { queryStatus, querySpeech, submitSpeech, setVoice, importMaterial, renameMaterial, queryVisualPreviews, beginEdit, connectTable, modifyUserBatch, type TableSession } from '../shared/client.js';
 import { MaterialDerivationDetails } from './material-derivation.js';
@@ -104,6 +103,7 @@ const cellControlKeyboard: NonNullable<ColDef<Segment>['suppressKeyboardEvent']>
 function rowControlTab(event: import('react').KeyboardEvent<HTMLDivElement>) {
   if (event.key !== 'Tab' || event.nativeEvent.isComposing) return;
   const target = event.target as HTMLElement;
+  if (target.matches('[data-inline-editor] textarea')) return;
   const row = target.closest<HTMLElement>('.ag-row[row-id]');
   if (!row) return;
   const controls = (root: Element) => [...root.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea')]
@@ -569,12 +569,12 @@ export function App() {
   const columns: ColDef<Segment>[] = [
     { headerName: '序号', field: 'order', width: orderWidth, cellClass: 'px-1!', headerClass: 'px-1!', cellRenderer: SegmentOrderCell,
       cellRendererParams: { suppressMouseEventHandling: cellControlMouse, actionsFor, drag, segmentEditingBusy: segmentEditingBusy || !!speechLock } },
-    // 给行内三个 32px 操作入口及编辑框留出单行空间。
     { headerName: '文案', field: 'text', flex: 1, minWidth: 116, autoHeight: true, cellClass: 'px-1!', headerClass: 'px-2!',
       cellRenderer: SegmentScriptCell,
       cellRendererParams: { query: searchOpen ? query : '', activeId: activeMatch, speechLock,
-        editorFor: (data: Segment) => segmentDetail.draft?.id === data.id ? <TextEditor key={data.id} value={segmentDetail.draft.text} data={data} busy={editState.busy || segmentDetail.finishing}
-          change={value => navigationView.current?.change(value)} commit={mode => { void navigationView.current?.save(mode); }} cancel={input => navigationView.current?.escape(input)} onVisibilityChange={setDraftVisible} /> : null,
+        editorFor: (data: Segment) => segmentDetail.draft?.id === data.id ? <TextEditor key={data.id} value={segmentDetail.draft.text} busy={editState.busy || segmentDetail.finishing}
+          change={value => navigationView.current?.change(value)} commit={mode => { void navigationView.current?.save(mode); }}
+          discard={() => { void navigationView.current?.discard(); }} onVisibilityChange={setDraftVisible} /> : null,
         suppressMouseEventHandling: cellControlMouse },
       suppressKeyboardEvent: params => {
         if ((params.event.target as HTMLElement).closest('textarea, input')) return true;
@@ -782,6 +782,9 @@ export function App() {
             event.api.ensureIndexVisible(event.rowIndex, 'top');
           }
           segmentDetail.navigate({ id: event.data.id, preventScroll: true });
+        } else if (segmentDetail.draft && target && event.column.getColId() !== SELECTION_COLUMN_ID
+          && !target.closest('[data-inline-editor], button, input, textarea, select, a, [contenteditable="true"]')) {
+          segmentDetail.navigate(null);
         }
       }}
       getRowId={params => params.data.id}
@@ -817,7 +820,6 @@ export function App() {
       <Button variant="outline" onClick={() => { void navigator.clipboard.writeText(segmentDetail.draft!.text).catch(cause => failed(cause)); }}>复制草稿</Button>
       <Button variant="outline" onClick={() => { void segmentDetail.discard(); setDeletedDraftOpen(false); }}>放弃草稿</Button>
     </section></DetailPanel>}
-    <SegmentDraftPrompt controller={segmentDetail} busy={editState.busy} />
     <footer ref={statusFooter} className="flex-none border-0 border-t border-solid border-input pt-1 text-xs text-muted-foreground [&_button]:px-2 [&_button]:text-xs [&_p]:m-0 [&_p]:wrap-anywhere" aria-label="项目状态">
       <div className="flex min-w-0 flex-wrap items-center gap-1.5 max-[600px]:gap-x-1">
         {selectedIds.length > 0 && <>

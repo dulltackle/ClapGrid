@@ -31,47 +31,43 @@ test('逐句保存后光标落在下一句末尾，末句保存后回到本行',
   expect((await project.status()).snapshot.segments.map(segment => segment.text)).toEqual(['已保存的第一句', '最后一句！']);
 });
 
-test('保存响应尚未返回时，长按快捷键也只保存并前进一次', async ({ page, project }) => {
-  const [first] = await project.seed(['第一句', '第二句', '第三句']);
+for (const shortcut of ['Enter', 'Control+Enter'] as const) test(`保存响应尚未返回时，长按 ${shortcut} 也只保存并前进一次`, async ({ page, project }) => {
+  const [first, second] = await project.seed(['第一句', '第二句', '第三句']);
   await page.goto(project.url);
   await page.locator(`[row-id="${first}"] [data-segment-script]`).click();
   const input = page.getByRole('textbox', { name: '文案全文', exact: true });
   await input.fill('长按保存的第一句');
   const gate = await holdResponse(page, '/api/segments/edit');
   try {
-    await page.keyboard.down('Control'); await page.keyboard.down('Enter');
+    if (shortcut === 'Control+Enter') await page.keyboard.down('Control');
+    await page.keyboard.down('Enter');
     await gate.received;
     await page.keyboard.down('Enter');
-    await page.keyboard.up('Enter'); await page.keyboard.up('Control');
+    await page.keyboard.up('Enter');
+    if (shortcut === 'Control+Enter') await page.keyboard.up('Control');
   } finally { gate.release(); }
-  await expect(input).toHaveValue('第二句');
-  await expect(input).toBeFocused();
+  if (shortcut === 'Control+Enter') {
+    await expect(input).toHaveValue('第二句');
+    await expect(input).toBeFocused();
+  } else {
+    await expect(input).toHaveCount(0);
+    await expect(page.locator(`[row-id="${second}"] [col-id="text"]`)).toBeFocused();
+  }
   expect(gate.calls).toBe(1);
 });
 
 for (const [width, platform, key] of [[780, 'MacIntel', '⌘'], [601, 'Linux x86_64', 'Ctrl'], [360, 'Linux x86_64', 'Ctrl']] as const) {
-  test(`文案编辑操作单行显示并保留快捷键说明 ${width}`, async ({ page, project }, testInfo) => {
+  test(`文案输入框保留快捷键说明 ${width}`, async ({ page, project }, testInfo) => {
     await page.setViewportSize({ width, height: 360 });
     await page.addInitScript(value => { Object.defineProperty(navigator, 'platform', { value }); }, platform);
     await project.seed(['第一句', '第二句']);
     await page.goto(project.url);
     await page.getByText('第一句', { exact: true }).click();
-    const actions = page.getByRole('group', { name: '文案编辑操作', exact: true });
-    const toolbar = (await actions.boundingBox())!;
-    for (const [name, label] of [['放大编辑', ''], ['取消修改', '取消'], ['保存修改', '保存']]) {
-      const button = actions.getByRole('button', { name, exact: true });
-      await expect(button).toHaveText(label!);
-      await expect(button).toBeInViewport(fullyVisible);
-      const bounds = (await button.boundingBox())!;
-      expect(bounds.y).toBe(toolbar.y);
-      expect(Math.min(bounds.width, bounds.height)).toBeGreaterThanOrEqual(32);
-      expect(bounds.x + bounds.width).toBeLessThanOrEqual(toolbar.x + toolbar.width);
-    }
-    const help = `${key}+↵ 保存并编辑下一句 · Alt+↵ 仅保存`;
-    await expect(actions.getByRole('button', { name: '保存修改', exact: true })).toHaveAttribute('title', help);
+    const help = `Enter 保存并移到下一行，Tab 保存并移到相邻单元格，Shift+Enter 换行，Esc 撤销。${key}+↵ 保存并编辑下一句 · Alt+↵ 仅保存`;
     const input = page.getByRole('textbox', { name: '文案全文' });
     await expect(input).toHaveAccessibleDescription(help);
     await expect(input).toBeFocused();
+    await expect(input).toBeInViewport(fullyVisible);
     expect(await input.evaluate(node => {
       const style = getComputedStyle(node);
       return node.clientHeight - parseFloat(style.paddingTop) >= parseFloat(style.lineHeight);
@@ -194,28 +190,24 @@ test('配音锁定时顶部说明持续可见，仍能键盘播放有效和旧�
   } finally { speechControl.release(); }
 });
 
-for (const width of [420, 780]) test(`放弃确认不遮挡草稿，继续编辑回到输入框 ${width}`, async ({ page, project }) => {
-  const [first, second] = await project.seed(Array.from({ length: 16 }, (_, index) => `第 ${index + 1} 句`));
+for (const width of [420, 780]) test(`单击其他单元格的空白处提交文案，失败保留草稿 ${width}`, async ({ page, project }) => {
+  const [first, second] = await project.seed(['第一句', '第二句']);
   await page.setViewportSize({ width, height: 360 });
   await page.goto(project.url);
-  await page.locator(`[row-id="${width === 420 ? first : second}"] [data-segment-script]`).click();
+  await page.locator(`[row-id="${first}"] [data-segment-script]`).click();
   const input = page.getByLabel('文案全文', { exact: true });
-  await input.fill('还没有保存的草稿');
-  if (width === 420) {
-    await page.locator('.ag-grid-viewport').evaluate(node => { node.scrollTop = 180; });
-    await expect(input).not.toBeInViewport();
-  }
-  await page.keyboard.press('Escape');
-  const prompt = page.getByRole('alertdialog', { name: '放弃未保存的修改？' });
-  await expect(prompt).toBeVisible();
-  await expect(input).toBeInViewport(fullyVisible);
-  await expect.poll(async () => {
-    const editorBounds = (await input.boundingBox())!, promptBounds = (await prompt.boundingBox())!;
-    const headerBounds = (await page.getByRole('columnheader', { name: '文案', exact: true, includeHidden: true }).boundingBox())!;
-    return editorBounds.y >= headerBounds.y + headerBounds.height
-      && (editorBounds.y + editorBounds.height <= promptBounds.y || promptBounds.y + promptBounds.height <= editorBounds.y);
-  }).toBe(true);
-  await page.getByRole('button', { name: '继续编辑' }).click();
-  await expect(input).toBeFocused();
-  await expect(input).toHaveValue('还没有保存的草稿');
+  const cell = page.locator(`[row-id="${second}"] [col-id="materials"]`);
+  await expect(cell).toBeVisible();
+  const position = { x: (await cell.boundingBox())!.width - 8, y: 20 };
+  await input.fill('准备保存的草稿');
+  await page.route('**/api/segments/edit', route => route.fulfill({ status: 500, json: { error: '文案暂时无法保存' } }));
+  await cell.click({ position });
+  await expect(page.locator('[data-save-status]')).toHaveText('保存失败');
+  await expect(input).toHaveValue('准备保存的草稿');
+  expect((await project.status()).snapshot.segments[0]!.text).toBe('第一句');
+  await page.unroute('**/api/segments/edit');
+  await cell.click({ position });
+  await expect(input).toHaveCount(0);
+  await expect(cell).toBeFocused();
+  expect((await project.status()).snapshot.segments[0]!.text).toBe('准备保存的草稿');
 });
