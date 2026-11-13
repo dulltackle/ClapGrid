@@ -96,3 +96,43 @@ test('MCP 风格导入返回稳定身份，可设置和清空项目风格，页�
     expect(response.status, await response.clone().text()).toBe(status);
   }
 });
+
+const needsCases = [
+  ['needs: [image-generation]', true],
+  ['needs: ["image-generation"]', true],
+  ["needs: ['image-generation']", true],
+  ['needs: []', true],
+  ['needs: [webgl]', false],
+  ['needs: [image-generation, image-generation]', false],
+  ['needs:\n  - image-generation', false],
+  ['needs: image-generation', false],
+  ['needs: [image-generation', false],
+  ['needs: [image-generation, ]', false],
+] as const;
+for (const [declaration, accepted] of needsCases) {
+  test(`风格导入校验 needs 声明：${declaration.replace('\n', '⏎')}`, async ({ createDirectory, startService }) => {
+    const { readdirSync, existsSync } = await import('node:fs');
+    const root = createDirectory(join(tmpdir(), 'clapgrid-style-needs-'));
+    const sourceDirectory = join(root, 'style'); cpSync(resolve('tests/fixtures/style'), sourceDirectory, { recursive: true });
+    const stylePath = join(sourceDirectory, 'STYLE.md');
+    writeFileSync(stylePath, readFileSync(stylePath, 'utf8').replace(/^version:.*$/m, match => `${match}\n${declaration}`));
+    const panelDirectory = join(root, 'panel'); mkdirSync(panelDirectory); writeFileSync(join(panelDirectory, 'index.html'), 'panel');
+    const service = await startService({ projectDirectory: join(root, 'project'), panelDirectory, port: 0 });
+    const response = await fetch(service.url + '/api/codex/import-style', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sourceDirectory }) });
+    const styles = join(root, 'project', 'styles');
+    if (!accepted) {
+      expect(response.status).toBe(400);
+      const { error } = await response.json();
+      expect(error).toContain('needs');
+      expect(error).toContain('image-generation');
+      expect(error).toContain('needs: [image-generation]');
+      if (declaration.includes('webgl')) expect(error).toContain('不支持的取值：webgl');
+      if (declaration.includes('generation, image')) expect(error).toContain('重复');
+      expect(existsSync(styles) ? readdirSync(styles) : []).toEqual([]);
+      return;
+    }
+    expect(response.status, await response.clone().text()).toBe(200);
+    const { style } = await response.json();
+    expect(readFileSync(join(styles, style.styleId, 'STYLE.md'), 'utf8')).toContain(declaration);
+  });
+}
