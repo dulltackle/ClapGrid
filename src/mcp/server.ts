@@ -131,7 +131,7 @@ export function createBusinessMcp(url?: string) {
     }
   });
   server.registerTool('clapgrid_import_style', {
-    description: 'sourceDirectory 指定当前工作空间内的风格绝对目录（STYLE.md、lib/subtitle.js、example/index.html），返回不可变 styleId；最多 256 文件、32 MiB，拒绝链接。修改风格后重新导入，再设置为项目风格。',
+    description: 'sourceDirectory 指定当前工作空间内的风格绝对目录（STYLE.md、lib/subtitle.js、example/index.html），返回不可变 styleId；STYLE.md 头部可选 needs 只接受行内列表，取值仅 image-generation，格式错误或未知取值拒绝导入；最多 256 文件、32 MiB，拒绝链接。修改风格后重新导入，再设置为项目风格。',
     inputSchema: importPageSchema,
   }, async (input, extra) => {
     try { const result = await importStyle(await connection(extra._meta), input.sourceDirectory, extra.signal); return { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result }; }

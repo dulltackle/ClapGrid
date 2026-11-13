@@ -48,13 +48,16 @@
 
 风格由 `STYLE.md`、含 `subtitle.js` 的 ES module `lib/` 和 `example/` 组成。项目采用的规则仍记录在视觉方案中，风格本身不代表已被采用。
 
-1. 阅读所选内置风格的 `STYLE.md`，将整个风格目录复制到工作空间 `styles/<id>/`，在 `STYLE.md` 头部追加来源 id/version，保留项目版本自己的 id 与 version。插件更新不改变此独立副本。
-2. 在 `video.md` 的“风格”小节链接该目录的 `STYLE.md`。先完成本项目的结构方案和视觉方案，再阅读风格示例源码、编写第一个页面。结构方案按[项目制作约定模板](https://github.com/dulltackle/ClapGrid/blob/main/docs/templates/video.md#结构方案)记录，仅供制作者自检，不作为审阅证据。按 `STYLE.md` 的修改分级调整项目风格。
-3. 用 `clapgrid_import_style` 导入风格。不可变副本存于项目 `clapgrid/styles/<SHA-256>/`。同一内容重复导入返回相同身份；修改工作副本后重新导入，不编辑已导入副本。导入遵循现有修改权流程，限制见[导入边界](#导入边界)。
-4. 核对项目状态后，用 `clapgrid_set_project_style` 设置项目风格。面板显示当前风格，项目状态及 `clapgrid_visual_context` 返回风格身份与来源。
-5. 页面以绝对路径引用项目风格，例如 `import { draw } from '/style/lib/draw.js'`。渲染时只开放当前项目风格；未设置风格时请求 `/style/` 返回 404，并使任务失败、指明片段。旧 `page.json` 的 `style` 字段会被拒绝。
-6. 使用示例时，将 `example/` 复制到风格目录外的页面目录，按实际图层区间调整 DUR，再导入页面。
-7. 根据字幕模块的 `subtitleRegion` 为字幕留出画布空间。导出前必须设置项目风格；未设置时片段合成预览会标明字幕缺失，全片导出被拒绝。
+1. 推荐风格或用户点名风格时，先读其 `STYLE.md` 头部的 `needs`，在复制前检查所需能力。`image-generation` 的满足条件是当前宿主已加载 `imagegen` 工具或本机已配置 ClapGrid 生图密钥；ClapGrid 尚未提供密钥可用信号，目前只看 `imagegen`，配音用的 `TOKENDANCE_KEY` 不算。只检查是否可用，不做试生成。推荐列表照常列出不满足的风格，注明“需要生图，当前不可用”，不作首推。检查不通过且用户仍要这种风格时，说明缺少的能力，推荐两三种不需要该能力的替代风格，并提供两个选项：“配置生图密钥后再来”和“由你提供该风格需要的图片后继续”。用户选择自备图片时照常复制、导入并设为项目风格；某句缺少所需图片时停在该句等待图片。无论哪种情况都不制作[代码替身](https://github.com/dulltackle/ClapGrid/blob/main/GLOSSARY.md)；在派生素材上叠加程序化图形属于画面编排，照常允许。
+2. 阅读所选内置风格的 `STYLE.md`，将整个风格目录复制到工作空间 `styles/<id>/`，在 `STYLE.md` 头部追加来源 id/version，保留项目版本自己的 id 与 version。插件更新不改变此独立副本。
+3. 在 `video.md` 的“风格”小节链接该目录的 `STYLE.md`。先完成本项目的结构方案和视觉方案，再阅读风格示例源码、编写第一个页面。结构方案按[项目制作约定模板](https://github.com/dulltackle/ClapGrid/blob/main/docs/templates/video.md#结构方案)记录，仅供制作者自检，不作为审阅证据。按 `STYLE.md` 的修改分级调整项目风格。
+4. 用 `clapgrid_import_style` 导入风格。不可变副本存于项目 `clapgrid/styles/<SHA-256>/`。同一内容重复导入返回相同身份；修改工作副本后重新导入，不编辑已导入副本。导入遵循现有修改权流程，限制见[导入边界](#导入边界)。
+5. 核对项目状态后，用 `clapgrid_set_project_style` 设置项目风格。面板显示当前风格，项目状态及 `clapgrid_visual_context` 返回风格身份与来源。
+6. 页面以绝对路径引用项目风格，例如 `import { draw } from '/style/lib/draw.js'`。渲染时只开放当前项目风格；未设置风格时请求 `/style/` 返回 404，并使任务失败、指明片段。旧 `page.json` 的 `style` 字段会被拒绝。
+7. 使用示例时，将 `example/` 复制到风格目录外的页面目录，按实际图层区间调整 DUR，再导入页面。
+8. 根据字幕模块的 `subtitleRegion` 为字幕留出画布空间。导出前必须设置项目风格；未设置时片段合成预览会标明字幕缺失，全片导出被拒绝。
+
+修改风格后新增 `needs` 并重新导入时，按第 1 步重新检查。打开一个风格已声明 `needs` 的已有项目时，若当前宿主缺少该能力，只提示，不阻止；到了需要生图的那一句，再按 `derive-clapgrid-material` 的失败规则处理。
 
 风格变化后重新导入并设置新身份，原页面引用继续生效，旧预览随之显示待更新。同时更新采用方案中的风格身份，重新展示动态样片并取得受影响范围的确认；样式稿可选。确认记录格式见[样片接入说明](https://github.com/dulltackle/ClapGrid/blob/main/docs/production-sample.md)。
 
