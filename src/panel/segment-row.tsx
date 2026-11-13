@@ -1,5 +1,6 @@
 import { DragHandleDots2Icon, ImageIcon, PlusIcon, Cross2Icon, MinusIcon, EnterFullScreenIcon, PlayIcon, Pencil1Icon } from '@radix-ui/react-icons';
-import { useRef, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
+import type { ICellRendererParams } from 'ag-grid-community';
 import { Button, Popover, PopoverTrigger, PopoverContent } from '@/components/ui/index.js';
 import { segmentMaterials } from '../shared/contracts.js';
 import type { ExportTask, Segment, ServiceStatus } from '../shared/contracts.js';
@@ -18,13 +19,32 @@ type VisualProps = {
   associate: (id: string, trigger: HTMLElement) => void; unlink: (segment: Segment, index?: number) => void;
 };
 
-export function SegmentScriptCell({ data, query, activeId, editorFor, speechLock }: {
-  data?: Segment; editorFor: (segment: Segment) => ReactNode; query: string; activeId: string | null; speechLock: string;
-}) {
+export function SegmentScriptCell({ data, query, activeId, editorFor, speechLock, api, node, eGridCell }:
+  Pick<ICellRendererParams<Segment>, 'data' | 'api' | 'node' | 'eGridCell'> & {
+    editorFor: (segment: Segment) => ReactNode; query: string; activeId: string | null; speechLock: string;
+  }) {
+  const editor = data ? editorFor(data) : null;
+  const editing = !!editor;
+  const editorBody = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const body = editorBody.current;
+    if (!editing || !body) return;
+    // 自动行高会延后重排；编辑行在绘制前同步位置，避免操作栏先伸到下一行。
+    const syncHeight = () => {
+      const cell = getComputedStyle(eGridCell);
+      const height = body.offsetHeight + parseFloat(cell.paddingTop) + parseFloat(cell.paddingBottom)
+        + parseFloat(cell.borderTopWidth) + parseFloat(cell.borderBottomWidth);
+      if (height === node.rowHeight) return;
+      node.setRowHeight(height);
+      api.onRowHeightChanged();
+    };
+    syncHeight();
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(body);
+    return () => observer.disconnect();
+  }, [editing, api, node, eGridCell]);
   if (!data) return null;
-  const editor = editorFor(data);
-  // 文案和编辑器都由 AG Grid 测量，草稿换行后表格会重新计算行高。
-  if (editor) return <div data-inline-editor className="w-full min-w-0 py-1">{editor}</div>;
+  if (editor) return <div ref={editorBody} data-inline-editor className="w-full min-w-0 py-1">{editor}</div>;
   return <div className="w-full min-w-0">
     <div data-segment-script title={speechLock || '单击编辑口播文案'} aria-disabled={speechLock ? true : undefined} onMouseDown={event => event.preventDefault()}
       className={`min-h-12 max-[720px]:min-h-[70px] max-[480px]:min-h-[80px] min-[601px]:max-[640px]:min-h-[80px] rounded-md px-1 py-3 text-base ${speechLock ? '' : 'cursor-text hover:bg-muted hover:inset-ring hover:inset-ring-input'}`}>
