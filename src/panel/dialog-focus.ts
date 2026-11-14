@@ -50,8 +50,10 @@ export function segmentFocusCoordinator(grid: Grid, fallback: { search: ElementR
     const interaction = (event: Event) => {
       if (event instanceof KeyboardEvent) {
         // 忙态可以忽略 Escape；长按保存键也不应撤销第一次保存请求的焦点交接。
-        if (event.key === 'Escape' || (event.repeat && event.key === 'Enter' && (event.ctrlKey || event.metaKey || event.altKey)
-          && event.target instanceof HTMLTextAreaElement)) return;
+        const repeatedSave = event.repeat && event.target instanceof HTMLTextAreaElement
+          && ((event.key === 'Enter' && (event.ctrlKey || event.metaKey || event.altKey))
+            || (event.target.closest('[data-inline-editor]') && (event.key === 'Tab' || (event.key === 'Enter' && !event.shiftKey))));
+        if (event.key === 'Escape' || repeatedSave) return;
       }
       cancelPending();
     };

@@ -92,7 +92,7 @@ for (const entry of ['原位'] as const) test(`${entry}草稿在确认删除前�
   await expect(page.locator('.ag-row[aria-selected="true"]')).toHaveCount(2);
 });
 
-test('阅读字符与 Space 不启动编辑或勾选，编辑 Esc 提示、输入法及 Tab 保留草稿', async ({ page, project }) => {
+test('阅读字符与 Space 不启动编辑或勾选，输入法保留草稿，Esc 撤销，Tab 保存并移动焦点', async ({ page, project }) => {
   const [a, b] = await project.seed(['A', 'B']); await page.goto(project.url);
   const cell = page.locator(`[row-id="${a}"] [col-id="text"]`);
   await cell.focus(); await page.keyboard.press('x'); await page.keyboard.press('Space');
@@ -103,17 +103,24 @@ test('阅读字符与 Space 不启动编辑或勾选，编辑 Esc 提示、输�
   await expect(page.locator('.ag-row[aria-selected="true"]')).toHaveCount(0);
   await cell.focus(); await page.keyboard.press('F2');
   const input = page.getByLabel('文案全文', { exact: true }); await expect(input).toBeFocused();
-  await input.fill('未保存输入'); await input.press('Tab'); await expect(input).toBeVisible();
-  await page.keyboard.press('Escape'); await expect(page.getByRole('alertdialog')).toBeVisible();
-  await page.keyboard.press('Escape'); await expect(page.getByRole('alertdialog')).toHaveCount(0);
-  expect((await project.status()).snapshot.segments[0]!.text).toBe('A');
-  await input.dispatchEvent('keydown', { key: 'Escape', isComposing: true, bubbles: true });
-  await expect(page.getByRole('alertdialog')).toHaveCount(0);
-  await input.press('Escape'); await expect(page.getByRole('alertdialog')).toBeVisible();
-  await page.keyboard.press('Escape'); await expect(page.getByRole('alertdialog')).toHaveCount(0);
+  await input.fill('未保存输入');
+  for (const key of ['Enter', 'Tab', 'Escape']) {
+    await input.dispatchEvent('keydown', { key, isComposing: true, bubbles: true });
+  }
   await expect(input).toHaveValue('未保存输入'); await expect(input).toBeFocused();
-  await input.press('Escape'); await page.getByRole('button', { name: '放弃修改', exact: true }).click();
+  expect((await project.status()).snapshot.segments[0]!.text).toBe('A');
+  await input.press('Escape');
   await expect(input).toHaveCount(0); await expect(cell).toBeFocused();
+  expect((await project.status()).snapshot.segments[0]!.text).toBe('A');
+  for (const [key, column] of [['Tab', 'materials'], ['Shift+Tab', 'order']] as const) {
+    await cell.press('F2');
+    await expect(input).toBeFocused();
+    await input.fill(`由 ${key} 保存`);
+    await input.press(key);
+    await expect(input).toHaveCount(0);
+    await expect(page.locator(`[row-id="${a}"] [col-id="${column}"]`)).toBeFocused();
+    expect((await project.status()).snapshot.segments[0]!.text).toBe(`由 ${key} 保存`);
+  }
   const checkbox = page.locator(`[row-id="${b}"] input[type="checkbox"]`);
   await checkbox.focus(); await checkbox.press('Space');
   await expect(checkbox).toBeChecked();

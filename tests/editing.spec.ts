@@ -1,6 +1,6 @@
 import { test, expect } from './helpers/project.js';
 
-for (const [width, height] of [[1280, 800], [780, 579]] as const) test(`双层编辑框占满文案列且行高随草稿变化 ${width}×${height}`, async ({ page, project }) => {
+for (const [width, height] of [[1280, 800], [780, 579]] as const) test(`行内编辑框占满文案列且行高随草稿变化 ${width}×${height}`, async ({ page, project }) => {
   const text = '欢迎来到 ClapGrid！今天用一分钟，体验从文案到口播视频的制作流程。\n接下来，我们来看怎样为口播片段准备文案和画面素材。';
   const [id] = await project.seed([text]);
   await page.setViewportSize({ width, height });
@@ -13,25 +13,12 @@ for (const [width, height] of [[1280, 800], [780, 579]] as const) test(`双层�
   await script.click();
   const input = page.getByLabel('文案全文', { exact: true });
   await expect(input).toBeFocused();
-  const editor = row.locator('[data-inline-text-box]');
+  const editor = row.locator('[data-inline-editor]');
   await expect(editor).toHaveCSS('border-top-color', 'rgb(39, 39, 42)');
   const box = (await editor.boundingBox())!;
   expect(box.x).toBe(column.x);
   expect(box.width).toBe(column.width);
-  const footer = editor.getByRole('group', { name: '文案编辑操作' });
-  const inputBox = (await input.boundingBox())!;
-  let right = box.x;
-  for (const name of ['放大编辑', '取消修改', '保存修改']) {
-    const button = footer.getByRole('button', { name, exact: true });
-    await expect(button).toBeInViewport({ ratio: 0.999 });
-    const bounds = (await button.boundingBox())!;
-    expect(bounds.y).toBeGreaterThanOrEqual(inputBox.y + inputBox.height);
-    expect(bounds.x).toBeGreaterThanOrEqual(right);
-    expect(bounds.x + bounds.width).toBeLessThanOrEqual(box.x + box.width);
-    expect(Math.min(bounds.width, bounds.height)).toBeGreaterThanOrEqual(32);
-    right = bounds.x + bounds.width;
-  }
-  await expect(footer.getByRole('button', { name: '保存修改' })).toHaveCSS('background-color', 'rgb(39, 39, 42)');
+  await expect(editor.getByRole('button')).toHaveCount(0);
   expect(await row.locator('[data-segment-support]').boundingBox()).toEqual(support);
   expect(await row.locator('[data-segment-speech]').boundingBox()).toEqual(speech);
 
@@ -118,7 +105,7 @@ test('保存草稿期间连续点击文案只提交一次并进入最后点击�
   expect((await project.status()).snapshot.segments.map(segment => segment.text)).toEqual(['A 草稿', 'B', 'C']);
 });
 
-for (const width of [780, 420]) test(`原位编辑保留画面上下文并可用底栏保存或放弃 ${width}`, async ({ page, project }) => {
+for (const width of [780, 420]) test(`原位编辑保留画面上下文，Enter 保存并移动，Esc 撤销 ${width}`, async ({ page, project }) => {
   const [id, next] = await project.seed(['原文', '下一条']);
   await page.setViewportSize({ width, height: 579 });
   await page.goto(project.url);
@@ -128,7 +115,6 @@ for (const width of [780, 420]) test(`原位编辑保留画面上下文并可用
   const editor = row.locator('[data-inline-editor]');
   const input = page.getByLabel('文案全文', { exact: true });
   await expect(row.getByRole('button', { name: '片段 1 画面素材（0）' })).toBeInViewport();
-  await expect(editor.getByRole('button', { name: '保存修改', exact: true })).toBeVisible();
   await expect.poll(async () => {
     const bounds = (await editor.boundingBox())!, support = (await row.locator('[data-segment-support]').boundingBox())!;
     return support.x >= bounds.x + bounds.width;
@@ -138,78 +124,22 @@ for (const width of [780, 420]) test(`原位编辑保留画面上下文并可用
     const current = (await row.boundingBox())!, following = (await page.locator(`[row-id="${next}"]`).boundingBox())!;
     return following.y >= current.y + current.height - 1;
   }).toBe(true);
-  await input.fill('第一行'); await input.press('Enter'); await input.pressSequentially('第二行');
-  await input.press('Enter'); await input.pressSequentially('第三行');
+  await input.fill('第一行'); await input.press('Shift+Enter'); await input.pressSequentially('第二行');
+  await input.press('Shift+Enter'); await input.pressSequentially('第三行');
   await expect(input).toHaveValue('第一行\n第二行\n第三行');
   await expect(editor).toBeVisible();
-  await editor.getByRole('button', { name: '保存修改', exact: true }).click();
+  await input.press('Enter');
   await expect(editor).toHaveCount(0);
-  await expect(input).toHaveValue('下一条');
-  await input.press('Escape');
+  await expect(page.locator(`[row-id="${next}"] [col-id="text"]`)).toBeFocused();
   await expect(input).toHaveCount(0);
   await expect.poll(async () => (await project.status()).snapshot.segments[0]!.text).toBe('第一行\n第二行\n第三行');
   await expect.poll(async () => (await row.boundingBox())!.height).toBeGreaterThan(initialHeight);
   await row.locator('[data-segment-script]').dblclick();
   await input.fill('不保存的草稿');
-  await editor.getByRole('button', { name: '取消修改', exact: true }).click();
-  await page.getByRole('button', { name: '放弃修改', exact: true }).click();
+  await input.press('Escape');
   await expect(editor).toHaveCount(0);
   await expect.poll(async () => (await project.status()).modification).toBeNull();
   expect((await project.status()).snapshot.segments[0]!.text).toBe('第一行\n第二行\n第三行');
-});
-
-for (const [width, height] of [[780, 579], [420, 360]]) test(`原位放大缩小保留草稿、焦点与修改权 ${width}×${height}`, async ({ page, project }) => {
-  const [id] = await project.seed(['原文']);
-  await page.setViewportSize({ width: width!, height: height! });
-  await page.goto(project.url);
-  const row = page.locator(`[row-id="${id}"]`);
-  await row.locator('[data-segment-script]').dblclick();
-  const input = page.getByLabel('文案全文', { exact: true });
-  const expand = row.getByRole('button', { name: '放大编辑', exact: true });
-  await input.fill('原位草稿');
-  await input.press('Home'); await input.press('Shift+ArrowRight'); await input.press('Shift+ArrowRight');
-  const box = (await row.locator('[data-inline-text-box]').boundingBox())!;
-  const button = (await expand.boundingBox())!;
-  expect(button.x + button.width).toBeLessThanOrEqual(box.x + box.width);
-  expect(button.y).toBeGreaterThanOrEqual(box.y);
-  await expand.click();
-  const dialog = page.getByRole('dialog', { name: '编辑口播文案 · 片段 1', exact: true });
-  const large = page.getByLabel('放大文案全文', { exact: true });
-  await expect(dialog).toBeVisible(); await expect(large).toBeFocused();
-  await expect(large).toHaveValue('原位草稿');
-  expect(await large.evaluate(node => [(node as HTMLTextAreaElement).selectionStart, (node as HTMLTextAreaElement).selectionEnd])).toEqual([0, 2]);
-  await large.press('Tab');
-  await expect(dialog.getByRole('button', { name: '取消修改', exact: true })).toBeFocused();
-  await page.keyboard.press('Shift+Tab'); await expect(large).toBeFocused();
-  expect((await project.status()).snapshot.segments[0]!.text).toBe('原文');
-  expect((await project.status()).modification?.owner).toBe('user');
-  const bounds = (await dialog.boundingBox())!;
-  expect(bounds.x).toBeGreaterThanOrEqual(0); expect(bounds.y).toBeGreaterThanOrEqual(0);
-  expect(bounds.x + bounds.width).toBeLessThanOrEqual(width! + 1);
-  expect(bounds.y + bounds.height).toBeLessThanOrEqual(height! + 1);
-  await large.fill('放大后修改\n第二行');
-  await large.press('Home'); await large.press('Shift+ArrowRight'); await large.press('Shift+ArrowRight');
-  await dialog.getByRole('button', { name: '缩小编辑', exact: true }).click();
-  await expect(dialog).toHaveCount(0); await expect(input).toBeFocused();
-  await expect(input).toHaveValue('放大后修改\n第二行');
-  expect(await input.evaluate(node => [(node as HTMLTextAreaElement).selectionStart, (node as HTMLTextAreaElement).selectionEnd])).toEqual([6, 8]);
-  expect((await project.status()).snapshot.segments[0]!.text).toBe('原文');
-  await expand.click(); await expect(large).toBeFocused();
-  await large.press('Escape');
-  await page.getByRole('button', { name: '继续编辑', exact: true }).click();
-  await expect(large).toBeFocused();
-  await expect(large).toHaveValue('放大后修改\n第二行');
-  await dialog.getByRole('button', { name: '保存修改', exact: true }).click();
-  await expect(dialog).toHaveCount(0);
-  await expect.poll(async () => (await project.status()).snapshot.segments[0]!.text).toBe('放大后修改\n第二行');
-  await expect.poll(async () => (await project.status()).modification).toBeNull();
-  await row.locator('[data-segment-script]').dblclick(); await input.fill('不保存的放大草稿'); await expand.click();
-  await expect(large).toBeFocused();
-  await dialog.getByRole('button', { name: '取消修改', exact: true }).click();
-  await page.getByRole('button', { name: '放弃修改', exact: true }).click();
-  await expect(dialog).toHaveCount(0); await expect(input).toHaveCount(0);
-  await expect.poll(async () => (await project.status()).modification).toBeNull();
-  expect((await project.status()).snapshot.segments[0]!.text).toBe('放大后修改\n第二行');
 });
 
 test('行内 Escape 取消且 Shift+Enter 保留多行输入', async ({ page, project }) => {
@@ -218,7 +148,7 @@ test('行内 Escape 取消且 Shift+Enter 保留多行输入', async ({ page, pr
   const cell = page.locator(`[row-id="${id}"] [data-segment-script]`);
   const input = page.getByLabel('文案全文', { exact: true });
   await cell.dblclick(); await input.fill('取消的草稿'); await input.press('Escape');
-  await page.getByRole('button', { name: '放弃修改', exact: true }).click();
+  await expect(input).toHaveCount(0);
   expect((await project.status()).snapshot.segments[0]!.text).toBe('原文');
   await cell.dblclick(); await input.fill('第一行'); await input.press('Shift+Enter');
   await input.pressSequentially('第二行');

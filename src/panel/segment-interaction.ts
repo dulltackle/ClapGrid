@@ -7,6 +7,7 @@ import type { Segment, ServiceStatus, SpeechStatus } from '../shared/contracts.j
 import type { FocusReturn, segmentFocusCoordinator } from './dialog-focus.js';
 import type { ProjectEditing } from './project-editing.js';
 import type { SegmentDestination, SegmentNavigation } from './segment-navigation.js';
+import type { TextCommit } from './text-editor.js';
 
 export { segmentTargets } from './segment-targets.js';
 
@@ -24,9 +25,6 @@ export function useSegmentInteraction({ editing, status, accept, acceptSpeech, c
   const [draft, setDraft] = useState<Draft | null>(null);
   const current = useRef(draft);
   const update = (value: Draft | null) => { current.current = value; setDraft(value); };
-  const [prompt, setPrompt] = useState<{ open: boolean; edge: 'top' | 'bottom'; maxHeight: number } | null>(null);
-  const closePrompt = () => setPrompt(current => current?.open ? { ...current, open: false } : current);
-  const promptSource = useRef<HTMLElement | null>(null);
   const latest = useRef({ accept }); latest.current = { accept };
   const [saving, setSaving] = useState(false);
   const [navigating, setNavigating] = useState(false);
@@ -140,7 +138,7 @@ export function useSegmentInteraction({ editing, status, accept, acceptSpeech, c
   };
   const discard = async () => {
     if (finishing || flight.current || editing.getState().busy) return;
-    ++sequence.current; closePrompt();
+    ++sequence.current;
     const value = current.current;
     const version = lifetime.current;
     const restore = value ? focus.captureSegment({ id: value.id, column: 'text' }, { preventScroll: true }) : undefined;
@@ -155,26 +153,6 @@ export function useSegmentInteraction({ editing, status, accept, acceptSpeech, c
       else { update(null); }
     } catch (cause) { restore?.cancel(); if (version === lifetime.current) draftFailed(cause instanceof Error ? cause : new Error('读取项目状态失败')); }
     finally { if (version === lifetime.current) setFinishing(false); }
-  };
-  const escape = (input: HTMLTextAreaElement | null) => {
-    if (finishing || flight.current || editing.getState().busy) return;
-    if (dirtyDraft(current.current)) {
-      promptSource.current = input;
-      input?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-      // 原生滚动只考虑表格视口，滚回来的草稿仍可能被固定表头挡住。
-      const viewport = input?.closest<HTMLElement>('.ag-grid-viewport');
-      const header = viewport?.querySelector('.ag-header');
-      if (input && viewport && header) {
-        const covered = header.getBoundingClientRect().bottom - input.getBoundingClientRect().top;
-        if (covered > 0) viewport.scrollTop -= Math.ceil(covered);
-      }
-      const bounds = input?.getBoundingClientRect();
-      const above = bounds?.top ?? 0;
-      const below = window.innerHeight - (bounds?.bottom ?? 0);
-      setPrompt({ open: true, edge: above > below ? 'top' : 'bottom', maxHeight: Math.max(0, Math.floor(Math.max(above, below)) - 16) });
-    }
-    else if (current.current) void discard();
-    else navigate(null);
   };
   const perform = async (work: (savedTarget: (target: Segment) => Segment) => Promise<void>) => {
     // 有副作用的动作只接受一次；导航才使用最新目标替换策略。
@@ -210,7 +188,7 @@ export function useSegmentInteraction({ editing, status, accept, acceptSpeech, c
       input?.scrollIntoView({ block: 'nearest' }); input?.focus({ preventScroll: true });
     });
   };
-  return { draft, dirty, deleted, saving, navigating, finishing, draftStatus, draftError: activeFailure?.message ?? '', returnToDraft, prompt, navigate, begin,
+  return { draft, dirty, deleted, saving, navigating, finishing, draftStatus, draftError: activeFailure?.message ?? '', returnToDraft, navigate, begin,
     change: (value: string) => {
       const previous = current.current;
       if (previous && !finishing && !flight.current) {
@@ -219,25 +197,25 @@ export function useSegmentInteraction({ editing, status, accept, acceptSpeech, c
         update(next);
       }
     },
-    commit, perform, escape, discard,
-    save: async (mode: 'advance' | 'stay') => {
+    commit, perform, discard,
+    save: async (mode: TextCommit) => {
       if (finishing || flight.current || editing.getState().busy) return;
       if (mode === 'stay') { await commit(true); return; }
       const value = current.current;
+      if (!value) return;
       const api = grid();
-      const index = value ? api?.getRowNode(value.id)?.rowIndex : null;
-      const next = index == null ? undefined : api?.getDisplayedRowAtIndex(index + 1)?.data;
-      if (next) { navigate({ id: next.id }); return; }
-      const restore = value ? focus.captureSegment({ id: value.id, column: 'text' }, { preventScroll: true }) : undefined;
+      const index = api?.getRowNode(value.id)?.rowIndex;
+      const next = mode === 'advance' || mode === 'down'
+        ? index == null ? undefined : api?.getDisplayedRowAtIndex(index + 1)?.data
+        : undefined;
+      if (next && mode === 'advance') { navigate({ id: next.id }); return; }
+      const textColumn = api?.getColumn('text');
+      const adjacent = textColumn && (mode === 'left' ? api?.getDisplayedColBefore(textColumn)
+        : mode === 'right' ? api?.getDisplayedColAfter(textColumn) : null);
+      const restore = focus.captureSegment({ id: next?.id ?? value.id, column: adjacent?.getColId() ?? 'text' },
+        { preventScroll: !next && !adjacent });
       const requested = navigation.intent();
-      if (await commit() && requested.valid()) restore?.(); else restore?.cancel();
-    },
-    continueEditing: () => {
-      closePrompt();
-      requestAnimationFrame(() => {
-        const input = promptSource.current?.isConnected ? promptSource.current : document.querySelector<HTMLTextAreaElement>('[data-inline-editor] textarea');
-        input?.focus({ preventScroll: true });
-      });
+      if (await commit() && requested.valid()) restore(); else restore.cancel();
     },
   };
 }
